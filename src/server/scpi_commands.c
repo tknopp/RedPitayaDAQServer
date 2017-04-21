@@ -320,6 +320,17 @@ static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
         return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_ADC_SlowDACInterpolation(scpi_t * context) {
+
+	int32_t tmp;
+        if (!SCPI_ParamInt32(context, &tmp, TRUE)) {
+                return SCPI_RES_ERR;
+        }
+	slowDACInterpolation = (tmp == 1);
+
+        return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t * context) {
         // Reading is only possible while an acquisition is running
         if(!rxEnabled) {
@@ -327,6 +338,18 @@ static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t * context) {
         }
 
 	SCPI_ResultInt64(context, currentFrameTotal-1);
+
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_ADC_GetCurrentWP(scpi_t * context) {
+        printf("RP_ADC_GetCurrentWP\n");
+	// Reading is only possible while an acquisition is running
+        //if(!rxEnabled) {
+        //        return SCPI_RES_ERR;
+        //}
+
+	SCPI_ResultInt64(context, getWritePointer());
 
     return SCPI_RES_OK;
 }
@@ -391,6 +414,7 @@ static scpi_result_t RP_ADC_GetPeriods(scpi_t * context) {
 static scpi_result_t RP_ADC_StartAcquisitionConnection(scpi_t * context) {
 	bool connectionEstablished = false;
 	
+printf("RP_ADC_StartAcquisitionConnection\n");
 	while(!connectionEstablished) {
 		newdatasocklen = sizeof (newdatasockaddr);
 		newdatasockfd = accept(datasockfd, (struct sockaddr *) &newdatasockaddr, &newdatasocklen);
@@ -424,11 +448,17 @@ static scpi_result_t RP_ADC_GetAcquisitionStatus(scpi_t * context) {
 
 static scpi_result_t RP_ADC_SetAcquisitionStatus(scpi_t * context) {
 	int32_t acquisition_status_selection;
+printf("Test 0\n");
 
     if (!SCPI_ParamChoice(context, acquisition_status_modes, &acquisition_status_selection, TRUE)) {
 		return SCPI_RES_ERR;
 	}
-	
+printf("Test 1\n");
+	if (!SCPI_ParamInt64(context, &startWP, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+printf("Test 2\n");
+
 	if(acquisition_status_selection == ACQUISITION_ON) {
 		rxEnabled = true;
 	} else {
@@ -761,9 +791,11 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:SlowDAC?", .callback = RP_ADC_GetNumSlowDACChan,},
 	{.pattern = "RP:ADC:SlowDACLUT", .callback = RP_ADC_SetSlowDACLUT,},
 	{.pattern = "RP:ADC:SlowDACEnable", .callback = RP_ADC_EnableSlowDAC,},
+	{.pattern = "RP:ADC:SlowDACInterpolation", .callback = RP_ADC_SlowDACInterpolation,},
 	{.pattern = "RP:ADC:FRAme", .callback = RP_ADC_SetPeriodsPerFrame,},
 	{.pattern = "RP:ADC:FRAme?", .callback = RP_ADC_GetPeriodsPerFrame,},
 	{.pattern = "RP:ADC:FRAmes:CURRent?", .callback = RP_ADC_GetCurrentFrame,},
+	{.pattern = "RP:ADC:WP:CURRent?", .callback = RP_ADC_GetCurrentWP,},
 	{.pattern = "RP:ADC:FRAmes:DATa", .callback = RP_ADC_GetFrames,},
 	{.pattern = "RP:ADC:ACQCONNect", .callback = RP_ADC_StartAcquisitionConnection,},
 	{.pattern = "RP:ADC:ACQSTATus", .callback = RP_ADC_SetAcquisitionStatus,},

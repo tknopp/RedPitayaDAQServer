@@ -66,6 +66,7 @@ volatile int64_t numSamplesPerFrame = -1;
 volatile int64_t numFramesInMemoryBuffer = -1;
 volatile int64_t numPeriodsInMemoryBuffer = -1;
 volatile int64_t buff_size = 0;
+int64_t startWP = -1;
 
 volatile int64_t currentFrameTotal;
 volatile int64_t currentPeriodTotal;
@@ -78,6 +79,7 @@ bool acquisitionThreadRunning = false;
 bool commThreadRunning = false;
 
 float *slowDACLUT = NULL;
+bool slowDACInterpolation = false;
 
 pthread_t pAcq;
 pthread_t pSlowDAC;
@@ -228,8 +230,8 @@ int waitServer(int fd) {
   max_fd = fd;
   FD_SET(fd, &fds);
 
-  timeout.tv_sec = 1;
-  timeout.tv_usec = 0;
+  timeout.tv_sec = 0;
+  timeout.tv_usec = 400;
 
   rc = select(max_fd + 1, &fds, NULL, NULL, &timeout);
 
@@ -269,15 +271,15 @@ void* acquisitionThread(void* ch) {
       initBuffer();
       printf("New buffer initialized\n");
 
-      wp_old = 0;
+      wp_old = startWP;
       firstCycle = true;
 
-      while(getTriggerStatus() == 0 && rxEnabled)
-      {
-        printf("Waiting for external trigger! \n");
-        fflush(stdout);
-        usleep(100);
-      }
+      //while(getTriggerStatus() == 0 && rxEnabled)
+      //{
+      //  printf("Waiting for external trigger! \n");
+      //  fflush(stdout);
+      //  usleep(100);
+      //}
 
       printf("Trigger received, start reading\n");		
 
@@ -287,7 +289,6 @@ void* acquisitionThread(void* ch) {
 
         //printf("Get write pointer distance\n");
         uint32_t size = getWritePointerDistance(wp_old, wp)-1;
-        //printf("____ %d %d %d \n", size, wp_old, wp);
         if(size > 512*1024) {
           printf("I think we lost a step %d %d %d \n", size, wp_old, wp);
         }
@@ -310,6 +311,12 @@ void* acquisitionThread(void* ch) {
             wp_old = (wp_old + size) % ADC_BUFF_SIZE;
           } else {
             printf("OVERFLOW %ld %d  %ld\n", data_read, size, buff_size);
+            printf("____ %d %d %d \n", size, wp_old, wp);
+            printf("data_read_total = %lld \n", data_read_total);
+            printf("currentFrameTotal = %lld \n", currentFrameTotal);
+            printf("currentPeriodTotal = %lld \n", currentPeriodTotal);
+
+
             uint32_t size1 = buff_size - data_read; 
             uint32_t size2 = size - size1; 
 
@@ -453,13 +460,13 @@ void* slowDACThread(void* ch)
 
       numSamplesPerFrame = numSamplesPerPeriod * numPeriodsPerFrame; 
 
-      wp_old = 0;
-      while(getTriggerStatus() == 0 && rxEnabled)
+      wp_old = startWP;
+      /*while(getTriggerStatus() == 0 && rxEnabled)
       {
         printf("Waiting for external trigger SlowDAC thread! \n");
         fflush(stdout);
         usleep(100);
-      }
+      }*/
 
       printf("Trigger received, start sending\n");		
 
@@ -474,15 +481,14 @@ void* slowDACThread(void* ch)
           data_read_total += size;
           wp_old = (wp_old + size) % ADC_BUFF_SIZE;
 
-          currentFrameTotal = data_read_total / numSamplesPerFrame;
-          currentPeriodTotal = data_read_total / (numSamplesPerPeriod);
+          currentPeriodTotal = data_read_total / numSamplesPerPeriod;
 
           if(currentPeriodTotal > oldPeriodTotal + 1 && numPeriodsPerFrame > 1) 
           {
             printf("WARNING: We lost an ff step! oldFr %ld newFr %ld size=%d\n", 
                 oldPeriodTotal, currentPeriodTotal, size);
           }
-          if(currentPeriodTotal > oldPeriodTotal) // || params.ffLinear) 
+          if(currentPeriodTotal > oldPeriodTotal || slowDACInterpolation) 
           {
             float factor = ((float)data_read_total - currentPeriodTotal*numSamplesPerPeriod )/
               numSamplesPerPeriod;
@@ -492,7 +498,7 @@ void* slowDACThread(void* ch)
             for (int i=0; i< numSlowDACChan; i++) 
             {
               float val;
-              if(false) //params.ffLinear) 
+              if(slowDACInterpolation) 
               {
                 val = (1-factor)*slowDACLUT[currFFStep*numSlowDACChan+i] +
                   factor*slowDACLUT[((currFFStep+1) % numPeriodsPerFrame)*numSlowDACChan+i];
@@ -547,11 +553,11 @@ void* communicationThread(void* p)
   char smbuffer[10];
 
   while(true) {
-    printf("Comm thread loop\n");
+    //printf("Comm thread loop\n");
     if(!commThreadRunning)
     {
       stopTx();
-      setMasterTrigger(MASTER_TRIGGER_OFF);
+      //setMasterTrigger(MASTER_TRIGGER_OFF);
       rxEnabled = false;
       joinThreads();
       break;
@@ -574,7 +580,7 @@ void* communicationThread(void* p)
       } else if (rc == 0) {
         printf("Connection closed\r\n");
         stopTx();
-        setMasterTrigger(MASTER_TRIGGER_OFF);
+        //setMasterTrigger(MASTER_TRIGGER_OFF);
         rxEnabled = false;
         joinThreads();
         commThreadRunning = false;
@@ -583,7 +589,7 @@ void* communicationThread(void* p)
         SCPI_Input(&scpi_context, smbuffer, rc);
       }
     }
-    usleep(400);
+    usleep(200);
   }
   printf("Comm almost done\n");
 
@@ -714,7 +720,7 @@ int main(int argc, char** argv) {
   // Exit gracefully
   acquisitionThreadRunning = false;
   stopTx();
-  setMasterTrigger(MASTER_TRIGGER_OFF);
+  //setMasterTrigger(MASTER_TRIGGER_OFF);
   rxEnabled = false;
   pthread_join(pAcq, NULL);
   pthread_join(pSlowDAC, NULL);
