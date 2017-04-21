@@ -309,6 +309,13 @@ static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
         if (!SCPI_ParamInt32(context, &enableSlowDAC, TRUE)) {
                 return SCPI_RES_ERR;
         }
+        if(!enableSlowDAC)
+        {
+          for (int i=0; i<4; i++)                        
+          {
+             setPDMNextValueVolt(0.0, i);
+          }  
+        }
 
         return SCPI_RES_OK;
 }

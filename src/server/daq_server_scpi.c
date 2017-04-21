@@ -503,12 +503,11 @@ void* slowDACThread(void* ch)
               //printf("Set ff channel %d in cycle %d to value %f totalper %ld.\n", 
               //            i, currFFStep,val, currentPeriodTotal);
 
-              if(!enableSlowDAC)
+              int status = 0;          
+              if(enableSlowDAC)
 	      {
-                val = 0.0;
+                status = setPDMNextValueVolt(val, i);             
 	      }
-
-              int status = setPDMNextValueVolt(val, i);             
 
               //uint64_t curr = getPDMRegisterValue();
 
