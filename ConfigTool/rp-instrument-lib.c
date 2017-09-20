@@ -89,7 +89,7 @@ double getFrequency(int channel, int component) {
   uint32_t phase_increment = *((uint32_t *)(dac_cfg + 12 + 4*component + 16*channel));
   
   // Calculate frequency from phase increment
-  double frequency = phase_increment*125000000.0/pow(2, 28);
+  double frequency = phase_increment*125000000.0/pow(2, 32);
   
   return frequency;
 }
@@ -109,7 +109,7 @@ int setFrequency(double frequency, int channel, int component)
   }
 
   // Calculate phase increment
-  uint32_t phase_increment = (uint32_t)round(frequency*pow(2, 28)/125000000);
+  uint32_t phase_increment = (uint32_t)round(frequency*pow(2, 32)/125000000);
   printf("phase_increment for frequency %f Hz is %04x.\n", frequency, phase_increment);
 
   *((uint32_t *)(dac_cfg + 12 + 4*component + 16*channel)) = phase_increment;
@@ -129,7 +129,7 @@ double getPhase(int channel, int component)
 
   // Calculate phase factor from phase offset
   uint32_t phase_offset = *((uint32_t *)(dac_cfg + 44 + 4*component + 16*channel));
-  double phase_factor = phase_offset/pow(2, 28);
+  double phase_factor = phase_offset/pow(2, 32);
 
   return phase_factor;
 }
@@ -149,7 +149,7 @@ int setPhase(double phase_factor, int channel, int component)
   }
 
   // Calculate phase offset
-  uint32_t phase_offset = (uint32_t)floor(phase_factor*pow(2, 28));
+  uint32_t phase_offset = (uint32_t)floor(phase_factor*pow(2, 32));
   printf("phase_offset for %f*2*pi rad is %04x.\n", phase_factor, phase_offset);
 
   *((uint32_t *)(dac_cfg + 44 + 4*component + 16*channel)) = phase_offset;
