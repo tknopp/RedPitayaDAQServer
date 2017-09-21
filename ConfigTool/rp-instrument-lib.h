@@ -26,6 +26,7 @@ extern uint16_t dac_channel_A_modulus[4];
 extern uint16_t dac_channel_B_modulus[4];
 
 extern int init();
+extern void load_bitstream();
 extern uint16_t getAmplitude(int, int);
 extern int setAmplitude(uint16_t, int, int);
 extern double getFrequency(int, int);
@@ -46,6 +47,7 @@ extern int setPDMNextValue(uint16_t, int);
 extern int getPDMNextValue();
 extern int getPDMCurrentValue(int);
 extern int* getPDMCurrentValues();
+
 
 
 #endif /* RP_INSTRUMENT_LIB_H */

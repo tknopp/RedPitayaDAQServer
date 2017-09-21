@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <signal.h>
@@ -21,7 +22,13 @@ int dac_mode = 0;
 uint16_t dac_channel_A_modulus[4] = {4800, 4800, 4800, 4800};
 uint16_t dac_channel_B_modulus[4] = {4800, 4800, 4800, 4800};
 
+void load_bitstream()
+{
+  system("cat /root/system_wrapper.bin > /dev/xdevcfg");
+}
+
 int init() {
+  load_bitstream();
 
   // Open memory
   if((mmapfd = open("/dev/mem", O_RDWR)) < 0)
