@@ -3,20 +3,11 @@ command to compile:
 gcc -O3 adc-test-server.c -o adc-test-server
 */
 
-#include <stdio.h>
 #include <stdint.h>
-#include <string.h>
-#include <unistd.h>
 #include <signal.h>
 #include <fcntl.h>
-#include <math.h>
 #include <sys/mman.h>
-#include <sys/types.h>
 #include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
 
 #include <stdio.h>
 #include <math.h>
@@ -30,28 +21,48 @@ gcc -O3 adc-test-server.c -o adc-test-server
 #include <netinet/in.h>
 #include <pthread.h>
 
+#include "../ConfigTool/rp-instrument-lib.h"
 
-uint64_t numSamplesPerPeriod = 312;
-uint64_t numPeriods = 1;
-uint64_t numSamplesPerFrame = 312;
-uint64_t numFramesInMemoryBuffer = 100000;
-uint64_t buff_size;
+uint64_t numSamplesPerFrame = 0;
+uint64_t numFramesInMemoryBuffer = 0;
+uint64_t buff_size = 0;
+
+uint32_t adc_buff_size = 1024*1024;
 
 int64_t currentFrameTotal;
 int64_t data_read, data_read_total;
 
-uint32_t *buffer=NULL;
+uint32_t *buffer = NULL;
+float *ffValues = NULL;
+float *ffRead = NULL;
 
-volatile uint32_t *slcr, *axi_hp0;
-volatile void *cfg, *sts, *ram, *buf;
+int64_t decimation = 16;
+
+float amplitudeTx[] = {0.0, 0.0};
+float phaseTx[] = {0.0, 0.0};
 
 bool rxEnabled;
-
 int mmapfd;
 
-uint32_t getWP() { return *((uint32_t *)(sts + 0)); }
+struct paramsType {
+  int numSamplesPerPeriod;
+  int numSamplesPerTxPeriod;
+  int numPeriodsPerFrame;
+  int numFFChannels;
+  bool txEnabled;
+  bool ffEnabled;
+  bool ffLinear;
+  bool isMaster; // not used yet
+  bool isHighGainChA;
+  bool isHighGainChB;
+  bool pad1;
+  bool pad2;
+};
 
-uint32_t adc_buff_size = 1024*1024;
+struct paramsType params;
+
+
+uint32_t getWP() { return *((uint32_t *)(adc_sts + 0)); }
 
 uint32_t getSizeFromStartEndPos(uint32_t start_pos, uint32_t end_pos) {
     end_pos   = end_pos   % adc_buff_size;
@@ -136,6 +147,37 @@ void* acquisition_thread(void* ch)
 
 }
 
+void updateTx() {
+  printf("amplitudeTx New: %f %f \n", amplitudeTx[0], amplitudeTx[1]);
+  printf("phaseTx New: %f %f\n", phaseTx[0], phaseTx[1]);
+  
+  //rp_GenAmp(RP_CH_1, amplitudeTx);
+  //rp_GenWaveform(RP_CH_1, RP_WAVEFORM_ARBITRARY);
+  //fillTxBuff();
+  //rp_GenArbWaveform(RP_CH_1, txBuff, numSamplesInTxBuff);
+
+  setAmplitude(8192 * amplitudeTx[0], 0, 0);
+  setAmplitude(8192 * amplitudeTx[1], 1, 0);
+
+  //setAmplitude(0x0f11, 0, 0);
+
+  //setFrequency(125e6 / 4800, 0, 0);
+  //setFrequency(125e6 / 4800, 0, 1);
+  //setFrequency(125e6 / 4800, 1, 0);
+  setFrequency(125e6 / (256*16), 0, 0);
+  setFrequency(125e6 / (256*16), 0, 1);
+  setFrequency(125e6 / (256*16), 1, 0);
+  setPhase((phaseTx[0]+180)/360, 0, 0);
+  setPhase((phaseTx[0]+180)/360, 0, 1);
+  setPhase((phaseTx[1]+180)/360, 1, 0);
+}
+
+void stopTx()
+{
+  setAmplitude(0, 0, 0);
+  setAmplitude(0, 0, 0);
+}
+
 // globals used for network communication
 int sockfd, newsockfd, portno;
 socklen_t clilen;
@@ -173,7 +215,7 @@ void wait_for_connections()
   if (newsockfd < 0) 
         error("ERROR on accept");
 
-/*  printf("Params type has %d bytes \n", sizeof(struct paramsType));
+  printf("Params type has %d bytes \n", sizeof(struct paramsType));
 
   n = read(newsockfd,&params,sizeof(struct paramsType));
   if (n < 0) error("ERROR reading from socket");
@@ -192,7 +234,15 @@ void wait_for_connections()
   printf("isMaster: %d\n", params.isMaster);
   printf("isHighGainChA: %d\n", params.isHighGainChA);
   printf("isHighGainChB: %d\n", params.isHighGainChB);
-  */
+  
+  if(params.ffEnabled) 
+  {
+    ffValues = (float *)malloc(params.numFFChannels* params.numPeriodsPerFrame * sizeof(float));
+    n = read(newsockfd,ffValues,params.numFFChannels* params.numPeriodsPerFrame * sizeof(float));
+    for(int i=0;i<params.numFFChannels* params.numPeriodsPerFrame; i++) printf(" %f ",ffValues[i]);
+    printf("\n");
+    if (n < 0) error("ERROR reading from socket");
+  }
 }
 
 void send_data_to_host(int64_t frame, int64_t numframes)
@@ -245,6 +295,16 @@ void* communication_thread(void* ch)
         printf("Frame to read: %lld\n", frame);
         send_data_to_host(frame,numframes);
       break;
+      case 3: // get new tx params
+        n = read(newsockfd,tcp_buffer,4*sizeof(double));
+        if (n < 0) error("ERROR reading from socket");
+        amplitudeTx[0] = ((double*)tcp_buffer)[0];
+        amplitudeTx[1] = ((double*)tcp_buffer)[1];
+        phaseTx[0] = ((double*)tcp_buffer)[2];
+        phaseTx[1] = ((double*)tcp_buffer)[3];
+        printf("New Tx: %f %f %f %f\n", amplitudeTx[0], phaseTx[0], amplitudeTx[1], phaseTx[1]);
+        updateTx();
+      break;
       case 9: 
        close(newsockfd);
        close(sockfd);
@@ -257,41 +317,21 @@ void* communication_thread(void* ch)
   return NULL;
 }
 
-void init()
-{
-  printf("Open memory\n");
-  if((mmapfd = open("/dev/mem", O_RDWR)) < 0)
-  {
-    perror("open");
-    return 1;
-  }
 
-  printf("Map memory\n");
-  slcr = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0xF8000000);
-  axi_hp0 = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0xF8008000);
-  cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40000000);
-  sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40001000);
-  ram = mmap(NULL, 2048*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x1E000000);
-  buf = mmap(NULL, 2048*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
-
-  /* set HP0 bus width to 64 bits */
-  printf("Set bus properties\n");
-  slcr[2] = 0xDF0D;
-  slcr[144] = 0;
-  axi_hp0[0] &= ~1;
-  axi_hp0[5] &= ~1;
-}
-
-void initBuffers()
+static void initBuffers()
 {
   buff_size = numSamplesPerFrame*numFramesInMemoryBuffer;
   buffer = (uint32_t*)malloc(buff_size * sizeof(uint32_t) );
   memset(buffer,0, buff_size * sizeof(uint32_t));
 }
 
-void releaseBuffers()
+static void releaseBuffers()
 {
   free(buffer);
+  if(ffValues != NULL)
+  {
+    free(ffValues);
+  }
 }
 
 int main ()
@@ -327,6 +367,7 @@ int main ()
     pthread_join(pCom, NULL);
     printf("Com Thread finished \n");
 
+    stopTx();
     //if(params.txEnabled) {
     //  stopTx();
     //}
