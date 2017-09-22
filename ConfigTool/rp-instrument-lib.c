@@ -17,7 +17,7 @@ volatile uint32_t *slcr, *axi_hp0;
 volatile void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *ram, *buf;
 
 // 0 => rasterized (divider based), 1 => standard (frequency based)
-int dac_mode = 0;
+int dac_mode = 1;
 
 uint16_t dac_channel_A_modulus[4] = {4800, 4800, 4800, 4800};
 uint16_t dac_channel_B_modulus[4] = {4800, 4800, 4800, 4800};
