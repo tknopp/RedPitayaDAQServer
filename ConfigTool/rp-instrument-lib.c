@@ -14,10 +14,7 @@
 
 int mmapfd;
 volatile uint32_t *slcr, *axi_hp0;
-volatile void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *ram, *buf;
-
-// 0 => rasterized (divider based), 1 => standard (frequency based)
-int dac_mode = 0;
+volatile void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *cfg, *ram, *buf;
 
 uint16_t dac_channel_A_modulus[4] = {4800, 4800, 4800, 4800};
 uint16_t dac_channel_B_modulus[4] = {4800, 4800, 4800, 4800};
@@ -44,6 +41,7 @@ int init() {
   adc_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40001000);
   pdm_cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40002000);
   pdm_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40003000);
+  cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40004000);
   ram = mmap(NULL, 2048*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x1E000000);
   buf = mmap(NULL, 2048*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
 
@@ -97,12 +95,12 @@ double getFrequency(int channel, int component) {
         return -4;
     }
 
-    uint32_t register_value = *((uint32_t *)(dac_cfg + 12 + 4*component + 16*channel));
+    uint32_t register_value = *((uint32_t *)(dac_cfg + 16 + 4*component + 16*channel));
     double frequency = -1;
-    if(dac_mode == DAC_MODE_STANDARD) {
+    if(getDACMode() == DAC_MODE_STANDARD) {
         // Calculate frequency from phase increment
         frequency = register_value*((double)BASE_FREQUENCY)/pow(2, 32);
-    } else if(dac_mode == DAC_MODE_RASTERIZED) {
+    } else if(getDACMode() == DAC_MODE_RASTERIZED) {
         int modulus = -1;
         if(channel == 0) {
             modulus = dac_channel_A_modulus[component];
@@ -131,13 +129,13 @@ int setFrequency(double frequency, int channel, int component)
         return -4;
     }
 
-    if(dac_mode == DAC_MODE_STANDARD) {
+    if(getDACMode() == DAC_MODE_STANDARD) {
         // Calculate phase increment
         uint32_t phase_increment = (uint32_t)round(frequency*pow(2, 32)/((double)BASE_FREQUENCY));
         printf("phase_increment for frequency %f Hz is %04x.\n", frequency, phase_increment);
 
-        *((uint32_t *)(dac_cfg + 12 + 4*component + 16*channel)) = phase_increment;
-    } else if(dac_mode == DAC_MODE_RASTERIZED) {
+        *((uint32_t *)(dac_cfg + 16 + 4*component + 16*channel)) = phase_increment;
+    } else if(getDACMode() == DAC_MODE_RASTERIZED) {
         int modulus = -1;
         if(channel == 0) {
             modulus = dac_channel_A_modulus[component];
@@ -165,12 +163,12 @@ int getModulusFactor(int channel, int component)
         return -4;
     }
 
-    int modulus_factor = (int)(*((uint32_t *)(dac_cfg + 12 + 4*component + 16*channel)));
+    int modulus_factor = (int)(*((uint32_t *)(dac_cfg + 16 + 4*component + 16*channel)));
 
     return modulus_factor;
 }
 
-int setModulusFactor(int modulus_factor, int channel, int component)
+int setModulusFactor(uint32_t modulus_factor, int channel, int component)
 {
     if(channel < 0 || channel > 1) {
         return -3;
@@ -191,7 +189,9 @@ int setModulusFactor(int modulus_factor, int channel, int component)
         return -2;
     }
 
-    *((uint32_t *)(dac_cfg + 12 + 4*component + 16*channel)) = modulus_factor;
+    printf("Setting modulus factor to %d\n", modulus_factor);
+
+    *((uint32_t *)(dac_cfg + 16 + 4*component + 16*channel)) = modulus_factor;
 
     return 0;
 }
@@ -207,12 +207,12 @@ double getPhase(int channel, int component)
     }
 
     // Get register value
-    uint32_t register_value = *((uint32_t *)(dac_cfg + 44 + 4*component + 16*channel));
+    uint32_t register_value = *((uint32_t *)(dac_cfg + 48 + 4*component + 16*channel));
     double phase_factor = -1;
-    if(dac_mode == DAC_MODE_STANDARD) {
+    if(getDACMode() == DAC_MODE_STANDARD) {
         // Calculate phase factor from phase offset
         phase_factor = register_value/pow(2, 32);
-    } else if(dac_mode == DAC_MODE_RASTERIZED) {
+    } else if(getDACMode() == DAC_MODE_RASTERIZED) {
         int modulus = -1;
         if(channel == 0) {
             modulus = dac_channel_A_modulus[component];
@@ -240,13 +240,13 @@ int setPhase(double phase_factor, int channel, int component)
         return -4;
     }
 
-    if(dac_mode == DAC_MODE_STANDARD) {
+    if(getDACMode() == DAC_MODE_STANDARD) {
         // Calculate phase offset
         uint32_t phase_offset = (uint32_t)floor(phase_factor*pow(2, 32));
         printf("phase_offset for %f*2*pi rad is %04x.\n", phase_factor, phase_offset);
 
-        *((uint32_t *)(dac_cfg + 44 + 4*component + 16*channel)) = phase_offset;
-    } else if(dac_mode == DAC_MODE_RASTERIZED) {
+        *((uint32_t *)(dac_cfg + 48 + 4*component + 16*channel)) = phase_offset;
+    } else if(getDACMode() == DAC_MODE_RASTERIZED) {
         int modulus = -1;
         if(channel == 0) {
             modulus = dac_channel_A_modulus[component];
@@ -258,15 +258,17 @@ int setPhase(double phase_factor, int channel, int component)
         uint32_t modulus_fraction = (uint32_t)round(phase_factor*modulus);
         printf("modulus_fraction for %f*2*pi rad is %04x.\n", phase_factor, modulus_fraction);
         
-        *((uint32_t *)(dac_cfg + 44 + 4*component + 16*channel)) = modulus_fraction;
+        *((uint32_t *)(dac_cfg + 48 + 4*component + 16*channel)) = modulus_fraction;
     }
 
     return 0;
 }
 
 int setDACMode(int mode) {
-    if(mode == DAC_MODE_RASTERIZED || mode == DAC_MODE_STANDARD) {
-        dac_mode = mode;
+    if(mode == DAC_MODE_STANDARD) {
+        *((uint32_t *)(cfg + 0)) &= ~8;
+    } else if(mode == DAC_MODE_RASTERIZED) {
+        *((uint32_t *)(cfg + 0)) |= 8;
     } else {
         return -1;
     }
@@ -275,7 +277,8 @@ int setDACMode(int mode) {
 }
 
 int getDACMode() {
-    return dac_mode;
+    uint32_t register_value = *((uint32_t *)(cfg + 0));
+    return ((register_value & 0x00000008) >> 3);
 }
 
 /**

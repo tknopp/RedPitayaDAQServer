@@ -16,11 +16,10 @@
 
 extern int mmapfd;
 extern volatile uint32_t *slcr, *axi_hp0;
-extern volatile void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *ram, *buf;
+extern volatile void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *cfg, *ram, *buf;
 
-#define DAC_MODE_RASTERIZED 0
-#define	DAC_MODE_STANDARD   1
-extern int dac_mode; // 0 => rasterized (divider based), 1 => standard (frequency based)
+#define DAC_MODE_RASTERIZED 1
+#define	DAC_MODE_STANDARD   0
 
 extern uint16_t dac_channel_A_modulus[4];
 extern uint16_t dac_channel_B_modulus[4];
@@ -32,7 +31,7 @@ extern int setAmplitude(uint16_t, int, int);
 extern double getFrequency(int, int);
 extern int setFrequency(double, int, int);
 extern int getModulusFactor(int, int);
-extern int setModulusFactor(int, int, int);
+extern int setModulusFactor(uint32_t, int, int);
 extern double getPhase(int, int);
 extern int setPhase(double, int, int);
 extern int setDACMode(int);
