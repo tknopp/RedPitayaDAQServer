@@ -43,10 +43,12 @@ extern uint64_t getPDMStatusValue();
 extern int setPDMNextValues(uint16_t, uint16_t, uint16_t, uint16_t);
 extern int* getPDMNextValues();
 extern int setPDMNextValue(uint16_t, int);
+extern int setPDMNextValueVolt(float, int);
 extern int getPDMNextValue();
 extern int getPDMCurrentValue(int);
 extern int* getPDMCurrentValues();
 
-
+extern uint32_t getXADCValue(int);
+extern float getXADCValueVolt(int);
 
 #endif /* RP_INSTRUMENT_LIB_H */

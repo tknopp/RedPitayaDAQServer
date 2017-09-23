@@ -31,6 +31,8 @@ uint32_t adc_buff_size = 1024*1024;
 
 int64_t currentFrameTotal;
 int64_t data_read, data_read_total;
+int64_t oldFrameTotal;
+int64_t channel;
 
 uint32_t *buffer = NULL;
 float *ffValues = NULL;
@@ -44,6 +46,8 @@ float phaseTx[] = {0.0, 0.0};
 bool rxEnabled;
 int mmapfd;
 
+pthread_t pAcq;
+ 
 struct paramsType {
   int numSamplesPerPeriod;
   int numSamplesPerTxPeriod;
@@ -94,7 +98,12 @@ void* acquisition_thread(void* ch)
   currentFrameTotal = 0;
   data_read_total = 0; 
   data_read = 0; 
- 
+  oldFrameTotal = -1;
+  int64_t currentPeriodTotal;
+  int64_t oldPeriodTotal=-1; 
+
+  printf("starting acq thread\n");
+
   wp_old = getWP();
 
     while(rxEnabled)
@@ -130,21 +139,63 @@ void* acquisition_thread(void* ch)
        }
 
 
+
        currentFrameTotal = data_read_total / numSamplesPerFrame;
-       //currentPeriodTotal = data_read_total / params.numSamplesPerPeriod;
+       currentPeriodTotal = data_read_total / (params.numSamplesPerPeriod);
        
        //printf("++++ data_read: %lld data_read_total: %lld total_frame %lld\n", 
        //                    data_read, data_read_total, currentFrameTotal);
 
+       if (params.ffEnabled) {
+         //printf("factor = %f \n",factor);
+         //  printf("!!! oldPeriod %lld newPeriod %lld size=%d\n", 
+         //          oldPeriodTotal, currentPeriodTotal, size);
+         if(currentPeriodTotal > oldPeriodTotal + 1) {
+           printf("WARNING: We lost an ff step! oldFr %lld newFr %lld size=%d\n", 
+                   oldPeriodTotal, currentPeriodTotal, size);
+         }
+         if(currentPeriodTotal > oldPeriodTotal || params.ffLinear) {
+           float factor = ((float)data_read_total - currentPeriodTotal*params.numSamplesPerPeriod)/
+                         params.numSamplesPerPeriod;
+           int currFFStep = currentPeriodTotal % params.numPeriodsPerFrame;
+           //int currFFStep = currentPeriodTotal-currentFrameTotal*params.numPeriodsPerFrame;
+           //printf("++++ currFrame: %lld\n",  currFFStep);
+           for (int i=0; i< params.numFFChannels; i++) {
+             float val;
+             if(params.ffLinear) {
+               val = (1-factor)*ffValues[currFFStep*params.numFFChannels+i] +
+                     factor*ffValues[((currFFStep+1) % params.numPeriodsPerFrame)*params.numFFChannels+i];
+             } else {
+               val = ffValues[currFFStep*params.numFFChannels+i];
+             }
+             printf("Set ff channel %d in cycle %d to value %f totalper %lld.\n", 
+                         i, currFFStep,val, currentPeriodTotal);
+             buffer[data_read-1] = 7000;
+             int status = setPDMNextValueVolt(val, i);             
+
+             if (status != 0) {
+                 printf("Could not set AO[%d] voltage.\n", i);
+             }
+
+             //printf("Set ff channel %d in cycle %d to value %f.\n", i,
+             //              currFFStep,ffValues[currFFStep*params.numFFChannels+i]);
+             //status = rp_AIpinGetValue(i, ffRead + currFFStep*4+i);
+             //if (status != RP_OK) {
+             //    printf("Could not get AO[%i] voltage.\n", i);
+             //}
+           }
+         }
+       }
+
        wp_old = wp;
-       //oldFrameTotal = currentFrameTotal;
-       //oldPeriodTotal = currentPeriodTotal;
-   
-         
-        //usleep(1000);
+       oldFrameTotal = currentFrameTotal;
+       oldPeriodTotal = currentPeriodTotal;
+    } else {
+      //printf("Counter not increased %d %d \n", wp_old, wp);
+      usleep(1);    
     }
   } 
-
+  printf("acq thread finished\n");
 }
 
 void updateTx() {
@@ -161,12 +212,9 @@ void updateTx() {
 
   //setAmplitude(0x0f11, 0, 0);
 
-  //setFrequency(125e6 / 4800, 0, 0);
-  //setFrequency(125e6 / 4800, 0, 1);
-  //setFrequency(125e6 / 4800, 1, 0);
-  setFrequency(125e6 / (256*16), 0, 0);
-  setFrequency(125e6 / (256*16), 0, 1);
-  setFrequency(125e6 / (256*16), 1, 0);
+  setFrequency(125e6 / (params.numSamplesPerTxPeriod*16), 0, 0);
+  setFrequency(125e6 / (params.numSamplesPerTxPeriod*16), 0, 1);
+  setFrequency(125e6 / (params.numSamplesPerTxPeriod*16), 1, 0);
   setPhase((phaseTx[0]+180)/360, 0, 0);
   setPhase((phaseTx[0]+180)/360, 0, 1);
   setPhase((phaseTx[1]+180)/360, 1, 0);
@@ -221,12 +269,12 @@ void wait_for_connections()
   if (n < 0) error("ERROR reading from socket");
  
   numSamplesPerFrame = params.numSamplesPerPeriod * params.numPeriodsPerFrame; 
-  numFramesInMemoryBuffer = 64*1024*1024 / numSamplesPerFrame / 2;
+  numFramesInMemoryBuffer = 64*1024*1024 / numSamplesPerFrame;
                              
   printf("Num Samples Per Period: %d\n", params.numSamplesPerPeriod);
   printf("Num Samples Per Tx Period: %d\n", params.numSamplesPerTxPeriod);
   printf("Num Periods Per Frame: %d\n", params.numPeriodsPerFrame);
-  printf("Num Samples Per Frame: %d\n", numSamplesPerFrame);
+  printf("Num Samples Per Frame: %lld\n", numSamplesPerFrame);
   printf("Num Frames In Memory Buffer: %lld\n", numFramesInMemoryBuffer);
   printf("Num FF Channels: %d\n", params.numFFChannels);
   printf("txEnabled: %d\n", params.txEnabled);
@@ -277,7 +325,7 @@ void* communication_thread(void* ch)
     if (n < 0) error("ERROR reading from socket");
 
     int command = ((int32_t*)tcp_buffer)[0];
-    printf("Command: %d\n", command);
+    //printf("Command: %d\n", command);
 
     switch(command) {
       case 1: // get current frame number
@@ -304,6 +352,34 @@ void* communication_thread(void* ch)
         phaseTx[1] = ((double*)tcp_buffer)[3];
         printf("New Tx: %f %f %f %f\n", amplitudeTx[0], phaseTx[0], amplitudeTx[1], phaseTx[1]);
         updateTx();
+      break;
+      case 4: // set slow DAC value
+        n = read(newsockfd,tcp_buffer,sizeof(int64_t));
+        if (n < 0) error("ERROR writing to socket");
+        channel = ((int64_t*)tcp_buffer)[0];
+        n = read(newsockfd,tcp_buffer,sizeof(float));
+        if (n < 0) error("ERROR writing to socket");
+        float val = ((float*)tcp_buffer)[0];
+        setPDMNextValueVolt(val, channel);
+      break;
+      case 5: // get slow ADC value
+        n = read(newsockfd,tcp_buffer,sizeof(int64_t));
+        if (n < 0) error("ERROR writing to socket");
+        channel = ((int64_t*)tcp_buffer)[0];
+        ((float*)tcp_buffer)[0] = getXADCValueVolt(channel);
+        n = write(newsockfd, tcp_buffer, sizeof(float));
+        if (n < 0) error("ERROR writing to socket");
+      break;
+      case 6: // start acquisition
+        data_read = 0;
+        data_read_total = 0;
+        rxEnabled = true;
+        pthread_create(&pAcq, NULL, acquisition_thread, NULL);
+      break;
+      case 7: // stop acquisition
+        rxEnabled = false;
+        pthread_join(pAcq, NULL);
+        printf("Acq Thread finished \n"); 
       break;
       case 9: 
        close(newsockfd);
@@ -353,17 +429,10 @@ int main ()
     //  startTx();
     //}
     //startRx();
-
-    rxEnabled = true;
-    
-    pthread_t pAcq;
-    pthread_create(&pAcq, NULL, acquisition_thread, NULL);
     
     pthread_t pCom;
     pthread_create(&pCom, NULL, communication_thread, NULL);
     
-    pthread_join(pAcq, NULL);
-    printf("Acq Thread finished \n");
     pthread_join(pCom, NULL);
     printf("Com Thread finished \n");
 

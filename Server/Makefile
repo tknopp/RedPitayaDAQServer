@@ -1,4 +1,4 @@
-CFLAGS  = -Os -std=gnu99 
+CFLAGS  = -O3 -std=gnu99 
 CFLAGS += -I/opt/redpitaya/include
 LDFLAGS = -L/opt/redpitaya/lib 
 LDLIBS = -lm -lpthread -lrp ../ConfigTool/rp-instrument-lib.so
