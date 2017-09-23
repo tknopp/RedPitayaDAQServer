@@ -22,6 +22,17 @@ int dac_mode = 1;
 uint16_t dac_channel_A_modulus[4] = {4800, 4800, 4800, 4800};
 uint16_t dac_channel_B_modulus[4] = {4800, 4800, 4800, 4800};
 
+static const uint32_t ANALOG_OUT_MASK            = 0xFF;
+static const uint32_t ANALOG_OUT_BITS            = 16;
+static const uint32_t ANALOG_IN_MASK             = 0xFFF;
+
+static const float    ANALOG_IN_MAX_VAL          = 7.0;
+static const float    ANALOG_IN_MIN_VAL          = 0.0;
+static const uint32_t ANALOG_IN_MAX_VAL_INTEGER  = 0xFFF;
+static const float    ANALOG_OUT_MAX_VAL         = 1.8;
+static const float    ANALOG_OUT_MIN_VAL         = 0.0;
+static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
+
 void load_bitstream()
 {
   system("cat /root/system_wrapper.bin > /dev/xdevcfg");
@@ -390,6 +401,20 @@ int setPDMNextValue(uint16_t value, int channel) {
     return 0;
 }
 
+int setPDMNextValueVolt(float voltage, int channel) {
+//    uint16_t val = (uint16_t) (((value - ANALOG_OUT_MIN_VAL) / (ANALOG_OUT_MAX_VAL - ANALOG_OUT_MIN_VAL)) * ANALOG_OUT_MAX_VAL_INTEGER);
+  //int n;
+  /// Not sure what is correct here: might be helpful https://forum.redpitaya.com/viewtopic.php?f=9&t=614
+  if (voltage > 1.8) voltage = 1.8;
+  if (voltage < 0) voltage = 0;
+  //n = (voltage / 1.8) * 2496.;
+  //uint16_t val = ((n / 16) << 16) + (0xffff >> (16 - (n % 16)));
+  uint16_t val = (voltage / 1.8) * 2038.;
+
+    printf("set val %04x.\n", val);
+    return setPDMNextValue(val, channel);
+}
+
 int getPDMNextValue(int channel) {
     if(channel < 0 || channel >= 4) {
         return -2;
@@ -420,3 +445,29 @@ int* getPDMCurrentValues() {
     
     return channel_values;
 }
+
+
+// Slow Analog Inputs
+
+uint32_t getXADCValue(int channel) {
+    FILE *fp;
+    uint32_t value;
+    switch (channel) {
+        case 0:  fp = fopen ("/sys/bus/iio/devices/iio:device0/in_voltage11_vaux8_raw", "r");  break;
+        case 1:  fp = fopen ("/sys/bus/iio/devices/iio:device0/in_voltage9_vaux0_raw" , "r");  break;
+        case 2:  fp = fopen ("/sys/bus/iio/devices/iio:device0/in_voltage10_vaux1_raw", "r");  break;
+        case 3:  fp = fopen ("/sys/bus/iio/devices/iio:device0/in_voltage12_vaux9_raw", "r");  break;
+        default:
+            return 1;
+    }
+    fscanf (fp, "%d", &value);
+    fclose(fp);
+    return value;
+}
+
+
+float getXADCValueVolt(int channel) {
+    uint32_t value_raw = getXADCValue(channel);
+    return (((float)value_raw / ANALOG_IN_MAX_VAL_INTEGER) * (ANALOG_IN_MAX_VAL - ANALOG_IN_MIN_VAL)) + ANALOG_IN_MIN_VAL;
+}
+

@@ -32,6 +32,7 @@ uint32_t adc_buff_size = 1024*1024;
 int64_t currentFrameTotal;
 int64_t data_read, data_read_total;
 int64_t oldFrameTotal;
+int64_t channel;
 
 uint32_t *buffer = NULL;
 float *ffValues = NULL;
@@ -45,6 +46,8 @@ float phaseTx[] = {0.0, 0.0};
 bool rxEnabled;
 int mmapfd;
 
+pthread_t pAcq;
+ 
 struct paramsType {
   int numSamplesPerPeriod;
   int numSamplesPerTxPeriod;
@@ -136,8 +139,9 @@ void* acquisition_thread(void* ch)
        }
 
 
+
        currentFrameTotal = data_read_total / numSamplesPerFrame;
-       currentPeriodTotal = data_read_total / (params.numSamplesPerPeriod/2);
+       currentPeriodTotal = data_read_total / (params.numSamplesPerPeriod);
        
        //printf("++++ data_read: %lld data_read_total: %lld total_frame %lld\n", 
        //                    data_read, data_read_total, currentFrameTotal);
@@ -164,10 +168,10 @@ void* acquisition_thread(void* ch)
              } else {
                val = ffValues[currFFStep*params.numFFChannels+i];
              }
-             //int status = rp_AOpinSetValue(i, val);
-             uint16_t vali = val / 1.8 * 2047 ;
-             //printf("Set ff channel %d in cycle %d to value %d.\n", i, currFFStep,vali);
-             int status = setPDMNextValue( vali, i);             
+             printf("Set ff channel %d in cycle %d to value %f totalper %lld.\n", 
+                         i, currFFStep,val, currentPeriodTotal);
+             buffer[data_read-1] = 7000;
+             int status = setPDMNextValueVolt(val, i);             
 
              if (status != 0) {
                  printf("Could not set AO[%d] voltage.\n", i);
@@ -349,6 +353,34 @@ void* communication_thread(void* ch)
         printf("New Tx: %f %f %f %f\n", amplitudeTx[0], phaseTx[0], amplitudeTx[1], phaseTx[1]);
         updateTx();
       break;
+      case 4: // set slow DAC value
+        n = read(newsockfd,tcp_buffer,sizeof(int64_t));
+        if (n < 0) error("ERROR writing to socket");
+        channel = ((int64_t*)tcp_buffer)[0];
+        n = read(newsockfd,tcp_buffer,sizeof(float));
+        if (n < 0) error("ERROR writing to socket");
+        float val = ((float*)tcp_buffer)[0];
+        setPDMNextValueVolt(val, channel);
+      break;
+      case 5: // get slow ADC value
+        n = read(newsockfd,tcp_buffer,sizeof(int64_t));
+        if (n < 0) error("ERROR writing to socket");
+        channel = ((int64_t*)tcp_buffer)[0];
+        ((float*)tcp_buffer)[0] = getXADCValueVolt(channel);
+        n = write(newsockfd, tcp_buffer, sizeof(float));
+        if (n < 0) error("ERROR writing to socket");
+      break;
+      case 6: // start acquisition
+        data_read = 0;
+        data_read_total = 0;
+        rxEnabled = true;
+        pthread_create(&pAcq, NULL, acquisition_thread, NULL);
+      break;
+      case 7: // stop acquisition
+        rxEnabled = false;
+        pthread_join(pAcq, NULL);
+        printf("Acq Thread finished \n"); 
+      break;
       case 9: 
        close(newsockfd);
        close(sockfd);
@@ -397,17 +429,10 @@ int main ()
     //  startTx();
     //}
     //startRx();
-
-    rxEnabled = true;
-    
-    pthread_t pAcq;
-    pthread_create(&pAcq, NULL, acquisition_thread, NULL);
     
     pthread_t pCom;
     pthread_create(&pCom, NULL, communication_thread, NULL);
     
-    pthread_join(pAcq, NULL);
-    printf("Acq Thread finished \n");
     pthread_join(pCom, NULL);
     printf("Com Thread finished \n");
 
