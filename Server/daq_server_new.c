@@ -8,6 +8,7 @@ gcc -O3 adc-test-server.c -o adc-test-server
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
+#include <inttypes.h>
 
 #include <stdio.h>
 #include <math.h>
@@ -27,12 +28,12 @@ uint64_t numSamplesPerFrame = 0;
 uint64_t numFramesInMemoryBuffer = 0;
 uint64_t buff_size = 0;
 
-uint32_t adc_buff_size = 1024*1024;
+uint32_t adc_buff_size = 2*1024*1024; // 2MSamples = 8 MB
 
-int64_t currentFrameTotal;
-int64_t data_read, data_read_total;
-int64_t oldFrameTotal;
-int64_t channel;
+volatile int64_t currentFrameTotal;
+volatile int64_t data_read, data_read_total;
+volatile int64_t oldFrameTotal;
+volatile int64_t channel;
 
 uint32_t *buffer = NULL;
 float *ffValues = NULL;
@@ -52,6 +53,7 @@ struct paramsType {
   int numSamplesPerPeriod;
   int numSamplesPerTxPeriod;
   int numPeriodsPerFrame;
+  int numPatches;
   int numFFChannels;
   bool txEnabled;
   bool ffEnabled;
@@ -63,10 +65,10 @@ struct paramsType {
   bool pad2;
 };
 
-struct paramsType params;
+volatile struct paramsType params;
 
-
-uint32_t getWP() { return *((uint32_t *)(adc_sts + 0)); }
+// TK: I don't know why we need the factor of two, but this is how pavels code works
+uint32_t getWP() { return (*((uint32_t *)(adc_sts + 0)))*2; }
 
 uint32_t getSizeFromStartEndPos(uint32_t start_pos, uint32_t end_pos) {
     end_pos   = end_pos   % adc_buff_size;
@@ -100,7 +102,9 @@ void* acquisition_thread(void* ch)
   data_read = 0; 
   oldFrameTotal = -1;
   int64_t currentPeriodTotal;
+  int64_t currentPatchTotal;
   int64_t oldPeriodTotal=-1; 
+  int64_t oldPatchTotal=-1; 
 
   printf("starting acq thread\n");
 
@@ -139,50 +143,56 @@ void* acquisition_thread(void* ch)
        }
 
 
-
+       int64_t numSamplesPerPatch = numSamplesPerFrame / params.numPatches;
        currentFrameTotal = data_read_total / numSamplesPerFrame;
        currentPeriodTotal = data_read_total / (params.numSamplesPerPeriod);
+       currentPatchTotal = data_read_total / numSamplesPerPatch;
        
        //printf("++++ data_read: %lld data_read_total: %lld total_frame %lld\n", 
        //                    data_read, data_read_total, currentFrameTotal);
 
        if (params.ffEnabled) {
-         //printf("factor = %f \n",factor);
          //  printf("!!! oldPeriod %lld newPeriod %lld size=%d\n", 
          //          oldPeriodTotal, currentPeriodTotal, size);
-         if(currentPeriodTotal > oldPeriodTotal + 1) {
+         if(currentPatchTotal > oldPatchTotal + 1) {
            printf("WARNING: We lost an ff step! oldFr %lld newFr %lld size=%d\n", 
-                   oldPeriodTotal, currentPeriodTotal, size);
+                   oldPatchTotal, currentPatchTotal, size);
          }
-         if(currentPeriodTotal > oldPeriodTotal || params.ffLinear) {
-           float factor = ((float)data_read_total - currentPeriodTotal*params.numSamplesPerPeriod)/
-                         params.numSamplesPerPeriod;
-           int currFFStep = currentPeriodTotal % params.numPeriodsPerFrame;
-           //int currFFStep = currentPeriodTotal-currentFrameTotal*params.numPeriodsPerFrame;
+         if(true) { //currentPatchTotal > oldPatchTotal || params.ffLinear) {
+           float factor = ((float)data_read_total - currentPatchTotal*numSamplesPerPatch )/
+                         numSamplesPerPatch;
+           int currFFStep = currentPatchTotal % params.numPatches;
            //printf("++++ currFrame: %lld\n",  currFFStep);
            for (int i=0; i< params.numFFChannels; i++) {
              float val;
              if(params.ffLinear) {
                val = (1-factor)*ffValues[currFFStep*params.numFFChannels+i] +
-                     factor*ffValues[((currFFStep+1) % params.numPeriodsPerFrame)*params.numFFChannels+i];
+                     factor*ffValues[((currFFStep+1) % params.numPatches)*params.numFFChannels+i];
              } else {
                val = ffValues[currFFStep*params.numFFChannels+i];
              }
-             printf("Set ff channel %d in cycle %d to value %f totalper %lld.\n", 
-                         i, currFFStep,val, currentPeriodTotal);
-             buffer[data_read-1] = 7000;
-             int status = setPDMNextValueVolt(val, i);             
+             //printf("Set ff channel %d in cycle %d to value %f totalper %lld.\n", 
+             //            i, currFFStep,val, currentPeriodTotal);
+             
+             // For debugging it can be very helpful to write something into the ADC buffer
+             // buffer[data_read-1] = 7000;
+             int status = setPDMNextValueVolt(val, 0);             
+             status = setPDMNextValueVolt(0.0, 1);             
+             status = setPDMNextValueVolt(0.0, 2);             
+             status = setPDMNextValueVolt(0.0, 3);             
 
+             //uint64_t curr = getPDMRegisterValue();
+
+             //uint64_t st;
+             //do {
+             //    st = getPDMStatusValue();
+              //   printf("____ %"PRIu64"  %"PRIu64"  \n",curr,st);
+             //}
+             //while(st != curr);
+ 
              if (status != 0) {
                  printf("Could not set AO[%d] voltage.\n", i);
              }
-
-             //printf("Set ff channel %d in cycle %d to value %f.\n", i,
-             //              currFFStep,ffValues[currFFStep*params.numFFChannels+i]);
-             //status = rp_AIpinGetValue(i, ffRead + currFFStep*4+i);
-             //if (status != RP_OK) {
-             //    printf("Could not get AO[%i] voltage.\n", i);
-             //}
            }
          }
        }
@@ -190,6 +200,7 @@ void* acquisition_thread(void* ch)
        wp_old = wp;
        oldFrameTotal = currentFrameTotal;
        oldPeriodTotal = currentPeriodTotal;
+       oldPatchTotal = currentPatchTotal;
     } else {
       //printf("Counter not increased %d %d \n", wp_old, wp);
       usleep(1);    
@@ -208,13 +219,21 @@ void updateTx() {
   //rp_GenArbWaveform(RP_CH_1, txBuff, numSamplesInTxBuff);
 
   setAmplitude(8192 * amplitudeTx[0], 0, 0);
-  setAmplitude(8192 * amplitudeTx[1], 1, 0);
+  setAmplitude(0, 0, 1);
+  setAmplitude(0, 0, 2);
+  setAmplitude(0, 0, 3);
 
   //setAmplitude(0x0f11, 0, 0);
 
-  setFrequency(125e6 / (params.numSamplesPerTxPeriod*16), 0, 0);
-  setFrequency(125e6 / (params.numSamplesPerTxPeriod*16), 0, 1);
-  setFrequency(125e6 / (params.numSamplesPerTxPeriod*16), 1, 0);
+  setFrequency(125e6 / (params.numSamplesPerTxPeriod*decimation), 0, 0);
+  //setFrequency(125e6 / (params.numSamplesPerTxPeriod*decimation), 0, 1);
+  //setFrequency(125e6 / (params.numSamplesPerTxPeriod*decimation), 1, 0);
+
+  /*setModulusFactor(1, 0, 0);
+  setModulusFactor(1, 0, 1);
+  setModulusFactor(1, 0, 2);
+  setModulusFactor(1, 0, 3);
+  */
   setPhase((phaseTx[0]+180)/360, 0, 0);
   setPhase((phaseTx[0]+180)/360, 0, 1);
   setPhase((phaseTx[1]+180)/360, 1, 0);
@@ -223,7 +242,7 @@ void updateTx() {
 void stopTx()
 {
   setAmplitude(0, 0, 0);
-  setAmplitude(0, 0, 0);
+  setAmplitude(0, 1, 0);
 }
 
 // globals used for network communication
@@ -274,6 +293,7 @@ void wait_for_connections()
   printf("Num Samples Per Period: %d\n", params.numSamplesPerPeriod);
   printf("Num Samples Per Tx Period: %d\n", params.numSamplesPerTxPeriod);
   printf("Num Periods Per Frame: %d\n", params.numPeriodsPerFrame);
+  printf("Num Patches: %d\n", params.numPatches);
   printf("Num Samples Per Frame: %lld\n", numSamplesPerFrame);
   printf("Num Frames In Memory Buffer: %lld\n", numFramesInMemoryBuffer);
   printf("Num FF Channels: %d\n", params.numFFChannels);
@@ -285,9 +305,9 @@ void wait_for_connections()
   
   if(params.ffEnabled) 
   {
-    ffValues = (float *)malloc(params.numFFChannels* params.numPeriodsPerFrame * sizeof(float));
-    n = read(newsockfd,ffValues,params.numFFChannels* params.numPeriodsPerFrame * sizeof(float));
-    for(int i=0;i<params.numFFChannels* params.numPeriodsPerFrame; i++) printf(" %f ",ffValues[i]);
+    ffValues = (float *)malloc(params.numFFChannels* params.numPatches * sizeof(float));
+    n = read(newsockfd,ffValues,params.numFFChannels* params.numPatches * sizeof(float));
+    for(int i=0;i<params.numFFChannels* params.numPatches; i++) printf(" %f ",ffValues[i]);
     printf("\n");
     if (n < 0) error("ERROR reading from socket");
   }
@@ -413,6 +433,8 @@ static void releaseBuffers()
 int main ()
 {
   init();
+  setDACMode(DAC_MODE_RASTERIZED);
+  //setDACMode(DAC_MODE_STANDARD);
 
   while(true)
   {

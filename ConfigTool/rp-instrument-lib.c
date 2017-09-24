@@ -414,8 +414,8 @@ int setPDMNextValueVolt(float voltage, int channel) {
   //uint16_t val = ((n / 16) << 16) + (0xffff >> (16 - (n % 16)));
   uint16_t val = (voltage / 1.8) * 2038.;
 
-    printf("set val %04x.\n", val);
-    return setPDMNextValue(val, channel);
+  //printf("set val %04x.\n", val);
+  return setPDMNextValue(val, channel);
 }
 
 int getPDMNextValue(int channel) {
