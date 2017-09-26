@@ -21,6 +21,7 @@ gcc -O3 adc-test-server.c -o adc-test-server
 #include <sys/types.h> 
 #include <netinet/in.h>
 #include <pthread.h>
+#include <sched.h>
 
 #include "../ConfigTool/rp-instrument-lib.h"
 
@@ -107,6 +108,15 @@ void* acquisition_thread(void* ch)
   int64_t oldPatchTotal=-1; 
 
   printf("starting acq thread\n");
+
+  struct sched_param p;
+  p.sched_priority = sched_get_priority_max(SCHED_FIFO);
+  pthread_t this_thread = pthread_self();
+  int ret = pthread_setschedparam(this_thread, SCHED_FIFO, &p);
+  if (ret != 0) {
+     printf("Unsuccessful in setting thread realtime prio");
+     return;     
+  }
 
   wp_old = getWP();
 
@@ -203,7 +213,7 @@ void* acquisition_thread(void* ch)
        oldPatchTotal = currentPatchTotal;
     } else {
       //printf("Counter not increased %d %d \n", wp_old, wp);
-      usleep(1);    
+      usleep(40);    
     }
   } 
   printf("acq thread finished\n");
@@ -452,11 +462,13 @@ int main ()
     //}
     //startRx();
     
-    pthread_t pCom;
-    pthread_create(&pCom, NULL, communication_thread, NULL);
+    //pthread_t pCom;
+    //pthread_create(&pCom, NULL, communication_thread, NULL);
     
-    pthread_join(pCom, NULL);
-    printf("Com Thread finished \n");
+    communication_thread(NULL);
+
+    //pthread_join(pCom, NULL);
+    //printf("Com Thread finished \n");
 
     stopTx();
     //if(params.txEnabled) {

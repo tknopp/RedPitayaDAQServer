@@ -32,7 +32,8 @@ static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
 
 void load_bitstream()
 {
-  system("cat /root/system_wrapper.bin > /dev/xdevcfg");
+  //system("cat /root/system_wrapper.bin > /dev/xdevcfg");
+  system("cat /root/RedPitayaDAQServer/Bitfiles/system_wrapper.bin > /dev/xdevcfg");
 }
 
 int init() {
