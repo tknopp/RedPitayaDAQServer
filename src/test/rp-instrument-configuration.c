@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 
-#include "rp-instrument-lib.h"
+#include "../lib/rp-daq-lib.h"
 
 /* Compile
     gcc -c -Wall -Werror -fpic rp-instrument-lib.c

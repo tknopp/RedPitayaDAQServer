@@ -1,7 +1,7 @@
 CFLAGS  = -O3 -std=gnu99 
 CFLAGS += -I/opt/redpitaya/include
 LDFLAGS = -L/opt/redpitaya/lib 
-LDLIBS = -lm -lpthread -lrp ../ConfigTool/rp-instrument-lib.so
+LDLIBS = -lm -lpthread -lrp ../../build/lib/rp-daq-lib.so
 
 SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=)

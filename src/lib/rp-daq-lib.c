@@ -10,7 +10,7 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 
-#include "rp-instrument-lib.h"
+#include "rp-daq-lib.h"
 
 int mmapfd;
 volatile uint32_t *slcr, *axi_hp0;
@@ -33,7 +33,7 @@ static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
 void load_bitstream()
 {
   //system("cat /root/system_wrapper.bin > /dev/xdevcfg");
-  system("cat /root/RedPitayaDAQServer/Bitfiles/system_wrapper.bin > /dev/xdevcfg");
+  system("cat /root/RedPitayaDAQServer/bitfiles/system_wrapper_0_1.bin > /dev/xdevcfg");
 }
 
 int init() {

@@ -1,8 +1,3 @@
-/*
-command to compile:
-gcc -O3 adc-test-server.c -o adc-test-server
-*/
-
 #include <stdint.h>
 #include <signal.h>
 #include <fcntl.h>
@@ -23,7 +18,7 @@ gcc -O3 adc-test-server.c -o adc-test-server
 #include <pthread.h>
 #include <sched.h>
 
-#include "../ConfigTool/rp-instrument-lib.h"
+#include "../lib/rp-daq-lib.h"
 
 uint64_t numSamplesPerFrame = 0;
 uint64_t numFramesInMemoryBuffer = 0;

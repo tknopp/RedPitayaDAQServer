@@ -1,5 +1,5 @@
-#ifndef RP_INSTRUMENT_LIB_H
-#define RP_INSTRUMENT_LIB_H
+#ifndef RP_DAQ_LIB_H
+#define RP_DAQ_LIB_H
 
 #include <stdio.h>
 #include <stdint.h>
@@ -51,4 +51,4 @@ extern int* getPDMCurrentValues();
 extern uint32_t getXADCValue(int);
 extern float getXADCValueVolt(int);
 
-#endif /* RP_INSTRUMENT_LIB_H */
+#endif /* RP_DAQ_LIB_H */

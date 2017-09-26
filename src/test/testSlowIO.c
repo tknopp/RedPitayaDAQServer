@@ -3,14 +3,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 
-#include "rp-instrument-lib.h"
-
-/* Compile
-    gcc -c -Wall -Werror -fpic rp-instrument-lib.c
-    gcc -shared -o rp-instrument-lib.so rp-instrument-lib.o
-    gcc rp-instrument-configuration.c rp-instrument-lib.o -o rp-instrument-configuration
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./
-*/
+#include "../lib/rp-daq-lib.h"
 
 int main(int argc, char *argv[]) {
   init();
