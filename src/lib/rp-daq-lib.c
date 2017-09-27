@@ -14,7 +14,7 @@
 
 int mmapfd;
 volatile uint32_t *slcr, *axi_hp0;
-volatile void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *cfg, *ram, *buf;
+volatile void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *reset_sts, *cfg, *ram, *buf;
 
 uint16_t dac_channel_A_modulus[4] = {4800, 4800, 4800, 4800};
 uint16_t dac_channel_B_modulus[4] = {4800, 4800, 4800, 4800};
@@ -33,7 +33,7 @@ static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
 void load_bitstream()
 {
   //system("cat /root/system_wrapper.bin > /dev/xdevcfg");
-  system("cat /root/RedPitayaDAQServer/bitfiles/system_wrapper_0_1.bin > /dev/xdevcfg");
+  system("cat /root/RedPitayaDAQServer/bitfiles/system_wrapper.bin > /dev/xdevcfg");
 }
 
 int init() {
@@ -53,6 +53,7 @@ int init() {
   adc_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40001000);
   pdm_cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40002000);
   pdm_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40003000);
+  reset_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40005000);
   cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40004000);
   ram = mmap(NULL, 2048*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x1E000000);
   buf = mmap(NULL, 2048*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
@@ -473,5 +474,89 @@ uint32_t getXADCValue(int channel) {
 float getXADCValueVolt(int channel) {
     uint32_t value_raw = getXADCValue(channel);
     return (((float)value_raw / ANALOG_IN_MAX_VAL_INTEGER) * (ANALOG_IN_MAX_VAL - ANALOG_IN_MIN_VAL)) + ANALOG_IN_MIN_VAL;
+}
+
+int setWatchdogMode(int mode) {
+    if(mode == WATCHDOG_OFF) {
+        *((uint8_t *)(cfg + 1)) &= ~2;
+    } else if(mode == WATCHDOG_ON) {
+        *((uint8_t *)(cfg + 1)) |= 2;
+    } else {
+        return -1;
+    }
+    
+    return 0;
+}
+
+int setRAMWriterMode(int mode) {
+    if(mode == ADC_MODE_CONTINUOUS) {
+        *((uint8_t *)(cfg + 1)) &= ~1;
+    } else if(mode == ADC_MODE_TRIGGERED) {
+        *((uint8_t *)(cfg + 1)) |= 1;
+    } else {
+        return -1;
+    }
+    
+    return 0;
+}
+
+int setMasterTrigger(int mode) {
+    if(mode == MASTER_TRIGGER_OFF) {
+        *((uint8_t *)(cfg + 1)) &= ~4;
+    } else if(mode == MASTER_TRIGGER_ON) {
+        *((uint8_t *)(cfg + 1)) |= 4;
+    } else {
+        return -1;
+    }
+    
+    return 0;
+}
+
+int getPeripheralAResetN() {
+    int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x01) >> 0);
+    
+    return value;
+}
+
+int getFourierSynthAResetN() {
+    int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x02) >> 1);
+    
+    return value;
+}
+
+int getPDMAResetN() {
+    int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x04) >> 2);
+    
+    return value;
+}
+
+int getWriteToRAMAResetN() {
+    int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x08) >> 3);
+    
+    return value;
+}
+
+int getXADCAResetN() {
+    int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x10) >> 4);
+    
+    return value;
+}
+
+int getTriggerStatus() {
+    int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x20) >> 5);
+    
+    return value;
+}
+
+int getWatchdogStatus() {
+    int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x40) >> 6);
+    
+    return value;
+}
+
+int getInstantResetStatus() {
+    int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x80) >> 7);
+    
+    return value;
 }
 

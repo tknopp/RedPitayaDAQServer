@@ -60,9 +60,24 @@ int main(int argc, char *argv[]) {
   setModulusFactor(7, 1, 2);
   setModulusFactor(8, 1, 3);
 
+  //setWatchdogMode(WATCHDOG_ON);
+  setRAMWriterMode(ADC_MODE_TRIGGERED);
+  setMasterTrigger(MASTER_TRIGGER_ON);
+
+  usleep(1000);
+
   printf("test getAmplitude (channel 0, component 0): %04x\n", getAmplitude(0, 0));
   printf("test getFrequency (channel 0, component 0): %f Hz\n", getFrequency(0, 0));
   printf("test getPhase (channel 0, component 0): %f*2*pi rad\n", getPhase(0, 0));
+
+  printf("getPeripheralAResetN(): %d\n", getPeripheralAResetN());
+  printf("getFourierSynthAResetN(): %d\n", getFourierSynthAResetN());
+  printf("getPDMAResetN(): %d\n", getPDMAResetN());
+  printf("getWriteToRAMAResetN(): %d\n", getWriteToRAMAResetN());
+  printf("getXADCAResetN(): %d\n", getXADCAResetN());
+  printf("getTriggerStatus(): %d\n", getTriggerStatus());
+  printf("getWatchdogStatus(): %d\n", getWatchdogStatus());
+  printf("getInstantResetStatus(): %d\n", getInstantResetStatus());
   
   return 0;
 }

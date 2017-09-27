@@ -16,10 +16,19 @@
 
 extern int mmapfd;
 extern volatile uint32_t *slcr, *axi_hp0;
-extern volatile void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *cfg, *ram, *buf;
+extern volatile void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *reset_sts, *cfg, *ram, *buf;
 
 #define DAC_MODE_RASTERIZED 1
 #define	DAC_MODE_STANDARD   0
+
+#define ADC_MODE_CONTINUOUS 0
+#define ADC_MODE_TRIGGERED 1
+
+#define WATCHDOG_OFF 0
+#define WATCHDOG_ON 1
+
+#define MASTER_TRIGGER_OFF 0
+#define MASTER_TRIGGER_ON 1
 
 extern uint16_t dac_channel_A_modulus[4];
 extern uint16_t dac_channel_B_modulus[4];
@@ -47,8 +56,18 @@ extern int setPDMNextValueVolt(float, int);
 extern int getPDMNextValue();
 extern int getPDMCurrentValue(int);
 extern int* getPDMCurrentValues();
-
 extern uint32_t getXADCValue(int);
 extern float getXADCValueVolt(int);
+extern int setWatchdogMode(int);
+extern int setRAMWriterMode(int);
+extern int setMasterTrigger(int);
+extern int getPeripheralAResetN();
+extern int getFourierSynthAResetN();
+extern int getPDMAResetN();
+extern int getWriteToRAMAResetN();
+extern int getXADCAResetN();
+extern int getTriggerStatus();
+extern int getWatchdogStatus();
+extern int getInstantResetStatus();
 
 #endif /* RP_DAQ_LIB_H */
