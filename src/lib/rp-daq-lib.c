@@ -583,6 +583,10 @@ int getInstantResetStatus() {
 }
 
 int setDecimation(uint16_t decimation) {
+    if(decimation < 8 || decimation > 8192) {
+        return -1;
+    }
+
     *((uint16_t *)(cfg + 2)) = decimation;
     return 0;
 }
