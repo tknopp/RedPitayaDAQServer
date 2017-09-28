@@ -582,3 +582,12 @@ int getInstantResetStatus() {
     return value;
 }
 
+int setDecimation(uint16_t decimation) {
+    *((uint16_t *)(cfg + 2)) = decimation;
+    return 0;
+}
+
+uint16_t getDecimation() {
+    uint16_t value = *((uint16_t *)(cfg + 2));
+    return value;
+}

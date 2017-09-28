@@ -78,6 +78,9 @@ int main(int argc, char *argv[]) {
   printf("getTriggerStatus(): %d\n", getTriggerStatus());
   printf("getWatchdogStatus(): %d\n", getWatchdogStatus());
   printf("getInstantResetStatus(): %d\n", getInstantResetStatus());
+
+  setDecimation(32);
+  printf("getDecimation(): %d", getDecimation());
   
   return 0;
 }

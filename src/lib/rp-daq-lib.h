@@ -74,5 +74,7 @@ extern int getXADCAResetN();
 extern int getTriggerStatus();
 extern int getWatchdogStatus();
 extern int getInstantResetStatus();
+extern int setDecimation(uint16_t decimation);
+extern uint16_t getDecimation();
 
 #endif /* RP_DAQ_LIB_H */
