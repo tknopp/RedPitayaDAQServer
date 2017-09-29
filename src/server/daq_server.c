@@ -104,6 +104,7 @@ void* acquisition_thread(void* ch)
   int64_t oldPatchTotal=-1; 
 
   printf("starting acq thread\n");
+  setMasterTrigger(MASTER_TRIGGER_ON);
 
   struct sched_param p;
   p.sched_priority = sched_get_priority_max(SCHED_FIFO);
@@ -114,10 +115,15 @@ void* acquisition_thread(void* ch)
      return;     
   }
 
-  wp_old = getWP();
+  wp_old = 0; //getWP();
 
-    while(rxEnabled)
-    {
+  while(getTriggerStatus() == 0)
+  {
+    usleep(40);
+  }
+
+  while(rxEnabled)
+  {
       wp = getWP();
 
      uint32_t size = getSizeFromStartEndPos(wp_old, wp)-1;
@@ -467,14 +473,13 @@ void init_daq()
     init();
     setDACMode(DAC_MODE_RASTERIZED);
     //setDACMode(DAC_MODE_STANDARD);
-    isFirstConnection = false;  
+    isFirstConnection = false;
+    setWatchdogMode(WATCHDOG_OFF);  
   }
   setDecimation(params.decimation);  
 
-  setRAMWriterMode(ADC_MODE_TRIGGERED);
   setMasterTrigger(MASTER_TRIGGER_OFF);
-  usleep(1000);
-  setMasterTrigger(MASTER_TRIGGER_ON);
+  setRAMWriterMode(ADC_MODE_TRIGGERED);
 }
 
 int main ()
