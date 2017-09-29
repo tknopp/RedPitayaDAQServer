@@ -61,9 +61,9 @@ int main(int argc, char *argv[]) {
   setModulusFactor(7, 1, 2);
   setModulusFactor(8, 1, 3);
 
-  //setWatchdogMode(WATCHDOG_ON);
+  setWatchdogMode(WATCHDOG_OFF);
   setRAMWriterMode(ADC_MODE_TRIGGERED);
-  setMasterTrigger(MASTER_TRIGGER_ON);
+  //setMasterTrigger(MASTER_TRIGGER_ON);
 
   usleep(1000);
 
