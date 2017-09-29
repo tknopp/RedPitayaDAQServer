@@ -13,6 +13,7 @@
 */
 
 int main(int argc, char *argv[]) {
+  setSlave();
   init();
   setDACMode(DAC_MODE_RASTERIZED);
   setAmplitude(0x0FFF, 0, 0);  

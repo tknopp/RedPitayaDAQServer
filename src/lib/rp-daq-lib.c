@@ -38,7 +38,7 @@ void load_bitstream()
   if(isMaster()) {
     system("cat /root/RedPitayaDAQServer/bitfiles/master.bin > /dev/xdevcfg");
   } else {
-    system("cat /root/RedPitayaDAQServer/bitfiles/master.bin > /dev/xdevcfg");
+    system("cat /root/RedPitayaDAQServer/bitfiles/slave.bin > /dev/xdevcfg");
   }
 }
 

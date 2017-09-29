@@ -41,6 +41,7 @@ float phaseTx[] = {0.0, 0.0};
 
 bool rxEnabled;
 int mmapfd;
+bool isFirstConnection;
 
 pthread_t pAcq;
  
@@ -281,6 +282,8 @@ void init_socket()
 
 }
 
+void init_daq();
+
 void wait_for_connections()
 {
   listen(sockfd,5);
@@ -299,7 +302,7 @@ void wait_for_connections()
   numSamplesPerFrame = params.numSamplesPerPeriod * params.numPeriodsPerFrame; 
   numFramesInMemoryBuffer = 64*1024*1024 / numSamplesPerFrame;
                              
-  setDecimation(params.decimation);
+  init_daq();
   
   printf("Decimation: %d\n", params.decimation);
   printf("Num Samples Per Period: %d\n", params.numSamplesPerPeriod);
@@ -314,7 +317,17 @@ void wait_for_connections()
   printf("isMaster: %d\n", params.isMaster);
   printf("isHighGainChA: %d\n", params.isHighGainChA);
   printf("isHighGainChB: %d\n", params.isHighGainChB);
-  
+ 
+  printf("getPeripheralAResetN(): %d\n", getPeripheralAResetN());
+  printf("getFourierSynthAResetN(): %d\n", getFourierSynthAResetN());
+  printf("getPDMAResetN(): %d\n", getPDMAResetN());
+  printf("getWriteToRAMAResetN(): %d\n", getWriteToRAMAResetN());
+  printf("getXADCAResetN(): %d\n", getXADCAResetN());
+  printf("getTriggerStatus(): %d\n", getTriggerStatus());
+  printf("getWatchdogStatus(): %d\n", getWatchdogStatus());
+  printf("getInstantResetStatus(): %d\n", getInstantResetStatus());
+  printf("getDecimation(): %d", getDecimation());
+ 
   if(params.ffEnabled) 
   {
     ffValues = (float *)malloc(params.numFFChannels* params.numPatches * sizeof(float));
@@ -442,13 +455,31 @@ static void releaseBuffers()
   }
 }
 
+void init_daq()
+{
+  if(isFirstConnection)
+  {
+    if(params.isMaster) {
+      setMaster();
+    } else {
+      setSlave();
+    }
+    init();
+    setDACMode(DAC_MODE_RASTERIZED);
+    //setDACMode(DAC_MODE_STANDARD);
+    isFirstConnection = false;  
+  }
+  setDecimation(params.decimation);  
+
+  setRAMWriterMode(ADC_MODE_TRIGGERED);
+  setMasterTrigger(MASTER_TRIGGER_OFF);
+  usleep(1000);
+  setMasterTrigger(MASTER_TRIGGER_ON);
+}
+
 int main ()
 {
-  init();
-  setDACMode(DAC_MODE_RASTERIZED);
-  //setDACMode(DAC_MODE_STANDARD);
-  setDecimation(32);
-
+  isFirstConnection = true;
 
   while(true)
   {
@@ -461,6 +492,7 @@ int main ()
     data_read_total = 0;
         
     initBuffers();
+
     //if(params.txEnabled) {
     //  startTx();
     //}
