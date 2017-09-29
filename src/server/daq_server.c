@@ -119,8 +119,11 @@ void* acquisition_thread(void* ch)
 
   while(getTriggerStatus() == 0)
   {
+    printf("Waiting for external trigger!"); 
     usleep(40);
   }
+
+  bool firstCycle = true;
 
   while(rxEnabled)
   {
@@ -132,8 +135,12 @@ void* acquisition_thread(void* ch)
        printf("I think we lost a step %d %d %d \n", size, wp_old, wp);
      }
 
-     // limit size to be read to period length
-     size = MIN(size, params.numSamplesPerPeriod);
+     if(firstCycle) {
+       firstCycle = false;
+     } else {
+       // limit size to be read to period length
+       size = MIN(size, params.numSamplesPerPeriod);
+     }
 
      if (size > 0) {
        if(data_read + size <= buff_size) { 
