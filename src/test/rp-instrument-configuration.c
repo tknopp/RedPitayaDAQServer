@@ -13,6 +13,7 @@
 */
 
 int main(int argc, char *argv[]) {
+  setSlave();
   init();
   setDACMode(DAC_MODE_RASTERIZED);
   setAmplitude(0x0FFF, 0, 0);  
@@ -60,9 +61,9 @@ int main(int argc, char *argv[]) {
   setModulusFactor(7, 1, 2);
   setModulusFactor(8, 1, 3);
 
-  //setWatchdogMode(WATCHDOG_ON);
+  setWatchdogMode(WATCHDOG_OFF);
   setRAMWriterMode(ADC_MODE_TRIGGERED);
-  setMasterTrigger(MASTER_TRIGGER_ON);
+  //setMasterTrigger(MASTER_TRIGGER_ON);
 
   usleep(1000);
 
@@ -78,6 +79,9 @@ int main(int argc, char *argv[]) {
   printf("getTriggerStatus(): %d\n", getTriggerStatus());
   printf("getWatchdogStatus(): %d\n", getWatchdogStatus());
   printf("getInstantResetStatus(): %d\n", getInstantResetStatus());
+
+  setDecimation(32);
+  printf("getDecimation(): %d", getDecimation());
   
   return 0;
 }

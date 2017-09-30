@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <signal.h>
 #include <fcntl.h>
@@ -19,6 +20,8 @@ volatile void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *reset_sts, *cfg, *ram, *b
 uint16_t dac_channel_A_modulus[4] = {4800, 4800, 4800, 4800};
 uint16_t dac_channel_B_modulus[4] = {4800, 4800, 4800, 4800};
 
+bool master = true;
+
 static const uint32_t ANALOG_OUT_MASK            = 0xFF;
 static const uint32_t ANALOG_OUT_BITS            = 16;
 static const uint32_t ANALOG_IN_MASK             = 0xFFF;
@@ -32,8 +35,11 @@ static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
 
 void load_bitstream()
 {
-  //system("cat /root/system_wrapper.bin > /dev/xdevcfg");
-  system("cat /root/RedPitayaDAQServer/bitfiles/system_wrapper.bin > /dev/xdevcfg");
+  if(isMaster()) {
+    system("cat /root/RedPitayaDAQServer/bitfiles/master.bin > /dev/xdevcfg");
+  } else {
+    system("cat /root/RedPitayaDAQServer/bitfiles/slave.bin > /dev/xdevcfg");
+  }
 }
 
 int init() {
@@ -65,6 +71,22 @@ int init() {
   axi_hp0[5] &= ~1;
 
   return 0;
+}
+
+bool isMaster() {
+  return master;
+}
+
+bool isSlave() {
+  return !master;
+}
+
+void setMaster() {
+  master = true;
+}
+
+void setSlave() {
+  master = false;
 }
 
 uint16_t getAmplitude(int channel, int component) {
@@ -560,3 +582,16 @@ int getInstantResetStatus() {
     return value;
 }
 
+int setDecimation(uint16_t decimation) {
+    if(decimation < 8 || decimation > 8192) {
+        return -1;
+    }
+
+    *((uint16_t *)(cfg + 2)) = decimation;
+    return 0;
+}
+
+uint16_t getDecimation() {
+    uint16_t value = *((uint16_t *)(cfg + 2));
+    return value;
+}

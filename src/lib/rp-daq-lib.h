@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include <signal.h>
 #include <fcntl.h>
@@ -35,6 +36,10 @@ extern uint16_t dac_channel_B_modulus[4];
 
 extern int init();
 extern void load_bitstream();
+extern bool isMaster();
+extern bool isSlave();
+extern void setMaster();
+extern void setSlave();
 extern uint16_t getAmplitude(int, int);
 extern int setAmplitude(uint16_t, int, int);
 extern double getFrequency(int, int);
@@ -69,5 +74,7 @@ extern int getXADCAResetN();
 extern int getTriggerStatus();
 extern int getWatchdogStatus();
 extern int getInstantResetStatus();
+extern int setDecimation(uint16_t decimation);
+extern uint16_t getDecimation();
 
 #endif /* RP_DAQ_LIB_H */

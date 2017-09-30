@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
+#include <sys/param.h>
 #include <inttypes.h>
 
 #include <stdio.h>
@@ -35,17 +36,17 @@ uint32_t *buffer = NULL;
 float *ffValues = NULL;
 float *ffRead = NULL;
 
-int64_t decimation = 16;
-
 float amplitudeTx[] = {0.0, 0.0};
 float phaseTx[] = {0.0, 0.0};
 
 bool rxEnabled;
 int mmapfd;
+bool isFirstConnection;
 
 pthread_t pAcq;
  
 struct paramsType {
+  int decimation;
   int numSamplesPerPeriod;
   int numSamplesPerTxPeriod;
   int numPeriodsPerFrame;
@@ -103,6 +104,7 @@ void* acquisition_thread(void* ch)
   int64_t oldPatchTotal=-1; 
 
   printf("starting acq thread\n");
+  setMasterTrigger(MASTER_TRIGGER_ON);
 
   struct sched_param p;
   p.sched_priority = sched_get_priority_max(SCHED_FIFO);
@@ -113,10 +115,18 @@ void* acquisition_thread(void* ch)
      return;     
   }
 
-  wp_old = getWP();
+  wp_old = 0; //getWP();
 
-    while(rxEnabled)
-    {
+  while(getTriggerStatus() == 0)
+  {
+    printf("Waiting for external trigger!"); 
+    usleep(40);
+  }
+
+  bool firstCycle = true;
+
+  while(rxEnabled)
+  {
       wp = getWP();
 
      uint32_t size = getSizeFromStartEndPos(wp_old, wp)-1;
@@ -125,12 +135,20 @@ void* acquisition_thread(void* ch)
        printf("I think we lost a step %d %d %d \n", size, wp_old, wp);
      }
 
+     if(firstCycle) {
+       firstCycle = false;
+     } else {
+       // limit size to be read to period length
+       size = MIN(size, params.numSamplesPerPeriod);
+     }
+
      if (size > 0) {
        if(data_read + size <= buff_size) { 
          read_data(wp_old, size, buffer + data_read);
          
          data_read += size;
          data_read_total += size;
+         wp_old = (wp_old + size) % adc_buff_size;
        } else {
          printf("OVERFLOW %lld %d  %lld\n", data_read, size, buff_size);
          uint32_t size1 = buff_size - data_read; 
@@ -145,6 +163,7 @@ void* acquisition_thread(void* ch)
          read_data(wp_old, size2, buffer + data_read);
          data_read += size2;
          data_read_total += size2;
+         wp_old = (wp_old + size2) % adc_buff_size;
        }
 
 
@@ -202,7 +221,6 @@ void* acquisition_thread(void* ch)
          }
        }
 
-       wp_old = wp;
        oldFrameTotal = currentFrameTotal;
        oldPeriodTotal = currentPeriodTotal;
        oldPatchTotal = currentPatchTotal;
@@ -230,9 +248,9 @@ void updateTx() {
 
   //setAmplitude(0x0f11, 0, 0);
 
-  setFrequency(125e6 / (params.numSamplesPerTxPeriod*decimation), 0, 0);
-  //setFrequency(125e6 / (params.numSamplesPerTxPeriod*decimation), 0, 1);
-  //setFrequency(125e6 / (params.numSamplesPerTxPeriod*decimation), 1, 0);
+  setFrequency(125e6 / (params.numSamplesPerTxPeriod*params.decimation), 0, 0);
+  //setFrequency(125e6 / (params.numSamplesPerTxPeriod*params.decimation), 0, 1);
+  //setFrequency(125e6 / (params.numSamplesPerTxPeriod*params.decimation), 1, 0);
 
   /*setModulusFactor(1, 0, 0);
   setModulusFactor(1, 0, 1);
@@ -277,6 +295,8 @@ void init_socket()
 
 }
 
+void init_daq();
+
 void wait_for_connections()
 {
   listen(sockfd,5);
@@ -295,6 +315,9 @@ void wait_for_connections()
   numSamplesPerFrame = params.numSamplesPerPeriod * params.numPeriodsPerFrame; 
   numFramesInMemoryBuffer = 64*1024*1024 / numSamplesPerFrame;
                              
+  init_daq();
+  
+  printf("Decimation: %d\n", params.decimation);
   printf("Num Samples Per Period: %d\n", params.numSamplesPerPeriod);
   printf("Num Samples Per Tx Period: %d\n", params.numSamplesPerTxPeriod);
   printf("Num Periods Per Frame: %d\n", params.numPeriodsPerFrame);
@@ -307,7 +330,17 @@ void wait_for_connections()
   printf("isMaster: %d\n", params.isMaster);
   printf("isHighGainChA: %d\n", params.isHighGainChA);
   printf("isHighGainChB: %d\n", params.isHighGainChB);
-  
+ 
+  printf("getPeripheralAResetN(): %d\n", getPeripheralAResetN());
+  printf("getFourierSynthAResetN(): %d\n", getFourierSynthAResetN());
+  printf("getPDMAResetN(): %d\n", getPDMAResetN());
+  printf("getWriteToRAMAResetN(): %d\n", getWriteToRAMAResetN());
+  printf("getXADCAResetN(): %d\n", getXADCAResetN());
+  printf("getTriggerStatus(): %d\n", getTriggerStatus());
+  printf("getWatchdogStatus(): %d\n", getWatchdogStatus());
+  printf("getInstantResetStatus(): %d\n", getInstantResetStatus());
+  printf("getDecimation(): %d", getDecimation());
+ 
   if(params.ffEnabled) 
   {
     ffValues = (float *)malloc(params.numFFChannels* params.numPatches * sizeof(float));
@@ -435,11 +468,30 @@ static void releaseBuffers()
   }
 }
 
+void init_daq()
+{
+  if(isFirstConnection)
+  {
+    if(params.isMaster) {
+      setMaster();
+    } else {
+      setSlave();
+    }
+    init();
+    setDACMode(DAC_MODE_RASTERIZED);
+    //setDACMode(DAC_MODE_STANDARD);
+    isFirstConnection = false;
+    setWatchdogMode(WATCHDOG_OFF);  
+  }
+  setDecimation(params.decimation);  
+
+  setMasterTrigger(MASTER_TRIGGER_OFF);
+  setRAMWriterMode(ADC_MODE_TRIGGERED);
+}
+
 int main ()
 {
-  init();
-  setDACMode(DAC_MODE_RASTERIZED);
-  //setDACMode(DAC_MODE_STANDARD);
+  isFirstConnection = true;
 
   while(true)
   {
@@ -452,6 +504,7 @@ int main ()
     data_read_total = 0;
         
     initBuffers();
+
     //if(params.txEnabled) {
     //  startTx();
     //}
