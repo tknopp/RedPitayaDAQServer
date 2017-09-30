@@ -40,7 +40,8 @@ module fourier_synthesizer #
     output wire                        m_axis_tvalid,
     output wire [AXIS_TDATA_WIDTH-1:0] m_axis_tdata,
     
-    input clk
+    input clk,
+    input aresetn
 );
 
     reg signed [2*AXIS_TDATA_WIDTH-1:0]   multiplications [N_MULTIPLICATIONS-1:0];
@@ -124,12 +125,19 @@ module fourier_synthesizer #
     
     always @(posedge clk)
     begin
-        if (shifted >= $signed(8192)) // postitive sat
-            dac_out <= 14'h1FFF;
-        else if (shifted < $signed(-8192)) // negative sat
-            dac_out <= 14'h2000;
+        if (~aresetn)
+        begin
+            dac_out <= 14'h0;
+        end
         else
-            dac_out <= shifted[DAC_WIDTH-1:0];
+        begin
+            if (shifted >= $signed(8192)) // postitive sat
+                dac_out <= 14'h1FFF;
+            else if (shifted < $signed(-8192)) // negative sat
+                dac_out <= 14'h2000;
+            else
+                dac_out <= shifted[DAC_WIDTH-1:0];
+        end
     end
     
     assign m_axis_tvalid = 1;
