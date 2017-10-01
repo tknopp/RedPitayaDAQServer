@@ -8,7 +8,7 @@ Since this is a project we use for our own purposes and provide it as a courtesy
 [1] https://www.koheron.com/blog/2016/11/29/red-pitaya-cluster
 [2] https://github.com/pavel-demin/red-pitaya-notes
 
-## Installing
+## Installation
 
 Clone the code to the `/root` folder of each Red Pitaya. Currently some scripts use an absolute patch and therefore expect the repository to be cloned in that directory.
 
@@ -43,6 +43,6 @@ To enable it at startup type
 systemctl enable daq_server
 ```
 
-## DAQ server
+## Documentation
 
-TODO
+More documentation can be found in the [overview](docs/overview.md), the [daq_server](docs/daqserver.md), the [rp_daq](docs/librp-daq.md) C library, and the [FPGA design](docs/fpga.md).
