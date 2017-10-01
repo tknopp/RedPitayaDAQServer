@@ -213,7 +213,7 @@ void updateTx() {
   printf("Set PhaseTxA: %f %f %f %f\n", phaseTxA[0], phaseTxA[1], phaseTxA[2], phaseTxA[3]);
   printf("Set PhaseTxB: %f %f %f %f\n", phaseTxB[0], phaseTxB[1], phaseTxB[2], phaseTxB[3]);
 
-  for(int d=1; d<4; d++) {
+  for(int d=0; d<4; d++) {
     setAmplitude(8192 * amplitudeTxA[d], 0, d);
     setAmplitude(8192 * amplitudeTxB[d], 1, d);
     
