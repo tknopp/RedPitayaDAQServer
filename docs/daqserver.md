@@ -1,3 +1,0 @@
-# DAQ Server
-
-TODO
