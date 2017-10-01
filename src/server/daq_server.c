@@ -11,8 +11,8 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <sys/socket.h> /* for socket(), connect(), send(), and recv() */
-#include <arpa/inet.h>  /* for sockaddr_in and inet_addr() */
+#include <sys/socket.h>
+#include <arpa/inet.h>
 #include <sys/types.h> 
 #include <netinet/in.h>
 #include <pthread.h>
@@ -24,8 +24,6 @@ uint64_t numSamplesPerFrame = 0;
 uint64_t numFramesInMemoryBuffer = 0;
 uint64_t buff_size = 0;
 
-uint32_t adc_buff_size = 2*1024*1024; // 2MSamples = 8 MB
-
 volatile int64_t currentFrameTotal;
 volatile int64_t data_read, data_read_total;
 volatile int64_t oldFrameTotal;
@@ -35,8 +33,10 @@ uint32_t *buffer = NULL;
 float *ffValues = NULL;
 float *ffRead = NULL;
 
-float amplitudeTx[] = {0.0, 0.0};
-float phaseTx[] = {0.0, 0.0};
+float amplitudeTxA[] = {0.0, 0.0, 0.0, 0.0};
+float amplitudeTxB[] = {0.0, 0.0, 0.0, 0.0};
+float phaseTxA[] = {0.0, 0.0, 0.0, 0.0};
+float phaseTxB[] = {0.0, 0.0, 0.0, 0.0};
 
 bool rxEnabled;
 int mmapfd;
@@ -47,10 +47,13 @@ pthread_t pAcq;
 struct paramsType {
   int decimation;
   int numSamplesPerPeriod;
-  int numSamplesPerTxPeriod;
   int numPeriodsPerFrame;
   int numPatches;
   int numFFChannels;
+  int modulus1;
+  int modulus2;
+  int modulus3;
+  int modulus4;
   bool txEnabled;
   bool ffEnabled;
   bool ffLinear;
@@ -61,34 +64,7 @@ struct paramsType {
   bool pad2;
 };
 
-volatile struct paramsType params;
-
-// TK: I don't know why we need the factor of two, but this is how pavels code works
-uint32_t getWP() { return (*((uint32_t *)(adc_sts + 0)))*2; }
-
-uint32_t getSizeFromStartEndPos(uint32_t start_pos, uint32_t end_pos) {
-    end_pos   = end_pos   % adc_buff_size;
-    start_pos = start_pos % adc_buff_size;
-    if (end_pos < start_pos)
-        end_pos += adc_buff_size;
-    return end_pos - start_pos + 1;
-}
-
-
-void read_data(uint32_t wp, uint32_t size, uint32_t* buffer)
-{
-  if(wp+size <= adc_buff_size) 
-  {
-    memcpy(buffer, ram + sizeof(uint32_t)*wp, size*sizeof(uint32_t));
-  } else
-  {
-    uint32_t size1 = adc_buff_size - wp;
-    uint32_t size2 = size - size1;
-
-    memcpy(buffer, ram + sizeof(uint32_t)*wp, size1*sizeof(uint32_t));
-    memcpy(buffer+size1, ram, size2*sizeof(uint32_t));
-  }
-}
+struct paramsType params;
 
 void* acquisition_thread(void* ch)
 { 
@@ -111,10 +87,10 @@ void* acquisition_thread(void* ch)
   int ret = pthread_setschedparam(this_thread, SCHED_FIFO, &p);
   if (ret != 0) {
      printf("Unsuccessful in setting thread realtime prio");
-     return;     
+     return NULL;     
   }
 
-  wp_old = 0; //getWP();
+  wp_old = 0; 
 
   while(getTriggerStatus() == 0)
   {
@@ -126,9 +102,9 @@ void* acquisition_thread(void* ch)
 
   while(rxEnabled)
   {
-      wp = getWP();
+     wp = getWritePointer();
 
-     uint32_t size = getSizeFromStartEndPos(wp_old, wp)-1;
+     uint32_t size = getWritePointerDistance(wp_old, wp)-1;
      //printf("____ %d %d %d \n", size, wp_old, wp);
      if(size > 512*1024) {
        printf("I think we lost a step %d %d %d \n", size, wp_old, wp);
@@ -143,26 +119,26 @@ void* acquisition_thread(void* ch)
 
      if (size > 0) {
        if(data_read + size <= buff_size) { 
-         read_data(wp_old, size, buffer + data_read);
+         readADCData(wp_old, size, buffer + data_read);
          
          data_read += size;
          data_read_total += size;
-         wp_old = (wp_old + size) % adc_buff_size;
+         wp_old = (wp_old + size) % ADC_BUFF_SIZE;
        } else {
          printf("OVERFLOW %lld %d  %lld\n", data_read, size, buff_size);
          uint32_t size1 = buff_size - data_read; 
          uint32_t size2 = size - size1; 
         
-         read_data(wp_old, size1, buffer + data_read);
+         readADCData(wp_old, size1, buffer + data_read);
          data_read = 0;
          data_read_total += size1;
          
-         wp_old = (wp_old + size1) % adc_buff_size;
+         wp_old = (wp_old + size1) % ADC_BUFF_SIZE;
          
-         read_data(wp_old, size2, buffer + data_read);
+         readADCData(wp_old, size2, buffer + data_read);
          data_read += size2;
          data_read_total += size2;
-         wp_old = (wp_old + size2) % adc_buff_size;
+         wp_old = (wp_old + size2) % ADC_BUFF_SIZE;
        }
 
 
@@ -232,33 +208,20 @@ void* acquisition_thread(void* ch)
 }
 
 void updateTx() {
-  printf("amplitudeTx New: %f %f \n", amplitudeTx[0], amplitudeTx[1]);
-  printf("phaseTx New: %f %f\n", phaseTx[0], phaseTx[1]);
+  printf("Set AmplitudeTxA: %f %f %f %f \n", amplitudeTxA[0], amplitudeTxA[1], amplitudeTxA[2],amplitudeTxA[3]);
+  printf("Set AmplitudeTxB: %f %f %f %f \n", amplitudeTxB[0], amplitudeTxB[1], amplitudeTxB[2],amplitudeTxB[3]);
+  printf("Set PhaseTxA: %f %f %f %f\n", phaseTxA[0], phaseTxA[1], phaseTxA[2], phaseTxA[3]);
+  printf("Set PhaseTxB: %f %f %f %f\n", phaseTxB[0], phaseTxB[1], phaseTxB[2], phaseTxB[3]);
+
+  for(int d=1; d<4; d++) {
+    setAmplitude(8192 * amplitudeTxA[d], 0, d);
+    setAmplitude(8192 * amplitudeTxB[d], 1, d);
+    
+    setPhase((phaseTxA[d]+180)/360, 0, d);
+    setPhase((phaseTxB[d]+180)/360, 1, d);
+  }
+
   
-  //rp_GenAmp(RP_CH_1, amplitudeTx);
-  //rp_GenWaveform(RP_CH_1, RP_WAVEFORM_ARBITRARY);
-  //fillTxBuff();
-  //rp_GenArbWaveform(RP_CH_1, txBuff, numSamplesInTxBuff);
-
-  setAmplitude(8192 * amplitudeTx[0], 0, 0);
-  setAmplitude(0, 0, 1);
-  setAmplitude(0, 0, 2);
-  setAmplitude(0, 0, 3);
-
-  //setAmplitude(0x0f11, 0, 0);
-
-  setFrequency(125e6 / (params.numSamplesPerTxPeriod*params.decimation), 0, 0);
-  //setFrequency(125e6 / (params.numSamplesPerTxPeriod*params.decimation), 0, 1);
-  //setFrequency(125e6 / (params.numSamplesPerTxPeriod*params.decimation), 1, 0);
-
-  /*setModulusFactor(1, 0, 0);
-  setModulusFactor(1, 0, 1);
-  setModulusFactor(1, 0, 2);
-  setModulusFactor(1, 0, 3);
-  */
-  setPhase((phaseTx[0]+180)/360, 0, 0);
-  setPhase((phaseTx[0]+180)/360, 0, 1);
-  setPhase((phaseTx[1]+180)/360, 1, 0);
 }
 
 void stopTx()
@@ -268,57 +231,49 @@ void stopTx()
 }
 
 // globals used for network communication
-int sockfd, newsockfd, portno;
-socklen_t clilen;
-char tcp_buffer[256];
-struct sockaddr_in serv_addr, cli_addr;
-int n;
- 
-void init_socket()
-{
-  sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  if (sockfd < 0) 
-     error("ERROR opening socket");
-  int enable = 1;
-  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
-    error("setsockopt(SO_REUSEADDR) failed");
-
-  bzero((char *) &serv_addr, sizeof(serv_addr));
-  portno = 7777;
-  serv_addr.sin_family = AF_INET;
-  serv_addr.sin_addr.s_addr = INADDR_ANY;
-  serv_addr.sin_port = htons(portno);
-  if (bind(sockfd, (struct sockaddr *) &serv_addr,
-              sizeof(serv_addr)) < 0) 
-              error("ERROR on binding");
-
-}
+int sockfd, newsockfd;
 
 void init_daq();
 
 void wait_for_connections()
 {
+  int n;
+  struct sockaddr_in cli_addr;
+  socklen_t clilen;
   listen(sockfd,5);
   clilen = sizeof(cli_addr);
   newsockfd = accept(sockfd, 
                  (struct sockaddr *) &cli_addr, 
                  &clilen);
   if (newsockfd < 0) 
-        error("ERROR on accept");
+    perror("ERROR on accept");
 
   printf("Params type has %d bytes \n", sizeof(struct paramsType));
 
   n = read(newsockfd,&params,sizeof(struct paramsType));
-  if (n < 0) error("ERROR reading from socket");
+  if (n < 0) perror("ERROR reading from socket");
  
   numSamplesPerFrame = params.numSamplesPerPeriod * params.numPeriodsPerFrame; 
   numFramesInMemoryBuffer = 64*1024*1024 / numSamplesPerFrame;
                              
   init_daq();
-  
+
+  reconfigureDACModulus(params.modulus1, 0, 0);
+  reconfigureDACModulus(params.modulus2, 0, 1);
+  reconfigureDACModulus(params.modulus3, 0, 2);
+  reconfigureDACModulus(params.modulus4, 0, 3);
+  reconfigureDACModulus(params.modulus1, 1, 0);
+  reconfigureDACModulus(params.modulus2, 1, 1);
+  reconfigureDACModulus(params.modulus3, 1, 2);
+  reconfigureDACModulus(params.modulus4, 1, 3);
+ 
+  for(int d=0; d<4; d++) {
+    setModulusFactor(1, 0, d);
+    setModulusFactor(1, 1, d);
+  }
+ 
   printf("Decimation: %d\n", params.decimation);
   printf("Num Samples Per Period: %d\n", params.numSamplesPerPeriod);
-  printf("Num Samples Per Tx Period: %d\n", params.numSamplesPerTxPeriod);
   printf("Num Periods Per Frame: %d\n", params.numPeriodsPerFrame);
   printf("Num Patches: %d\n", params.numPatches);
   printf("Num Samples Per Frame: %lld\n", numSamplesPerFrame);
@@ -346,40 +301,43 @@ void wait_for_connections()
     n = read(newsockfd,ffValues,params.numFFChannels* params.numPatches * sizeof(float));
     for(int i=0;i<params.numFFChannels* params.numPatches; i++) printf(" %f ",ffValues[i]);
     printf("\n");
-    if (n < 0) error("ERROR reading from socket");
+    if (n < 0) perror("ERROR reading from socket");
   }
 }
 
 void send_data_to_host(int64_t frame, int64_t numframes)
 {
+  int n;
   int64_t frameInBuff = frame % numFramesInMemoryBuffer;
 
   if(numframes+frameInBuff < numFramesInMemoryBuffer)
   {
     n = write(newsockfd, buffer+frameInBuff*numSamplesPerFrame, 
                   numSamplesPerFrame * numframes * sizeof(uint32_t));
-    if (n < 0) error("ERROR writing to socket"); 
+    if (n < 0) perror("ERROR writing to socket"); 
   } else {
       int64_t frames1 = numFramesInMemoryBuffer - frameInBuff;
       int64_t frames2 = numframes - frames1;
       n = write(newsockfd, buffer+frameInBuff*numSamplesPerFrame,
                   numSamplesPerFrame * frames1 *sizeof(uint32_t));
-      if (n < 0) error("ERROR writing to socket");
+      if (n < 0) perror("ERROR writing to socket");
       n = write(newsockfd, buffer,
                   numSamplesPerFrame * frames2 * sizeof(uint32_t));
-      if (n < 0) error("ERROR writing to socket");
+      if (n < 0) perror("ERROR writing to socket");
   }
 }
 
 void updateTx();
 
-void* communication_thread(void* ch)
+void communication_thread()
 {
+  int n;
+  char tcp_buffer[256];
   while(true)
   {
     //printf("SERVER: Wait for new command \n");
     n = read(newsockfd,tcp_buffer,4);
-    if (n < 0) error("ERROR reading from socket");
+    if (n < 0) perror("ERROR reading from socket");
 
     int command = ((int32_t*)tcp_buffer)[0];
     //printf("Command: %d\n", command);
@@ -389,11 +347,11 @@ void* communication_thread(void* ch)
         ((int64_t*)tcp_buffer)[0] = currentFrameTotal-1; // -1 because we want full frames
         //printf(" current frame = %lld \n", ((int64_t*)buffer)[0]);
         n = write(newsockfd, tcp_buffer, sizeof(int64_t));
-        if (n < 0) error("ERROR writing to socket");
+        if (n < 0) perror("ERROR writing to socket");
       break;
       case 2: // get frame data
         n = read(newsockfd,tcp_buffer,255);
-        if (n < 0) error("ERROR reading from socket");
+        if (n < 0) perror("ERROR reading from socket");
 
         int64_t frame = ((int64_t*)tcp_buffer)[0];
         int64_t numframes = ((int64_t*)tcp_buffer)[1];
@@ -401,31 +359,33 @@ void* communication_thread(void* ch)
         send_data_to_host(frame,numframes);
       break;
       case 3: // get new tx params
-        n = read(newsockfd,tcp_buffer,4*sizeof(double));
-        if (n < 0) error("ERROR reading from socket");
-        amplitudeTx[0] = ((double*)tcp_buffer)[0];
-        amplitudeTx[1] = ((double*)tcp_buffer)[1];
-        phaseTx[0] = ((double*)tcp_buffer)[2];
-        phaseTx[1] = ((double*)tcp_buffer)[3];
-        printf("New Tx: %f %f %f %f\n", amplitudeTx[0], phaseTx[0], amplitudeTx[1], phaseTx[1]);
+        n = read(newsockfd,amplitudeTxA,4*sizeof(double));
+        if (n < 0) perror("ERROR reading from socket");
+        n = read(newsockfd,amplitudeTxB,4*sizeof(double));
+        if (n < 0) perror("ERROR reading from socket");
+        n = read(newsockfd,phaseTxA,4*sizeof(double));
+        if (n < 0) perror("ERROR reading from socket");
+        n = read(newsockfd,phaseTxB,4*sizeof(double));
+        if (n < 0) perror("ERROR reading from socket");
+        
         updateTx();
       break;
       case 4: // set slow DAC value
         n = read(newsockfd,tcp_buffer,sizeof(int64_t));
-        if (n < 0) error("ERROR writing to socket");
+        if (n < 0) perror("ERROR writing to socket");
         channel = ((int64_t*)tcp_buffer)[0];
         n = read(newsockfd,tcp_buffer,sizeof(float));
-        if (n < 0) error("ERROR writing to socket");
+        if (n < 0) perror("ERROR writing to socket");
         float val = ((float*)tcp_buffer)[0];
         setPDMNextValueVolt(val, channel);
       break;
       case 5: // get slow ADC value
         n = read(newsockfd,tcp_buffer,sizeof(int64_t));
-        if (n < 0) error("ERROR writing to socket");
+        if (n < 0) perror("ERROR writing to socket");
         channel = ((int64_t*)tcp_buffer)[0];
         ((float*)tcp_buffer)[0] = getXADCValueVolt(channel);
         n = write(newsockfd, tcp_buffer, sizeof(float));
-        if (n < 0) error("ERROR writing to socket");
+        if (n < 0) perror("ERROR writing to socket");
       break;
       case 6: // start acquisition
         data_read = 0;
@@ -442,12 +402,12 @@ void* communication_thread(void* ch)
        close(newsockfd);
        close(sockfd);
        rxEnabled = false;
-       return NULL;
+       return;
       default: ;
     }
   }
 
-  return NULL;
+  return;
 }
 
 
@@ -478,7 +438,6 @@ void init_daq()
     }
     init();
     setDACMode(DAC_MODE_RASTERIZED);
-    //setDACMode(DAC_MODE_STANDARD);
     isFirstConnection = false;
     setWatchdogMode(WATCHDOG_OFF);  
   }
@@ -496,7 +455,7 @@ int main ()
   {
     printf("New connection \n");
 
-    init_socket();
+    sockfd = initSocket(7777);
     wait_for_connections();
 
     data_read = 0;
@@ -504,27 +463,11 @@ int main ()
         
     initBuffers();
 
-    //if(params.txEnabled) {
-    //  startTx();
-    //}
-    //startRx();
-    
-    //pthread_t pCom;
-    //pthread_create(&pCom, NULL, communication_thread, NULL);
-    
-    communication_thread(NULL);
-
-    //pthread_join(pCom, NULL);
-    //printf("Com Thread finished \n");
+    communication_thread();
 
     stopTx();
-    //if(params.txEnabled) {
-    //  stopTx();
-    //}
-    //stopRx();
 
     releaseBuffers();
-
   }
   return 0;
 }  

@@ -10,12 +10,14 @@
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
+#include <sys/socket.h> /* for socket(), connect(), send(), and recv() */
+#include <arpa/inet.h>  /* for sockaddr_in and inet_addr() */
 
 #include "rp-daq-lib.h"
 
 int mmapfd;
 volatile uint32_t *slcr, *axi_hp0;
-volatile void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *reset_sts, *cfg, *ram, *buf;
+void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *reset_sts, *cfg, *ram, *buf;
 
 uint16_t dac_channel_A_modulus[4] = {4800, 4800, 4800, 4800};
 uint16_t dac_channel_B_modulus[4] = {4800, 4800, 4800, 4800};
@@ -33,7 +35,9 @@ static const float    ANALOG_OUT_MAX_VAL         = 1.8;
 static const float    ANALOG_OUT_MIN_VAL         = 0.0;
 static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
 
-void load_bitstream()
+// Init stuff
+
+void loadBitstream()
 {
   if(isMaster()) {
     system("cat /root/RedPitayaDAQServer/bitfiles/master.bin > /dev/xdevcfg");
@@ -43,7 +47,7 @@ void load_bitstream()
 }
 
 int init() {
-  load_bitstream();
+  loadBitstream();
 
   // Open memory
   if((mmapfd = open("/dev/mem", O_RDWR)) < 0)
@@ -88,6 +92,8 @@ void setMaster() {
 void setSlave() {
   master = false;
 }
+
+// fast ADC
 
 uint16_t getAmplitude(int channel, int component) {
   if(channel < 0 || channel > 1) {
@@ -365,6 +371,35 @@ int getDACModulus(int channel, int component) {
     return -1;
 }
 
+// Fast ADC
+
+uint32_t getWritePointer() { return (*((uint32_t *)(adc_sts + 0)))*2; }
+
+uint32_t getWritePointerDistance(uint32_t start_pos, uint32_t end_pos) {
+    end_pos   = end_pos   % ADC_BUFF_SIZE;
+    start_pos = start_pos % ADC_BUFF_SIZE;
+    if (end_pos < start_pos)
+        end_pos += ADC_BUFF_SIZE;
+    return end_pos - start_pos + 1;
+}
+
+void readADCData(uint32_t wp, uint32_t size, uint32_t* buffer)
+{
+  if(wp+size <= ADC_BUFF_SIZE)
+  {
+    memcpy(buffer, ram + sizeof(uint32_t)*wp, size*sizeof(uint32_t));
+  } else
+  {
+    uint32_t size1 = ADC_BUFF_SIZE - wp;
+    uint32_t size2 = size - size1;
+
+    memcpy(buffer, ram + sizeof(uint32_t)*wp, size1*sizeof(uint32_t));
+    memcpy(buffer+size1, ram, size2*sizeof(uint32_t));
+  }
+}
+
+// Slow IO
+
 int setPDMRegisterValue(uint64_t value) {
     *((uint64_t *)(pdm_cfg)) = value;
     return 0;
@@ -594,4 +629,27 @@ int setDecimation(uint16_t decimation) {
 uint16_t getDecimation() {
     uint16_t value = *((uint16_t *)(cfg + 2));
     return value;
+}
+
+
+// network (tcp)
+
+int initSocket(int portno)
+{
+  struct sockaddr_in serv_addr;
+  int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  if (sockfd < 0)
+     perror("ERROR opening socket");
+  int enable = 1;
+  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
+    perror("setsockopt(SO_REUSEADDR) failed");
+
+  bzero((char *) &serv_addr, sizeof(serv_addr));
+  serv_addr.sin_family = AF_INET;
+  serv_addr.sin_addr.s_addr = INADDR_ANY;
+  serv_addr.sin_port = htons(portno);
+  if (bind(sockfd, (struct sockaddr *) &serv_addr,
+              sizeof(serv_addr)) < 0)
+              perror("ERROR on binding");
+  return sockfd;
 }
