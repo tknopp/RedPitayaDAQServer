@@ -15,7 +15,7 @@
 
 
 #define BASE_FREQUENCY 125000000
-#define ADC_BUFF_SIZE 2*1024*1024 // 2MSamples = 8 MB
+#define ADC_BUFF_SIZE (2*1024*1024) // 2MSamples = 8 MB
 
 extern int mmapfd;
 extern volatile uint32_t *slcr, *axi_hp0;
