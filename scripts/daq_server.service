@@ -1,0 +1,8 @@
+[Unit]
+Description=DAQ Server
+
+[Service]
+ExecStart=/bin/bash /root/RedPitayaDAQServer/scripts/start_daq_server.sh
+
+[Install]
+WantedBy=multi-user.target
