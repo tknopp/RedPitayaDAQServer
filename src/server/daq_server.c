@@ -359,13 +359,13 @@ void communication_thread()
         send_data_to_host(frame,numframes);
       break;
       case 3: // get new tx params
-        n = read(newsockfd,amplitudeTxA,4*sizeof(double));
+        n = read(newsockfd,amplitudeTxA,4*sizeof(float));
         if (n < 0) perror("ERROR reading from socket");
-        n = read(newsockfd,amplitudeTxB,4*sizeof(double));
+        n = read(newsockfd,amplitudeTxB,4*sizeof(float));
         if (n < 0) perror("ERROR reading from socket");
-        n = read(newsockfd,phaseTxA,4*sizeof(double));
+        n = read(newsockfd,phaseTxA,4*sizeof(float));
         if (n < 0) perror("ERROR reading from socket");
-        n = read(newsockfd,phaseTxB,4*sizeof(double));
+        n = read(newsockfd,phaseTxB,4*sizeof(float));
         if (n < 0) perror("ERROR reading from socket");
         
         updateTx();
