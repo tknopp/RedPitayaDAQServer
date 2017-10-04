@@ -1,4 +1,4 @@
-// Originally from https://github.com/pavel-demin/red-pitaya-notes/blob/master/scripts/core.tcl
+# Originally from https://github.com/pavel-demin/red-pitaya-notes/blob/master/scripts/core.tcl
 
 set core_name [lindex $argv 0]
 
