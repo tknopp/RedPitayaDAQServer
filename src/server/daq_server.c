@@ -37,6 +37,8 @@ float amplitudeTxA[] = {0.0, 0.0, 0.0, 0.0};
 float amplitudeTxB[] = {0.0, 0.0, 0.0, 0.0};
 float phaseTxA[] = {0.0, 0.0, 0.0, 0.0};
 float phaseTxB[] = {0.0, 0.0, 0.0, 0.0};
+uint32_t modulusFacA[] = {1, 1, 1, 1};
+uint32_t modulusFacB[] = {1, 1, 1, 1};
 
 bool rxEnabled;
 int mmapfd;
@@ -212,16 +214,19 @@ void updateTx() {
   printf("Set AmplitudeTxB: %f %f %f %f \n", amplitudeTxB[0], amplitudeTxB[1], amplitudeTxB[2],amplitudeTxB[3]);
   printf("Set PhaseTxA: %f %f %f %f\n", phaseTxA[0], phaseTxA[1], phaseTxA[2], phaseTxA[3]);
   printf("Set PhaseTxB: %f %f %f %f\n", phaseTxB[0], phaseTxB[1], phaseTxB[2], phaseTxB[3]);
+  printf("Set ModulusFacA: %d %d %d %d\n", modulusFacA[0], modulusFacA[1], modulusFacA[2], modulusFacA[3]);
+  printf("Set ModulusFacB: %d %d %d %d\n", modulusFacB[0], modulusFacB[1], modulusFacB[2], modulusFacB[3]);
 
   for(int d=0; d<4; d++) {
+    setModulusFactor(modulusFacA[d], 0, d);
+    setModulusFactor(modulusFacB[d], 1, d);
+
     setAmplitude(8192 * amplitudeTxA[d], 0, d);
     setAmplitude(8192 * amplitudeTxB[d], 1, d);
     
     setPhase((phaseTxA[d]+180)/360, 0, d);
     setPhase((phaseTxB[d]+180)/360, 1, d);
   }
-
-  
 }
 
 void stopTx()
@@ -267,10 +272,6 @@ void wait_for_connections()
   reconfigureDACModulus(params.modulus3, 1, 2);
   reconfigureDACModulus(params.modulus4, 1, 3);
  
-  for(int d=0; d<4; d++) {
-    setModulusFactor(1, 0, d);
-    setModulusFactor(1, 1, d);
-  }
  
   printf("Decimation: %d\n", params.decimation);
   printf("Num Samples Per Period: %d\n", params.numSamplesPerPeriod);
@@ -359,6 +360,10 @@ void communication_thread()
         send_data_to_host(frame,numframes);
       break;
       case 3: // get new tx params
+        n = read(newsockfd,modulusFacA,4*sizeof(uint32_t));
+        if (n < 0) perror("ERROR reading from socket");
+        n = read(newsockfd,modulusFacB,4*sizeof(uint32_t));
+        if (n < 0) perror("ERROR reading from socket");
         n = read(newsockfd,amplitudeTxA,4*sizeof(float));
         if (n < 0) perror("ERROR reading from socket");
         n = read(newsockfd,amplitudeTxB,4*sizeof(float));
