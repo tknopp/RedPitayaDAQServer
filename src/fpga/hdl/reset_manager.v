@@ -144,6 +144,17 @@ IOBUF #(
 .T(1'b0) // 3-state enable input, high=input, low=output
 );
 
+// Register Inputs
+reg trigger_in_int = 0;
+reg watchdog_in_int = 0;
+reg instant_reset_in_int = 0;
+always @(posedge clk)
+begin
+    trigger_in_int = trigger_in;
+    watchdog_in_int = watchdog_in;
+    instant_reset_in_int = instant_reset_in;
+end
+
 // Create alive signal
 reg alive_signal_int = 0;
 reg [27:0] alive_signal_counter = 0;
@@ -277,15 +288,13 @@ assign reset_sts[1] = fourier_synth_aresetn_int;
 assign reset_sts[2] = pdm_aresetn_int;
 assign reset_sts[3] = write_to_ram_aresetn_int;
 assign reset_sts[4] = xadc_aresetn_int;
-
-// Temporary fix for LOC errors
-assign reset_sts[5] = 0;//trigger_in;
-assign reset_sts[6] = 0;//watchdog_in;
-assign reset_sts[7] = 0;//instant_reset_in;
+assign reset_sts[5] = trigger_in_int;
+assign reset_sts[6] = watchdog_in_int;
+assign reset_sts[7] = instant_reset_in_int;
 assign reset_sts[8] = reset_cfg[2];
 assign reset_sts[31:9] = 23'b0;
 
-assign led[7:0] =  reset_sts[7:0];
+assign led[7:0] = reset_sts[7:0];
 
 assign reset_ack_out = watchdog_in; // Acknowledge received watchdog signal
 
@@ -294,4 +303,5 @@ assign master_trigger_out = reset_cfg[2];
 
 
 endmodule
+
 
