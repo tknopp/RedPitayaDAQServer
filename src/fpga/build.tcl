@@ -87,10 +87,10 @@ if { $::argc > 0 } {
 }
 
 # Set the directory path for the original project from where this script was exported
-set orig_proj_dir "[file normalize "$origin_dir/../../build/fpga/"]"
+set orig_proj_dir "[file normalize "$origin_dir/build/fpga/"]"
 
 # Create project
-create_project RedPitayaDAQServer ../../build/fpga/firmware -part xc7z010clg400-1
+create_project RedPitayaDAQServer $origin_dir/build/fpga/firmware -part xc7z010clg400-1
 
 # Set the directory path for the new project
 set proj_dir [get_property directory [current_project]]
@@ -100,15 +100,15 @@ set proj_dir [get_property directory [current_project]]
 set obj [get_projects RedPitayaDAQServer]
 set_property -name "board_connections" -value "" -objects $obj
 set_property -name "board_part" -value "" -objects $obj
-set_property -name "compxlib.activehdl_compiled_library_dir" -value "$proj_dir/RedPitayaMPI.cache/compile_simlib/activehdl" -objects $obj
+set_property -name "compxlib.activehdl_compiled_library_dir" -value "$proj_dir/RedPitayaDAQServer.cache/compile_simlib/activehdl" -objects $obj
 set_property -name "compxlib.funcsim" -value "1" -objects $obj
-set_property -name "compxlib.ies_compiled_library_dir" -value "$proj_dir/RedPitayaMPI.cache/compile_simlib/ies" -objects $obj
-set_property -name "compxlib.modelsim_compiled_library_dir" -value "$proj_dir/RedPitayaMPI.cache/compile_simlib/modelsim" -objects $obj
+set_property -name "compxlib.ies_compiled_library_dir" -value "$proj_dir/RedPitayaDAQServer.cache/compile_simlib/ies" -objects $obj
+set_property -name "compxlib.modelsim_compiled_library_dir" -value "$proj_dir/RedPitayaDAQServer.cache/compile_simlib/modelsim" -objects $obj
 set_property -name "compxlib.overwrite_libs" -value "0" -objects $obj
-set_property -name "compxlib.questa_compiled_library_dir" -value "$proj_dir/RedPitayaMPI.cache/compile_simlib/questa" -objects $obj
-set_property -name "compxlib.riviera_compiled_library_dir" -value "$proj_dir/RedPitayaMPI.cache/compile_simlib/riviera" -objects $obj
+set_property -name "compxlib.questa_compiled_library_dir" -value "$proj_dir/RedPitayaDAQServer.cache/compile_simlib/questa" -objects $obj
+set_property -name "compxlib.riviera_compiled_library_dir" -value "$proj_dir/RedPitayaDAQServer.cache/compile_simlib/riviera" -objects $obj
 set_property -name "compxlib.timesim" -value "1" -objects $obj
-set_property -name "compxlib.vcs_compiled_library_dir" -value "$proj_dir/RedPitayaMPI.cache/compile_simlib/vcs" -objects $obj
+set_property -name "compxlib.vcs_compiled_library_dir" -value "$proj_dir/RedPitayaDAQServer.cache/compile_simlib/vcs" -objects $obj
 set_property -name "compxlib.xsim_compiled_library_dir" -value "" -objects $obj
 set_property -name "corecontainer.enable" -value "0" -objects $obj
 set_property -name "default_lib" -value "xil_defaultlib" -objects $obj
@@ -117,7 +117,7 @@ set_property -name "enable_optional_runs_sta" -value "0" -objects $obj
 set_property -name "generate_ip_upgrade_log" -value "1" -objects $obj
 set_property -name "ip_cache_permissions" -value "read write" -objects $obj
 set_property -name "ip_interface_inference_priority" -value "" -objects $obj
-set_property -name "ip_output_repo" -value "/home/rpdevelopment/RedPitayaMPI/RedPitayaMPI.cache/ip" -objects $obj
+set_property -name "ip_output_repo" -value "$proj_dir/RedPitayaDAQServer.cache/ip" -objects $obj
 set_property -name "managed_ip" -value "0" -objects $obj
 set_property -name "part" -value "xc7z010clg400-1" -objects $obj
 set_property -name "pr_flow" -value "0" -objects $obj
@@ -140,7 +140,7 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
 
 # Set IP repository paths
 set obj [get_filesets sources_1]
-set_property "ip_repo_paths" "[file normalize "$origin_dir/../../build/fpga/cores"]" $obj
+set_property "ip_repo_paths" "[file normalize "$origin_dir/build/fpga/cores"]" $obj
 
 # Rebuild user ip_repo's index before adding any source files
 update_ip_catalog -rebuild
@@ -148,12 +148,12 @@ update_ip_catalog -rebuild
 # Set 'sources_1' fileset object
 set obj [get_filesets sources_1]
 set files [list \
- "[file normalize "$origin_dir/../../src/fpga/hdl/reset_manager.v"]"\
+ "[file normalize "$origin_dir/src/fpga/hdl/reset_manager.v"]"\
 ]
 add_files -norecurse -fileset $obj $files
 
 # Set 'sources_1' fileset file properties for remote files
-set file "$origin_dir/../../src/fpga/hdl/reset_manager.v"
+set file "$origin_dir/src/fpga/hdl/reset_manager.v"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "Verilog" -objects $file_obj
@@ -193,9 +193,9 @@ if {[string equal [get_filesets -quiet constrs_1] ""]} {
 set obj [get_filesets constrs_1]
 
 # Add/Import constrs file and set constrs file properties
-set file "[file normalize "$origin_dir/constraints/ports.xdc"]"
+set file "[file normalize "$origin_dir/src/fpga/constraints/ports.xdc"]"
 set file_added [add_files -norecurse -fileset $obj $file]
-set file "$origin_dir/constraints/ports.xdc"
+set file "$origin_dir/src/fpga/constraints/ports.xdc"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets constrs_1] [list "*$file"]]
 set_property -name "file_type" -value "XDC" -objects $file_obj
@@ -211,9 +211,9 @@ set_property -name "used_in_implementation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
 # Add/Import constrs file and set constrs file properties
-set file "[file normalize "$origin_dir/constraints/clocks.xdc"]"
+set file "[file normalize "$origin_dir/src/fpga/constraints/clocks.xdc"]"
 set file_added [add_files -norecurse -fileset $obj $file]
-set file "$origin_dir/constraints/clocks.xdc"
+set file "$origin_dir/src/fpga/constraints/clocks.xdc"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets constrs_1] [list "*$file"]]
 set_property -name "file_type" -value "XDC" -objects $file_obj
@@ -398,7 +398,7 @@ set_property -name "steps.write_bitstream.args.more options" -value "" -objects 
 current_run -implementation [get_runs impl_1]
 
 # Create block design
-source $origin_dir/bd/bd.tcl
+source $origin_dir/src/fpga/bd/bd.tcl
 
 # Generate the wrapper
 set design_name [get_bd_designs]
