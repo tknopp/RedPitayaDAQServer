@@ -34,6 +34,9 @@ extern void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *reset_sts, *cfg, *ram, *buf
 #define MASTER_TRIGGER_OFF 0
 #define MASTER_TRIGGER_ON 1
 
+#define INSTANT_RESET_OFF 0
+#define INSTANT_RESET_ON 1
+
 extern uint16_t dac_channel_A_modulus[4];
 extern uint16_t dac_channel_B_modulus[4];
 
@@ -83,6 +86,7 @@ extern float getXADCValueVolt(int);
 extern int setWatchdogMode(int);
 extern int setRAMWriterMode(int);
 extern int setMasterTrigger(int);
+extern int setInstantResetMode(int);
 extern int getPeripheralAResetN();
 extern int getFourierSynthAResetN();
 extern int getPDMAResetN();

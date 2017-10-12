@@ -1,24 +1,4 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: 
-// Engineer: 
-// 
-// Create Date: 09/26/2017 05:13:25 PM
-// Design Name: 
-// Module Name: reset_manager
-// Project Name: 
-// Target Devices: 
-// Tool Versions: 
-// Description: 
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
-
 
 module reset_manager #
 (
@@ -49,6 +29,7 @@ reset_cfg:
 Bit 0 => 0: continuous mode; 1: trigger mode
 Bit 1 => 0: no watchdog; 1: watchdog mode
 Bit 2 => master trigger
+Bit 3 => instant reset mode: 0: disabled; 1: enabled
 
 reset_ack: high if reset active (either watchdog failed or instant reset)
 */
@@ -229,7 +210,7 @@ begin
         end
         
         // Watchdog for DACs
-        if (instant_reset_in)
+        if (instant_reset_in && reset_cfg[3])
         begin
             fourier_synth_aresetn_int <= 1'b0;
             pdm_aresetn_int <= 1'b0;

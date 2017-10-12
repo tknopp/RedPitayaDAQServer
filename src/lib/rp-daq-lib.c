@@ -569,6 +569,18 @@ int setMasterTrigger(int mode) {
     return 0;
 }
 
+int setInstantResetMode(int mode) {
+    if(mode == INSTANT_RESET_OFF) {
+        *((uint8_t *)(cfg + 1)) &= ~8;
+    } else if(mode == INSTANT_RESET_ON) {
+        *((uint8_t *)(cfg + 1)) |= 8;
+    } else {
+        return -1;
+    }
+    
+    return 0;
+}
+
 int getPeripheralAResetN() {
     int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x01) >> 0);
     
