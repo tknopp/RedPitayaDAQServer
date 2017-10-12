@@ -343,6 +343,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI_HP0
 
   # Create pins
+  create_bd_pin -dir O -type rst FCLK_RESET0_N
   create_bd_pin -dir I -type clk S_AXI_HP0_ACLK
   create_bd_pin -dir I -from 31 -to 0 adc_sts
   create_bd_pin -dir O -from 31 -to 0 cfg_data
@@ -437,6 +438,7 @@ CONFIG.PCW_USE_S_AXI_HP1 {0} \
   connect_bd_net -net axi_cfg_register_pdm_cfg_data [get_bd_pins pdm_data] [get_bd_pins axi_cfg_register_pdm/cfg_data]
   connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins S_AXI_HP0_ACLK] [get_bd_pins axi_cfg_register_cfg/aclk] [get_bd_pins axi_cfg_register_dac/aclk] [get_bd_pins axi_cfg_register_pdm/aclk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/M01_ACLK] [get_bd_pins axi_interconnect_0/M02_ACLK] [get_bd_pins axi_interconnect_0/M03_ACLK] [get_bd_pins axi_interconnect_0/M04_ACLK] [get_bd_pins axi_interconnect_0/M05_ACLK] [get_bd_pins axi_interconnect_0/M06_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_sts_register_adc/aclk] [get_bd_pins axi_sts_register_pdm/aclk] [get_bd_pins axi_sts_register_reset/aclk] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins processing_system7_0/S_AXI_HP0_ACLK] [get_bd_pins rst_ps7_0_125M/slowest_sync_clk]
   connect_bd_net -net clk_wiz_0_locked [get_bd_pins dcm_locked] [get_bd_pins rst_ps7_0_125M/dcm_locked]
+  connect_bd_net -net processing_system7_0_FCLK_RESET0_N [get_bd_pins FCLK_RESET0_N] [get_bd_pins processing_system7_0/FCLK_RESET0_N]
   connect_bd_net -net rst_ps7_0_125M_interconnect_aresetn [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins rst_ps7_0_125M/interconnect_aresetn]
   connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins peripheral_aresetn] [get_bd_pins axi_cfg_register_cfg/aresetn] [get_bd_pins axi_cfg_register_dac/aresetn] [get_bd_pins axi_cfg_register_pdm/aresetn] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/M02_ARESETN] [get_bd_pins axi_interconnect_0/M03_ARESETN] [get_bd_pins axi_interconnect_0/M04_ARESETN] [get_bd_pins axi_interconnect_0/M05_ARESETN] [get_bd_pins axi_interconnect_0/M06_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_sts_register_adc/aresetn] [get_bd_pins axi_sts_register_pdm/aresetn] [get_bd_pins axi_sts_register_reset/aresetn] [get_bd_pins rst_ps7_0_125M/peripheral_aresetn]
   connect_bd_net -net sts_data1_1 [get_bd_pins curr_pdm_values] [get_bd_pins axi_sts_register_pdm/sts_data]
@@ -529,7 +531,7 @@ CONFIG.DOUT_WIDTH {16} \
 CONFIG.DIN_FROM {47} \
 CONFIG.DIN_TO {32} \
 CONFIG.DIN_WIDTH {64} \
-CONFIG.DOUT_WIDTH {16} \
+CONFIG.DOUT_WIDTH {1} \
  ] $pdm_channel_3_slice
 
   # Create instance: pdm_channel_4_slice, and set properties
@@ -538,7 +540,7 @@ CONFIG.DOUT_WIDTH {16} \
 CONFIG.DIN_FROM {63} \
 CONFIG.DIN_TO {48} \
 CONFIG.DIN_WIDTH {64} \
-CONFIG.DOUT_WIDTH {16} \
+CONFIG.DOUT_WIDTH {1} \
  ] $pdm_channel_4_slice
 
   # Create instance: pdm_value_supply_0, and set properties
@@ -642,7 +644,7 @@ CONFIG.DOUT_WIDTH {16} \
 CONFIG.DIN_FROM {47} \
 CONFIG.DIN_TO {32} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {16} \
+CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_A_channel_3_slice
 
   # Create instance: amplitude_A_channel_4_slice, and set properties
@@ -651,7 +653,7 @@ CONFIG.DOUT_WIDTH {16} \
 CONFIG.DIN_FROM {63} \
 CONFIG.DIN_TO {48} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {16} \
+CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_A_channel_4_slice
 
   # Create instance: amplitude_B_channel_1_slice, and set properties
@@ -660,7 +662,7 @@ CONFIG.DOUT_WIDTH {16} \
 CONFIG.DIN_FROM {79} \
 CONFIG.DIN_TO {64} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {16} \
+CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_B_channel_1_slice
 
   # Create instance: amplitude_B_channel_2_slice, and set properties
@@ -669,7 +671,7 @@ CONFIG.DOUT_WIDTH {16} \
 CONFIG.DIN_FROM {95} \
 CONFIG.DIN_TO {80} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {16} \
+CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_B_channel_2_slice
 
   # Create instance: amplitude_B_channel_3_slice, and set properties
@@ -678,7 +680,7 @@ CONFIG.DOUT_WIDTH {16} \
 CONFIG.DIN_FROM {111} \
 CONFIG.DIN_TO {96} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {16} \
+CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_B_channel_3_slice
 
   # Create instance: amplitude_B_channel_4_slice, and set properties
@@ -687,7 +689,7 @@ CONFIG.DOUT_WIDTH {16} \
 CONFIG.DIN_FROM {127} \
 CONFIG.DIN_TO {112} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {16} \
+CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_B_channel_4_slice
 
   # Create instance: axis_variable_A_channel_1, and set properties
@@ -990,7 +992,7 @@ CONFIG.Spurious_Free_Dynamic_Range {84} \
 CONFIG.DIN_FROM {159} \
 CONFIG.DIN_TO {128} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {32} \
+CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_1_slice
 
   # Create instance: freq_A_channel_2_slice, and set properties
@@ -999,7 +1001,7 @@ CONFIG.DOUT_WIDTH {32} \
 CONFIG.DIN_FROM {191} \
 CONFIG.DIN_TO {160} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {32} \
+CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_2_slice
 
   # Create instance: freq_A_channel_3_slice, and set properties
@@ -1008,7 +1010,7 @@ CONFIG.DOUT_WIDTH {32} \
 CONFIG.DIN_FROM {223} \
 CONFIG.DIN_TO {192} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {32} \
+CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_3_slice
 
   # Create instance: freq_A_channel_4_slice, and set properties
@@ -1017,7 +1019,7 @@ CONFIG.DOUT_WIDTH {32} \
 CONFIG.DIN_FROM {255} \
 CONFIG.DIN_TO {224} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {32} \
+CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_4_slice
 
   # Create instance: freq_B_channel_1_slice, and set properties
@@ -1026,7 +1028,7 @@ CONFIG.DOUT_WIDTH {32} \
 CONFIG.DIN_FROM {287} \
 CONFIG.DIN_TO {256} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {32} \
+CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_1_slice
 
   # Create instance: freq_B_channel_2_slice, and set properties
@@ -1035,7 +1037,7 @@ CONFIG.DOUT_WIDTH {32} \
 CONFIG.DIN_FROM {319} \
 CONFIG.DIN_TO {288} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {32} \
+CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_2_slice
 
   # Create instance: freq_B_channel_3_slice, and set properties
@@ -1044,7 +1046,7 @@ CONFIG.DOUT_WIDTH {32} \
 CONFIG.DIN_FROM {351} \
 CONFIG.DIN_TO {320} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {32} \
+CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_3_slice
 
   # Create instance: freq_B_channel_4_slice, and set properties
@@ -1053,7 +1055,7 @@ CONFIG.DOUT_WIDTH {32} \
 CONFIG.DIN_FROM {383} \
 CONFIG.DIN_TO {352} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {32} \
+CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_4_slice
 
   # Create instance: phase_A_channel_1_slice, and set properties
@@ -1062,7 +1064,7 @@ CONFIG.DOUT_WIDTH {32} \
 CONFIG.DIN_FROM {415} \
 CONFIG.DIN_TO {384} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {32} \
+CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_1_slice
 
   # Create instance: phase_A_channel_2_slice, and set properties
@@ -1071,7 +1073,7 @@ CONFIG.DOUT_WIDTH {32} \
 CONFIG.DIN_FROM {447} \
 CONFIG.DIN_TO {416} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {32} \
+CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_2_slice
 
   # Create instance: phase_A_channel_3_slice, and set properties
@@ -1080,7 +1082,7 @@ CONFIG.DOUT_WIDTH {32} \
 CONFIG.DIN_FROM {479} \
 CONFIG.DIN_TO {448} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {32} \
+CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_3_slice
 
   # Create instance: phase_A_channel_4_slice, and set properties
@@ -1098,7 +1100,7 @@ CONFIG.DOUT_WIDTH {1} \
 CONFIG.DIN_FROM {543} \
 CONFIG.DIN_TO {512} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {32} \
+CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_1_slice
 
   # Create instance: phase_B_channel_2_slice, and set properties
@@ -1107,7 +1109,7 @@ CONFIG.DOUT_WIDTH {32} \
 CONFIG.DIN_FROM {575} \
 CONFIG.DIN_TO {544} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {32} \
+CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_2_slice
 
   # Create instance: phase_B_channel_3_slice, and set properties
@@ -1116,7 +1118,7 @@ CONFIG.DOUT_WIDTH {32} \
 CONFIG.DIN_FROM {607} \
 CONFIG.DIN_TO {576} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {32} \
+CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_3_slice
 
   # Create instance: phase_B_channel_4_slice, and set properties
@@ -1125,7 +1127,7 @@ CONFIG.DOUT_WIDTH {32} \
 CONFIG.DIN_FROM {639} \
 CONFIG.DIN_TO {608} \
 CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {32} \
+CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_4_slice
 
   # Create instance: util_vector_logic_1, and set properties
@@ -2042,9 +2044,6 @@ proc create_root_design { parentCell } {
 CONFIG.FREQ_HZ {125000000} \
  ] $daisy_clk_i
   set daisy_clk_o [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:diff_clock_rtl:1.0 daisy_clk_o ]
-  set_property -dict [ list \
-CONFIG.FREQ_HZ {125000000} \
- ] $daisy_clk_o
 
   # Create ports
   set adc_clk_n_i [ create_bd_port -dir I adc_clk_n_i ]
@@ -2241,6 +2240,22 @@ CONFIG.C_BUF_TYPE {OBUFDS} \
 CONFIG.C_BUF_TYPE {BUFG} \
  ] $util_ds_buf_1
 
+  # Create instance: util_vector_logic_0, and set properties
+  set util_vector_logic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_0 ]
+  set_property -dict [ list \
+CONFIG.C_OPERATION {not} \
+CONFIG.C_SIZE {1} \
+CONFIG.LOGO_FILE {data/sym_notgate.png} \
+ ] $util_vector_logic_0
+
+  # Create instance: util_vector_logic_1, and set properties
+  set util_vector_logic_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_1 ]
+  set_property -dict [ list \
+CONFIG.C_OPERATION {not} \
+CONFIG.C_SIZE {1} \
+CONFIG.LOGO_FILE {data/sym_notgate.png} \
+ ] $util_vector_logic_1
+
   # Create instance: write_to_ram
   create_hier_cell_write_to_ram [current_bd_instance .] write_to_ram
 
@@ -2267,19 +2282,6 @@ CONFIG.XADC_STARUP_SELECTION {independent_adc} \
   set_property -dict [ list \
 CONFIG.CONST_VAL {0} \
  ] $xlconstant_2
-
-  # Create instance: xlconstant_5, and set properties
-  set xlconstant_5 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_5 ]
-  set_property -dict [ list \
-CONFIG.CONST_VAL {0} \
- ] $xlconstant_5
-
-  # Create instance: xlconstant_masterslave, and set properties
-  set xlconstant_masterslave [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_masterslave ]
-  set_property -dict [ list \
-CONFIG.CONST_VAL {1} \
-CONFIG.CONST_WIDTH {1} \
- ] $xlconstant_masterslave
 
   # Create instance: xlslice_0, and set properties
   set xlslice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_0 ]
@@ -2345,6 +2347,7 @@ CONFIG.DOUT_WIDTH {8} \
   connect_bd_net -net clk_wiz_0_clk_pdm [get_bd_pins clk_div_0/clk] [get_bd_pins clk_wiz_0/clk_pdm]
   connect_bd_net -net clk_wiz_0_locked [get_bd_pins axis_red_pitaya_dac_0/locked] [get_bd_pins clk_wiz_0/locked] [get_bd_pins selectio_wiz_1/clock_enable] [get_bd_pins system/dcm_locked]
   connect_bd_net -net clk_wiz_1_clk_out1 [get_bd_pins clk_wiz_0/clk_in2] [get_bd_pins clk_wiz_1/clk_out1]
+  connect_bd_net -net clk_wiz_1_locked [get_bd_pins clk_wiz_1/locked] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net daisy_n_i_1 [get_bd_ports daisy_n_i] [get_bd_pins selectio_wiz_2/data_in_from_pins_n]
   connect_bd_net -net daisy_p_i_1 [get_bd_ports daisy_p_i] [get_bd_pins selectio_wiz_2/data_in_from_pins_p]
   connect_bd_net -net forurier_synth_rasterized_synth_tdata [get_bd_pins axis_select_0/s_axis_tdata_channel_2] [get_bd_pins fourier_synth_rasterized/synth_tdata]
@@ -2365,17 +2368,18 @@ CONFIG.DOUT_WIDTH {8} \
   connect_bd_net -net selectio_wiz_1_data_out_to_pins_n [get_bd_ports daisy_n_o] [get_bd_pins selectio_wiz_1/data_out_to_pins_n]
   connect_bd_net -net selectio_wiz_1_data_out_to_pins_p [get_bd_ports daisy_p_o] [get_bd_pins selectio_wiz_1/data_out_to_pins_p]
   connect_bd_net -net selectio_wiz_2_clk_out [get_bd_pins clk_wiz_1/clk_in1] [get_bd_pins selectio_wiz_2/clk_out]
+  connect_bd_net -net system_FCLK_RESET0_N [get_bd_pins system/FCLK_RESET0_N] [get_bd_pins util_vector_logic_1/Op1]
   connect_bd_net -net system_cfg_data [get_bd_pins fourier_synth_rasterized/cfg_data] [get_bd_pins fourier_synth_standard/cfg_data] [get_bd_pins system/dac_cfg]
   connect_bd_net -net system_cfg_data1 [get_bd_pins system/cfg_data] [get_bd_pins xlslice_0/Din] [get_bd_pins xlslice_2/Din] [get_bd_pins xlslice_3/Din]
   connect_bd_net -net system_peripheral_aresetn [get_bd_pins reset_manager_0/peripheral_aresetn] [get_bd_pins system/peripheral_aresetn]
   connect_bd_net -net util_ds_buf_0_OBUF_DS_N [get_bd_ports adc_enc_n_o] [get_bd_pins util_ds_buf_0/OBUF_DS_N]
   connect_bd_net -net util_ds_buf_0_OBUF_DS_P [get_bd_ports adc_enc_p_o] [get_bd_pins util_ds_buf_0/OBUF_DS_P]
   connect_bd_net -net util_ds_buf_1_BUFG_O [get_bd_pins pdm/pdm_clk] [get_bd_pins util_ds_buf_1/BUFG_O]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins clk_wiz_0/clk_in_sel] [get_bd_pins util_vector_logic_0/Res]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins system/adc_sts] [get_bd_pins write_to_ram/sts_data]
   connect_bd_net -net xlconcat_0_dout1 [get_bd_ports dac_pwm_o] [get_bd_pins pdm/dout]
-  connect_bd_net -net xlconstant_0_dout [get_bd_pins clk_wiz_0/clk_in_sel] [get_bd_pins xlconstant_masterslave/dout]
   connect_bd_net -net xlconstant_2_dout [get_bd_pins clk_div_0/reset] [get_bd_pins xlconstant_2/dout]
-  connect_bd_net -net xlconstant_5_dout [get_bd_pins clk_wiz_0/reset] [get_bd_pins clk_wiz_1/reset] [get_bd_pins xlconstant_5/dout]
+  connect_bd_net -net xlconstant_5_dout [get_bd_pins clk_wiz_0/reset] [get_bd_pins clk_wiz_1/reset] [get_bd_pins util_vector_logic_1/Res]
   connect_bd_net -net xlslice_0_Dout [get_bd_pins pdm/Din] [get_bd_pins system/pdm_data]
   connect_bd_net -net xlslice_0_Dout1 [get_bd_pins axis_select_0/selection] [get_bd_pins xlslice_0/Dout]
   connect_bd_net -net xlslice_2_Dout [get_bd_pins write_to_ram/decimation] [get_bd_pins xlslice_2/Dout]
@@ -2407,9 +2411,6 @@ CONFIG.DOUT_WIDTH {8} \
 ##################################################################
 # MAIN FLOW
 ##################################################################
-
-
-common::send_msg_id "BD_TCL-2000" "CRITICAL WARNING" "This Tcl script was generated from a block design that is out-of-date/locked. It is possible that design <$design_name> may result in errors during construction."
 
 create_root_design ""
 
