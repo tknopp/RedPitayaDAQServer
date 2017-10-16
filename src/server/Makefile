@@ -1,9 +1,9 @@
 CFLAGS  = -O3 -std=gnu99
 CFLAGS += -I/opt/redpitaya/include
-LDFLAGS = -L/root/RedPitayaDAQServer/build/lib
-LDLIBS = -lm -lpthread  -lrp-daq
+LDFLAGS = /root/RedPitayaDAQServer/build/lib/librp-daq.so
+LDLIBS = -lm -lpthread -lscpi
 
 all: daq_server.c
 	mkdir -p ../../build/server/
-	export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:./
-	gcc $(CFLAGS) $(LDLIBS) daq_server.c $(LDFLAGS) -o ../../build/server/daq_server
+	gcc $(CFLAGS) daq_server.c $(LDFLAGS) $(LDLIBS) -o ../../build/server/daq_server
+	gcc $(CFLAGS) daq_server_scpi.c scpi_commands.c $(LDFLAGS) $(LDLIBS) -o ../../build/server/daq_server_scpi

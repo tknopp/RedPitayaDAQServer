@@ -60,6 +60,7 @@ extern int setPhase(double, int, int);
 extern int setDACMode(int);
 extern int getDACMode();
 extern int reconfigureDACModulus(int, int, int);
+extern int getDACModulus(int, int);
 
 // fast DAC
 extern int setDecimation(uint16_t decimation);

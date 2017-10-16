@@ -40,9 +40,9 @@ static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
 void loadBitstream()
 {
   if(isMaster()) {
-    system("cat /root/RedPitayaDAQServer/bitfiles/master.bin > /dev/xdevcfg");
+    system("cat /root/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");
   } else {
-    system("cat /root/RedPitayaDAQServer/bitfiles/slave.bin > /dev/xdevcfg");
+    system("cat /root/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");
   }
 }
 
@@ -73,6 +73,8 @@ int init() {
   slcr[144] = 0;
   axi_hp0[0] &= ~1;
   axi_hp0[5] &= ~1;
+
+  setDecimation(16);
 
   return 0;
 }
