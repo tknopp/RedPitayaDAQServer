@@ -74,7 +74,45 @@ int init() {
   axi_hp0[0] &= ~1;
   axi_hp0[5] &= ~1;
 
+  // Set default values
   setDecimation(16);
+  setDACMode(DAC_MODE_STANDARD);
+  setWatchdogMode(WATCHDOG_OFF);
+  setRAMWriterMode(ADC_MODE_CONTINUOUS);
+  setMasterTrigger(MASTER_TRIGGER_OFF);
+  setInstantResetMode(INSTANT_RESET_OFF);
+
+  setAmplitude(0, 0, 0);
+  setAmplitude(0, 0, 1);
+  setAmplitude(0, 0, 2);
+  setAmplitude(0, 0, 3);
+  setAmplitude(0, 1, 0);
+  setAmplitude(0, 1, 1);
+  setAmplitude(0, 1, 2);
+  setAmplitude(0, 1, 3);
+
+  setFrequency(25000, 0, 0);
+  setFrequency(25000, 0, 1);
+  setFrequency(25000, 0, 2);
+  setFrequency(25000, 0, 3);
+  setFrequency(25000, 1, 0);
+  setFrequency(25000, 1, 1);
+  setFrequency(25000, 1, 2);
+  setFrequency(25000, 1, 3);
+
+  setPhase(0, 0, 0);
+  setPhase(0, 0, 1);
+  setPhase(0, 0, 2);
+  setPhase(0, 0, 3);
+  setPhase(0, 1, 0);
+  setPhase(0, 1, 1);
+  setPhase(0, 1, 2);
+  setPhase(0, 1, 3);
+
+  setPDMNextValue(0, 0);
+  setPDMNextValue(0, 1);
+  setPDMNextValue(0, 2);
+  setPDMNextValue(0, 3);
 
   return 0;
 }
@@ -106,7 +144,7 @@ uint16_t getAmplitude(int channel, int component) {
     return -4;
   }
 
-  uint16_t amplitude = *((uint16_t *)(dac_cfg + 2*component + 4*channel));
+  uint16_t amplitude = *((uint16_t *)(dac_cfg + 2*component + 8*channel));
 
   return amplitude;
 }
@@ -124,7 +162,7 @@ int setAmplitude(uint16_t amplitude, int channel, int component) {
     return -4;
   }
 
-  *((uint16_t *)(dac_cfg + 2*component + 4*channel)) = amplitude;
+  *((uint16_t *)(dac_cfg + 2*component + 8*channel)) = amplitude;
 
   return 0;
 }

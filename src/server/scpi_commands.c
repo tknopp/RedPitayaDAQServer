@@ -52,6 +52,8 @@ static scpi_result_t RP_DAC_SetAmplitude(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 	
+	printf("channel = %d; component = %d, amplitude = %d\n", channel, component, amplitude);
+	
     return SCPI_RES_OK;
 }
 
