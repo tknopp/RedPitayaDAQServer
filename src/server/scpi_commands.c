@@ -208,6 +208,12 @@ static scpi_result_t RP_DAC_GetDACModulus(scpi_t * context) {
 }
 
 static scpi_result_t RP_ADC_SetDecimation(scpi_t * context) {
+	// Enforce changing the decimation to be only
+	// possible while not acquiring data
+	if(rxEnabled) {
+		return SCPI_RES_ERR;
+	}
+	
 	uint32_t decimation;
     if (!SCPI_ParamInt32(context, &decimation, TRUE)) {
 		return SCPI_RES_ERR;
@@ -223,6 +229,71 @@ static scpi_result_t RP_ADC_SetDecimation(scpi_t * context) {
 
 static scpi_result_t RP_ADC_GetDecimation(scpi_t * context) {
     SCPI_ResultUInt16(context, getDecimation());
+	
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_ADC_GetFrames(scpi_t * context) {
+	// Reading is only possible while an acquisition is running
+	if(!rxEnabled) {
+		return SCPI_RES_ERR;
+	}
+	
+	int64_t frame;
+    if (!SCPI_ParamInt64(context, &frame, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+	
+	int64_t numFrames;
+	if (!SCPI_ParamInt64(context, &numFrames, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+	
+	sendDataToHost(frame, numFrames);
+	
+    return SCPI_RES_OK;
+}
+scpi_choice_def_t acquisition_status_modes[] = {
+    {"OFF", ACQUISITION_OFF},
+    {"ON", ACQUISITION_ON},
+    SCPI_CHOICE_LIST_END /* termination of option list */
+};
+
+static scpi_result_t RP_ADC_StartAcquisitionConnection(scpi_t * context) {
+	bool connectionEstablished = false;
+	
+	while(!connectionEstablished) {
+		int newdatasockfd;
+		struct sockaddr_in newdatasockaddr;
+		socklen_t newdatasocklen;
+
+		newdatasocklen = sizeof (newdatasockaddr);
+		newdatasockfd = accept(datasock, (struct sockaddr *) &newdatasockaddr, &newdatasocklen);
+
+		if (newdatasockfd < 0) {
+			continue;
+		} else {
+			connectionEstablished = true;
+		}
+	}
+	
+	SCPI_ResultBool(context, true);
+	
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_ADC_SetAcquisitionStatus(scpi_t * context) {
+	int32_t acquisition_status_selection;
+
+    if (!SCPI_ParamChoice(context, acquisition_status_modes, &acquisition_status_selection, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+	
+	if(acquisition_status_selection == ACQUISITION_ON) {
+		rxEnabled = true;
+	} else {
+		rxEnabled = false;
+	}
 	
     return SCPI_RES_OK;
 }
@@ -456,10 +527,12 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:MODulus?", .callback = RP_DAC_GetDACModulus,},
 	{.pattern = "RP:ADC:DECimation", .callback = RP_ADC_SetDecimation,},
 	{.pattern = "RP:ADC:DECimation?", .callback = RP_ADC_GetDecimation,},
-	{.pattern = "RP:PDM:CH#:NextValue", .callback = RP_PDM_SetPDMNextValue,},
-	{.pattern = "RP:PDM:CH#:NextValue?", .callback = RP_PDM_GetPDMNextValue,},
-	{.pattern = "RP:PDM:CH#:CurrentValue?", .callback = RP_PDM_GetPDMCurrentValue,},
-	{.pattern = "RP:XADC:CH#?", .callback = RP_XADC_GetXADCValueVolt,},
+	{.pattern = "RP:ADC:FRames", .callback = RP_ADC_GetFrames,},
+	{.pattern = "RP:ADC:ACQStatus", .callback = RP_ADC_SetAcquisitionStatus,},
+	{.pattern = "RP:PDM:CHannel#:NextValue", .callback = RP_PDM_SetPDMNextValue,},
+	{.pattern = "RP:PDM:CHannel#:NextValue?", .callback = RP_PDM_GetPDMNextValue,},
+	{.pattern = "RP:PDM:CHannel#:CurrentValue?", .callback = RP_PDM_GetPDMCurrentValue,},
+	{.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},
 	{.pattern = "RP:WatchDogMode", .callback = RP_WatchdogMode,},
 	{.pattern = "RP:RamWriterMode", .callback = RP_RAMWriterMode,},
 	{.pattern = "RP:MasterTrigger", .callback = RP_MasterTrigger,},

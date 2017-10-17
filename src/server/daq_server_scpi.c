@@ -65,6 +65,27 @@
 #define SCPI_IDN3 NULL
 #define SCPI_IDN4 "0.1"
 
+int numSamplesPerPeriod = 5000;
+int numPeriodsPerFrame = 20;
+uint64_t numSamplesPerFrame = numSamplesPerPeriod*numPeriodsPerFrame;
+uint64_t numFramesInMemoryBuffer = 64*1024*1024 / numSamplesPerFrame;
+uint64_t buff_size = 0;
+
+volatile int64_t currentFrameTotal;
+volatile int64_t data_read, data_read_total;
+volatile int64_t oldFrameTotal;
+volatile int64_t channel;
+
+uint32_t *buffer = NULL;
+bool rxEnabled = false;
+bool acquisitionThreadRunning = false;
+
+pthread_t pAcq;
+
+int datasockfd;
+int newdatasockfd;
+
+
 size_t SCPI_Write(scpi_t * context, const char * data, size_t len) {
     (void) context;
 
@@ -197,6 +218,145 @@ static int waitServer(int fd) {
     return rc;
 }
 
+void* acquisitionThread(void* ch) { 
+	uint32_t wp, wp_old;
+	int64_t currentPeriodTotal;
+	int64_t oldPeriodTotal;
+	bool firstCycle;
+
+	printf("Starting acquisition thread\n");
+
+	// Set priority of this thread
+	struct sched_param p;
+	p.sched_priority = sched_get_priority_max(SCHED_FIFO);
+	pthread_t this_thread = pthread_self();
+	int ret = pthread_setschedparam(this_thread, SCHED_FIFO, &p);
+	if (ret != 0) {
+		printf("Unsuccessful in setting thread realtime prio.\n");
+		return NULL;     
+	}
+	
+	// Loop until the acquisition is started
+	while(acquisitionThreadRunning) {
+		// Reset everything in order to provide a fresh start
+		// everytime the acquisition is started
+		if(rxEnabled) {
+			currentFrameTotal = 0;
+			data_read_total = 0; 
+			data_read = 0; 
+			oldFrameTotal = -1;
+			oldPeriodTotal = -1;
+			
+			numSamplesPerFrame = numSamplesPerPeriod * numPeriodsPerFrame; 
+			numFramesInMemoryBuffer = 64*1024*1024 / numSamplesPerFrame;
+			releaseBuffer();
+			initBuffer();
+			
+			wp_old = 0;
+			firstCycle = true;
+		}
+		
+		while(rxEnabled) {
+			wp = getWritePointer();
+
+			uint32_t size = getWritePointerDistance(wp_old, wp)-1;
+			//printf("____ %d %d %d \n", size, wp_old, wp);
+			if(size > 512*1024) {
+				printf("I think we lost a step %d %d %d \n", size, wp_old, wp);
+			}
+
+			if(firstCycle) {
+				firstCycle = false;
+			} else {
+				// Limit size to be read to period length
+				size = MIN(size, numSamplesPerPeriod);
+			}
+
+			if (size > 0) {
+				if(data_read + size <= buff_size) { 
+					readADCData(wp_old, size, buffer + data_read);
+
+					data_read += size;
+					data_read_total += size;
+					wp_old = (wp_old + size) % ADC_BUFF_SIZE;
+				} else {
+					printf("OVERFLOW %lld %d  %lld\n", data_read, size, buff_size);
+					uint32_t size1 = buff_size - data_read; 
+					uint32_t size2 = size - size1; 
+
+					readADCData(wp_old, size1, buffer + data_read);
+					data_read = 0;
+					data_read_total += size1;
+
+					wp_old = (wp_old + size1) % ADC_BUFF_SIZE;
+
+					readADCData(wp_old, size2, buffer + data_read);
+					data_read += size2;
+					data_read_total += size2;
+					wp_old = (wp_old + size2) % ADC_BUFF_SIZE;
+				}
+				
+				currentFrameTotal = data_read_total / numSamplesPerFrame;
+				currentPeriodTotal = data_read_total / (numSamplesPerPeriod);
+
+				//printf("++++ data_read: %lld data_read_total: %lld total_frame %lld\n", 
+				//                    data_read, data_read_total, currentFrameTotal);
+
+				oldFrameTotal = currentFrameTotal;
+				oldPeriodTotal = currentPeriodTotal;
+			} else {
+				//printf("Counter not increased %d %d \n", wp_old, wp);
+				usleep(40);
+			}
+		}
+		
+		// Wait for the acquisition to start
+		usleep(40);
+	}
+	
+	printf("Acquisition thread finished\n");
+}
+
+void sendDataToHost(int64_t frame, int64_t numFrames) {
+	int n;
+	int64_t frameInBuff = frame % numFramesInMemoryBuffer;
+
+	if(numFrames+frameInBuff < numFramesInMemoryBuffer) {
+		n = write(newdatasockfd, buffer+frameInBuff*numSamplesPerFrame, 
+					numSamplesPerFrame * numFrames * sizeof(uint32_t));
+		
+		if (n < 0) {
+			perror("ERROR writing to socket"); 
+		} else {
+			int64_t frames1 = numFramesInMemoryBuffer - frameInBuff;
+			int64_t frames2 = numFrames - frames1;
+			n = write(newdatasockfd, buffer+frameInBuff*numSamplesPerFrame,
+			numSamplesPerFrame * frames1 *sizeof(uint32_t));
+			
+			if (n < 0) {
+				perror("ERROR writing to socket");
+			}
+			
+			n = write(newdatasockfd, buffer,
+			numSamplesPerFrame * frames2 * sizeof(uint32_t));
+			
+			if (n < 0) {
+				perror("ERROR writing to socket");
+			}
+		}
+	}
+}
+
+static void initBuffer() {
+	buff_size = numSamplesPerFrame*numFramesInMemoryBuffer;
+	buffer = (uint32_t*)malloc(buff_size * sizeof(uint32_t));
+	memset(buffer, 0, buff_size * sizeof(uint32_t));
+}
+
+static void releaseBuffer() {
+	free(buffer);
+}
+
 /*
  *
  */
@@ -210,8 +370,16 @@ int main(int argc, char** argv) {
 
     // Init FPGA
     init();
+	
+	// Start socket for sending the data
+	datasockfd = createServer(5026);
+	
+	// Start acquisition thread
+	acquisitionThreadRunning = true;
+	rxEnabled = false;
+	pthread_create(&pAcq, NULL, acquisition_thread, NULL);
 
-    /* user_context will be pointer to socket */
+    /* User_context will be pointer to socket */
     scpi_context.user_context = NULL;
 
     SCPI_Init(&scpi_context,
@@ -265,6 +433,13 @@ int main(int argc, char** argv) {
 
         close(clifd);
     }
+	
+	// Exit gracefully
+	acquisitionThreadRunning = false;
+	rxEnabled = false;
+	pthread_join(pAcq, NULL);
+	stopTx();
+	releaseBuffer();
 
     return (EXIT_SUCCESS);
 }

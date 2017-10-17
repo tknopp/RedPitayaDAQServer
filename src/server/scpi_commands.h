@@ -27,7 +27,51 @@
 
 #include "../lib/rp-daq-lib.h"
 
-extern const scpi_command_t scpi_commands[];
+#define ACQUISITION_OFF 0
+#define ACQUISITION_ON 1
 
+extern const scpi_command_t scpi_commands[];
+extern scpi_choice_def_t DAC_modes[];
+extern scpi_choice_def_t watchdog_modes[];
+extern scpi_choice_def_t RAM_writer_modes[];
+extern scpi_choice_def_t master_trigger_modes[];
+extern scpi_choice_def_t instant_reset_modes[];
+
+extern static scpi_result_t RP_DAC_GetAmplitude(scpi_t *);
+extern static scpi_result_t RP_DAC_SetAmplitude(scpi_t *);
+extern static scpi_result_t RP_DAC_GetFrequency(scpi_t *) ;
+extern static scpi_result_t RP_DAC_SetFrequency(scpi_t *);
+extern static scpi_result_t RP_DAC_GetModulusFactor(scpi_t *);
+extern static scpi_result_t RP_DAC_SetModulusFactor(scpi_t *);
+extern static scpi_result_t RP_DAC_GetPhase(scpi_t *);
+extern static scpi_result_t RP_DAC_SetPhase(scpi_t *);
+extern static scpi_result_t RP_DAC_SetDACMode(scpi_t *);
+extern static scpi_result_t RP_DAC_GetDACMode(scpi_t *);
+extern static scpi_result_t RP_DAC_ReconfigureDACModulus(scpi_t *);
+extern static scpi_result_t RP_DAC_GetDACModulus(scpi_t *);
+
+extern static scpi_result_t RP_ADC_SetDecimation(scpi_t *);
+extern static scpi_result_t RP_ADC_GetDecimation(scpi_t *);
+extern static scpi_result_t RP_ADC_GetFrames(scpi_t *);
+
+extern static scpi_result_t RP_PDM_SetPDMNextValue(scpi_t *);
+extern static scpi_result_t RP_PDM_GetPDMNextValue(scpi_t *);
+extern static scpi_result_t RP_PDM_GetPDMCurrentValue(scpi_t *);
+
+extern static scpi_result_t RP_XADC_GetXADCValueVolt(scpi_t *);
+
+extern static scpi_result_t RP_WatchdogMode(scpi_t *);
+extern static scpi_result_t RP_RAMWriterMode(scpi_t *);
+extern static scpi_result_t RP_MasterTrigger(scpi_t *);
+extern static scpi_result_t RP_InstantResetMode(scpi_t *);
+
+extern static scpi_result_t RP_PeripheralAResetN(scpi_t *);
+extern static scpi_result_t RP_FourierSynthAResetN(scpi_t *);
+extern static scpi_result_t RP_PDMAResetN(scpi_t *);
+extern static scpi_result_t RP_WriteToRAMAResetN(scpi_t *);
+extern static scpi_result_t RP_XADCAResetN(scpi_t *);
+extern static scpi_result_t RP_TriggerStatus(scpi_t *);
+extern static scpi_result_t RP_WatchdogStatus(scpi_t *);
+extern static scpi_result_t RP_InstantResetStatus(scpi_t *);
 
 #endif /* __SCPI_COMMANDS_H_ */
