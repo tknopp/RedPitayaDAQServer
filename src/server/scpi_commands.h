@@ -26,12 +26,13 @@
 #include "scpi/scpi.h"
 
 #include "../lib/rp-daq-lib.h"
+#include "daq_server_scpi.h"
 
 #define ACQUISITION_OFF 0
 #define ACQUISITION_ON 1
 
 extern const scpi_command_t scpi_commands[];
-extern scpi_choice_def_t DAC_modes[];
+/*extern scpi_choice_def_t DAC_modes[];
 extern scpi_choice_def_t watchdog_modes[];
 extern scpi_choice_def_t RAM_writer_modes[];
 extern scpi_choice_def_t master_trigger_modes[];
@@ -72,6 +73,6 @@ extern static scpi_result_t RP_WriteToRAMAResetN(scpi_t *);
 extern static scpi_result_t RP_XADCAResetN(scpi_t *);
 extern static scpi_result_t RP_TriggerStatus(scpi_t *);
 extern static scpi_result_t RP_WatchdogStatus(scpi_t *);
-extern static scpi_result_t RP_InstantResetStatus(scpi_t *);
+extern static scpi_result_t RP_InstantResetStatus(scpi_t *);*/
 
 #endif /* __SCPI_COMMANDS_H_ */

@@ -67,8 +67,8 @@
 
 int numSamplesPerPeriod = 5000;
 int numPeriodsPerFrame = 20;
-uint64_t numSamplesPerFrame = numSamplesPerPeriod*numPeriodsPerFrame;
-uint64_t numFramesInMemoryBuffer = 64*1024*1024 / numSamplesPerFrame;
+uint64_t numSamplesPerFrame = -1;
+uint64_t numFramesInMemoryBuffer = -1;
 uint64_t buff_size = 0;
 
 volatile int64_t currentFrameTotal;
@@ -146,7 +146,7 @@ scpi_error_t scpi_error_queue_data[SCPI_ERROR_QUEUE_SIZE];
 
 scpi_t scpi_context;
 
-static int createServer(int port) {
+int createServer(int port) {
     int fd;
     int rc;
     int on = 1;
@@ -200,7 +200,7 @@ static int createServer(int port) {
     return fd;
 }
 
-static int waitServer(int fd) {
+int waitServer(int fd) {
     fd_set fds;
     struct timeval timeout;
     int rc;
@@ -347,13 +347,13 @@ void sendDataToHost(int64_t frame, int64_t numFrames) {
 	}
 }
 
-static void initBuffer() {
+void initBuffer() {
 	buff_size = numSamplesPerFrame*numFramesInMemoryBuffer;
 	buffer = (uint32_t*)malloc(buff_size * sizeof(uint32_t));
 	memset(buffer, 0, buff_size * sizeof(uint32_t));
 }
 
-static void releaseBuffer() {
+void releaseBuffer() {
 	free(buffer);
 }
 
@@ -377,7 +377,7 @@ int main(int argc, char** argv) {
 	// Start acquisition thread
 	acquisitionThreadRunning = true;
 	rxEnabled = false;
-	pthread_create(&pAcq, NULL, acquisition_thread, NULL);
+	pthread_create(&pAcq, NULL, acquisitionThread, NULL);
 
     /* User_context will be pointer to socket */
     scpi_context.user_context = NULL;

@@ -268,7 +268,7 @@ static scpi_result_t RP_ADC_StartAcquisitionConnection(scpi_t * context) {
 		socklen_t newdatasocklen;
 
 		newdatasocklen = sizeof (newdatasockaddr);
-		newdatasockfd = accept(datasock, (struct sockaddr *) &newdatasockaddr, &newdatasocklen);
+		newdatasockfd = accept(datasockfd, (struct sockaddr *) &newdatasockaddr, &newdatasocklen);
 
 		if (newdatasockfd < 0) {
 			continue;
@@ -528,7 +528,8 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:DECimation", .callback = RP_ADC_SetDecimation,},
 	{.pattern = "RP:ADC:DECimation?", .callback = RP_ADC_GetDecimation,},
 	{.pattern = "RP:ADC:FRames", .callback = RP_ADC_GetFrames,},
-	{.pattern = "RP:ADC:ACQStatus", .callback = RP_ADC_SetAcquisitionStatus,},
+	{.pattern = "RP:ADC:ACQSTARt", .callback = RP_ADC_StartAcquisitionConnection,},
+	{.pattern = "RP:ADC:ACQSTATus", .callback = RP_ADC_SetAcquisitionStatus,},
 	{.pattern = "RP:PDM:CHannel#:NextValue", .callback = RP_PDM_SetPDMNextValue,},
 	{.pattern = "RP:PDM:CHannel#:NextValue?", .callback = RP_PDM_GetPDMNextValue,},
 	{.pattern = "RP:PDM:CHannel#:CurrentValue?", .callback = RP_PDM_GetPDMCurrentValue,},
