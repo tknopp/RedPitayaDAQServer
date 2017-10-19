@@ -83,8 +83,6 @@ bool acquisitionThreadRunning = false;
 pthread_t pAcq;
 
 int datasockfd;
-int newdatasockfd;
-
 
 size_t SCPI_Write(scpi_t * context, const char * data, size_t len) {
     (void) context;
@@ -241,6 +239,7 @@ void* acquisitionThread(void* ch) {
 		// Reset everything in order to provide a fresh start
 		// everytime the acquisition is started
 		if(rxEnabled) {
+			printf("Starting acquisition...\n");
 			currentFrameTotal = 0;
 			data_read_total = 0; 
 			data_read = 0; 
@@ -248,8 +247,10 @@ void* acquisitionThread(void* ch) {
 			oldPeriodTotal = -1;
 			
 			numSamplesPerFrame = numSamplesPerPeriod * numPeriodsPerFrame; 
-			numFramesInMemoryBuffer = 64*1024*1024 / numSamplesPerFrame;
+			numFramesInMemoryBuffer = 16*1024*1024 / numSamplesPerFrame;
+			//printf("Release old buffer\n");
 			releaseBuffer();
+			printf("Init new buffer\n");
 			initBuffer();
 			
 			wp_old = 0;
@@ -257,8 +258,10 @@ void* acquisitionThread(void* ch) {
 		}
 		
 		while(rxEnabled) {
+			//printf("Get write pointer\n");
 			wp = getWritePointer();
-
+			
+			//printf("Get write pointer distance\n");
 			uint32_t size = getWritePointerDistance(wp_old, wp)-1;
 			//printf("____ %d %d %d \n", size, wp_old, wp);
 			if(size > 512*1024) {
@@ -274,8 +277,10 @@ void* acquisitionThread(void* ch) {
 
 			if (size > 0) {
 				if(data_read + size <= buff_size) { 
+					//printf("Read ADC data\n");
 					readADCData(wp_old, size, buffer + data_read);
-
+					
+					//printf("Update position information\n");
 					data_read += size;
 					data_read_total += size;
 					wp_old = (wp_old + size) % ADC_BUFF_SIZE;
@@ -309,7 +314,7 @@ void* acquisitionThread(void* ch) {
 				usleep(40);
 			}
 		}
-		
+	
 		// Wait for the acquisition to start
 		usleep(40);
 	}
@@ -326,6 +331,7 @@ void sendDataToHost(int64_t frame, int64_t numFrames) {
 					numSamplesPerFrame * numFrames * sizeof(uint32_t));
 		
 		if (n < 0) {
+			printf("Error in sendToHost()\n");
 			perror("ERROR writing to socket"); 
 		} else {
 			int64_t frames1 = numFramesInMemoryBuffer - frameInBuff;
@@ -334,6 +340,7 @@ void sendDataToHost(int64_t frame, int64_t numFrames) {
 			numSamplesPerFrame * frames1 *sizeof(uint32_t));
 			
 			if (n < 0) {
+				printf("Error in sendToHost() (else part 1)\n");
 				perror("ERROR writing to socket");
 			}
 			
@@ -341,6 +348,7 @@ void sendDataToHost(int64_t frame, int64_t numFrames) {
 			numSamplesPerFrame * frames2 * sizeof(uint32_t));
 			
 			if (n < 0) {
+				printf("Error in sendToHost() (else part 2)\n");
 				perror("ERROR writing to socket");
 			}
 		}
@@ -397,6 +405,7 @@ int main(int argc, char** argv) {
         struct sockaddr_in cliaddr;
         socklen_t clilen;
 
+	//printf("Waiting for new connection\n");
         clilen = sizeof (cliaddr);
         clifd = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
 
@@ -424,6 +433,8 @@ int main(int argc, char** argv) {
                     }
                 } else if (rc == 0) {
                     printf("Connection closed\r\n");
+		    rxEnabled = false;
+        	    stopTx();
                     break;
                 } else {
                     SCPI_Input(&scpi_context, smbuffer, rc);

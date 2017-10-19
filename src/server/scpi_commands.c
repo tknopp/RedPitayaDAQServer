@@ -25,6 +25,10 @@
 #include "../lib/rp-daq-lib.h"
 #include "../server/scpi_commands.h"
 
+int newdatasockfd;
+struct sockaddr_in newdatasockaddr;
+socklen_t newdatasocklen;
+
 static scpi_result_t RP_DAC_GetAmplitude(scpi_t * context) {
     int32_t numbers[2];
 	SCPI_CommandNumbers(context, numbers, 2, 1);
@@ -233,6 +237,18 @@ static scpi_result_t RP_ADC_GetDecimation(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t * context) {
+        // Reading is only possible while an acquisition is running
+        if(!rxEnabled) {
+                return SCPI_RES_ERR;
+        }
+
+	SCPI_ResultInt64(context, currentFrameTotal-1);
+
+    return SCPI_RES_OK;
+}
+
+
 static scpi_result_t RP_ADC_GetFrames(scpi_t * context) {
 	// Reading is only possible while an acquisition is running
 	if(!rxEnabled) {
@@ -249,10 +265,12 @@ static scpi_result_t RP_ADC_GetFrames(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 	
+	//printf("invoke sendDataToHost()");
 	sendDataToHost(frame, numFrames);
 	
     return SCPI_RES_OK;
 }
+
 scpi_choice_def_t acquisition_status_modes[] = {
     {"OFF", ACQUISITION_OFF},
     {"ON", ACQUISITION_ON},
@@ -263,10 +281,6 @@ static scpi_result_t RP_ADC_StartAcquisitionConnection(scpi_t * context) {
 	bool connectionEstablished = false;
 	
 	while(!connectionEstablished) {
-		int newdatasockfd;
-		struct sockaddr_in newdatasockaddr;
-		socklen_t newdatasocklen;
-
 		newdatasocklen = sizeof (newdatasockaddr);
 		newdatasockfd = accept(datasockfd, (struct sockaddr *) &newdatasockaddr, &newdatasocklen);
 
@@ -527,7 +541,8 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:MODulus?", .callback = RP_DAC_GetDACModulus,},
 	{.pattern = "RP:ADC:DECimation", .callback = RP_ADC_SetDecimation,},
 	{.pattern = "RP:ADC:DECimation?", .callback = RP_ADC_GetDecimation,},
-	{.pattern = "RP:ADC:FRames", .callback = RP_ADC_GetFrames,},
+	{.pattern = "RP:ADC:FRames:CURRent?", .callback = RP_ADC_GetCurrentFrame,},
+	{.pattern = "RP:ADC:FRames:DATa", .callback = RP_ADC_GetFrames,},
 	{.pattern = "RP:ADC:ACQSTARt", .callback = RP_ADC_StartAcquisitionConnection,},
 	{.pattern = "RP:ADC:ACQSTATus", .callback = RP_ADC_SetAcquisitionStatus,},
 	{.pattern = "RP:PDM:CHannel#:NextValue", .callback = RP_PDM_SetPDMNextValue,},

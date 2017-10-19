@@ -31,6 +31,10 @@
 #define ACQUISITION_OFF 0
 #define ACQUISITION_ON 1
 
+extern int newdatasockfd;
+extern struct sockaddr_in newdatasockaddr;
+extern socklen_t newdatasocklen;
+
 extern const scpi_command_t scpi_commands[];
 /*extern scpi_choice_def_t DAC_modes[];
 extern scpi_choice_def_t watchdog_modes[];
@@ -53,7 +57,10 @@ extern static scpi_result_t RP_DAC_GetDACModulus(scpi_t *);
 
 extern static scpi_result_t RP_ADC_SetDecimation(scpi_t *);
 extern static scpi_result_t RP_ADC_GetDecimation(scpi_t *);
+extern static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t *);
 extern static scpi_result_t RP_ADC_GetFrames(scpi_t *);
+extern static scpi_result_t RP_ADC_StartAcquisitionConnection(scpi_t *);
+extern static scpi_result_t RP_ADC_SetAcquisitionStatus(scpi_t *);
 
 extern static scpi_result_t RP_PDM_SetPDMNextValue(scpi_t *);
 extern static scpi_result_t RP_PDM_GetPDMNextValue(scpi_t *);

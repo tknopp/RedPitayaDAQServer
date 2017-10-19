@@ -430,6 +430,7 @@ uint32_t getWritePointerDistance(uint32_t start_pos, uint32_t end_pos) {
 }
 
 void readADCData(uint32_t wp, uint32_t size, uint32_t* buffer) {
+	//printf("Reading and copying ADC data");
 	if(wp+size <= ADC_BUFF_SIZE) {
 		memcpy(buffer, ram + sizeof(uint32_t)*wp, size*sizeof(uint32_t));
 	} else {
