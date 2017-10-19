@@ -57,6 +57,10 @@ extern static scpi_result_t RP_DAC_GetDACModulus(scpi_t *);
 
 extern static scpi_result_t RP_ADC_SetDecimation(scpi_t *);
 extern static scpi_result_t RP_ADC_GetDecimation(scpi_t *);
+extern static scpi_result_t RP_ADC_SetSamplesPerPeriod(scpi_t *);
+extern static scpi_result_t RP_ADC_GetSamplesPerPeriod(scpi_t *);
+extern static scpi_result_t RP_ADC_SetPeriodsPerFrame(scpi_t *);
+extern static scpi_result_t RP_ADC_GetPeriodsPerFrame(scpi_t *);
 extern static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t *);
 extern static scpi_result_t RP_ADC_GetFrames(scpi_t *);
 extern static scpi_result_t RP_ADC_StartAcquisitionConnection(scpi_t *);

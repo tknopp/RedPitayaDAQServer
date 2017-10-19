@@ -237,6 +237,46 @@ static scpi_result_t RP_ADC_GetDecimation(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_ADC_SetSamplesPerPeriod(scpi_t * context) {
+	// Enforce changing the samples per period to be only
+	// possible while not acquiring data
+	if(rxEnabled) {
+		return SCPI_RES_ERR;
+	}
+
+	if (!SCPI_ParamInt32(context, &numSamplesPerPeriod, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_ADC_GetSamplesPerPeriod(scpi_t * context) {
+	SCPI_ResultInt32(context, numSamplesPerPeriod);
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_ADC_SetPeriodsPerFrame(scpi_t * context) {
+	// Enforce changing the periods per frame to be only
+	// possible while not acquiring data
+	if(rxEnabled) {
+		return SCPI_RES_ERR;
+	}
+
+	if (!SCPI_ParamInt32(context, &numPeriodsPerFrame, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_ADC_GetPeriodsPerFrame(scpi_t * context) {
+	SCPI_ResultInt32(context, numPeriodsPerFrame);
+
+	return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t * context) {
         // Reading is only possible while an acquisition is running
         if(!rxEnabled) {
@@ -541,9 +581,13 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:MODulus?", .callback = RP_DAC_GetDACModulus,},
 	{.pattern = "RP:ADC:DECimation", .callback = RP_ADC_SetDecimation,},
 	{.pattern = "RP:ADC:DECimation?", .callback = RP_ADC_GetDecimation,},
-	{.pattern = "RP:ADC:FRames:CURRent?", .callback = RP_ADC_GetCurrentFrame,},
-	{.pattern = "RP:ADC:FRames:DATa", .callback = RP_ADC_GetFrames,},
-	{.pattern = "RP:ADC:ACQSTARt", .callback = RP_ADC_StartAcquisitionConnection,},
+	{.pattern = "RP:ADC:PERiod", .callback = RP_ADC_SetSamplesPerPeriod,},
+	{.pattern = "RP:ADC:PERiod?", .callback = RP_ADC_GetSamplesPerPeriod,},
+	{.pattern = "RP:ADC:FRAme", .callback = RP_ADC_SetPeriodsPerFrame,},
+	{.pattern = "RP:ADC:FRAme?", .callback = RP_ADC_GetPeriodsPerFrame,},
+	{.pattern = "RP:ADC:FRAmes:CURRent?", .callback = RP_ADC_GetCurrentFrame,},
+	{.pattern = "RP:ADC:FRAmes:DATa", .callback = RP_ADC_GetFrames,},
+	{.pattern = "RP:ADC:ACQCONNect", .callback = RP_ADC_StartAcquisitionConnection,},
 	{.pattern = "RP:ADC:ACQSTATus", .callback = RP_ADC_SetAcquisitionStatus,},
 	{.pattern = "RP:PDM:CHannel#:NextValue", .callback = RP_PDM_SetPDMNextValue,},
 	{.pattern = "RP:PDM:CHannel#:NextValue?", .callback = RP_PDM_GetPDMNextValue,},
