@@ -127,6 +127,140 @@ if { $nRet != 0 } {
 ##################################################################
 
 
+# Hierarchical cell: sign_extend_B
+proc create_hier_cell_sign_extend_B { parentCell nameHier } {
+
+  variable script_folder
+
+  if { $parentCell eq "" || $nameHier eq "" } {
+     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_sign_extend_B() - Empty argument(s)!"}
+     return
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+  # Create cell and set as current instance
+  set hier_obj [create_bd_cell -type hier $nameHier]
+  current_bd_instance $hier_obj
+
+  # Create interface pins
+
+  # Create pins
+  create_bd_pin -dir I -from 13 -to 0 In0
+  create_bd_pin -dir O -from 15 -to 0 dout
+
+  # Create instance: xlconcat_2, and set properties
+  set xlconcat_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_2 ]
+  set_property -dict [ list \
+CONFIG.IN0_WIDTH {14} \
+CONFIG.IN1_WIDTH {1} \
+CONFIG.IN2_WIDTH {1} \
+CONFIG.NUM_PORTS {3} \
+ ] $xlconcat_2
+
+  # Create instance: xlslice_2, and set properties
+  set xlslice_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_2 ]
+  set_property -dict [ list \
+CONFIG.DIN_FROM {13} \
+CONFIG.DIN_TO {13} \
+CONFIG.DIN_WIDTH {14} \
+CONFIG.DOUT_WIDTH {1} \
+ ] $xlslice_2
+
+  # Create port connections
+  connect_bd_net -net red_pitaya_dfilt1_A_adc_dat_o [get_bd_pins In0] [get_bd_pins xlconcat_2/In0] [get_bd_pins xlslice_2/Din]
+  connect_bd_net -net xlconcat_2_dout [get_bd_pins dout] [get_bd_pins xlconcat_2/dout]
+  connect_bd_net -net xlslice_2_Dout [get_bd_pins xlconcat_2/In1] [get_bd_pins xlconcat_2/In2] [get_bd_pins xlslice_2/Dout]
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+}
+
+# Hierarchical cell: sign_extend_A
+proc create_hier_cell_sign_extend_A { parentCell nameHier } {
+
+  variable script_folder
+
+  if { $parentCell eq "" || $nameHier eq "" } {
+     catch {common::send_msg_id "BD_TCL-102" "ERROR" "create_hier_cell_sign_extend_A() - Empty argument(s)!"}
+     return
+  }
+
+  # Get object for parentCell
+  set parentObj [get_bd_cells $parentCell]
+  if { $parentObj == "" } {
+     catch {common::send_msg_id "BD_TCL-100" "ERROR" "Unable to find parent cell <$parentCell>!"}
+     return
+  }
+
+  # Make sure parentObj is hier blk
+  set parentType [get_property TYPE $parentObj]
+  if { $parentType ne "hier" } {
+     catch {common::send_msg_id "BD_TCL-101" "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
+     return
+  }
+
+  # Save current instance; Restore later
+  set oldCurInst [current_bd_instance .]
+
+  # Set parent object as current
+  current_bd_instance $parentObj
+
+  # Create cell and set as current instance
+  set hier_obj [create_bd_cell -type hier $nameHier]
+  current_bd_instance $hier_obj
+
+  # Create interface pins
+
+  # Create pins
+  create_bd_pin -dir I -from 13 -to 0 In0
+  create_bd_pin -dir O -from 15 -to 0 dout
+
+  # Create instance: xlconcat_2, and set properties
+  set xlconcat_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_2 ]
+  set_property -dict [ list \
+CONFIG.IN0_WIDTH {14} \
+CONFIG.IN1_WIDTH {1} \
+CONFIG.IN2_WIDTH {1} \
+CONFIG.NUM_PORTS {3} \
+ ] $xlconcat_2
+
+  # Create instance: xlslice_2, and set properties
+  set xlslice_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_2 ]
+  set_property -dict [ list \
+CONFIG.DIN_FROM {13} \
+CONFIG.DIN_TO {13} \
+CONFIG.DIN_WIDTH {14} \
+CONFIG.DOUT_WIDTH {1} \
+ ] $xlslice_2
+
+  # Create port connections
+  connect_bd_net -net red_pitaya_dfilt1_A_adc_dat_o [get_bd_pins In0] [get_bd_pins xlconcat_2/In0] [get_bd_pins xlslice_2/Din]
+  connect_bd_net -net xlconcat_2_dout [get_bd_pins dout] [get_bd_pins xlconcat_2/dout]
+  connect_bd_net -net xlslice_2_Dout [get_bd_pins xlconcat_2/In1] [get_bd_pins xlconcat_2/In2] [get_bd_pins xlslice_2/Dout]
+
+  # Restore current instance
+  current_bd_instance $oldCurInst
+}
+
 # Hierarchical cell: write_to_ram
 proc create_hier_cell_write_to_ram { parentCell nameHier } {
 
@@ -182,17 +316,32 @@ CONFIG.S_TDATA_NUM_BYTES {4} \
   # Create instance: axis_ram_writer_1, and set properties
   set axis_ram_writer_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_ram_writer:1.0 axis_ram_writer_1 ]
 
+  set_property -dict [ list \
+CONFIG.SUPPORTS_NARROW_BURST {1} \
+CONFIG.NUM_READ_OUTSTANDING {2} \
+CONFIG.NUM_WRITE_OUTSTANDING {2} \
+CONFIG.MAX_BURST_LENGTH {16} \
+ ] [get_bd_intf_pins /write_to_ram/axis_ram_writer_1/M_AXI]
+
   # Create instance: axis_variable_decimation_A, and set properties
   set axis_variable_decimation_A [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_decimation_A ]
   set_property -dict [ list \
 CONFIG.AXIS_TDATA_WIDTH {16} \
  ] $axis_variable_decimation_A
 
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {2} \
+ ] [get_bd_intf_pins /write_to_ram/axis_variable_decimation_A/M_AXIS]
+
   # Create instance: axis_variable_decimation_B, and set properties
   set axis_variable_decimation_B [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_decimation_B ]
   set_property -dict [ list \
 CONFIG.AXIS_TDATA_WIDTH {16} \
  ] $axis_variable_decimation_B
+
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {2} \
+ ] [get_bd_intf_pins /write_to_ram/axis_variable_decimation_B/M_AXIS]
 
   # Create instance: cic_compiler_A, and set properties
   set cic_compiler_A [ create_bd_cell -type ip -vlnv xilinx.com:ip:cic_compiler:4.0 cic_compiler_A ]
@@ -230,6 +379,75 @@ CONFIG.SamplePeriod {1} \
 CONFIG.Sample_Rate_Changes {Programmable} \
  ] $cic_compiler_B
 
+  # Create instance: divide_by_two_0, and set properties
+  set divide_by_two_0 [ create_bd_cell -type ip -vlnv jbeuke:user:divide_by_two:1.0 divide_by_two_0 ]
+
+  # Create instance: fir_compiler_A, and set properties
+  set fir_compiler_A [ create_bd_cell -type ip -vlnv xilinx.com:ip:fir_compiler:7.2 fir_compiler_A ]
+  set_property -dict [ list \
+CONFIG.BestPrecision {true} \
+CONFIG.Clock_Frequency {125.0} \
+CONFIG.CoefficientVector {1.864885e-05, 1.294666e-05, -3.770850e-05, -4.311539e-05, 5.300379e-05, 9.817273e-05, -5.008376e-05, -1.792568e-04, 9.065278e-06, 2.779881e-04, 9.210241e-05, -3.728498e-04, -2.718314e-04, 4.275765e-04, 5.370248e-04, -3.929370e-04, -8.743719e-04, 2.129371e-04, 1.242726e-03, 1.642698e-04, -1.568912e-03, -7.715215e-04, 1.749326e-03, 1.605770e-03, -1.659122e-03, -2.612204e-03, 1.169717e-03, 3.673090e-03, -1.737946e-04, -4.605147e-03, -1.384765e-03, 5.168595e-03, 3.480177e-03, -5.089591e-03, -5.978548e-03, 4.095682e-03, 8.621744e-03, -1.961567e-03, -1.102610e-02, -1.439735e-03, 1.269893e-02, 6.086744e-03, -1.307282e-02, -1.176712e-02, 1.155437e-02, 1.804827e-02, -7.579900e-03, -2.426236e-02, 6.667354e-04, 2.949956e-02, 9.555878e-03, -3.258853e-02, -2.335979e-02, 3.200919e-02, 4.101456e-02, -2.558662e-02, -6.305221e-02, 9.473435e-03, 9.090422e-02, 2.565442e-02, -1.282244e-01, -1.138063e-01, 1.755209e-01, 4.883955e-01, 4.883955e-01, 1.755209e-01, -1.138063e-01, -1.282244e-01, 2.565442e-02, 9.090422e-02, 9.473435e-03, -6.305221e-02, -2.558662e-02, 4.101456e-02, 3.200919e-02, -2.335979e-02, -3.258853e-02, 9.555878e-03, 2.949956e-02, 6.667354e-04, -2.426236e-02, -7.579900e-03, 1.804827e-02, 1.155437e-02, -1.176712e-02, -1.307282e-02, 6.086744e-03, 1.269893e-02, -1.439735e-03, -1.102610e-02, -1.961567e-03, 8.621744e-03, 4.095682e-03, -5.978548e-03, -5.089591e-03, 3.480177e-03, 5.168595e-03, -1.384765e-03, -4.605147e-03, -1.737946e-04, 3.673090e-03, 1.169717e-03, -2.612204e-03, -1.659122e-03, 1.605770e-03, 1.749326e-03, -7.715215e-04, -1.568912e-03, 1.642698e-04, 1.242726e-03, 2.129371e-04, -8.743719e-04, -3.929370e-04, 5.370248e-04, 4.275765e-04, -2.718314e-04, -3.728498e-04, 9.210241e-05, 2.779881e-04, 9.065278e-06, -1.792568e-04, -5.008376e-05, 9.817273e-05, 5.300379e-05, -4.311539e-05, -3.770850e-05, 1.294666e-05, 1.864885e-05} \
+CONFIG.Coefficient_Fractional_Bits {16} \
+CONFIG.Coefficient_Reload {false} \
+CONFIG.Coefficient_Sets {1} \
+CONFIG.Coefficient_Sign {Signed} \
+CONFIG.Coefficient_Structure {Inferred} \
+CONFIG.Coefficient_Width {16} \
+CONFIG.ColumnConfig {2} \
+CONFIG.Data_Width {16} \
+CONFIG.Decimation_Rate {2} \
+CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
+CONFIG.Filter_Type {Decimation} \
+CONFIG.Interpolation_Rate {1} \
+CONFIG.Number_Channels {1} \
+CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
+CONFIG.Output_Width {16} \
+CONFIG.Quantization {Quantize_Only} \
+CONFIG.RateSpecification {Frequency_Specification} \
+CONFIG.Sample_Frequency {7.8125} \
+CONFIG.Zero_Pack_Factor {1} \
+ ] $fir_compiler_A
+
+  # Create instance: fir_compiler_B, and set properties
+  set fir_compiler_B [ create_bd_cell -type ip -vlnv xilinx.com:ip:fir_compiler:7.2 fir_compiler_B ]
+  set_property -dict [ list \
+CONFIG.BestPrecision {true} \
+CONFIG.Clock_Frequency {125.0} \
+CONFIG.CoefficientVector {1.864885e-05, 1.294666e-05, -3.770850e-05, -4.311539e-05, 5.300379e-05, 9.817273e-05, -5.008376e-05, -1.792568e-04, 9.065278e-06, 2.779881e-04, 9.210241e-05, -3.728498e-04, -2.718314e-04, 4.275765e-04, 5.370248e-04, -3.929370e-04, -8.743719e-04, 2.129371e-04, 1.242726e-03, 1.642698e-04, -1.568912e-03, -7.715215e-04, 1.749326e-03, 1.605770e-03, -1.659122e-03, -2.612204e-03, 1.169717e-03, 3.673090e-03, -1.737946e-04, -4.605147e-03, -1.384765e-03, 5.168595e-03, 3.480177e-03, -5.089591e-03, -5.978548e-03, 4.095682e-03, 8.621744e-03, -1.961567e-03, -1.102610e-02, -1.439735e-03, 1.269893e-02, 6.086744e-03, -1.307282e-02, -1.176712e-02, 1.155437e-02, 1.804827e-02, -7.579900e-03, -2.426236e-02, 6.667354e-04, 2.949956e-02, 9.555878e-03, -3.258853e-02, -2.335979e-02, 3.200919e-02, 4.101456e-02, -2.558662e-02, -6.305221e-02, 9.473435e-03, 9.090422e-02, 2.565442e-02, -1.282244e-01, -1.138063e-01, 1.755209e-01, 4.883955e-01, 4.883955e-01, 1.755209e-01, -1.138063e-01, -1.282244e-01, 2.565442e-02, 9.090422e-02, 9.473435e-03, -6.305221e-02, -2.558662e-02, 4.101456e-02, 3.200919e-02, -2.335979e-02, -3.258853e-02, 9.555878e-03, 2.949956e-02, 6.667354e-04, -2.426236e-02, -7.579900e-03, 1.804827e-02, 1.155437e-02, -1.176712e-02, -1.307282e-02, 6.086744e-03, 1.269893e-02, -1.439735e-03, -1.102610e-02, -1.961567e-03, 8.621744e-03, 4.095682e-03, -5.978548e-03, -5.089591e-03, 3.480177e-03, 5.168595e-03, -1.384765e-03, -4.605147e-03, -1.737946e-04, 3.673090e-03, 1.169717e-03, -2.612204e-03, -1.659122e-03, 1.605770e-03, 1.749326e-03, -7.715215e-04, -1.568912e-03, 1.642698e-04, 1.242726e-03, 2.129371e-04, -8.743719e-04, -3.929370e-04, 5.370248e-04, 4.275765e-04, -2.718314e-04, -3.728498e-04, 9.210241e-05, 2.779881e-04, 9.065278e-06, -1.792568e-04, -5.008376e-05, 9.817273e-05, 5.300379e-05, -4.311539e-05, -3.770850e-05, 1.294666e-05, 1.864885e-05} \
+CONFIG.Coefficient_Fractional_Bits {16} \
+CONFIG.Coefficient_Reload {false} \
+CONFIG.Coefficient_Sets {1} \
+CONFIG.Coefficient_Sign {Signed} \
+CONFIG.Coefficient_Structure {Inferred} \
+CONFIG.Coefficient_Width {16} \
+CONFIG.ColumnConfig {2} \
+CONFIG.Data_Width {16} \
+CONFIG.Decimation_Rate {2} \
+CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
+CONFIG.Filter_Type {Decimation} \
+CONFIG.Interpolation_Rate {1} \
+CONFIG.Number_Channels {1} \
+CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
+CONFIG.Output_Width {16} \
+CONFIG.Quantization {Quantize_Only} \
+CONFIG.RateSpecification {Frequency_Specification} \
+CONFIG.Sample_Frequency {7.8125} \
+CONFIG.Zero_Pack_Factor {1} \
+ ] $fir_compiler_B
+
+  # Create instance: red_pitaya_dfilt1_A, and set properties
+  set red_pitaya_dfilt1_A [ create_bd_cell -type ip -vlnv matej.oblak:user:red_pitaya_dfilt1:1.0 red_pitaya_dfilt1_A ]
+
+  # Create instance: red_pitaya_dfilt1_B, and set properties
+  set red_pitaya_dfilt1_B [ create_bd_cell -type ip -vlnv matej.oblak:user:red_pitaya_dfilt1:1.0 red_pitaya_dfilt1_B ]
+
+  # Create instance: sign_extend_A
+  create_hier_cell_sign_extend_A $hier_obj sign_extend_A
+
+  # Create instance: sign_extend_B
+  create_hier_cell_sign_extend_B $hier_obj sign_extend_B
+
   # Create instance: util_vector_logic_0, and set properties
   set util_vector_logic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_0 ]
   set_property -dict [ list \
@@ -258,45 +476,98 @@ CONFIG.CONST_VAL {503316480} \
 CONFIG.CONST_WIDTH {32} \
  ] $xlconstant_2
 
-  # Create instance: xlslice_0, and set properties
-  set xlslice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_0 ]
+  # Create instance: xlconstant_AA_HV, and set properties
+  set xlconstant_AA_HV [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_AA_HV ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DOUT_WIDTH {16} \
- ] $xlslice_0
+CONFIG.CONST_VAL {0x4c5f} \
+CONFIG.CONST_WIDTH {18} \
+ ] $xlconstant_AA_HV
 
-  # Create instance: xlslice_1, and set properties
-  set xlslice_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_1 ]
+  # Create instance: xlconstant_AA_LV, and set properties
+  set xlconstant_AA_LV [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_AA_LV ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {31} \
+CONFIG.CONST_VAL {0x7d93} \
+CONFIG.CONST_WIDTH {18} \
+ ] $xlconstant_AA_LV
+
+  # Create instance: xlconstant_BB_HV, and set properties
+  set xlconstant_BB_HV [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_BB_HV ]
+  set_property -dict [ list \
+CONFIG.CONST_VAL {0x2f38b} \
+CONFIG.CONST_WIDTH {25} \
+ ] $xlconstant_BB_HV
+
+  # Create instance: xlconstant_BB_LV, and set properties
+  set xlconstant_BB_LV [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_BB_LV ]
+  set_property -dict [ list \
+CONFIG.CONST_VAL {0x437c7} \
+CONFIG.CONST_WIDTH {25} \
+ ] $xlconstant_BB_LV
+
+  # Create instance: xlconstant_KK, and set properties
+  set xlconstant_KK [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_KK ]
+  set_property -dict [ list \
+CONFIG.CONST_VAL {0xd9999a} \
+CONFIG.CONST_WIDTH {25} \
+ ] $xlconstant_KK
+
+  # Create instance: xlconstant_PP, and set properties
+  set xlconstant_PP [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_PP ]
+  set_property -dict [ list \
+CONFIG.CONST_VAL {0x2666} \
+CONFIG.CONST_WIDTH {25} \
+ ] $xlconstant_PP
+
+  # Create instance: xlslice_A, and set properties
+  set xlslice_A [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_A ]
+  set_property -dict [ list \
+CONFIG.DIN_FROM {13} \
+CONFIG.DOUT_WIDTH {14} \
+ ] $xlslice_A
+
+  # Create instance: xlslice_B, and set properties
+  set xlslice_B [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_B ]
+  set_property -dict [ list \
+CONFIG.DIN_FROM {29} \
 CONFIG.DIN_TO {16} \
-CONFIG.DOUT_WIDTH {16} \
- ] $xlslice_1
+CONFIG.DOUT_WIDTH {14} \
+ ] $xlslice_B
 
   # Create interface connections
   connect_bd_intf_net -intf_net axis_dwidth_converter_0_M_AXIS [get_bd_intf_pins axis_dwidth_converter_0/M_AXIS] [get_bd_intf_pins axis_ram_writer_1/S_AXIS]
   connect_bd_intf_net -intf_net axis_ram_writer_1_M_AXI [get_bd_intf_pins m_axi] [get_bd_intf_pins axis_ram_writer_1/M_AXI]
   connect_bd_intf_net -intf_net axis_variable_2_M_AXIS [get_bd_intf_pins axis_variable_decimation_A/M_AXIS] [get_bd_intf_pins cic_compiler_A/S_AXIS_CONFIG]
   connect_bd_intf_net -intf_net axis_variable_decimation_B_M_AXIS [get_bd_intf_pins axis_variable_decimation_B/M_AXIS] [get_bd_intf_pins cic_compiler_B/S_AXIS_CONFIG]
+  connect_bd_intf_net -intf_net cic_compiler_A_M_AXIS_DATA [get_bd_intf_pins cic_compiler_A/M_AXIS_DATA] [get_bd_intf_pins fir_compiler_A/S_AXIS_DATA]
+  connect_bd_intf_net -intf_net cic_compiler_B_M_AXIS_DATA [get_bd_intf_pins cic_compiler_B/M_AXIS_DATA] [get_bd_intf_pins fir_compiler_B/S_AXIS_DATA]
 
   # Create port connections
   connect_bd_net -net axis_ram_writer_1_sts_data [get_bd_pins axis_ram_writer_1/sts_data] [get_bd_pins xlconcat_0/In0]
-  connect_bd_net -net axis_red_pitaya_adc_1_m_axis_tdata [get_bd_pins Din] [get_bd_pins xlslice_0/Din] [get_bd_pins xlslice_1/Din]
+  connect_bd_net -net axis_red_pitaya_adc_1_m_axis_tdata [get_bd_pins Din] [get_bd_pins xlslice_A/Din] [get_bd_pins xlslice_B/Din]
   connect_bd_net -net axis_red_pitaya_adc_1_m_axis_tvalid [get_bd_pins s_axis_data_tvalid] [get_bd_pins cic_compiler_A/s_axis_data_tvalid] [get_bd_pins cic_compiler_B/s_axis_data_tvalid]
-  connect_bd_net -net cic_compiler_0_m_axis_data_tdata [get_bd_pins cic_compiler_B/m_axis_data_tdata] [get_bd_pins xlconcat_1/In1]
-  connect_bd_net -net cic_compiler_0_m_axis_data_tvalid [get_bd_pins cic_compiler_B/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op2]
-  connect_bd_net -net cic_compiler_1_m_axis_data_tdata [get_bd_pins cic_compiler_A/m_axis_data_tdata] [get_bd_pins xlconcat_1/In0]
-  connect_bd_net -net cic_compiler_1_m_axis_data_tvalid [get_bd_pins cic_compiler_A/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op1]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_ram_writer_1/aclk] [get_bd_pins axis_variable_decimation_A/aclk] [get_bd_pins axis_variable_decimation_B/aclk] [get_bd_pins cic_compiler_A/aclk] [get_bd_pins cic_compiler_B/aclk]
-  connect_bd_net -net decimation_1 [get_bd_pins decimation] [get_bd_pins axis_variable_decimation_A/cfg_data] [get_bd_pins axis_variable_decimation_B/cfg_data]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_ram_writer_1/aresetn] [get_bd_pins axis_variable_decimation_A/aresetn] [get_bd_pins axis_variable_decimation_B/aresetn] [get_bd_pins cic_compiler_A/aresetn] [get_bd_pins cic_compiler_B/aresetn]
+  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_ram_writer_1/aclk] [get_bd_pins axis_variable_decimation_A/aclk] [get_bd_pins axis_variable_decimation_B/aclk] [get_bd_pins cic_compiler_A/aclk] [get_bd_pins cic_compiler_B/aclk] [get_bd_pins fir_compiler_A/aclk] [get_bd_pins fir_compiler_B/aclk] [get_bd_pins red_pitaya_dfilt1_A/adc_clk_i] [get_bd_pins red_pitaya_dfilt1_B/adc_clk_i]
+  connect_bd_net -net decimation_1 [get_bd_pins decimation] [get_bd_pins divide_by_two_0/input_vector]
+  connect_bd_net -net divide_by_two_0_input_divided_by_two [get_bd_pins axis_variable_decimation_A/cfg_data] [get_bd_pins axis_variable_decimation_B/cfg_data] [get_bd_pins divide_by_two_0/input_divided_by_two]
+  connect_bd_net -net fir_compiler_0_m_axis_data_tdata [get_bd_pins fir_compiler_A/m_axis_data_tdata] [get_bd_pins xlconcat_1/In0]
+  connect_bd_net -net fir_compiler_0_m_axis_data_tvalid [get_bd_pins fir_compiler_A/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op1]
+  connect_bd_net -net fir_compiler_B_m_axis_data_tdata [get_bd_pins fir_compiler_B/m_axis_data_tdata] [get_bd_pins xlconcat_1/In1]
+  connect_bd_net -net fir_compiler_B_m_axis_data_tvalid [get_bd_pins fir_compiler_B/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op2]
+  connect_bd_net -net red_pitaya_dfilt1_A_adc_dat_o [get_bd_pins red_pitaya_dfilt1_A/adc_dat_o] [get_bd_pins sign_extend_A/In0]
+  connect_bd_net -net red_pitaya_dfilt1_B_adc_dat_o [get_bd_pins red_pitaya_dfilt1_B/adc_dat_o] [get_bd_pins sign_extend_B/In0]
+  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_ram_writer_1/aresetn] [get_bd_pins axis_variable_decimation_A/aresetn] [get_bd_pins axis_variable_decimation_B/aresetn] [get_bd_pins cic_compiler_A/aresetn] [get_bd_pins cic_compiler_B/aresetn] [get_bd_pins red_pitaya_dfilt1_A/adc_rstn_i] [get_bd_pins red_pitaya_dfilt1_B/adc_rstn_i]
+  connect_bd_net -net sign_extend_B_dout [get_bd_pins cic_compiler_B/s_axis_data_tdata] [get_bd_pins sign_extend_B/dout]
   connect_bd_net -net util_vector_logic_0_Res [get_bd_pins axis_dwidth_converter_0/s_axis_tvalid] [get_bd_pins util_vector_logic_0/Res]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins sts_data] [get_bd_pins xlconcat_0/dout]
   connect_bd_net -net xlconcat_1_dout [get_bd_pins axis_dwidth_converter_0/s_axis_tdata] [get_bd_pins xlconcat_1/dout]
+  connect_bd_net -net xlconcat_2_dout [get_bd_pins cic_compiler_A/s_axis_data_tdata] [get_bd_pins sign_extend_A/dout]
   connect_bd_net -net xlconstant_1_dout [get_bd_pins xlconcat_0/In1] [get_bd_pins xlconstant_1/dout]
   connect_bd_net -net xlconstant_2_dout [get_bd_pins axis_ram_writer_1/cfg_data] [get_bd_pins xlconstant_2/dout]
-  connect_bd_net -net xlslice_0_Dout [get_bd_pins cic_compiler_A/s_axis_data_tdata] [get_bd_pins xlslice_0/Dout]
-  connect_bd_net -net xlslice_1_Dout [get_bd_pins cic_compiler_B/s_axis_data_tdata] [get_bd_pins xlslice_1/Dout]
+  connect_bd_net -net xlconstant_AA_dout [get_bd_pins red_pitaya_dfilt1_A/cfg_aa_i] [get_bd_pins red_pitaya_dfilt1_B/cfg_aa_i] [get_bd_pins xlconstant_AA_LV/dout]
+  connect_bd_net -net xlconstant_BB_dout [get_bd_pins red_pitaya_dfilt1_A/cfg_bb_i] [get_bd_pins red_pitaya_dfilt1_B/cfg_bb_i] [get_bd_pins xlconstant_BB_LV/dout]
+  connect_bd_net -net xlconstant_KK_dout [get_bd_pins red_pitaya_dfilt1_A/cfg_kk_i] [get_bd_pins red_pitaya_dfilt1_B/cfg_kk_i] [get_bd_pins xlconstant_KK/dout]
+  connect_bd_net -net xlconstant_PP_dout [get_bd_pins red_pitaya_dfilt1_A/cfg_pp_i] [get_bd_pins red_pitaya_dfilt1_B/cfg_pp_i] [get_bd_pins xlconstant_PP/dout]
+  connect_bd_net -net xlslice_0_Dout [get_bd_pins red_pitaya_dfilt1_A/adc_dat_i] [get_bd_pins xlslice_A/Dout]
+  connect_bd_net -net xlslice_1_Dout [get_bd_pins red_pitaya_dfilt1_B/adc_dat_i] [get_bd_pins xlslice_B/Dout]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -361,6 +632,11 @@ CONFIG.AXI_ADDR_WIDTH {32} \
 CONFIG.CFG_DATA_WIDTH {32} \
  ] $axi_cfg_register_cfg
 
+  set_property -dict [ list \
+CONFIG.NUM_READ_OUTSTANDING {1} \
+CONFIG.NUM_WRITE_OUTSTANDING {1} \
+ ] [get_bd_intf_pins /system/axi_cfg_register_cfg/S_AXI]
+
   # Create instance: axi_cfg_register_dac, and set properties
   set axi_cfg_register_dac [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 axi_cfg_register_dac ]
   set_property -dict [ list \
@@ -368,12 +644,22 @@ CONFIG.AXI_ADDR_WIDTH {32} \
 CONFIG.CFG_DATA_WIDTH {640} \
  ] $axi_cfg_register_dac
 
+  set_property -dict [ list \
+CONFIG.NUM_READ_OUTSTANDING {1} \
+CONFIG.NUM_WRITE_OUTSTANDING {1} \
+ ] [get_bd_intf_pins /system/axi_cfg_register_dac/S_AXI]
+
   # Create instance: axi_cfg_register_pdm, and set properties
   set axi_cfg_register_pdm [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 axi_cfg_register_pdm ]
   set_property -dict [ list \
 CONFIG.AXI_ADDR_WIDTH {32} \
 CONFIG.CFG_DATA_WIDTH {64} \
  ] $axi_cfg_register_pdm
+
+  set_property -dict [ list \
+CONFIG.NUM_READ_OUTSTANDING {1} \
+CONFIG.NUM_WRITE_OUTSTANDING {1} \
+ ] [get_bd_intf_pins /system/axi_cfg_register_pdm/S_AXI]
 
   # Create instance: axi_interconnect_0, and set properties
   set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
@@ -388,6 +674,11 @@ CONFIG.AXI_ADDR_WIDTH {32} \
 CONFIG.STS_DATA_WIDTH {32} \
  ] $axi_sts_register_adc
 
+  set_property -dict [ list \
+CONFIG.NUM_READ_OUTSTANDING {1} \
+CONFIG.NUM_WRITE_OUTSTANDING {1} \
+ ] [get_bd_intf_pins /system/axi_sts_register_adc/S_AXI]
+
   # Create instance: axi_sts_register_pdm, and set properties
   set axi_sts_register_pdm [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_sts_register:1.0 axi_sts_register_pdm ]
   set_property -dict [ list \
@@ -395,12 +686,22 @@ CONFIG.AXI_ADDR_WIDTH {32} \
 CONFIG.STS_DATA_WIDTH {64} \
  ] $axi_sts_register_pdm
 
+  set_property -dict [ list \
+CONFIG.NUM_READ_OUTSTANDING {1} \
+CONFIG.NUM_WRITE_OUTSTANDING {1} \
+ ] [get_bd_intf_pins /system/axi_sts_register_pdm/S_AXI]
+
   # Create instance: axi_sts_register_reset, and set properties
   set axi_sts_register_reset [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_sts_register:1.0 axi_sts_register_reset ]
   set_property -dict [ list \
 CONFIG.AXI_ADDR_WIDTH {32} \
 CONFIG.STS_DATA_WIDTH {32} \
  ] $axi_sts_register_reset
+
+  set_property -dict [ list \
+CONFIG.NUM_READ_OUTSTANDING {1} \
+CONFIG.NUM_WRITE_OUTSTANDING {1} \
+ ] [get_bd_intf_pins /system/axi_sts_register_reset/S_AXI]
 
   # Create instance: processing_system7_0, and set properties
   set processing_system7_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:processing_system7:5.5 processing_system7_0 ]
@@ -698,11 +999,19 @@ CONFIG.DOUT_WIDTH {1} \
 CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_A_channel_1
 
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {8} \
+ ] [get_bd_intf_pins /fourier_synth_standard/axis_variable_A_channel_1/M_AXIS]
+
   # Create instance: axis_variable_A_channel_2, and set properties
   set axis_variable_A_channel_2 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_2 ]
   set_property -dict [ list \
 CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_A_channel_2
+
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {8} \
+ ] [get_bd_intf_pins /fourier_synth_standard/axis_variable_A_channel_2/M_AXIS]
 
   # Create instance: axis_variable_A_channel_3, and set properties
   set axis_variable_A_channel_3 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_3 ]
@@ -710,11 +1019,19 @@ CONFIG.AXIS_TDATA_WIDTH {64} \
 CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_A_channel_3
 
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {8} \
+ ] [get_bd_intf_pins /fourier_synth_standard/axis_variable_A_channel_3/M_AXIS]
+
   # Create instance: axis_variable_A_channel_4, and set properties
   set axis_variable_A_channel_4 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_4 ]
   set_property -dict [ list \
 CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_A_channel_4
+
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {8} \
+ ] [get_bd_intf_pins /fourier_synth_standard/axis_variable_A_channel_4/M_AXIS]
 
   # Create instance: axis_variable_B_channel_1, and set properties
   set axis_variable_B_channel_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_1 ]
@@ -722,11 +1039,19 @@ CONFIG.AXIS_TDATA_WIDTH {64} \
 CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_B_channel_1
 
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {8} \
+ ] [get_bd_intf_pins /fourier_synth_standard/axis_variable_B_channel_1/M_AXIS]
+
   # Create instance: axis_variable_B_channel_2, and set properties
   set axis_variable_B_channel_2 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_2 ]
   set_property -dict [ list \
 CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_B_channel_2
+
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {8} \
+ ] [get_bd_intf_pins /fourier_synth_standard/axis_variable_B_channel_2/M_AXIS]
 
   # Create instance: axis_variable_B_channel_3, and set properties
   set axis_variable_B_channel_3 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_3 ]
@@ -734,11 +1059,19 @@ CONFIG.AXIS_TDATA_WIDTH {64} \
 CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_B_channel_3
 
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {8} \
+ ] [get_bd_intf_pins /fourier_synth_standard/axis_variable_B_channel_3/M_AXIS]
+
   # Create instance: axis_variable_B_channel_4, and set properties
   set axis_variable_B_channel_4 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_4 ]
   set_property -dict [ list \
 CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_B_channel_4
+
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {8} \
+ ] [get_bd_intf_pins /fourier_synth_standard/axis_variable_B_channel_4/M_AXIS]
 
   # Create instance: dds_compiler_A_channel_1, and set properties
   set dds_compiler_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_A_channel_1 ]
@@ -983,8 +1316,16 @@ CONFIG.Spurious_Free_Dynamic_Range {84} \
   # Create instance: fourier_synthesizer_A, and set properties
   set fourier_synthesizer_A [ create_bd_cell -type ip -vlnv jbeuke:user:fourier_synthesizer:1.0 fourier_synthesizer_A ]
 
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {2} \
+ ] [get_bd_intf_pins /fourier_synth_standard/fourier_synthesizer_A/m_axis]
+
   # Create instance: fourier_synthesizer_B, and set properties
   set fourier_synthesizer_B [ create_bd_cell -type ip -vlnv jbeuke:user:fourier_synthesizer:1.0 fourier_synthesizer_B ]
+
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {2} \
+ ] [get_bd_intf_pins /fourier_synth_standard/fourier_synthesizer_B/m_axis]
 
   # Create instance: freq_A_channel_1_slice, and set properties
   set freq_A_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_A_channel_1_slice ]
@@ -1346,26 +1687,58 @@ CONFIG.DOUT_WIDTH {1} \
   # Create instance: axis_variable_A_channel_1, and set properties
   set axis_variable_A_channel_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_1 ]
 
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {4} \
+ ] [get_bd_intf_pins /fourier_synth_rasterized/axis_variable_A_channel_1/M_AXIS]
+
   # Create instance: axis_variable_A_channel_2, and set properties
   set axis_variable_A_channel_2 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_2 ]
+
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {4} \
+ ] [get_bd_intf_pins /fourier_synth_rasterized/axis_variable_A_channel_2/M_AXIS]
 
   # Create instance: axis_variable_A_channel_3, and set properties
   set axis_variable_A_channel_3 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_3 ]
 
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {4} \
+ ] [get_bd_intf_pins /fourier_synth_rasterized/axis_variable_A_channel_3/M_AXIS]
+
   # Create instance: axis_variable_A_channel_4, and set properties
   set axis_variable_A_channel_4 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_4 ]
+
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {4} \
+ ] [get_bd_intf_pins /fourier_synth_rasterized/axis_variable_A_channel_4/M_AXIS]
 
   # Create instance: axis_variable_B_channel_1, and set properties
   set axis_variable_B_channel_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_1 ]
 
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {4} \
+ ] [get_bd_intf_pins /fourier_synth_rasterized/axis_variable_B_channel_1/M_AXIS]
+
   # Create instance: axis_variable_B_channel_2, and set properties
   set axis_variable_B_channel_2 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_2 ]
+
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {4} \
+ ] [get_bd_intf_pins /fourier_synth_rasterized/axis_variable_B_channel_2/M_AXIS]
 
   # Create instance: axis_variable_B_channel_3, and set properties
   set axis_variable_B_channel_3 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_3 ]
 
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {4} \
+ ] [get_bd_intf_pins /fourier_synth_rasterized/axis_variable_B_channel_3/M_AXIS]
+
   # Create instance: axis_variable_B_channel_4, and set properties
   set axis_variable_B_channel_4 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_4 ]
+
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {4} \
+ ] [get_bd_intf_pins /fourier_synth_rasterized/axis_variable_B_channel_4/M_AXIS]
 
   # Create instance: dds_compiler_A_channel_1, and set properties
   set dds_compiler_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_A_channel_1 ]
@@ -1626,8 +1999,16 @@ CONFIG.Spurious_Free_Dynamic_Range {84} \
   # Create instance: fourier_synthesizer_A, and set properties
   set fourier_synthesizer_A [ create_bd_cell -type ip -vlnv jbeuke:user:fourier_synthesizer:1.0 fourier_synthesizer_A ]
 
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {2} \
+ ] [get_bd_intf_pins /fourier_synth_rasterized/fourier_synthesizer_A/m_axis]
+
   # Create instance: fourier_synthesizer_B, and set properties
   set fourier_synthesizer_B [ create_bd_cell -type ip -vlnv jbeuke:user:fourier_synthesizer:1.0 fourier_synthesizer_B ]
+
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {2} \
+ ] [get_bd_intf_pins /fourier_synth_rasterized/fourier_synthesizer_B/m_axis]
 
   # Create instance: freq_A_channel_1_slice, and set properties
   set freq_A_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_A_channel_1_slice ]
@@ -2084,6 +2465,10 @@ CONFIG.FREQ_HZ {125000000} \
   # Create instance: axis_red_pitaya_adc_0, and set properties
   set axis_red_pitaya_adc_0 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_red_pitaya_adc:1.0 axis_red_pitaya_adc_0 ]
 
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {4} \
+ ] [get_bd_intf_pins /axis_red_pitaya_adc_0/M_AXIS]
+
   # Create instance: axis_red_pitaya_dac_0, and set properties
   set axis_red_pitaya_dac_0 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_red_pitaya_dac:1.0 axis_red_pitaya_dac_0 ]
 
@@ -2092,6 +2477,10 @@ CONFIG.FREQ_HZ {125000000} \
   set_property -dict [ list \
 CONFIG.AXIS_TDATA_WIDTH {32} \
  ] $axis_select_0
+
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {4} \
+ ] [get_bd_intf_pins /axis_select_0/m_axis]
 
   # Create instance: clk_div_0, and set properties
   set clk_div_0 [ create_bd_cell -type ip -vlnv referencedesigner.com:user:clk_div:1.0 clk_div_0 ]
