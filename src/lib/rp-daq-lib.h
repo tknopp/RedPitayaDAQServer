@@ -17,11 +17,6 @@
 #define BASE_FREQUENCY 125000000
 #define ADC_BUFF_SIZE (2*1024*1024) // 2MSamples = 8 MB
 
-extern int mmapfd;
-extern volatile uint32_t *slcr, *axi_hp0;
-// FPGA registers that are memory mapped
-extern void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *reset_sts, *cfg, *ram, *buf;
-
 #define DAC_MODE_RASTERIZED 1
 #define	DAC_MODE_STANDARD   0
 
@@ -37,6 +32,13 @@ extern void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *reset_sts, *cfg, *ram, *buf
 #define INSTANT_RESET_OFF 0
 #define INSTANT_RESET_ON 1
 
+extern bool verbose;
+
+extern int mmapfd;
+extern volatile uint32_t *slcr, *axi_hp0;
+// FPGA registers that are memory mapped
+extern void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *reset_sts, *cfg, *ram, *buf;
+
 extern uint16_t dac_channel_A_modulus[4];
 extern uint16_t dac_channel_B_modulus[4];
 
@@ -45,8 +47,6 @@ extern int init();
 extern void loadBitstream();
 extern bool isMaster();
 extern bool isSlave();
-extern void setMaster();
-extern void setSlave();
 
 // fast DAC
 extern uint16_t getAmplitude(int, int);
@@ -60,8 +60,9 @@ extern int setPhase(double, int, int);
 extern int setDACMode(int);
 extern int getDACMode();
 extern int reconfigureDACModulus(int, int, int);
+extern int getDACModulus(int, int);
 
-// fast DAC
+// fast ADC
 extern int setDecimation(uint16_t decimation);
 extern uint16_t getDecimation();
 extern uint32_t getWritePointer();
@@ -95,7 +96,6 @@ extern int getXADCAResetN();
 extern int getTriggerStatus();
 extern int getWatchdogStatus();
 extern int getInstantResetStatus();
+extern void stopTx();
 
-// network (tcp)
-extern int initSocket(int portno);
 #endif /* RP_DAQ_LIB_H */

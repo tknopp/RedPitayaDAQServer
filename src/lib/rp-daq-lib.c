@@ -15,14 +15,14 @@
 
 #include "rp-daq-lib.h"
 
+bool verbose = false;
+
 int mmapfd;
 volatile uint32_t *slcr, *axi_hp0;
 void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *reset_sts, *cfg, *ram, *buf;
 
 uint16_t dac_channel_A_modulus[4] = {4800, 4800, 4800, 4800};
 uint16_t dac_channel_B_modulus[4] = {4800, 4800, 4800, 4800};
-
-bool master = true;
 
 static const uint32_t ANALOG_OUT_MASK            = 0xFF;
 static const uint32_t ANALOG_OUT_BITS            = 16;
@@ -37,94 +37,110 @@ static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
 
 // Init stuff
 
-void loadBitstream()
-{
-  if(isMaster()) {
-    system("cat /root/RedPitayaDAQServer/bitfiles/master.bin > /dev/xdevcfg");
-  } else {
-    system("cat /root/RedPitayaDAQServer/bitfiles/slave.bin > /dev/xdevcfg");
-  }
+void loadBitstream() {
+	system("cat /root/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");
 }
 
 int init() {
-  loadBitstream();
+	loadBitstream();
 
-  // Open memory
-  if((mmapfd = open("/dev/mem", O_RDWR)) < 0)
-  {
-    perror("open");
-    return 1;
-  }
+	// Open memory
+	if((mmapfd = open("/dev/mem", O_RDWR)) < 0) {
+		perror("open");
+		return 1;
+	}
 
-  // Map memory
-  slcr = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0xF8000000);
-  axi_hp0 = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0xF8008000);
-  dac_cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40000000);
-  adc_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40001000);
-  pdm_cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40002000);
-  pdm_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40003000);
-  reset_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40005000);
-  cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40004000);
-  ram = mmap(NULL, 2048*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x1E000000);
-  buf = mmap(NULL, 2048*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+	// Map memory
+	slcr = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0xF8000000);
+	axi_hp0 = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0xF8008000);
+	dac_cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40000000);
+	adc_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40001000);
+	pdm_cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40002000);
+	pdm_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40003000);
+	reset_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40005000);
+	cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40004000);
+	ram = mmap(NULL, 2048*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x1E000000);
+	buf = mmap(NULL, 2048*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
 
-  // set HP0 bus width to 64 bits
-  slcr[2] = 0xDF0D;
-  slcr[144] = 0;
-  axi_hp0[0] &= ~1;
-  axi_hp0[5] &= ~1;
+	// Set HP0 bus width to 64 bits
+	slcr[2] = 0xDF0D;
+	slcr[144] = 0;
+	axi_hp0[0] &= ~1;
+	axi_hp0[5] &= ~1;
 
-  return 0;
+	// Explicitly set default values
+	setDecimation(16);
+	setDACMode(DAC_MODE_STANDARD);
+	setWatchdogMode(WATCHDOG_OFF);
+	setRAMWriterMode(ADC_MODE_CONTINUOUS);
+	setMasterTrigger(MASTER_TRIGGER_OFF);
+	setInstantResetMode(INSTANT_RESET_OFF);
+
+	stopTx();
+
+	setFrequency(25000, 0, 0);
+	setFrequency(25000, 0, 1);
+	setFrequency(25000, 0, 2);
+	setFrequency(25000, 0, 3);
+	setFrequency(25000, 1, 0);
+	setFrequency(25000, 1, 1);
+	setFrequency(25000, 1, 2);
+	setFrequency(25000, 1, 3);
+
+	setPhase(0, 0, 0);
+	setPhase(0, 0, 1);
+	setPhase(0, 0, 2);
+	setPhase(0, 0, 3);
+	setPhase(0, 1, 0);
+	setPhase(0, 1, 1);
+	setPhase(0, 1, 2);
+	setPhase(0, 1, 3);
+
+	return 0;
 }
 
+
+// TODO: Implement getting the status directly from the FPGA
 bool isMaster() {
-  return master;
+  return true;
 }
 
 bool isSlave() {
-  return !master;
+  return !isMaster();
 }
 
-void setMaster() {
-  master = true;
-}
-
-void setSlave() {
-  master = false;
-}
-
-// fast ADC
+// fast DAC
 
 uint16_t getAmplitude(int channel, int component) {
-  if(channel < 0 || channel > 1) {
-    return -3;
-  }
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
 
-  if(component < 0 || component > 3) {
-    return -4;
-  }
+	if(component < 0 || component > 3) {
+		return -4;
+	}
 
-  uint16_t amplitude = *((uint16_t *)(dac_cfg + 2*component + 4*channel));
+	uint16_t amplitude = *((uint16_t *)(dac_cfg + 2*component + 8*channel));
 
-  return amplitude;
+	return amplitude;
 }
 
 int setAmplitude(uint16_t amplitude, int channel, int component) {
-  if(amplitude < 0 || amplitude >= 8192) {
-    return -2;
-  }
+	if(amplitude < 0 || amplitude >= 8192) {
+		return -2;
+	}
 
-  if(channel < 0 || channel > 1) {
-    return -3;
-  }
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
 
-  if(component < 0 || component > 3) {
-    return -4;
-  }
+	if(component < 0 || component > 3) {
+		return -4;
+	}
 
-  *((uint16_t *)(dac_cfg + 2*component + 4*channel)) = amplitude;
+	*((uint16_t *)(dac_cfg + 2*component + 8*channel)) = amplitude;
 
-  return 0;
+	return 0;
 }
 
 double getFrequency(int channel, int component) {
@@ -173,7 +189,10 @@ int setFrequency(double frequency, int channel, int component)
     if(getDACMode() == DAC_MODE_STANDARD) {
         // Calculate phase increment
         uint32_t phase_increment = (uint32_t)round(frequency*pow(2, 32)/((double)BASE_FREQUENCY));
-        printf("phase_increment for frequency %f Hz is %04x.\n", frequency, phase_increment);
+		
+		if(verbose) {
+			printf("Phase_increment for frequency %f Hz is %04x.\n", frequency, phase_increment);
+		}
 
         *((uint32_t *)(dac_cfg + 16 + 4*component + 16*channel)) = phase_increment;
     } else if(getDACMode() == DAC_MODE_RASTERIZED) {
@@ -186,7 +205,10 @@ int setFrequency(double frequency, int channel, int component)
         
         // Calculate modulus factor
         int modulus_factor = (int)round(frequency*modulus/((double)BASE_FREQUENCY));
-        printf("modulus_factor for frequency %f Hz is %04x.\n", frequency, modulus_factor);
+		
+		if(verbose) {
+			printf("Modulus_factor for frequency %f Hz is %04x.\n", frequency, modulus_factor);
+		}
         
         setModulusFactor(modulus_factor, channel, component);
     }
@@ -230,7 +252,9 @@ int setModulusFactor(uint32_t modulus_factor, int channel, int component)
         return -2;
     }
 
-    printf("Setting modulus factor to %d\n", modulus_factor);
+	if(verbose) {
+		printf("Setting modulus factor to %d\n", modulus_factor);
+	}
 
     *((uint32_t *)(dac_cfg + 16 + 4*component + 16*channel)) = modulus_factor;
 
@@ -284,7 +308,10 @@ int setPhase(double phase_factor, int channel, int component)
     if(getDACMode() == DAC_MODE_STANDARD) {
         // Calculate phase offset
         uint32_t phase_offset = (uint32_t)floor(phase_factor*pow(2, 32));
-        printf("phase_offset for %f*2*pi rad is %04x.\n", phase_factor, phase_offset);
+		
+		if(verbose) {
+			printf("phase_offset for %f*2*pi rad is %04x.\n", phase_factor, phase_offset);
+		}
 
         *((uint32_t *)(dac_cfg + 48 + 4*component + 16*channel)) = phase_offset;
     } else if(getDACMode() == DAC_MODE_RASTERIZED) {
@@ -297,7 +324,10 @@ int setPhase(double phase_factor, int channel, int component)
         
         // Calculate modulus fraction
         uint32_t modulus_fraction = (uint32_t)round(phase_factor*modulus);
-        printf("modulus_fraction for %f*2*pi rad is %04x.\n", phase_factor, modulus_fraction);
+		
+		if(verbose) {
+			printf("modulus_fraction for %f*2*pi rad is %04x.\n", phase_factor, modulus_fraction);
+		}
         
         *((uint32_t *)(dac_cfg + 48 + 4*component + 16*channel)) = modulus_fraction;
     }
@@ -373,7 +403,23 @@ int getDACModulus(int channel, int component) {
 
 // Fast ADC
 
-uint32_t getWritePointer() { return (*((uint32_t *)(adc_sts + 0)))*2; }
+int setDecimation(uint16_t decimation) {
+    if(decimation < 8 || decimation > 8192) {
+        return -1;
+    }
+
+    *((uint16_t *)(cfg + 2)) = decimation;
+    return 0;
+}
+
+uint16_t getDecimation() {
+    uint16_t value = *((uint16_t *)(cfg + 2));
+    return value;
+}
+
+uint32_t getWritePointer() {
+	return (*((uint32_t *)(adc_sts + 0)))*2;
+}
 
 uint32_t getWritePointerDistance(uint32_t start_pos, uint32_t end_pos) {
     end_pos   = end_pos   % ADC_BUFF_SIZE;
@@ -383,19 +429,17 @@ uint32_t getWritePointerDistance(uint32_t start_pos, uint32_t end_pos) {
     return end_pos - start_pos + 1;
 }
 
-void readADCData(uint32_t wp, uint32_t size, uint32_t* buffer)
-{
-  if(wp+size <= ADC_BUFF_SIZE)
-  {
-    memcpy(buffer, ram + sizeof(uint32_t)*wp, size*sizeof(uint32_t));
-  } else
-  {
-    uint32_t size1 = ADC_BUFF_SIZE - wp;
-    uint32_t size2 = size - size1;
+void readADCData(uint32_t wp, uint32_t size, uint32_t* buffer) {
+	//printf("Reading and copying ADC data");
+	if(wp+size <= ADC_BUFF_SIZE) {
+		memcpy(buffer, ram + sizeof(uint32_t)*wp, size*sizeof(uint32_t));
+	} else {
+		uint32_t size1 = ADC_BUFF_SIZE - wp;
+		uint32_t size2 = size - size1;
 
-    memcpy(buffer, ram + sizeof(uint32_t)*wp, size1*sizeof(uint32_t));
-    memcpy(buffer+size1, ram, size2*sizeof(uint32_t));
-  }
+		memcpy(buffer, ram + sizeof(uint32_t)*wp, size1*sizeof(uint32_t));
+		memcpy(buffer+size1, ram, size2*sizeof(uint32_t));
+	}
 }
 
 // Slow IO
@@ -629,39 +673,18 @@ int getInstantResetStatus() {
     return value;
 }
 
-int setDecimation(uint16_t decimation) {
-    if(decimation < 8 || decimation > 8192) {
-        return -1;
-    }
+void stopTx() {
+	setAmplitude(0, 0, 0);
+	setAmplitude(0, 0, 1);
+	setAmplitude(0, 0, 2);
+	setAmplitude(0, 0, 3);
+	setAmplitude(0, 1, 0);
+	setAmplitude(0, 1, 1);
+	setAmplitude(0, 1, 2);
+	setAmplitude(0, 1, 3);
 
-    *((uint16_t *)(cfg + 2)) = decimation;
-    return 0;
-}
-
-uint16_t getDecimation() {
-    uint16_t value = *((uint16_t *)(cfg + 2));
-    return value;
-}
-
-
-// network (tcp)
-
-int initSocket(int portno)
-{
-  struct sockaddr_in serv_addr;
-  int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  if (sockfd < 0)
-     perror("ERROR opening socket");
-  int enable = 1;
-  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
-    perror("setsockopt(SO_REUSEADDR) failed");
-
-  bzero((char *) &serv_addr, sizeof(serv_addr));
-  serv_addr.sin_family = AF_INET;
-  serv_addr.sin_addr.s_addr = INADDR_ANY;
-  serv_addr.sin_port = htons(portno);
-  if (bind(sockfd, (struct sockaddr *) &serv_addr,
-              sizeof(serv_addr)) < 0)
-              perror("ERROR on binding");
-  return sockfd;
+	setPDMNextValue(0, 0);
+	setPDMNextValue(0, 1);
+	setPDMNextValue(0, 2);
+	setPDMNextValue(0, 3);
 }
