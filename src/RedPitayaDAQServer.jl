@@ -13,9 +13,10 @@ type RedPitaya
   dataSocket::TCPSocket
 
   function RedPitaya(host, port=5025)
-    socket = connect(host,port)
+    socket = connect(host, port)
     #return new("\r\n", socket)
-    return new(host,"\n", socket)
+    dataSocket = connect(host, 5026)
+    return new(host,"\n", socket, dataSocket)
   end
 end
 
@@ -23,6 +24,7 @@ end
 Send a command to the RedPitaya
 """
 function send(rp::RedPitaya,cmd::String)
+  println("send command: ", cmd)
   write(rp.socket,cmd*rp.delim)
 end
 
@@ -91,55 +93,7 @@ end
  {.pattern = "RP:InstantResetStatus?", .callback = RP_InstantResetStatus,},
  =#
 
-function test()
-
-  rp = RedPitaya("192.168.1.9",5025)
-
-  decimation = 16
-  frequency = 25000
-  base_frequency = 125000000
-  samples_per_period_base = base_frequency/frequency
-  samples_per_period = samples_per_period_base/decimation
-
-  samples_per_period = samples_per_period*2
-  periods_per_frame = 1
-
-  send(rp, "RP:ADC:PERiod $(samples_per_period)")
-  send(rp, "RP:ADC:FRAme $(periods_per_frame)")
-  send(rp, "RP:ADC:DECimation $(decimation)")
-  #send(rp, "RP:DAC:CH0:COMP0:FREQ $(frequency)")
-  send(rp, "RP:DAC:CH0:COMP0:AMP 400");
-  send(rp, "RP:MasterTrigger OFF");
-  send(rp, "RP:RamWriterMode TRIGGERED");
-  send(rp, "RP:ADC:ACQCONNect");
-
-
-  socket = connect(rp.host,5026)
-
-  # Communicating with instrument object, cli.
-  send(rp, "RP:ADC:ACQSTATUS ON")
-  send(rp, "RP:MasterTrigger ON")
-
-  send(rp, "RP:ADC:FRAMES:CURRENT?")
-
-
-  ###currect_frame = str2num(char(strtrim(string(query(cli, 'RP:ADC:FRAMES:CURRENT?\n')))));
-  ###fprintf(cli, 'RP:ADC:FRAMES:DATA %d,1\n', currect_frame);
-
-  #data = int32(zeros(1, samples_per_period*periods_per_frame));
-  ###data = int32(fread(con, 300*samples_per_period*periods_per_frame, 'int32'));
-
-  ###currect_frame = str2num(char(strtrim(string(query(cli, 'RP:ADC:FRAMES:CURRENT?\n')))))
-
-  send(rp, "RP:MasterTrigger OFF");
-
-  ###close(socket)
-
-
-
-end
-
-
-include("Commands.jl")
+include("ADC.jl")
+include("DAC.jl")
 
 end # module
