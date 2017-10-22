@@ -255,8 +255,15 @@ void* acquisitionThread(void* ch) {
 			
 			wp_old = 0;
 			firstCycle = true;
+
+                	while(getTriggerStatus() == 0)
+                	{
+                        	printf("Waiting for external trigger! \n");
+                        	fflush(stdout);
+                        	usleep(1000000);
+                	}
 		}
-		
+	
 		while(rxEnabled) {
 			//printf("Get write pointer\n");
 			wp = getWritePointer();
@@ -304,8 +311,9 @@ void* acquisitionThread(void* ch) {
 				currentFrameTotal = data_read_total / numSamplesPerFrame;
 				currentPeriodTotal = data_read_total / (numSamplesPerPeriod);
 
-				//printf("++++ data_read: %lld data_read_total: %lld total_frame %lld\n", 
-				//                    data_read, data_read_total, currentFrameTotal);
+//				printf("++++ data_read: %lld data_read_total: %lld total_frame %lld\n", 
+//				                    data_read, data_read_total, currentFrameTotal);
+//                                fflush(stdout);
 
 				oldFrameTotal = currentFrameTotal;
 				oldPeriodTotal = currentPeriodTotal;
@@ -379,13 +387,13 @@ int main(int argc, char** argv) {
     // Init FPGA
     init();
 	
-	// Start socket for sending the data
-	datasockfd = createServer(5026);
+    // Start socket for sending the data
+    datasockfd = createServer(5026);
 	
-	// Start acquisition thread
-	acquisitionThreadRunning = true;
-	rxEnabled = false;
-	pthread_create(&pAcq, NULL, acquisitionThread, NULL);
+    // Start acquisition thread
+    acquisitionThreadRunning = true;
+    rxEnabled = false;
+    pthread_create(&pAcq, NULL, acquisitionThread, NULL);
 
     /* User_context will be pointer to socket */
     scpi_context.user_context = NULL;

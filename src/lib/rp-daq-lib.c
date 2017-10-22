@@ -70,6 +70,7 @@ int init() {
 
 	// Explicitly set default values
 	setDecimation(16);
+	printf("Decimation = %d \n", getDecimation());
 	setDACMode(DAC_MODE_STANDARD);
 	setWatchdogMode(WATCHDOG_OFF);
 	setRAMWriterMode(ADC_MODE_CONTINUOUS);

@@ -67,7 +67,10 @@ static scpi_result_t RP_DAC_GetFrequency(scpi_t * context) {
 	int channel = numbers[0];
 	int component = numbers[1];
 
-	SCPI_ResultDouble(context, getFrequency(channel, component));
+        double freq = getFrequency(channel, component);
+        
+	printf("freq = %f \n", freq);
+	SCPI_ResultDouble(context, freq);
 
     return SCPI_RES_OK;
 }
@@ -223,6 +226,7 @@ static scpi_result_t RP_ADC_SetDecimation(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 	
+        printf("set dec = %d \n", decimation);
 	int result = setDecimation((uint16_t)decimation);
 	if (result < 0) {
 		return SCPI_RES_ERR;
@@ -232,7 +236,10 @@ static scpi_result_t RP_ADC_SetDecimation(scpi_t * context) {
 }
 
 static scpi_result_t RP_ADC_GetDecimation(scpi_t * context) {
-    SCPI_ResultUInt16(context, getDecimation());
+ 
+    uint16_t dec = getDecimation();
+        
+    SCPI_ResultUInt16(context, dec);
 	
     return SCPI_RES_OK;
 }
