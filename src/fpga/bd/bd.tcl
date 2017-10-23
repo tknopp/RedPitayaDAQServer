@@ -316,22 +316,11 @@ CONFIG.S_TDATA_NUM_BYTES {4} \
   # Create instance: axis_ram_writer_1, and set properties
   set axis_ram_writer_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_ram_writer:1.0 axis_ram_writer_1 ]
 
-  set_property -dict [ list \
-CONFIG.SUPPORTS_NARROW_BURST {1} \
-CONFIG.NUM_READ_OUTSTANDING {2} \
-CONFIG.NUM_WRITE_OUTSTANDING {2} \
-CONFIG.MAX_BURST_LENGTH {16} \
- ] [get_bd_intf_pins /write_to_ram/axis_ram_writer_1/M_AXI]
-
   # Create instance: axis_variable_decimation_A, and set properties
   set axis_variable_decimation_A [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_decimation_A ]
   set_property -dict [ list \
 CONFIG.AXIS_TDATA_WIDTH {16} \
  ] $axis_variable_decimation_A
-
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {2} \
- ] [get_bd_intf_pins /write_to_ram/axis_variable_decimation_A/M_AXIS]
 
   # Create instance: axis_variable_decimation_B, and set properties
   set axis_variable_decimation_B [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_decimation_B ]
@@ -339,21 +328,17 @@ CONFIG.TDATA_NUM_BYTES {2} \
 CONFIG.AXIS_TDATA_WIDTH {16} \
  ] $axis_variable_decimation_B
 
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {2} \
- ] [get_bd_intf_pins /write_to_ram/axis_variable_decimation_B/M_AXIS]
-
   # Create instance: cic_compiler_A, and set properties
   set cic_compiler_A [ create_bd_cell -type ip -vlnv xilinx.com:ip:cic_compiler:4.0 cic_compiler_A ]
   set_property -dict [ list \
 CONFIG.Clock_Frequency {125} \
 CONFIG.Filter_Type {Decimation} \
-CONFIG.Fixed_Or_Initial_Rate {16} \
+CONFIG.Fixed_Or_Initial_Rate {8} \
 CONFIG.HAS_ARESETN {true} \
 CONFIG.Input_Data_Width {16} \
 CONFIG.Input_Sample_Frequency {125} \
 CONFIG.Maximum_Rate {8192} \
-CONFIG.Minimum_Rate {8} \
+CONFIG.Minimum_Rate {4} \
 CONFIG.Number_Of_Stages {6} \
 CONFIG.Output_Data_Width {16} \
 CONFIG.Quantization {Truncation} \
@@ -366,12 +351,12 @@ CONFIG.Sample_Rate_Changes {Programmable} \
   set_property -dict [ list \
 CONFIG.Clock_Frequency {125} \
 CONFIG.Filter_Type {Decimation} \
-CONFIG.Fixed_Or_Initial_Rate {16} \
+CONFIG.Fixed_Or_Initial_Rate {8} \
 CONFIG.HAS_ARESETN {true} \
 CONFIG.Input_Data_Width {16} \
 CONFIG.Input_Sample_Frequency {125} \
 CONFIG.Maximum_Rate {8192} \
-CONFIG.Minimum_Rate {8} \
+CONFIG.Minimum_Rate {4} \
 CONFIG.Number_Of_Stages {6} \
 CONFIG.Output_Data_Width {16} \
 CONFIG.Quantization {Truncation} \
@@ -394,7 +379,7 @@ CONFIG.Coefficient_Sets {1} \
 CONFIG.Coefficient_Sign {Signed} \
 CONFIG.Coefficient_Structure {Inferred} \
 CONFIG.Coefficient_Width {16} \
-CONFIG.ColumnConfig {2} \
+CONFIG.ColumnConfig {8} \
 CONFIG.Data_Width {16} \
 CONFIG.Decimation_Rate {2} \
 CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
@@ -405,7 +390,7 @@ CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
 CONFIG.Output_Width {16} \
 CONFIG.Quantization {Quantize_Only} \
 CONFIG.RateSpecification {Frequency_Specification} \
-CONFIG.Sample_Frequency {7.8125} \
+CONFIG.Sample_Frequency {31.25} \
 CONFIG.Zero_Pack_Factor {1} \
  ] $fir_compiler_A
 
@@ -421,7 +406,7 @@ CONFIG.Coefficient_Sets {1} \
 CONFIG.Coefficient_Sign {Signed} \
 CONFIG.Coefficient_Structure {Inferred} \
 CONFIG.Coefficient_Width {16} \
-CONFIG.ColumnConfig {2} \
+CONFIG.ColumnConfig {8} \
 CONFIG.Data_Width {16} \
 CONFIG.Decimation_Rate {2} \
 CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
@@ -432,7 +417,7 @@ CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
 CONFIG.Output_Width {16} \
 CONFIG.Quantization {Quantize_Only} \
 CONFIG.RateSpecification {Frequency_Specification} \
-CONFIG.Sample_Frequency {7.8125} \
+CONFIG.Sample_Frequency {31.25} \
 CONFIG.Zero_Pack_Factor {1} \
  ] $fir_compiler_B
 
@@ -548,12 +533,10 @@ CONFIG.DOUT_WIDTH {14} \
   connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_ram_writer_1/aclk] [get_bd_pins axis_variable_decimation_A/aclk] [get_bd_pins axis_variable_decimation_B/aclk] [get_bd_pins cic_compiler_A/aclk] [get_bd_pins cic_compiler_B/aclk] [get_bd_pins fir_compiler_A/aclk] [get_bd_pins fir_compiler_B/aclk] [get_bd_pins red_pitaya_dfilt1_A/adc_clk_i] [get_bd_pins red_pitaya_dfilt1_B/adc_clk_i]
   connect_bd_net -net decimation_1 [get_bd_pins decimation] [get_bd_pins divide_by_two_0/input_vector]
   connect_bd_net -net divide_by_two_0_input_divided_by_two [get_bd_pins axis_variable_decimation_A/cfg_data] [get_bd_pins axis_variable_decimation_B/cfg_data] [get_bd_pins divide_by_two_0/input_divided_by_two]
-  connect_bd_net -net fir_compiler_0_m_axis_data_tdata [get_bd_pins fir_compiler_A/m_axis_data_tdata] [get_bd_pins xlconcat_1/In0]
-  connect_bd_net -net fir_compiler_0_m_axis_data_tvalid [get_bd_pins fir_compiler_A/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op1]
+  connect_bd_net -net fir_compiler_A_m_axis_data_tdata [get_bd_pins fir_compiler_A/m_axis_data_tdata] [get_bd_pins xlconcat_1/In0]
+  connect_bd_net -net fir_compiler_A_m_axis_data_tvalid [get_bd_pins fir_compiler_A/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net fir_compiler_B_m_axis_data_tdata [get_bd_pins fir_compiler_B/m_axis_data_tdata] [get_bd_pins xlconcat_1/In1]
   connect_bd_net -net fir_compiler_B_m_axis_data_tvalid [get_bd_pins fir_compiler_B/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op2]
-  connect_bd_net -net red_pitaya_dfilt1_A_adc_dat_o [get_bd_pins red_pitaya_dfilt1_A/adc_dat_o] [get_bd_pins sign_extend_A/In0]
-  connect_bd_net -net red_pitaya_dfilt1_B_adc_dat_o [get_bd_pins red_pitaya_dfilt1_B/adc_dat_o] [get_bd_pins sign_extend_B/In0]
   connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_ram_writer_1/aresetn] [get_bd_pins axis_variable_decimation_A/aresetn] [get_bd_pins axis_variable_decimation_B/aresetn] [get_bd_pins cic_compiler_A/aresetn] [get_bd_pins cic_compiler_B/aresetn] [get_bd_pins red_pitaya_dfilt1_A/adc_rstn_i] [get_bd_pins red_pitaya_dfilt1_B/adc_rstn_i]
   connect_bd_net -net sign_extend_B_dout [get_bd_pins cic_compiler_B/s_axis_data_tdata] [get_bd_pins sign_extend_B/dout]
   connect_bd_net -net util_vector_logic_0_Res [get_bd_pins axis_dwidth_converter_0/s_axis_tvalid] [get_bd_pins util_vector_logic_0/Res]
@@ -566,8 +549,8 @@ CONFIG.DOUT_WIDTH {14} \
   connect_bd_net -net xlconstant_BB_dout [get_bd_pins red_pitaya_dfilt1_A/cfg_bb_i] [get_bd_pins red_pitaya_dfilt1_B/cfg_bb_i] [get_bd_pins xlconstant_BB_LV/dout]
   connect_bd_net -net xlconstant_KK_dout [get_bd_pins red_pitaya_dfilt1_A/cfg_kk_i] [get_bd_pins red_pitaya_dfilt1_B/cfg_kk_i] [get_bd_pins xlconstant_KK/dout]
   connect_bd_net -net xlconstant_PP_dout [get_bd_pins red_pitaya_dfilt1_A/cfg_pp_i] [get_bd_pins red_pitaya_dfilt1_B/cfg_pp_i] [get_bd_pins xlconstant_PP/dout]
-  connect_bd_net -net xlslice_0_Dout [get_bd_pins red_pitaya_dfilt1_A/adc_dat_i] [get_bd_pins xlslice_A/Dout]
-  connect_bd_net -net xlslice_1_Dout [get_bd_pins red_pitaya_dfilt1_B/adc_dat_i] [get_bd_pins xlslice_B/Dout]
+  connect_bd_net -net xlslice_A_Dout [get_bd_pins sign_extend_A/In0] [get_bd_pins xlslice_A/Dout]
+  connect_bd_net -net xlslice_B_Dout [get_bd_pins sign_extend_B/In0] [get_bd_pins xlslice_B/Dout]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -632,11 +615,6 @@ CONFIG.AXI_ADDR_WIDTH {32} \
 CONFIG.CFG_DATA_WIDTH {32} \
  ] $axi_cfg_register_cfg
 
-  set_property -dict [ list \
-CONFIG.NUM_READ_OUTSTANDING {1} \
-CONFIG.NUM_WRITE_OUTSTANDING {1} \
- ] [get_bd_intf_pins /system/axi_cfg_register_cfg/S_AXI]
-
   # Create instance: axi_cfg_register_dac, and set properties
   set axi_cfg_register_dac [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 axi_cfg_register_dac ]
   set_property -dict [ list \
@@ -644,22 +622,12 @@ CONFIG.AXI_ADDR_WIDTH {32} \
 CONFIG.CFG_DATA_WIDTH {640} \
  ] $axi_cfg_register_dac
 
-  set_property -dict [ list \
-CONFIG.NUM_READ_OUTSTANDING {1} \
-CONFIG.NUM_WRITE_OUTSTANDING {1} \
- ] [get_bd_intf_pins /system/axi_cfg_register_dac/S_AXI]
-
   # Create instance: axi_cfg_register_pdm, and set properties
   set axi_cfg_register_pdm [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 axi_cfg_register_pdm ]
   set_property -dict [ list \
 CONFIG.AXI_ADDR_WIDTH {32} \
 CONFIG.CFG_DATA_WIDTH {64} \
  ] $axi_cfg_register_pdm
-
-  set_property -dict [ list \
-CONFIG.NUM_READ_OUTSTANDING {1} \
-CONFIG.NUM_WRITE_OUTSTANDING {1} \
- ] [get_bd_intf_pins /system/axi_cfg_register_pdm/S_AXI]
 
   # Create instance: axi_interconnect_0, and set properties
   set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
@@ -674,11 +642,6 @@ CONFIG.AXI_ADDR_WIDTH {32} \
 CONFIG.STS_DATA_WIDTH {32} \
  ] $axi_sts_register_adc
 
-  set_property -dict [ list \
-CONFIG.NUM_READ_OUTSTANDING {1} \
-CONFIG.NUM_WRITE_OUTSTANDING {1} \
- ] [get_bd_intf_pins /system/axi_sts_register_adc/S_AXI]
-
   # Create instance: axi_sts_register_pdm, and set properties
   set axi_sts_register_pdm [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_sts_register:1.0 axi_sts_register_pdm ]
   set_property -dict [ list \
@@ -686,22 +649,12 @@ CONFIG.AXI_ADDR_WIDTH {32} \
 CONFIG.STS_DATA_WIDTH {64} \
  ] $axi_sts_register_pdm
 
-  set_property -dict [ list \
-CONFIG.NUM_READ_OUTSTANDING {1} \
-CONFIG.NUM_WRITE_OUTSTANDING {1} \
- ] [get_bd_intf_pins /system/axi_sts_register_pdm/S_AXI]
-
   # Create instance: axi_sts_register_reset, and set properties
   set axi_sts_register_reset [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_sts_register:1.0 axi_sts_register_reset ]
   set_property -dict [ list \
 CONFIG.AXI_ADDR_WIDTH {32} \
 CONFIG.STS_DATA_WIDTH {32} \
  ] $axi_sts_register_reset
-
-  set_property -dict [ list \
-CONFIG.NUM_READ_OUTSTANDING {1} \
-CONFIG.NUM_WRITE_OUTSTANDING {1} \
- ] [get_bd_intf_pins /system/axi_sts_register_reset/S_AXI]
 
   # Create instance: processing_system7_0, and set properties
   set processing_system7_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:processing_system7:5.5 processing_system7_0 ]
@@ -999,19 +952,11 @@ CONFIG.DOUT_WIDTH {1} \
 CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_A_channel_1
 
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {8} \
- ] [get_bd_intf_pins /fourier_synth_standard/axis_variable_A_channel_1/M_AXIS]
-
   # Create instance: axis_variable_A_channel_2, and set properties
   set axis_variable_A_channel_2 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_2 ]
   set_property -dict [ list \
 CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_A_channel_2
-
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {8} \
- ] [get_bd_intf_pins /fourier_synth_standard/axis_variable_A_channel_2/M_AXIS]
 
   # Create instance: axis_variable_A_channel_3, and set properties
   set axis_variable_A_channel_3 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_3 ]
@@ -1019,19 +964,11 @@ CONFIG.TDATA_NUM_BYTES {8} \
 CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_A_channel_3
 
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {8} \
- ] [get_bd_intf_pins /fourier_synth_standard/axis_variable_A_channel_3/M_AXIS]
-
   # Create instance: axis_variable_A_channel_4, and set properties
   set axis_variable_A_channel_4 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_4 ]
   set_property -dict [ list \
 CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_A_channel_4
-
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {8} \
- ] [get_bd_intf_pins /fourier_synth_standard/axis_variable_A_channel_4/M_AXIS]
 
   # Create instance: axis_variable_B_channel_1, and set properties
   set axis_variable_B_channel_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_1 ]
@@ -1039,19 +976,11 @@ CONFIG.TDATA_NUM_BYTES {8} \
 CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_B_channel_1
 
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {8} \
- ] [get_bd_intf_pins /fourier_synth_standard/axis_variable_B_channel_1/M_AXIS]
-
   # Create instance: axis_variable_B_channel_2, and set properties
   set axis_variable_B_channel_2 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_2 ]
   set_property -dict [ list \
 CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_B_channel_2
-
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {8} \
- ] [get_bd_intf_pins /fourier_synth_standard/axis_variable_B_channel_2/M_AXIS]
 
   # Create instance: axis_variable_B_channel_3, and set properties
   set axis_variable_B_channel_3 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_3 ]
@@ -1059,19 +988,11 @@ CONFIG.TDATA_NUM_BYTES {8} \
 CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_B_channel_3
 
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {8} \
- ] [get_bd_intf_pins /fourier_synth_standard/axis_variable_B_channel_3/M_AXIS]
-
   # Create instance: axis_variable_B_channel_4, and set properties
   set axis_variable_B_channel_4 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_4 ]
   set_property -dict [ list \
 CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_B_channel_4
-
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {8} \
- ] [get_bd_intf_pins /fourier_synth_standard/axis_variable_B_channel_4/M_AXIS]
 
   # Create instance: dds_compiler_A_channel_1, and set properties
   set dds_compiler_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_A_channel_1 ]
@@ -1316,16 +1237,8 @@ CONFIG.Spurious_Free_Dynamic_Range {84} \
   # Create instance: fourier_synthesizer_A, and set properties
   set fourier_synthesizer_A [ create_bd_cell -type ip -vlnv jbeuke:user:fourier_synthesizer:1.0 fourier_synthesizer_A ]
 
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {2} \
- ] [get_bd_intf_pins /fourier_synth_standard/fourier_synthesizer_A/m_axis]
-
   # Create instance: fourier_synthesizer_B, and set properties
   set fourier_synthesizer_B [ create_bd_cell -type ip -vlnv jbeuke:user:fourier_synthesizer:1.0 fourier_synthesizer_B ]
-
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {2} \
- ] [get_bd_intf_pins /fourier_synth_standard/fourier_synthesizer_B/m_axis]
 
   # Create instance: freq_A_channel_1_slice, and set properties
   set freq_A_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_A_channel_1_slice ]
@@ -1687,58 +1600,26 @@ CONFIG.DOUT_WIDTH {1} \
   # Create instance: axis_variable_A_channel_1, and set properties
   set axis_variable_A_channel_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_1 ]
 
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {4} \
- ] [get_bd_intf_pins /fourier_synth_rasterized/axis_variable_A_channel_1/M_AXIS]
-
   # Create instance: axis_variable_A_channel_2, and set properties
   set axis_variable_A_channel_2 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_2 ]
-
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {4} \
- ] [get_bd_intf_pins /fourier_synth_rasterized/axis_variable_A_channel_2/M_AXIS]
 
   # Create instance: axis_variable_A_channel_3, and set properties
   set axis_variable_A_channel_3 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_3 ]
 
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {4} \
- ] [get_bd_intf_pins /fourier_synth_rasterized/axis_variable_A_channel_3/M_AXIS]
-
   # Create instance: axis_variable_A_channel_4, and set properties
   set axis_variable_A_channel_4 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_4 ]
-
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {4} \
- ] [get_bd_intf_pins /fourier_synth_rasterized/axis_variable_A_channel_4/M_AXIS]
 
   # Create instance: axis_variable_B_channel_1, and set properties
   set axis_variable_B_channel_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_1 ]
 
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {4} \
- ] [get_bd_intf_pins /fourier_synth_rasterized/axis_variable_B_channel_1/M_AXIS]
-
   # Create instance: axis_variable_B_channel_2, and set properties
   set axis_variable_B_channel_2 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_2 ]
-
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {4} \
- ] [get_bd_intf_pins /fourier_synth_rasterized/axis_variable_B_channel_2/M_AXIS]
 
   # Create instance: axis_variable_B_channel_3, and set properties
   set axis_variable_B_channel_3 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_3 ]
 
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {4} \
- ] [get_bd_intf_pins /fourier_synth_rasterized/axis_variable_B_channel_3/M_AXIS]
-
   # Create instance: axis_variable_B_channel_4, and set properties
   set axis_variable_B_channel_4 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_4 ]
-
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {4} \
- ] [get_bd_intf_pins /fourier_synth_rasterized/axis_variable_B_channel_4/M_AXIS]
 
   # Create instance: dds_compiler_A_channel_1, and set properties
   set dds_compiler_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_A_channel_1 ]
@@ -1778,7 +1659,7 @@ CONFIG.Spurious_Free_Dynamic_Range {84} \
 CONFIG.Amplitude_Mode {Full_Range} \
 CONFIG.DATA_Has_TLAST {Not_Required} \
 CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {26041} \
+CONFIG.Frequency_Resolution {25699} \
 CONFIG.Has_ARESETn {true} \
 CONFIG.Has_Phase_Out {false} \
 CONFIG.Has_TREADY {false} \
@@ -1787,7 +1668,7 @@ CONFIG.Latency_Configuration {Auto} \
 CONFIG.M_DATA_Has_TUSER {Not_Required} \
 CONFIG.M_PHASE_Has_TUSER {Not_Required} \
 CONFIG.Mode_of_Operation {Rasterized} \
-CONFIG.Modulus {4800} \
+CONFIG.Modulus {4864} \
 CONFIG.Noise_Shaping {None} \
 CONFIG.Output_Frequency1 {0.027} \
 CONFIG.Output_Selection {Sine} \
@@ -1906,7 +1787,7 @@ CONFIG.Spurious_Free_Dynamic_Range {84} \
 CONFIG.Amplitude_Mode {Full_Range} \
 CONFIG.DATA_Has_TLAST {Not_Required} \
 CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {26041} \
+CONFIG.Frequency_Resolution {25699} \
 CONFIG.Has_ARESETn {true} \
 CONFIG.Has_Phase_Out {false} \
 CONFIG.Has_TREADY {false} \
@@ -1915,7 +1796,7 @@ CONFIG.Latency_Configuration {Auto} \
 CONFIG.M_DATA_Has_TUSER {Not_Required} \
 CONFIG.M_PHASE_Has_TUSER {Not_Required} \
 CONFIG.Mode_of_Operation {Rasterized} \
-CONFIG.Modulus {4800} \
+CONFIG.Modulus {4864} \
 CONFIG.Noise_Shaping {None} \
 CONFIG.Output_Frequency1 {0.027} \
 CONFIG.Output_Selection {Sine} \
@@ -1999,16 +1880,8 @@ CONFIG.Spurious_Free_Dynamic_Range {84} \
   # Create instance: fourier_synthesizer_A, and set properties
   set fourier_synthesizer_A [ create_bd_cell -type ip -vlnv jbeuke:user:fourier_synthesizer:1.0 fourier_synthesizer_A ]
 
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {2} \
- ] [get_bd_intf_pins /fourier_synth_rasterized/fourier_synthesizer_A/m_axis]
-
   # Create instance: fourier_synthesizer_B, and set properties
   set fourier_synthesizer_B [ create_bd_cell -type ip -vlnv jbeuke:user:fourier_synthesizer:1.0 fourier_synthesizer_B ]
-
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {2} \
- ] [get_bd_intf_pins /fourier_synth_rasterized/fourier_synthesizer_B/m_axis]
 
   # Create instance: freq_A_channel_1_slice, and set properties
   set freq_A_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_A_channel_1_slice ]
@@ -2465,10 +2338,6 @@ CONFIG.FREQ_HZ {125000000} \
   # Create instance: axis_red_pitaya_adc_0, and set properties
   set axis_red_pitaya_adc_0 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_red_pitaya_adc:1.0 axis_red_pitaya_adc_0 ]
 
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {4} \
- ] [get_bd_intf_pins /axis_red_pitaya_adc_0/M_AXIS]
-
   # Create instance: axis_red_pitaya_dac_0, and set properties
   set axis_red_pitaya_dac_0 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_red_pitaya_dac:1.0 axis_red_pitaya_dac_0 ]
 
@@ -2477,10 +2346,6 @@ CONFIG.TDATA_NUM_BYTES {4} \
   set_property -dict [ list \
 CONFIG.AXIS_TDATA_WIDTH {32} \
  ] $axis_select_0
-
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {4} \
- ] [get_bd_intf_pins /axis_select_0/m_axis]
 
   # Create instance: clk_div_0, and set properties
   set clk_div_0 [ create_bd_cell -type ip -vlnv referencedesigner.com:user:clk_div:1.0 clk_div_0 ]
@@ -2666,6 +2531,12 @@ CONFIG.SINGLE_CHANNEL_SELECTION {TEMPERATURE} \
 CONFIG.XADC_STARUP_SELECTION {independent_adc} \
  ] $xadc_wiz_0
 
+  # Create instance: xlconstant_0, and set properties
+  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
+  set_property -dict [ list \
+CONFIG.CONST_VAL {1} \
+ ] $xlconstant_0
+
   # Create instance: xlconstant_2, and set properties
   set xlconstant_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_2 ]
   set_property -dict [ list \
@@ -2764,9 +2635,9 @@ CONFIG.DOUT_WIDTH {8} \
   connect_bd_net -net util_ds_buf_0_OBUF_DS_N [get_bd_ports adc_enc_n_o] [get_bd_pins util_ds_buf_0/OBUF_DS_N]
   connect_bd_net -net util_ds_buf_0_OBUF_DS_P [get_bd_ports adc_enc_p_o] [get_bd_pins util_ds_buf_0/OBUF_DS_P]
   connect_bd_net -net util_ds_buf_1_BUFG_O [get_bd_pins pdm/pdm_clk] [get_bd_pins util_ds_buf_1/BUFG_O]
-  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins clk_wiz_0/clk_in_sel] [get_bd_pins util_vector_logic_0/Res]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins system/adc_sts] [get_bd_pins write_to_ram/sts_data]
   connect_bd_net -net xlconcat_0_dout1 [get_bd_ports dac_pwm_o] [get_bd_pins pdm/dout]
+  connect_bd_net -net xlconstant_0_dout [get_bd_pins clk_wiz_0/clk_in_sel] [get_bd_pins xlconstant_0/dout]
   connect_bd_net -net xlconstant_2_dout [get_bd_pins clk_div_0/reset] [get_bd_pins xlconstant_2/dout]
   connect_bd_net -net xlconstant_5_dout [get_bd_pins clk_wiz_0/reset] [get_bd_pins clk_wiz_1/reset] [get_bd_pins util_vector_logic_1/Res]
   connect_bd_net -net xlslice_0_Dout [get_bd_pins pdm/Din] [get_bd_pins system/pdm_data]
