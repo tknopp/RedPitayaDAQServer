@@ -2,22 +2,23 @@ module RedPitayaDAQServer
 
 # package code goes here
 
-import Base: send, start, reset
+import Base: send, start, reset, connect
 
-export RedPitaya, receive, query, stop
+export RedPitaya, RedPitayaCluster, receive, query, stop, disconnect
 
-type RedPitaya
+mutable struct RedPitaya
   host::String
   delim::String
   socket::TCPSocket
   dataSocket::TCPSocket
+  decimation::Int64
+  samplesPerPeriod::Int64
+  periodsPerFrame::Int64
+  isConnected::Bool
+end
 
-  function RedPitaya(host, port=5025)
-    socket = connect(host, port)
-    #return new("\r\n", socket)
-    dataSocket = connect(host, 5026)
-    return new(host,"\n", socket, dataSocket)
-  end
+mutable struct RedPitayaCluster
+  rp::Vector{RedPitaya}
 end
 
 """
@@ -49,6 +50,45 @@ Perform a query with the RedPitaya. Parse result as type T
 function query(rp::RedPitaya,cmd::String,T::Type)
   a = query(rp,cmd)
   return parse(T,a)
+end
+
+function connect(rp::RedPitaya)
+  if !rp.isConnected
+    rp.socket = connect(rp.host, 5025)
+    rp.dataSocket = connect(rp.host, 5026)
+    rp.isConnected = true
+  end
+end
+
+function disconnect(rp::RedPitaya)
+  if rp.isConnected
+    close(rp.socket)
+    close(rp.dataSocket)
+    rp.isConnected = false
+  end
+  return nothing
+end
+
+include("ADC.jl")
+include("DAC.jl")
+
+function RedPitaya(host, port=5025)
+
+  rp = RedPitaya(host,"\n", TCPSocket(), TCPSocket(), 1, 1, 1, false)
+
+  connect(rp)
+
+  rp.decimation = decimation(rp)
+  rp.samplesPerPeriod = samplesPerPeriod(rp)
+  rp.periodsPerFrame = periodsPerFrame(rp)
+
+  return rp
+end
+
+function RedPitayaCluster(hosts::Vector{String}, port=5025)
+  rp = RedPitaya[ RedPitaya(host, port) for host in hosts ]
+
+  return RedPitayaCluster(rp)
 end
 
 
@@ -93,7 +133,6 @@ end
  {.pattern = "RP:InstantResetStatus?", .callback = RP_InstantResetStatus,},
  =#
 
-include("ADC.jl")
-include("DAC.jl")
+
 
 end # module
