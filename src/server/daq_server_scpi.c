@@ -256,14 +256,16 @@ void* acquisitionThread(void* ch) {
 			wp_old = 0;
 			firstCycle = true;
 
-                	while(getTriggerStatus() == 0)
+                	while(getTriggerStatus() == 0 && rxEnabled)
                 	{
                         	printf("Waiting for external trigger! \n");
                         	fflush(stdout);
                         	usleep(1000000);
                 	}
 		}
-	
+		
+		// TODO: Remove possible concurrency issue; if rxEnabled is set to true here, the 
+		//	 variables might be uninitialized	
 		while(rxEnabled) {
 			//printf("Get write pointer\n");
 			wp = getWritePointer();
