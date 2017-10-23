@@ -343,7 +343,8 @@ void sendDataToHost(int64_t frame, int64_t numFrames) {
 		if (n < 0) {
 			printf("Error in sendToHost()\n");
 			perror("ERROR writing to socket"); 
-		} else {
+                }
+	} else {
 			int64_t frames1 = numFramesInMemoryBuffer - frameInBuff;
 			int64_t frames2 = numFrames - frames1;
 			n = write(newdatasockfd, buffer+frameInBuff*numSamplesPerFrame,
@@ -361,7 +362,6 @@ void sendDataToHost(int64_t frame, int64_t numFrames) {
 				printf("Error in sendToHost() (else part 2)\n");
 				perror("ERROR writing to socket");
 			}
-		}
 	}
 }
 
