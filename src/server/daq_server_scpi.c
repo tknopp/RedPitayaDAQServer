@@ -389,7 +389,8 @@ int main(int argc, char** argv) {
 	
     // Start socket for sending the data
     datasockfd = createServer(5026);
-	
+    newdatasockfd = 0;
+
     // Start acquisition thread
     acquisitionThreadRunning = true;
     rxEnabled = false;
@@ -451,6 +452,10 @@ int main(int argc, char** argv) {
         }
 
         close(clifd);
+        if(newdatasockfd > 0) {
+          close(newdatasockfd);
+          newdatasockfd = 0;
+        }
     }
 	
 	// Exit gracefully

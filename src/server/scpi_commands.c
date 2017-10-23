@@ -145,6 +145,7 @@ static scpi_result_t RP_DAC_SetPhase(scpi_t * context) {
     if (!SCPI_ParamDouble(context, &phase, TRUE)) {
 		return SCPI_RES_ERR;
 	}
+	printf("channel = %d; component = %d, phase = %f\n", channel, component, phase);
 	
 	int result = setPhase(phase, channel, component);
 	if (result < 0) {
@@ -338,7 +339,7 @@ static scpi_result_t RP_ADC_StartAcquisitionConnection(scpi_t * context) {
 		}
 	}
 	
-	SCPI_ResultBool(context, true);
+	SCPI_ResultBool(context, connectionEstablished);
 	
     return SCPI_RES_OK;
 }
