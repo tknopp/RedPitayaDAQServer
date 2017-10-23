@@ -18,7 +18,7 @@ periodsPerFrame(rp, periods_per_frame)
 decimation(rp, dec)
 #send(rp, "RP:DAC:CH0:COMP0:FREQ $(frequency)")
 amplitudeDAC(rp, 1, 1, 400)
-#phaseDAC(rp, 1, 1, 90.0/180*pi) # Does not work
+phaseDAC(rp, 1, 1, 90.0/360.0) # Phase has to be given in between 0 and 1
 masterTrigger(rp, false)
 ramWriterMode(rp, "TRIGGERED")
 connectADC(rp)
@@ -29,7 +29,7 @@ sleep(1.0)
 # Low Level
 #u = RedPitayaDAQServer.readData_(rp, currentFrame(rp), 1)
 # High Level
-u = readData(rp, currentFrame(rp), 10)
+u = readData(rp, currentFrame(rp), 1)
 
 plot(vec(u[1,:,:]))
 
