@@ -68,6 +68,26 @@ struct paramsType {
 
 struct paramsType params;
 
+int initSocket(int portno)		
+{		
+  struct sockaddr_in serv_addr;		
+  int sockfd = socket(AF_INET, SOCK_STREAM, 0);		
+  if (sockfd < 0)		
+     perror("ERROR opening socket");		
+  int enable = 1;		
+  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)		
+    perror("setsockopt(SO_REUSEADDR) failed");		
+		
+  bzero((char *) &serv_addr, sizeof(serv_addr));		
+  serv_addr.sin_family = AF_INET;		
+  serv_addr.sin_addr.s_addr = INADDR_ANY;		
+  serv_addr.sin_port = htons(portno);		
+  if (bind(sockfd, (struct sockaddr *) &serv_addr,		
+              sizeof(serv_addr)) < 0)		
+              perror("ERROR on binding");		
+  return sockfd;		
+}
+
 void* acquisition_thread(void* ch)
 { 
   uint32_t wp, wp_old;

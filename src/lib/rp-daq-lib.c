@@ -38,7 +38,12 @@ static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
 // Init stuff
 
 void loadBitstream() {
-	system("cat /root/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");
+   //system("cat /root/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");
+  if(isMaster()) {		
+     system("cat /root/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");		
+  } else {		
+     system("cat /root/RedPitayaDAQServer/bitfiles/slave.bit > /dev/xdevcfg");		
+  }
 }
 
 int init() {
@@ -101,13 +106,23 @@ int init() {
 }
 
 
+bool master = true;
+
 // TODO: Implement getting the status directly from the FPGA
 bool isMaster() {
-  return true;
+  return master;
 }
 
 bool isSlave() {
   return !isMaster();
+}
+
+void setMaster() {
+  master = true;		
+}		
+		
+void setSlave() {		
+  master = false;		
 }
 
 // fast DAC
