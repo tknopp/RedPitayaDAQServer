@@ -289,14 +289,15 @@ double getPhase(int channel, int component)
         phase_factor = ((double)register_value)/modulus;
     }
 
-    return phase_factor;
+    return phase_factor*2*M_PI;
 }
 
-int setPhase(double phase_factor, int channel, int component)
-{
-    if(phase_factor < 0.0 || phase_factor > 1.0) {
-        return -2;
-    }
+int setPhase(double phase, int channel, int component)
+{   
+    phase = fmod(phase, 2*M_PI);
+    phase = (phase < 0) ? phase+2*M_PI : phase;
+
+    double phase_factor = phase / (2*M_PI);
 
     if(channel < 0 || channel > 1) {
         return -3;
