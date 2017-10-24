@@ -4,7 +4,7 @@ module RedPitayaDAQServer
 
 import Base: send, start, reset, connect
 
-export RedPitaya, RedPitayaCluster, receive, query, stop, disconnect
+export RedPitaya, receive, query, stop, disconnect
 
 mutable struct RedPitaya
   host::String
@@ -15,10 +15,6 @@ mutable struct RedPitaya
   samplesPerPeriod::Int64
   periodsPerFrame::Int64
   isConnected::Bool
-end
-
-mutable struct RedPitayaCluster
-  rp::Vector{RedPitaya}
 end
 
 """
@@ -71,6 +67,7 @@ end
 
 include("ADC.jl")
 include("DAC.jl")
+include("Cluster.jl")
 
 function RedPitaya(host, port=5025)
 
@@ -85,11 +82,7 @@ function RedPitaya(host, port=5025)
   return rp
 end
 
-function RedPitayaCluster(hosts::Vector{String}, port=5025)
-  rp = RedPitaya[ RedPitaya(host, port) for host in hosts ]
 
-  return RedPitayaCluster(rp)
-end
 
 
 #=

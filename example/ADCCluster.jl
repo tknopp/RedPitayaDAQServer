@@ -2,7 +2,7 @@ using RedPitayaDAQServer
 using GR
 
 #rp = RedPitaya("192.168.1.9")
-rp = RedPitaya("10.167.6.172")
+rp = RedPitayaCluster(["10.167.6.172"])
 
 dec = 16
 frequency = 25000
@@ -17,8 +17,8 @@ samplesPerPeriod(rp, samples_per_period)
 periodsPerFrame(rp, periods_per_frame)
 decimation(rp, dec)
 #send(rp, "RP:DAC:CH0:COMP0:FREQ $(frequency)")
-amplitudeDAC(rp, 1, 1, 400)
-phaseDAC(rp, 1, 1, pi / 2 ) # Phase has to be given in between 0 and 1
+amplitudeDAC(rp, 1, 1, 1, 400)
+phaseDAC(rp, 1, 1, 1, pi / 2 ) # Phase has to be given in between 0 and 1
 masterTrigger(rp, false)
 ramWriterMode(rp, "TRIGGERED")
 connectADC(rp)
@@ -31,6 +31,6 @@ sleep(1.0)
 # High Level
 u = readData(rp, currentFrame(rp), 1)
 
-plot(vec(u[1,:,:,:]))
+plot(vec(u[1,:,1,:,:]))
 
 disconnect(rp)

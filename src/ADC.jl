@@ -57,7 +57,7 @@ function readData(rp::RedPitaya, startFrame, numFrames)
   numPeriods = rp.periodsPerFrame
   numSampPerFrame = numSampPerPeriod * numPeriods
 
-  data = zeros(Int32, 2, numSampPerPeriod, numPeriods, numFrames)
+  data = zeros(Int16, 2, numSampPerPeriod, numPeriods, numFrames)
   wpRead = startFrame
   l=1
 
