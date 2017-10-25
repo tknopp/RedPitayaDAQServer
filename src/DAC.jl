@@ -1,4 +1,4 @@
-export amplitudeDAC, frequencyDAC, modulusFactorDAC, phaseDAC, modeDAC
+export amplitudeDAC, frequencyDAC, modulusFactorDAC, phaseDAC, modeDAC, modulusDAC
 
 # TODO: make this Float64
 function amplitudeDAC(rp::RedPitaya, channel, component)
@@ -38,6 +38,16 @@ end
 function modulusFactorDAC(rp::RedPitaya, channel, component, value)
   command = string("RP:DAC:CH", Int(channel)-1, ":COMP",
                    Int(component)-1, ":FAC ", Int64(value))
+  return send(rp, command)
+end
+
+function modulusDAC(rp::RedPitaya, channel, component)
+  command = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":MOD?")
+  return query(rp, command, Int64)
+end
+function modulusDAC(rp::RedPitaya, channel, component, value)
+  command = string("RP:DAC:CH", Int(channel)-1, ":COMP",
+                   Int(component)-1, ":MOD ", Int64(value))
   return send(rp, command)
 end
 

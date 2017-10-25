@@ -6,6 +6,7 @@ mutable struct RedPitayaCluster
   rp::Vector{RedPitaya}
 end
 
+#TODO: set first RP to master
 function RedPitayaCluster(hosts::Vector{String}, port=5025)
   rp = RedPitaya[ RedPitaya(host, port) for host in hosts ]
 
@@ -52,7 +53,7 @@ function ramWriterMode(rpc::RedPitayaCluster, mode::String)
   end
 end
 
-for op in [:amplitudeDAC,  :frequencyDAC, :phaseDAC, :modulusFactorDAC]
+for op in [:amplitudeDAC,  :frequencyDAC, :phaseDAC, :modulusFactorDAC, :modulusDAC]
   @eval begin $op(rpc::RedPitayaCluster, idxRP::Integer, channel::Integer, component::Integer) =
            $op(rpc.rp[idxRP], channel, component)
   end

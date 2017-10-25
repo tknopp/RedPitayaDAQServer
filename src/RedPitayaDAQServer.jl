@@ -79,6 +79,7 @@ function RedPitaya(host, port=5025)
   rp.samplesPerPeriod = samplesPerPeriod(rp)
   rp.periodsPerFrame = periodsPerFrame(rp)
 
+  finalizer(rp, d -> disconnect(d))
   return rp
 end
 
