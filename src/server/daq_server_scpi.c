@@ -262,7 +262,7 @@ void* acquisitionThread(void* ch) {
                         	fflush(stdout);
                         	usleep(1000000);
                 	}
-		}
+		
 		
 		// TODO: Remove possible concurrency issue; if rxEnabled is set to true here, the 
 		//	 variables might be uninitialized	
@@ -324,7 +324,7 @@ void* acquisitionThread(void* ch) {
 				usleep(40);
 			}
 		}
-	
+	        }
 		// Wait for the acquisition to start
 		usleep(40);
 	}
