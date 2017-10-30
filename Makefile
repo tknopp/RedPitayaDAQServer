@@ -2,8 +2,8 @@ all:
 	@$(MAKE) -C src/lib
 	@$(MAKE) -C src/test
 	@$(MAKE) -C src/server
-	@$(MAKE) -C scpi-parser
-	@$(MAKE) install -C scpi-parser
+	@$(MAKE) -C lib/scpi-parser
+	@$(MAKE) install -C lib/scpi-parser
 	cp scripts/daq_server.service /etc/systemd/system/
 
 .PHONY: clean
