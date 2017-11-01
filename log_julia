@@ -1,0 +1,10 @@
+Decimation = 16 
+Starting acquisition thread
+Connection established 141.83.112.156
+set dec = 8 
+freq = 26041.666667 
+channel = 0; component = 0, amplitude = 4000
+channel = 0; component = 0, phase = 0.000000
+Starting acquisition...
+Init new buffer
+Waiting for external trigger! 
