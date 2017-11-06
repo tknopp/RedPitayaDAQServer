@@ -250,8 +250,9 @@ void* acquisitionThread(void* ch) {
 			numFramesInMemoryBuffer = 16*1024*1024 / numSamplesPerFrame;
 			//printf("Release old buffer\n");
 			releaseBuffer();
-			printf("Init new buffer\n");
+			printf("Initializing new buffer...\n");
 			initBuffer();
+			printf("New buffer initialized\n");
 			
 			wp_old = 0;
 			firstCycle = true;
@@ -262,7 +263,8 @@ void* acquisitionThread(void* ch) {
                         	fflush(stdout);
                         	usleep(1000000);
                 	}
-		
+
+		printf("Trigger received, start reading\n");		
 		
 		// TODO: Remove possible concurrency issue; if rxEnabled is set to true here, the 
 		//	 variables might be uninitialized	
