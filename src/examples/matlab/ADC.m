@@ -22,27 +22,34 @@ rp.setSamplesPerPeriod(samples_per_period);
 rp.setPeriodsPerFrame(periods_per_frame);
 
 rp.setDACMode("rasterized");
-rp.reconfigureDACModulus(0, 0, 4800)
+rp.reconfigureDACModulus(0, 0, 4800);
 rp.setModulusFactor(0, 0, 1);
 
 fprintf('DAC frequency is %fHz.\n\r', rp.getFrequency(0, 0))
-rp.setAmplitude(0, 0, 4000);
-rp.setPhase(0, 0, 0);
+rp.setAmplitude(0, 0, 7000);
+rp.setPhase(0, 0, 0.33);
 rp.setMasterTrigger(false);
 rp.setRamWriterMode("triggered");
+
+pause(0.1);
 
 rp.setAcquisitionStatus(true);
 rp.setMasterTrigger(true);
 
-pause(1.0)
-% High Level
-fprintf('Decimation=%d\n\r', rp.getDecimation())
+% Wait for valid frames
+while (rp.getCurrentFrame() == -1)
+    pause(0.01);
+end
 
-u = rp.readData(rp.getCurrentFrame(), 1);
+startFrame = rp.getCurrentFrame();
+u = rp.readDataLowLevel(startFrame, 2);
 
 rp.setAcquisitionStatus(false);
 rp.setMasterTrigger(false);
-
-plot(u(1,:,1,:,:));
-
 rp.disconnect();
+
+figure;
+plot(u(1,:));
+
+figure;
+plot(u(2,:));
