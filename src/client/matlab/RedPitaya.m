@@ -121,11 +121,12 @@ classdef RedPitaya < handle
             % Read specified amount of data
             fprintf('Read data...\n\r');
             numSampPerFrame = RP.samplesPerPeriod*RP.periodsPerFrame;
-            data = fread(RP.dataSocket, 2*numSampPerFrame, 'int16');
+            data = int16(fread(RP.dataSocket, 2*numSampPerFrame*numFrames, 'int16'));
+            data = swapbytes(data);
             fprintf('Read data!\n\r');
             
             % Reshape to one row per ADC channel
-            data = reshape(data, 2, numSampPerFrame);
+            data = reshape(data, 2, numSampPerFrame, numFrames);
         end
         
         function data = readData(RP, startFrame, numFrames)
@@ -260,7 +261,7 @@ classdef RedPitaya < handle
         
         function data = getPeriodsPerFrame(RP)
             if isempty(RP.samplesPerPeriod)
-                data = RP.query(sprintf('RP:ADC:PERiod?'));
+                data = RP.query(sprintf('RP:ADC:FRAme?'));
                 data = str2double(data);
                 RP.periodsPerFrame = data;
             else
@@ -269,7 +270,7 @@ classdef RedPitaya < handle
         end
         
         function setPeriodsPerFrame(RP, periodsPerFrame)
-            RP.send(sprintf('RP:ADC:PERiod %d', periodsPerFrame));
+            RP.send(sprintf('RP:ADC:FRAme %d', periodsPerFrame));
             RP.periodsPerFrame = periodsPerFrame;
         end
         

@@ -252,20 +252,23 @@ void* acquisitionThread(void* ch) {
 			numFramesInMemoryBuffer = 16*1024*1024 / numSamplesPerFrame;
 			//printf("Release old buffer\n");
 			releaseBuffer();
-			printf("Init new buffer\n");
+			printf("Initializing new buffer...\n");
 			initBuffer();
-
+			printf("New buffer initialized\n");
+			
 			wp_old = 0;
 			firstCycle = true;
 
-			while(getTriggerStatus() == 0 && rxEnabled)
-			{
-				printf("Waiting for external trigger! \n");
-				fflush(stdout);
-				usleep(100);
-			}
+                	while(getTriggerStatus() == 0 && rxEnabled)
+                	{
+                        	printf("Waiting for external trigger! \n");
+                        	fflush(stdout);
+                        	usleep(100);
+                	}
 
-
+		printf("Trigger received, start reading\n");		
+		
+			
 			// TODO: Remove possible concurrency issue; if rxEnabled is set to true here, the 
 			//	 variables might be uninitialized	
 			while(rxEnabled) {

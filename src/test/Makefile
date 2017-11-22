@@ -4,5 +4,5 @@ LDFLAGS = /root/RedPitayaDAQServer/build/lib/librp-daq.so
 LDLIBS = -lm -lpthread -lscpi
 
 all: test_trigger.c
-	mkdir -p ../../build/server/
+	mkdir -p ../../build/test/
 	gcc $(CFLAGS) test_trigger.c $(LDFLAGS) $(LDLIBS) -o ../../build/test/test_trigger

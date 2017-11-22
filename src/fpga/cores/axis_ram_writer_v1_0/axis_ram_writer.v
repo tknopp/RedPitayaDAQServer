@@ -68,7 +68,7 @@ module axis_ram_writer #
   ) fifo_0 (
     .FULL(int_full_wire),
     .ALMOSTEMPTY(int_empty_wire),
-    .RST(~aresetn),
+    .RST(~aresetn && int_empty_wire),
     .WRCLK(aclk),
     .WREN(int_tready_wire & s_axis_tvalid),
     .DI({{(72-AXIS_TDATA_WIDTH){1'b0}}, s_axis_tdata}),
@@ -79,7 +79,8 @@ module axis_ram_writer #
 
   always @(posedge aclk)
   begin
-    if(~aresetn)
+    // Prevent locking of the AXI bus due to reset while bursting data
+    if(~aresetn && int_empty_wire)
     begin
       int_awvalid_reg <= 1'b0;
       int_wvalid_reg <= 1'b0;
