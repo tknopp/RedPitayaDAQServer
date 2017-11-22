@@ -55,6 +55,8 @@ extern pthread_t pAcq;
 extern int datasockfd;
 extern int newdatasockfd;
 
+extern float *slowDACLUT;
+
 extern size_t SCPI_Write(scpi_t *, const char *, size_t);
 extern scpi_result_t SCPI_Flush(scpi_t *);
 extern int SCPI_Error(scpi_t *, int_fast16_t);
@@ -70,6 +72,7 @@ extern scpi_t scpi_context;
 extern int createServer(int);
 extern int waitServer(int);
 extern void* acquisitionThread(void*);
+extern void* slowDACThread(void*);
 extern void sendDataToHost(int64_t, int64_t);
 extern void initBuffer();
 extern void releaseBuffer();

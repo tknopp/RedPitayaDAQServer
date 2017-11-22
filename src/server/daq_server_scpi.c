@@ -80,63 +80,65 @@ uint32_t *buffer = NULL;
 bool rxEnabled = false;
 bool acquisitionThreadRunning = false;
 
+float *slowDACLUT = NULL;
+
 pthread_t pAcq;
 
 int datasockfd;
 
 size_t SCPI_Write(scpi_t * context, const char * data, size_t len) {
-    (void) context;
+	(void) context;
 
-    if (context->user_context != NULL) {
-        int fd = *(int *) (context->user_context);
-        return write(fd, data, len);
-    }
-    return 0;
+	if (context->user_context != NULL) {
+		int fd = *(int *) (context->user_context);
+		return write(fd, data, len);
+	}
+	return 0;
 }
 
 scpi_result_t SCPI_Flush(scpi_t * context) {
-    (void) context;
+	(void) context;
 
-    return SCPI_RES_OK;
+	return SCPI_RES_OK;
 }
 
 int SCPI_Error(scpi_t * context, int_fast16_t err) {
-    (void) context;
-    /* BEEP */
-    fprintf(stderr, "**ERROR: %d, \"%s\"\r\n", (int16_t) err, SCPI_ErrorTranslate(err));
-    return 0;
+	(void) context;
+	/* BEEP */
+	fprintf(stderr, "**ERROR: %d, \"%s\"\r\n", (int16_t) err, SCPI_ErrorTranslate(err));
+	return 0;
 }
 
 scpi_result_t SCPI_Control(scpi_t * context, scpi_ctrl_name_t ctrl, scpi_reg_val_t val) {
-    (void) context;
+	(void) context;
 
-    if (SCPI_CTRL_SRQ == ctrl) {
-        fprintf(stderr, "**SRQ: 0x%X (%d)\r\n", val, val);
-    } else {
-        fprintf(stderr, "**CTRL %02x: 0x%X (%d)\r\n", ctrl, val, val);
-    }
-    return SCPI_RES_OK;
+	if (SCPI_CTRL_SRQ == ctrl) {
+		fprintf(stderr, "**SRQ: 0x%X (%d)\r\n", val, val);
+	} else {
+		fprintf(stderr, "**CTRL %02x: 0x%X (%d)\r\n", ctrl, val, val);
+	}
+	return SCPI_RES_OK;
 }
 
 scpi_result_t SCPI_Reset(scpi_t * context) {
-    (void) context;
+	(void) context;
 
-    fprintf(stderr, "**Reset\r\n");
-    return SCPI_RES_OK;
+	fprintf(stderr, "**Reset\r\n");
+	return SCPI_RES_OK;
 }
 
 scpi_result_t SCPI_SystemCommTcpipControlQ(scpi_t * context) {
-    (void) context;
+	(void) context;
 
-    return SCPI_RES_ERR;
+	return SCPI_RES_ERR;
 }
 
 scpi_interface_t scpi_interface = {
-    .error = SCPI_Error,
-    .write = SCPI_Write,
-    .control = SCPI_Control,
-    .flush = SCPI_Flush,
-    .reset = SCPI_Reset,
+	.error = SCPI_Error,
+	.write = SCPI_Write,
+	.control = SCPI_Control,
+	.flush = SCPI_Flush,
+	.reset = SCPI_Reset,
 };
 
 char scpi_input_buffer[SCPI_INPUT_BUFFER_LENGTH];
@@ -145,75 +147,75 @@ scpi_error_t scpi_error_queue_data[SCPI_ERROR_QUEUE_SIZE];
 scpi_t scpi_context;
 
 int createServer(int port) {
-    int fd;
-    int rc;
-    int on = 1;
-    struct sockaddr_in servaddr;
+	int fd;
+	int rc;
+	int on = 1;
+	struct sockaddr_in servaddr;
 
-    /* Configure TCP Server */
-    memset(&servaddr, 0, sizeof (servaddr));
-    servaddr.sin_family = AF_INET;
-    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    servaddr.sin_port = htons(port);
+	/* Configure TCP Server */
+	memset(&servaddr, 0, sizeof (servaddr));
+	servaddr.sin_family = AF_INET;
+	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	servaddr.sin_port = htons(port);
 
-    /* Create socket */
-    fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (fd < 0) {
-        perror("socket() failed");
-        exit(-1);
-    }
+	/* Create socket */
+	fd = socket(AF_INET, SOCK_STREAM, 0);
+	if (fd < 0) {
+		perror("socket() failed");
+		exit(-1);
+	}
 
-    /* Set address reuse enable */
-    rc = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *) &on, sizeof (on));
-    if (rc < 0) {
-        perror("setsockopt() failed");
-        close(fd);
-        exit(-1);
-    }
+	/* Set address reuse enable */
+	rc = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (char *) &on, sizeof (on));
+	if (rc < 0) {
+		perror("setsockopt() failed");
+		close(fd);
+		exit(-1);
+	}
 
-    /* Set non blocking */
-    rc = ioctl(fd, FIONBIO, (char *) &on);
-    if (rc < 0) {
-        perror("ioctl() failed");
-        close(fd);
-        exit(-1);
-    }
+	/* Set non blocking */
+	rc = ioctl(fd, FIONBIO, (char *) &on);
+	if (rc < 0) {
+		perror("ioctl() failed");
+		close(fd);
+		exit(-1);
+	}
 
-    /* Bind to socket */
-    rc = bind(fd, (struct sockaddr *) &servaddr, sizeof (servaddr));
-    if (rc < 0) {
-        perror("bind() failed");
-        close(fd);
-        exit(-1);
-    }
+	/* Bind to socket */
+	rc = bind(fd, (struct sockaddr *) &servaddr, sizeof (servaddr));
+	if (rc < 0) {
+		perror("bind() failed");
+		close(fd);
+		exit(-1);
+	}
 
-    /* Listen on socket */
-    listen(fd, 1);
-    if (rc < 0) {
-        perror("listen() failed");
-        close(fd);
-        exit(-1);
-    }
+	/* Listen on socket */
+	listen(fd, 1);
+	if (rc < 0) {
+		perror("listen() failed");
+		close(fd);
+		exit(-1);
+	}
 
-    return fd;
+	return fd;
 }
 
 int waitServer(int fd) {
-    fd_set fds;
-    struct timeval timeout;
-    int rc;
-    int max_fd;
+	fd_set fds;
+	struct timeval timeout;
+	int rc;
+	int max_fd;
 
-    FD_ZERO(&fds);
-    max_fd = fd;
-    FD_SET(fd, &fds);
+	FD_ZERO(&fds);
+	max_fd = fd;
+	FD_SET(fd, &fds);
 
-    timeout.tv_sec = 5;
-    timeout.tv_usec = 0;
+	timeout.tv_sec = 5;
+	timeout.tv_usec = 0;
 
-    rc = select(max_fd + 1, &fds, NULL, NULL, &timeout);
+	rc = select(max_fd + 1, &fds, NULL, NULL, &timeout);
 
-    return rc;
+	return rc;
 }
 
 void* acquisitionThread(void* ch) { 
@@ -233,7 +235,7 @@ void* acquisitionThread(void* ch) {
 		printf("Unsuccessful in setting thread realtime prio.\n");
 		return NULL;     
 	}
-	
+
 	// Loop until the acquisition is started
 	while(acquisitionThreadRunning) {
 		// Reset everything in order to provide a fresh start
@@ -245,90 +247,90 @@ void* acquisitionThread(void* ch) {
 			data_read = 0; 
 			oldFrameTotal = -1;
 			oldPeriodTotal = -1;
-			
+
 			numSamplesPerFrame = numSamplesPerPeriod * numPeriodsPerFrame; 
 			numFramesInMemoryBuffer = 16*1024*1024 / numSamplesPerFrame;
 			//printf("Release old buffer\n");
 			releaseBuffer();
 			printf("Init new buffer\n");
 			initBuffer();
-			
+
 			wp_old = 0;
 			firstCycle = true;
 
-                	while(getTriggerStatus() == 0 && rxEnabled)
-                	{
-                        	printf("Waiting for external trigger! \n");
-                        	fflush(stdout);
-                        	usleep(1000000);
-                	}
-		
-		
-		// TODO: Remove possible concurrency issue; if rxEnabled is set to true here, the 
-		//	 variables might be uninitialized	
-		while(rxEnabled) {
-			//printf("Get write pointer\n");
-			wp = getWritePointer();
-			
-			//printf("Get write pointer distance\n");
-			uint32_t size = getWritePointerDistance(wp_old, wp)-1;
-			//printf("____ %d %d %d \n", size, wp_old, wp);
-			if(size > 512*1024) {
-				printf("I think we lost a step %d %d %d \n", size, wp_old, wp);
+			while(getTriggerStatus() == 0 && rxEnabled)
+			{
+				printf("Waiting for external trigger! \n");
+				fflush(stdout);
+				usleep(100);
 			}
 
-			if(firstCycle) {
-				firstCycle = false;
-			} else {
-				// Limit size to be read to period length
-				size = MIN(size, numSamplesPerPeriod);
-			}
 
-			if (size > 0) {
-				if(data_read + size <= buff_size) { 
-					//printf("Read ADC data\n");
-					readADCData(wp_old, size, buffer + data_read);
-					
-					//printf("Update position information\n");
-					data_read += size;
-					data_read_total += size;
-					wp_old = (wp_old + size) % ADC_BUFF_SIZE;
-				} else {
-					printf("OVERFLOW %lld %d  %lld\n", data_read, size, buff_size);
-					uint32_t size1 = buff_size - data_read; 
-					uint32_t size2 = size - size1; 
+			// TODO: Remove possible concurrency issue; if rxEnabled is set to true here, the 
+			//	 variables might be uninitialized	
+			while(rxEnabled) {
+				//printf("Get write pointer\n");
+				wp = getWritePointer();
 
-					readADCData(wp_old, size1, buffer + data_read);
-					data_read = 0;
-					data_read_total += size1;
-
-					wp_old = (wp_old + size1) % ADC_BUFF_SIZE;
-
-					readADCData(wp_old, size2, buffer + data_read);
-					data_read += size2;
-					data_read_total += size2;
-					wp_old = (wp_old + size2) % ADC_BUFF_SIZE;
+				//printf("Get write pointer distance\n");
+				uint32_t size = getWritePointerDistance(wp_old, wp)-1;
+				//printf("____ %d %d %d \n", size, wp_old, wp);
+				if(size > 512*1024) {
+					printf("I think we lost a step %d %d %d \n", size, wp_old, wp);
 				}
-				
-				currentFrameTotal = data_read_total / numSamplesPerFrame;
-				currentPeriodTotal = data_read_total / (numSamplesPerPeriod);
 
-//				printf("++++ data_read: %lld data_read_total: %lld total_frame %lld\n", 
-//				                    data_read, data_read_total, currentFrameTotal);
-//                                fflush(stdout);
+				if(firstCycle) {
+					firstCycle = false;
+				} else {
+					// Limit size to be read to period length
+					size = MIN(size, numSamplesPerPeriod);
+				}
 
-				oldFrameTotal = currentFrameTotal;
-				oldPeriodTotal = currentPeriodTotal;
-			} else {
-				//printf("Counter not increased %d %d \n", wp_old, wp);
-				usleep(40);
+				if (size > 0) {
+					if(data_read + size <= buff_size) { 
+						//printf("Read ADC data\n");
+						readADCData(wp_old, size, buffer + data_read);
+
+						//printf("Update position information\n");
+						data_read += size;
+						data_read_total += size;
+						wp_old = (wp_old + size) % ADC_BUFF_SIZE;
+					} else {
+						printf("OVERFLOW %lld %d  %lld\n", data_read, size, buff_size);
+						uint32_t size1 = buff_size - data_read; 
+						uint32_t size2 = size - size1; 
+
+						readADCData(wp_old, size1, buffer + data_read);
+						data_read = 0;
+						data_read_total += size1;
+
+						wp_old = (wp_old + size1) % ADC_BUFF_SIZE;
+
+						readADCData(wp_old, size2, buffer + data_read);
+						data_read += size2;
+						data_read_total += size2;
+						wp_old = (wp_old + size2) % ADC_BUFF_SIZE;
+					}
+
+					currentFrameTotal = data_read_total / numSamplesPerFrame;
+					currentPeriodTotal = data_read_total / (numSamplesPerPeriod);
+
+					//				printf("++++ data_read: %lld data_read_total: %lld total_frame %lld\n", 
+					//				                    data_read, data_read_total, currentFrameTotal);
+					//                                fflush(stdout);
+
+					oldFrameTotal = currentFrameTotal;
+					oldPeriodTotal = currentPeriodTotal;
+				} else {
+					//printf("Counter not increased %d %d \n", wp_old, wp);
+					usleep(40);
+				}
 			}
 		}
-	        }
 		// Wait for the acquisition to start
 		usleep(40);
 	}
-	
+
 	printf("Acquisition thread finished\n");
 }
 
@@ -338,30 +340,30 @@ void sendDataToHost(int64_t frame, int64_t numFrames) {
 
 	if(numFrames+frameInBuff < numFramesInMemoryBuffer) {
 		n = write(newdatasockfd, buffer+frameInBuff*numSamplesPerFrame, 
-					numSamplesPerFrame * numFrames * sizeof(uint32_t));
-		
+				numSamplesPerFrame * numFrames * sizeof(uint32_t));
+
 		if (n < 0) {
 			printf("Error in sendToHost()\n");
 			perror("ERROR writing to socket"); 
-                }
+		}
 	} else {
-			int64_t frames1 = numFramesInMemoryBuffer - frameInBuff;
-			int64_t frames2 = numFrames - frames1;
-			n = write(newdatasockfd, buffer+frameInBuff*numSamplesPerFrame,
-			numSamplesPerFrame * frames1 *sizeof(uint32_t));
-			
-			if (n < 0) {
-				printf("Error in sendToHost() (else part 1)\n");
-				perror("ERROR writing to socket");
-			}
-			
-			n = write(newdatasockfd, buffer,
-			numSamplesPerFrame * frames2 * sizeof(uint32_t));
-			
-			if (n < 0) {
-				printf("Error in sendToHost() (else part 2)\n");
-				perror("ERROR writing to socket");
-			}
+		int64_t frames1 = numFramesInMemoryBuffer - frameInBuff;
+		int64_t frames2 = numFrames - frames1;
+		n = write(newdatasockfd, buffer+frameInBuff*numSamplesPerFrame,
+				numSamplesPerFrame * frames1 *sizeof(uint32_t));
+
+		if (n < 0) {
+			printf("Error in sendToHost() (else part 1)\n");
+			perror("ERROR writing to socket");
+		}
+
+		n = write(newdatasockfd, buffer,
+				numSamplesPerFrame * frames2 * sizeof(uint32_t));
+
+		if (n < 0) {
+			printf("Error in sendToHost() (else part 2)\n");
+			perror("ERROR writing to socket");
+		}
 	}
 }
 
@@ -375,91 +377,97 @@ void releaseBuffer() {
 	free(buffer);
 }
 
+void* slowDACThread(void* ch) { 
+
+
+}
+
+
 /*
  *
  */
 int main(int argc, char** argv) {
-    (void) argc;
-    (void) argv;
-    int rc;
+	(void) argc;
+	(void) argv;
+	int rc;
 
-    int listenfd;
-    char smbuffer[10];
+	int listenfd;
+	char smbuffer[10];
 
-    // Init FPGA
-    init();
-	
-    // Start socket for sending the data
-    datasockfd = createServer(5026);
-    newdatasockfd = 0;
+	// Init FPGA
+	init();
 
-    // Start acquisition thread
-    acquisitionThreadRunning = true;
-    rxEnabled = false;
-    pthread_create(&pAcq, NULL, acquisitionThread, NULL);
+	// Start socket for sending the data
+	datasockfd = createServer(5026);
+	newdatasockfd = 0;
 
-    /* User_context will be pointer to socket */
-    scpi_context.user_context = NULL;
+	// Start acquisition thread
+	acquisitionThreadRunning = true;
+	rxEnabled = false;
+	pthread_create(&pAcq, NULL, acquisitionThread, NULL);
 
-    SCPI_Init(&scpi_context,
-            scpi_commands,
-            &scpi_interface,
-            scpi_units_def,
-            SCPI_IDN1, SCPI_IDN2, SCPI_IDN3, SCPI_IDN4,
-            scpi_input_buffer, SCPI_INPUT_BUFFER_LENGTH,
-            scpi_error_queue_data, SCPI_ERROR_QUEUE_SIZE);
+	/* User_context will be pointer to socket */
+	scpi_context.user_context = NULL;
 
-    listenfd = createServer(5025);
+	SCPI_Init(&scpi_context,
+			scpi_commands,
+			&scpi_interface,
+			scpi_units_def,
+			SCPI_IDN1, SCPI_IDN2, SCPI_IDN3, SCPI_IDN4,
+			scpi_input_buffer, SCPI_INPUT_BUFFER_LENGTH,
+			scpi_error_queue_data, SCPI_ERROR_QUEUE_SIZE);
 
-    while (1) {
-        int clifd;
-        struct sockaddr_in cliaddr;
-        socklen_t clilen;
+	listenfd = createServer(5025);
 
-	//printf("Waiting for new connection\n");
-        clilen = sizeof (cliaddr);
-        clifd = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
+	while (1) {
+		int clifd;
+		struct sockaddr_in cliaddr;
+		socklen_t clilen;
 
-        if (clifd < 0) continue;
+		//printf("Waiting for new connection\n");
+		clilen = sizeof (cliaddr);
+		clifd = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
 
-        printf("Connection established %s\r\n", inet_ntoa(cliaddr.sin_addr));
+		if (clifd < 0) continue;
 
-        scpi_context.user_context = &clifd;
+		printf("Connection established %s\r\n", inet_ntoa(cliaddr.sin_addr));
 
-        while (1) {
-            rc = waitServer(clifd);
-            if (rc < 0) { /* failed */
-                perror("  recv() failed");
-                break;
-            }
-            if (rc == 0) { /* timeout */
-                SCPI_Input(&scpi_context, NULL, 0);
-            }
-            if (rc > 0) { /* something to read */
-                rc = recv(clifd, smbuffer, sizeof (smbuffer), 0);
-                if (rc < 0) {
-                    if (errno != EWOULDBLOCK) {
-                        perror("  recv() failed");
-                        break;
-                    }
-                } else if (rc == 0) {
-                    printf("Connection closed\r\n");
-		    rxEnabled = false;
-        	    stopTx();
-                    break;
-                } else {
-                    SCPI_Input(&scpi_context, smbuffer, rc);
-                }
-            }
-        }
+		scpi_context.user_context = &clifd;
 
-        close(clifd);
-        if(newdatasockfd > 0) {
-          close(newdatasockfd);
-          newdatasockfd = 0;
-        }
-    }
-	
+		while (1) {
+			rc = waitServer(clifd);
+			if (rc < 0) { /* failed */
+				perror("  recv() failed");
+				break;
+			}
+			if (rc == 0) { /* timeout */
+				SCPI_Input(&scpi_context, NULL, 0);
+			}
+			if (rc > 0) { /* something to read */
+				rc = recv(clifd, smbuffer, sizeof (smbuffer), 0);
+				if (rc < 0) {
+					if (errno != EWOULDBLOCK) {
+						perror("  recv() failed");
+						break;
+					}
+				} else if (rc == 0) {
+					printf("Connection closed\r\n");
+					rxEnabled = false;
+					stopTx();
+					break;
+				} else {
+					SCPI_Input(&scpi_context, smbuffer, rc);
+				}
+			}
+		}
+
+		close(clifd);
+		if(newdatasockfd > 0) {
+			close(newdatasockfd);
+			newdatasockfd = 0;
+		}
+	}
+
 	// Exit gracefully
 	acquisitionThreadRunning = false;
 	rxEnabled = false;
@@ -467,7 +475,7 @@ int main(int argc, char** argv) {
 	stopTx();
 	releaseBuffer();
 
-    return (EXIT_SUCCESS);
+	return (EXIT_SUCCESS);
 }
 
 
