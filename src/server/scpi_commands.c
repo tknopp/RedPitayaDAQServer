@@ -378,6 +378,26 @@ static scpi_result_t RP_PDM_SetPDMNextValue(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_PDM_SetPDMNextValueVolt(scpi_t * context) {
+    int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+	
+	double next_PDM_value;
+    if (!SCPI_ParamDouble(context, &next_PDM_value, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+        printf("Set PDM channel %d to %f Volt\n", channel, next_PDM_value);
+	
+	int result = setPDMNextValueVolt(next_PDM_value, channel);
+	if (result < 0) {
+		return SCPI_RES_ERR;
+	}
+
+    return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_PDM_GetPDMNextValue(scpi_t * context) {
     int32_t numbers[1];
 	SCPI_CommandNumbers(context, numbers, 1, 1);
@@ -402,8 +422,12 @@ static scpi_result_t RP_XADC_GetXADCValueVolt(scpi_t * context) {
     int32_t numbers[1];
 	SCPI_CommandNumbers(context, numbers, 1, 1);
 	int channel = numbers[0];
+
+        double val = getXADCValueVolt(channel);
+
+        printf("XADC value = %f \n", val);
 	
-	SCPI_ResultUInt32(context, getXADCValue(channel));
+	SCPI_ResultDouble(context, val);
 
     return SCPI_RES_OK;
 }
@@ -598,6 +622,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:ACQCONNect", .callback = RP_ADC_StartAcquisitionConnection,},
 	{.pattern = "RP:ADC:ACQSTATus", .callback = RP_ADC_SetAcquisitionStatus,},
 	{.pattern = "RP:PDM:CHannel#:NextValue", .callback = RP_PDM_SetPDMNextValue,},
+	{.pattern = "RP:PDM:CHannel#:NextValueVolt", .callback = RP_PDM_SetPDMNextValueVolt,},
 	{.pattern = "RP:PDM:CHannel#:NextValue?", .callback = RP_PDM_GetPDMNextValue,},
 	{.pattern = "RP:PDM:CHannel#:CurrentValue?", .callback = RP_PDM_GetPDMCurrentValue,},
 	{.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},
