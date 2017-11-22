@@ -68,6 +68,7 @@ end
 include("ADC.jl")
 include("DAC.jl")
 include("Cluster.jl")
+include("SlowIO.jl")
 
 function RedPitaya(host, port=5025)
 

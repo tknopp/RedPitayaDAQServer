@@ -1,8 +1,8 @@
 using RedPitayaDAQServer
 using GR
 
-#rp = RedPitayaCluster(["192.168.1.9"])
-rp = RedPitayaCluster(["10.167.6.172"])
+rp = RedPitayaCluster(["192.168.1.9"])
+#rp = RedPitayaCluster(["10.167.6.172"])
 connectADC(rp)
 
 dec = 16

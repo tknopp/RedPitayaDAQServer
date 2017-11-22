@@ -62,6 +62,11 @@ for op in [:amplitudeDAC,  :frequencyDAC, :phaseDAC, :modulusFactorDAC, :modulus
   end
 end
 
+setSlowDAC(rpc::RedPitayaCluster, idxRP::Integer, channel::Integer, value) =
+  setSlowDAC(rpc.rp[idxRP], channel, value)
+
+getSlowADC(rpc::RedPitayaCluster, idxRP::Integer, channel::Integer) =
+  getSlowADC(rpc.rp[idxRP], channel)
 
 #"STANDARD" or "RASTERIZED"
 modeDAC(rpc::RedPitayaCluster) = modeDAC(master(rpc))
