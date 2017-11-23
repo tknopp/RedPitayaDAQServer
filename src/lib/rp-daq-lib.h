@@ -84,9 +84,13 @@ extern uint32_t getXADCValue(int);
 extern float getXADCValueVolt(int);
 
 // misc
+extern int getWatchdogMode();
 extern int setWatchdogMode(int);
+extern int getRAMWriterMode();
 extern int setRAMWriterMode(int);
+extern int getMasterTrigger();
 extern int setMasterTrigger(int);
+extern int getInstantResetMode();
 extern int setInstantResetMode(int);
 extern int getPeripheralAResetN();
 extern int getFourierSynthAResetN();

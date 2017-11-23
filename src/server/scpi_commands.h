@@ -64,6 +64,7 @@ extern static scpi_result_t RP_ADC_GetPeriodsPerFrame(scpi_t *);
 extern static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t *);
 extern static scpi_result_t RP_ADC_GetFrames(scpi_t *);
 extern static scpi_result_t RP_ADC_StartAcquisitionConnection(scpi_t *);
+extern static scpi_result_t RP_ADC_GetAcquisitionStatus(scpi_t *);
 extern static scpi_result_t RP_ADC_SetAcquisitionStatus(scpi_t *);
 
 extern static scpi_result_t RP_PDM_SetPDMNextValue(scpi_t *);
@@ -72,10 +73,14 @@ extern static scpi_result_t RP_PDM_GetPDMCurrentValue(scpi_t *);
 
 extern static scpi_result_t RP_XADC_GetXADCValueVolt(scpi_t *);
 
-extern static scpi_result_t RP_WatchdogMode(scpi_t *);
-extern static scpi_result_t RP_RAMWriterMode(scpi_t *);
-extern static scpi_result_t RP_MasterTrigger(scpi_t *);
-extern static scpi_result_t RP_InstantResetMode(scpi_t *);
+extern static scpi_result_t RP_GetWatchdogMode(scpi_t *);
+extern static scpi_result_t RP_SetWatchdogMode(scpi_t *);
+extern static scpi_result_t RP_GetRAMWriterMode(scpi_t *);
+extern static scpi_result_t RP_SetRAMWriterMode(scpi_t *);
+extern static scpi_result_t RP_GetMasterTrigger(scpi_t *);
+extern static scpi_result_t RP_SetMasterTrigger(scpi_t *);
+extern static scpi_result_t RP_GetInstantResetMode(scpi_t *);
+extern static scpi_result_t RP_SetInstantResetMode(scpi_t *);
 
 extern static scpi_result_t RP_PeripheralAResetN(scpi_t *);
 extern static scpi_result_t RP_FourierSynthAResetN(scpi_t *);

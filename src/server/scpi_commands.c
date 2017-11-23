@@ -319,12 +319,6 @@ static scpi_result_t RP_ADC_GetFrames(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
-scpi_choice_def_t acquisition_status_modes[] = {
-    {"OFF", ACQUISITION_OFF},
-    {"ON", ACQUISITION_ON},
-    SCPI_CHOICE_LIST_END /* termination of option list */
-};
-
 static scpi_result_t RP_ADC_StartAcquisitionConnection(scpi_t * context) {
 	bool connectionEstablished = false;
 	
@@ -341,6 +335,21 @@ static scpi_result_t RP_ADC_StartAcquisitionConnection(scpi_t * context) {
 	
 	SCPI_ResultBool(context, connectionEstablished);
 	
+    return SCPI_RES_OK;
+}
+
+scpi_choice_def_t acquisition_status_modes[] = {
+    {"OFF", ACQUISITION_OFF},
+    {"ON", ACQUISITION_ON},
+    SCPI_CHOICE_LIST_END /* termination of option list */
+};
+
+static scpi_result_t RP_ADC_GetAcquisitionStatus(scpi_t * context) {
+	const char * name;
+
+    SCPI_ChoiceToName(acquisition_status_modes, rxEnabled, &name);
+	SCPI_ResultText(context, name);
+
     return SCPI_RES_OK;
 }
 
@@ -438,7 +447,16 @@ scpi_choice_def_t watchdog_modes[] = {
     SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
-static scpi_result_t RP_WatchdogMode(scpi_t * context) {
+static scpi_result_t RP_GetWatchdogMode(scpi_t * context) {
+	const char * name;
+
+    SCPI_ChoiceToName(watchdog_modes, getWatchdogMode(), &name);
+	SCPI_ResultText(context, name);
+
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_SetWatchdogMode(scpi_t * context) {
     int32_t watchdog_mode_selection;
 
     if (!SCPI_ParamChoice(context, watchdog_modes, &watchdog_mode_selection, TRUE)) {
@@ -459,7 +477,16 @@ scpi_choice_def_t RAM_writer_modes[] = {
     SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
-static scpi_result_t RP_RAMWriterMode(scpi_t * context) {
+static scpi_result_t RP_GetRAMWriterMode(scpi_t * context) {
+	const char * name;
+
+    SCPI_ChoiceToName(RAM_writer_modes, getRAMWriterMode(), &name);
+	SCPI_ResultText(context, name);
+
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_SetRAMWriterMode(scpi_t * context) {
     int32_t RAM_writer_mode_selection;
 
     if (!SCPI_ParamChoice(context, RAM_writer_modes, &RAM_writer_mode_selection, TRUE)) {
@@ -480,7 +507,16 @@ scpi_choice_def_t master_trigger_modes[] = {
     SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
-static scpi_result_t RP_MasterTrigger(scpi_t * context) {
+static scpi_result_t RP_GetMasterTrigger(scpi_t * context) {
+	const char * name;
+
+    SCPI_ChoiceToName(master_trigger_modes, getMasterTrigger(), &name);
+	SCPI_ResultText(context, name);
+
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_SetMasterTrigger(scpi_t * context) {
     int32_t master_trigger_selection;
 
     if (!SCPI_ParamChoice(context, master_trigger_modes, &master_trigger_selection, TRUE)) {
@@ -501,7 +537,16 @@ scpi_choice_def_t instant_reset_modes[] = {
     SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
-static scpi_result_t RP_InstantResetMode(scpi_t * context) {
+static scpi_result_t RP_GetInstantResetMode(scpi_t * context) {
+	const char * name;
+
+    SCPI_ChoiceToName(instant_reset_modes, getInstantResetMode, &name);
+	SCPI_ResultText(context, name);
+
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_SetInstantResetMode(scpi_t * context) {
     int32_t instant_reset_mode_selection;
 
     if (!SCPI_ParamChoice(context, instant_reset_modes, &instant_reset_mode_selection, TRUE)) {
@@ -621,15 +666,20 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:FRAmes:DATa", .callback = RP_ADC_GetFrames,},
 	{.pattern = "RP:ADC:ACQCONNect", .callback = RP_ADC_StartAcquisitionConnection,},
 	{.pattern = "RP:ADC:ACQSTATus", .callback = RP_ADC_SetAcquisitionStatus,},
+	{.pattern = "RP:ADC:ACQSTATus?", .callback = RP_ADC_GetAcquisitionStatus,},
 	{.pattern = "RP:PDM:CHannel#:NextValue", .callback = RP_PDM_SetPDMNextValue,},
 	{.pattern = "RP:PDM:CHannel#:NextValueVolt", .callback = RP_PDM_SetPDMNextValueVolt,},
 	{.pattern = "RP:PDM:CHannel#:NextValue?", .callback = RP_PDM_GetPDMNextValue,},
 	{.pattern = "RP:PDM:CHannel#:CurrentValue?", .callback = RP_PDM_GetPDMCurrentValue,},
 	{.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},
-	{.pattern = "RP:WatchDogMode", .callback = RP_WatchdogMode,},
-	{.pattern = "RP:RamWriterMode", .callback = RP_RAMWriterMode,},
-	{.pattern = "RP:MasterTrigger", .callback = RP_MasterTrigger,},
-	{.pattern = "RP:InstantResetMode", .callback = RP_InstantResetMode,},
+	{.pattern = "RP:WatchDogMode", .callback = RP_SetWatchdogMode,},
+	{.pattern = "RP:WatchDogMode?", .callback = RP_GetWatchdogMode,},
+	{.pattern = "RP:RamWriterMode", .callback = RP_SetRAMWriterMode,},
+	{.pattern = "RP:RamWriterMode?", .callback = RP_GetRAMWriterMode,},
+	{.pattern = "RP:MasterTrigger", .callback = RP_SetMasterTrigger,},
+	{.pattern = "RP:MasterTrigger?", .callback = RP_GetMasterTrigger,},
+	{.pattern = "RP:InstantResetMode", .callback = RP_SetInstantResetMode,},
+	{.pattern = "RP:InstantResetMode?", .callback = RP_GetInstantResetMode,},
 	{.pattern = "RP:PeripheralAResetN?", .callback = RP_PeripheralAResetN,},
 	{.pattern = "RP:FourierSynthAResetN?", .callback = RP_FourierSynthAResetN,},
 	{.pattern = "RP:PDMAResetN?", .callback = RP_PDMAResetN,},

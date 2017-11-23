@@ -594,6 +594,18 @@ float getXADCValueVolt(int channel) {
     return (((float)value_raw / ANALOG_IN_MAX_VAL_INTEGER) * (ANALOG_IN_MAX_VAL - ANALOG_IN_MIN_VAL)) + ANALOG_IN_MIN_VAL;
 }
 
+int getWatchdogMode() {
+	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x02) >> 1);
+	
+	if(value == 0) {
+		return WATCHDOG_OFF;
+	} else if(value == 1) {
+		return WATCHDOG_ON;
+	}
+	
+	return -1;
+}
+
 int setWatchdogMode(int mode) {
     if(mode == WATCHDOG_OFF) {
         *((uint8_t *)(cfg + 1)) &= ~2;
@@ -604,6 +616,18 @@ int setWatchdogMode(int mode) {
     }
     
     return 0;
+}
+
+int getRAMWriterMode() {
+	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x01) >> 0);
+	
+	if(value == 0) {
+		return ADC_MODE_CONTINUOUS;
+	} else if(value == 1) {
+		return ADC_MODE_TRIGGERED;
+	}
+	
+	return -1;
 }
 
 int setRAMWriterMode(int mode) {
@@ -618,6 +642,18 @@ int setRAMWriterMode(int mode) {
     return 0;
 }
 
+int getMasterTrigger() {
+	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x04) >> 2);
+	
+	if(value == 0) {
+		return MASTER_TRIGGER_OFF;
+	} else if(value == 1) {
+		return MASTER_TRIGGER_ON;
+	}
+	
+	return -1;
+}
+
 int setMasterTrigger(int mode) {
     if(mode == MASTER_TRIGGER_OFF) {
         *((uint8_t *)(cfg + 1)) &= ~4;
@@ -628,6 +664,18 @@ int setMasterTrigger(int mode) {
     }
     
     return 0;
+}
+
+int getInstantResetMode() {
+    int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x08) >> 3);
+	
+	if(value == 0) {
+		return INSTANT_RESET_OFF;
+	} else if(value == 1) {
+		return INSTANT_RESET_ON;
+	}
+	
+	return -1;
 }
 
 int setInstantResetMode(int mode) {
