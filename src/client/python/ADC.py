@@ -44,14 +44,13 @@ while (rp.getCurrentFrame() == -1):
     time.sleep(0.01)
 
 startFrame = rp.getCurrentFrame()
-print(type(startFrame))
-u = rp.readDataLowLevel(startFrame, 2)
+u = rp.readData(startFrame, 2)
 
 rp.setAcquisitionStatus(False)
 rp.setMasterTrigger(False)
 rp.disconnect()
 
-plt.plot(u[1])
+plt.plot(u[1,:,0,:])
 plt.show()
 
 if __name__ == '__main__':

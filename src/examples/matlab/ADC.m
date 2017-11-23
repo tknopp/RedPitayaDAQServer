@@ -42,7 +42,7 @@ while (rp.getCurrentFrame() == -1)
 end
 
 startFrame = rp.getCurrentFrame();
-u = rp.readDataLowLevel(startFrame, 2);
+u = rp.readData(startFrame, 2);
 
 rp.setAcquisitionStatus(false);
 rp.setMasterTrigger(false);

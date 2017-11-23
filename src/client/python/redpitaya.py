@@ -116,7 +116,11 @@ class RedPitaya:
         """
         
         fileHandle = self._socket.makefile('r')
-        data = fileHandle.readline()
+        data = fileHandle.readline().strip()
+        
+        # Strings start and end with '"' to mark them. Remove those.
+        if data[0] == '"' and data[-1] == '"':
+            data = data[1:-1]
 
         return data
     
@@ -150,17 +154,15 @@ class RedPitaya:
         # Restructure bytearray to int16 array with little endian
         data = [item[0] for item in struct.iter_unpack('<h', data[0])]
         
-        print(data)
-        
         # Reshape to one row per ADC channel
-        data = np.reshape(data, (2, numSampPerFrame, numFrames))
+        data = np.reshape(data, (2, self._samplesPerPeriod, self._periodsPerFrame, numFrames))
         
         return data
     
     def readData(self, startFrame, numFrames):
         numSampPerFrame = self._samplesPerPeriod*self._periodsPerFrame
         
-        data = np.int16(np.zeros(2, self._samplesPerPeriod, self._periodsPerFrame, numFrames))
+        data = np.zeros((2, self._samplesPerPeriod, self._periodsPerFrame, numFrames))
         
         wpRead = startFrame
         l = 1
@@ -184,7 +186,7 @@ class RedPitaya:
 
             u = self.readDataLowLevel(wpRead, chunk)
 
-            data[:,:,:,l:(l+chunk-1)] = u
+            data[:,:,:,0:(l+chunk-1)] = u
 
             l = l+chunk
             wpRead = wpRead+chunk

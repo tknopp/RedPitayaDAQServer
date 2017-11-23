@@ -283,6 +283,11 @@ classdef RedPitaya < handle
             RP.send(sprintf('RP:ADC:ACQCONNect'));
         end
         
+        function data = getAcquisitionStatus(RP)
+            data = RP.query(sprintf('RP:ADC:ACQSTATus?'));
+            data = lower(data);
+        end
+        
         function setAcquisitionStatus(RP, status)
             if status == true
                 RP.send(sprintf('RP:ADC:ACQSTATus %s', 'ON'));
@@ -342,6 +347,11 @@ classdef RedPitaya < handle
             else
                 error('Invalid RAM writer mode.');
             end
+        end
+        
+        function data = getMasterTrigger(RP)
+            data = RP.query(sprintf('RP:MasterTrigger?'));
+            data = lower(data);
         end
         
         function setMasterTrigger(RP, mode)
