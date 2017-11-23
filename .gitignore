@@ -6,4 +6,6 @@ build/
 *.pyc
 src/client/python/.pydevproject
 src/client/python/.project
+src/examples/python/.pydevproject
+src/examples/python/.project
 core
