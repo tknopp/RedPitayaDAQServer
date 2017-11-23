@@ -6,6 +6,7 @@ import sys
 import math
 import time
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Add the client object to the path
 sys.path.insert(0, os.path.join(os.getcwd(), '..', '..', 'client', 'python'))
@@ -47,13 +48,19 @@ while (rp.getCurrentFrame() == -1):
     time.sleep(0.01)
 
 startFrame = rp.getCurrentFrame()
-u = rp.readData(startFrame, 2)
+u = rp.readData(startFrame, 11)
 
 rp.setAcquisitionStatus(False)
 rp.setMasterTrigger(False)
 rp.disconnect()
 
-plt.plot(u[1,:,0,:])
+# TODO: I shouldn't be too stupid for using reshape
+u_reshaped = []
+for j in range(0, u.shape[3]-1):
+    for i in range(0, samples_per_period-1):
+        u_reshaped.append(u[0,i,0,j])
+
+plt.plot(u_reshaped)
 plt.show()
 
 if __name__ == '__main__':

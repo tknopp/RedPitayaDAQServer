@@ -147,15 +147,18 @@ class RedPitaya:
         expectedBytes = 2*2*numSampPerFrame*numFrames
         receivedBytes = 0
         while receivedBytes < expectedBytes:
-            receivedData = self._dataSocket.recv(expectedBytes-receivedBytes)
+            receivedData = self._dataSocket.recv(4096)
             receivedBytes += len(receivedData)
             data.append(receivedData)
         
+        # Combine all packets into one array
+        data = b''.join(data)
+        
         # Restructure bytearray to int16 array with little endian
-        data = [item[0] for item in struct.iter_unpack('<h', data[0])]
+        data = [item[0] for item in struct.iter_unpack('<h', data)]
         
         # Reshape to one row per ADC channel
-        data = np.reshape(data, (2, self._samplesPerPeriod, self._periodsPerFrame, numFrames))
+        data = np.reshape(data, (2, self._samplesPerPeriod, self._periodsPerFrame, numFrames), 'F')
         
         return data
     
@@ -165,12 +168,12 @@ class RedPitaya:
         data = np.zeros((2, self._samplesPerPeriod, self._periodsPerFrame, numFrames))
         
         wpRead = startFrame
-        l = 1
+        chunksRead = 0
 
         # This is a wild guess for a good chunk size
         chunkSize = max(1, round(1000000 / numSampPerFrame))
         print("chunkSize = %d\n\r" % chunkSize)
-        while l<=numFrames:
+        while chunksRead < numFrames:
             wpWrite = self.getCurrentFrame()
             while wpRead >= wpWrite: # Wait that startFrame is reached
                 wpWrite = self.getCurrentFrame()
@@ -179,16 +182,16 @@ class RedPitaya:
             chunk = min(wpWrite-wpRead,chunkSize) # Determine how many frames to read
             print("chunk=%d\n\r" % chunk)
             
-            if l+chunk > numFrames:
-                chunk = numFrames-l+1
+            if chunksRead+chunk > numFrames:
+                chunk = numFrames-chunksRead
 
             print("Read from %.0f until %.0f, WpWrite %.0f, chunk=%.0f\n\r" % (wpRead, wpRead+chunk-1, wpWrite, chunk))
 
             u = self.readDataLowLevel(wpRead, chunk)
 
-            data[:,:,:,0:(l+chunk-1)] = u
+            data[:,:,:,chunksRead:(chunksRead+chunk)] = u
 
-            l = l+chunk
+            chunksRead = chunksRead+chunk
             wpRead = wpRead+chunk
         
         return data
