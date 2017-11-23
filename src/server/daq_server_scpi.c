@@ -455,7 +455,7 @@ int main(int argc, char** argv) {
 					}
 				} else if (rc == 0) {
 					printf("Connection closed\r\n");
-					stopRx();
+					stopTx();
 					setMasterTrigger(MASTER_TRIGGER_OFF);
 					rxEnabled = false;
 					break;
@@ -474,7 +474,7 @@ int main(int argc, char** argv) {
 
 	// Exit gracefully
 	acquisitionThreadRunning = false;
-	stopRx();
+	stopTx();
 	setMasterTrigger(MASTER_TRIGGER_OFF);
 	rxEnabled = false;
 	pthread_join(pAcq, NULL);
