@@ -17,6 +17,10 @@ output clk_out;
 reg [WIDTH-1:0] r_reg;
 wire [WIDTH-1:0] r_nxt;
 reg clk_track;
+wire clk_int_unbuffered;
+wire clk_int_buffered;
+
+BUFG div_clk_inst (.I(clk_int_unbuffered), .O(clk_int_buffered));
  
 always @(posedge clk or posedge reset)
  
@@ -37,6 +41,8 @@ begin
       r_reg <= r_nxt;
 end
  
- assign r_nxt = r_reg+1;   	      
- assign clk_out = clk_track;
+assign r_nxt = r_reg+1;
+assign clk_int_unbuffered = clk_track;	      
+assign clk_out = clk_int_buffered;
+
 endmodule
