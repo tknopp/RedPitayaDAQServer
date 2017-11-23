@@ -455,8 +455,9 @@ int main(int argc, char** argv) {
 					}
 				} else if (rc == 0) {
 					printf("Connection closed\r\n");
+					stopRx();
+					setMasterTrigger(MASTER_TRIGGER_OFF);
 					rxEnabled = false;
-					stopTx();
 					break;
 				} else {
 					SCPI_Input(&scpi_context, smbuffer, rc);
@@ -473,9 +474,10 @@ int main(int argc, char** argv) {
 
 	// Exit gracefully
 	acquisitionThreadRunning = false;
+	stopRx();
+	setMasterTrigger(MASTER_TRIGGER_OFF);
 	rxEnabled = false;
 	pthread_join(pAcq, NULL);
-	stopTx();
 	releaseBuffer();
 
 	return (EXIT_SUCCESS);
