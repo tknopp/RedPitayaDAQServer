@@ -43,8 +43,8 @@ extern uint64_t numFramesInMemoryBuffer;
 extern uint64_t buff_size;
 
 extern volatile int64_t currentFrameTotal;
+extern volatile int64_t currentPeriodTotal;
 extern volatile int64_t data_read, data_read_total;
-extern volatile int64_t oldFrameTotal;
 extern volatile int64_t channel;
 
 extern uint32_t *buffer;
@@ -74,7 +74,8 @@ extern int createServer(int);
 extern int waitServer(int);
 extern void* acquisitionThread(void*);
 extern void* slowDACThread(void*);
-extern void sendDataToHost(int64_t, int64_t);
+extern void sendFramesToHost(int64_t, int64_t);
+extern void sendPeriodsToHost(int64_t, int64_t);
 extern void initBuffer();
 extern void releaseBuffer();
 
