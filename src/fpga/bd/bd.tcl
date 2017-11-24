@@ -421,12 +421,6 @@ CONFIG.Sample_Frequency {31.25} \
 CONFIG.Zero_Pack_Factor {1} \
  ] $fir_compiler_B
 
-  # Create instance: red_pitaya_dfilt1_A, and set properties
-  set red_pitaya_dfilt1_A [ create_bd_cell -type ip -vlnv matej.oblak:user:red_pitaya_dfilt1:1.0 red_pitaya_dfilt1_A ]
-
-  # Create instance: red_pitaya_dfilt1_B, and set properties
-  set red_pitaya_dfilt1_B [ create_bd_cell -type ip -vlnv matej.oblak:user:red_pitaya_dfilt1:1.0 red_pitaya_dfilt1_B ]
-
   # Create instance: sign_extend_A
   create_hier_cell_sign_extend_A $hier_obj sign_extend_A
 
@@ -468,40 +462,12 @@ CONFIG.CONST_VAL {0x4c5f} \
 CONFIG.CONST_WIDTH {18} \
  ] $xlconstant_AA_HV
 
-  # Create instance: xlconstant_AA_LV, and set properties
-  set xlconstant_AA_LV [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_AA_LV ]
-  set_property -dict [ list \
-CONFIG.CONST_VAL {0x7d93} \
-CONFIG.CONST_WIDTH {18} \
- ] $xlconstant_AA_LV
-
   # Create instance: xlconstant_BB_HV, and set properties
   set xlconstant_BB_HV [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_BB_HV ]
   set_property -dict [ list \
 CONFIG.CONST_VAL {0x2f38b} \
 CONFIG.CONST_WIDTH {25} \
  ] $xlconstant_BB_HV
-
-  # Create instance: xlconstant_BB_LV, and set properties
-  set xlconstant_BB_LV [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_BB_LV ]
-  set_property -dict [ list \
-CONFIG.CONST_VAL {0x437c7} \
-CONFIG.CONST_WIDTH {25} \
- ] $xlconstant_BB_LV
-
-  # Create instance: xlconstant_KK, and set properties
-  set xlconstant_KK [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_KK ]
-  set_property -dict [ list \
-CONFIG.CONST_VAL {0xd9999a} \
-CONFIG.CONST_WIDTH {25} \
- ] $xlconstant_KK
-
-  # Create instance: xlconstant_PP, and set properties
-  set xlconstant_PP [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_PP ]
-  set_property -dict [ list \
-CONFIG.CONST_VAL {0x2666} \
-CONFIG.CONST_WIDTH {25} \
- ] $xlconstant_PP
 
   # Create instance: xlslice_A, and set properties
   set xlslice_A [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_A ]
@@ -523,21 +489,18 @@ CONFIG.DOUT_WIDTH {14} \
   connect_bd_intf_net -intf_net axis_ram_writer_1_M_AXI [get_bd_intf_pins m_axi] [get_bd_intf_pins axis_ram_writer_1/M_AXI]
   connect_bd_intf_net -intf_net axis_variable_2_M_AXIS [get_bd_intf_pins axis_variable_decimation_A/M_AXIS] [get_bd_intf_pins cic_compiler_A/S_AXIS_CONFIG]
   connect_bd_intf_net -intf_net axis_variable_decimation_B_M_AXIS [get_bd_intf_pins axis_variable_decimation_B/M_AXIS] [get_bd_intf_pins cic_compiler_B/S_AXIS_CONFIG]
-  connect_bd_intf_net -intf_net cic_compiler_A_M_AXIS_DATA [get_bd_intf_pins cic_compiler_A/M_AXIS_DATA] [get_bd_intf_pins fir_compiler_A/S_AXIS_DATA]
-  connect_bd_intf_net -intf_net cic_compiler_B_M_AXIS_DATA [get_bd_intf_pins cic_compiler_B/M_AXIS_DATA] [get_bd_intf_pins fir_compiler_B/S_AXIS_DATA]
 
   # Create port connections
   connect_bd_net -net axis_ram_writer_1_sts_data [get_bd_pins axis_ram_writer_1/sts_data] [get_bd_pins xlconcat_0/In0]
   connect_bd_net -net axis_red_pitaya_adc_1_m_axis_tdata [get_bd_pins Din] [get_bd_pins xlslice_A/Din] [get_bd_pins xlslice_B/Din]
   connect_bd_net -net axis_red_pitaya_adc_1_m_axis_tvalid [get_bd_pins s_axis_data_tvalid] [get_bd_pins cic_compiler_A/s_axis_data_tvalid] [get_bd_pins cic_compiler_B/s_axis_data_tvalid]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_ram_writer_1/aclk] [get_bd_pins axis_variable_decimation_A/aclk] [get_bd_pins axis_variable_decimation_B/aclk] [get_bd_pins cic_compiler_A/aclk] [get_bd_pins cic_compiler_B/aclk] [get_bd_pins fir_compiler_A/aclk] [get_bd_pins fir_compiler_B/aclk] [get_bd_pins red_pitaya_dfilt1_A/adc_clk_i] [get_bd_pins red_pitaya_dfilt1_B/adc_clk_i]
-  connect_bd_net -net decimation_1 [get_bd_pins decimation] [get_bd_pins divide_by_two_0/input_vector]
-  connect_bd_net -net divide_by_two_0_input_divided_by_two [get_bd_pins axis_variable_decimation_A/cfg_data] [get_bd_pins axis_variable_decimation_B/cfg_data] [get_bd_pins divide_by_two_0/input_divided_by_two]
-  connect_bd_net -net fir_compiler_A_m_axis_data_tdata [get_bd_pins fir_compiler_A/m_axis_data_tdata] [get_bd_pins xlconcat_1/In0]
-  connect_bd_net -net fir_compiler_A_m_axis_data_tvalid [get_bd_pins fir_compiler_A/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op1]
-  connect_bd_net -net fir_compiler_B_m_axis_data_tdata [get_bd_pins fir_compiler_B/m_axis_data_tdata] [get_bd_pins xlconcat_1/In1]
-  connect_bd_net -net fir_compiler_B_m_axis_data_tvalid [get_bd_pins fir_compiler_B/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op2]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_ram_writer_1/aresetn] [get_bd_pins axis_variable_decimation_A/aresetn] [get_bd_pins axis_variable_decimation_B/aresetn] [get_bd_pins cic_compiler_A/aresetn] [get_bd_pins cic_compiler_B/aresetn] [get_bd_pins red_pitaya_dfilt1_A/adc_rstn_i] [get_bd_pins red_pitaya_dfilt1_B/adc_rstn_i]
+  connect_bd_net -net cic_compiler_A_m_axis_data_tdata [get_bd_pins cic_compiler_A/m_axis_data_tdata] [get_bd_pins xlconcat_1/In0]
+  connect_bd_net -net cic_compiler_A_m_axis_data_tvalid [get_bd_pins cic_compiler_A/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op1]
+  connect_bd_net -net cic_compiler_B_m_axis_data_tdata [get_bd_pins cic_compiler_B/m_axis_data_tdata] [get_bd_pins xlconcat_1/In1]
+  connect_bd_net -net cic_compiler_B_m_axis_data_tvalid [get_bd_pins cic_compiler_B/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op2]
+  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_ram_writer_1/aclk] [get_bd_pins axis_variable_decimation_A/aclk] [get_bd_pins axis_variable_decimation_B/aclk] [get_bd_pins cic_compiler_A/aclk] [get_bd_pins cic_compiler_B/aclk] [get_bd_pins fir_compiler_A/aclk] [get_bd_pins fir_compiler_B/aclk]
+  connect_bd_net -net decimation_1 [get_bd_pins decimation] [get_bd_pins axis_variable_decimation_A/cfg_data] [get_bd_pins axis_variable_decimation_B/cfg_data] [get_bd_pins divide_by_two_0/input_vector]
+  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_ram_writer_1/aresetn] [get_bd_pins axis_variable_decimation_A/aresetn] [get_bd_pins axis_variable_decimation_B/aresetn] [get_bd_pins cic_compiler_A/aresetn] [get_bd_pins cic_compiler_B/aresetn]
   connect_bd_net -net sign_extend_B_dout [get_bd_pins cic_compiler_B/s_axis_data_tdata] [get_bd_pins sign_extend_B/dout]
   connect_bd_net -net util_vector_logic_0_Res [get_bd_pins axis_dwidth_converter_0/s_axis_tvalid] [get_bd_pins util_vector_logic_0/Res]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins sts_data] [get_bd_pins xlconcat_0/dout]
@@ -545,10 +508,6 @@ CONFIG.DOUT_WIDTH {14} \
   connect_bd_net -net xlconcat_2_dout [get_bd_pins cic_compiler_A/s_axis_data_tdata] [get_bd_pins sign_extend_A/dout]
   connect_bd_net -net xlconstant_1_dout [get_bd_pins xlconcat_0/In1] [get_bd_pins xlconstant_1/dout]
   connect_bd_net -net xlconstant_2_dout [get_bd_pins axis_ram_writer_1/cfg_data] [get_bd_pins xlconstant_2/dout]
-  connect_bd_net -net xlconstant_AA_dout [get_bd_pins red_pitaya_dfilt1_A/cfg_aa_i] [get_bd_pins red_pitaya_dfilt1_B/cfg_aa_i] [get_bd_pins xlconstant_AA_LV/dout]
-  connect_bd_net -net xlconstant_BB_dout [get_bd_pins red_pitaya_dfilt1_A/cfg_bb_i] [get_bd_pins red_pitaya_dfilt1_B/cfg_bb_i] [get_bd_pins xlconstant_BB_LV/dout]
-  connect_bd_net -net xlconstant_KK_dout [get_bd_pins red_pitaya_dfilt1_A/cfg_kk_i] [get_bd_pins red_pitaya_dfilt1_B/cfg_kk_i] [get_bd_pins xlconstant_KK/dout]
-  connect_bd_net -net xlconstant_PP_dout [get_bd_pins red_pitaya_dfilt1_A/cfg_pp_i] [get_bd_pins red_pitaya_dfilt1_B/cfg_pp_i] [get_bd_pins xlconstant_PP/dout]
   connect_bd_net -net xlslice_A_Dout [get_bd_pins sign_extend_A/In0] [get_bd_pins xlslice_A/Dout]
   connect_bd_net -net xlslice_B_Dout [get_bd_pins sign_extend_B/In0] [get_bd_pins xlslice_B/Dout]
 
@@ -2488,12 +2447,6 @@ CONFIG.SYSTEM_DATA_WIDTH {1} \
 CONFIG.C_BUF_TYPE {OBUFDS} \
  ] $util_ds_buf_0
 
-  # Create instance: util_ds_buf_1, and set properties
-  set util_ds_buf_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.1 util_ds_buf_1 ]
-  set_property -dict [ list \
-CONFIG.C_BUF_TYPE {BUFG} \
- ] $util_ds_buf_1
-
   # Create instance: util_vector_logic_0, and set properties
   set util_vector_logic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_0 ]
   set_property -dict [ list \
@@ -2534,7 +2487,7 @@ CONFIG.XADC_STARUP_SELECTION {independent_adc} \
   # Create instance: xlconstant_0, and set properties
   set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
   set_property -dict [ list \
-CONFIG.CONST_VAL {1} \
+CONFIG.CONST_VAL {0} \
  ] $xlconstant_0
 
   # Create instance: xlconstant_2, and set properties
@@ -2601,7 +2554,7 @@ CONFIG.DOUT_WIDTH {8} \
   connect_bd_net -net axis_red_pitaya_dac_0_dac_rst [get_bd_ports dac_rst_o] [get_bd_pins axis_red_pitaya_dac_0/dac_rst]
   connect_bd_net -net axis_red_pitaya_dac_0_dac_sel [get_bd_ports dac_sel_o] [get_bd_pins axis_red_pitaya_dac_0/dac_sel]
   connect_bd_net -net axis_red_pitaya_dac_0_dac_wrt [get_bd_ports dac_wrt_o] [get_bd_pins axis_red_pitaya_dac_0/dac_wrt]
-  connect_bd_net -net clk_div_1_clk_out [get_bd_pins clk_div_0/clk_out] [get_bd_pins util_ds_buf_1/BUFG_I]
+  connect_bd_net -net clk_div_0_clk_out [get_bd_pins clk_div_0/clk_out] [get_bd_pins pdm/pdm_clk]
   connect_bd_net -net clk_wiz_0_clk_ddr [get_bd_pins axis_red_pitaya_dac_0/ddr_clk] [get_bd_pins clk_wiz_0/clk_ddr] [get_bd_pins pdm/ddr_clk]
   connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins axis_red_pitaya_dac_0/aclk] [get_bd_pins clk_wiz_0/clk_internal] [get_bd_pins fourier_synth_rasterized/aclk] [get_bd_pins fourier_synth_standard/aclk] [get_bd_pins pdm/aclk] [get_bd_pins proc_sys_reset_fourier_synth/slowest_sync_clk] [get_bd_pins proc_sys_reset_pdm/slowest_sync_clk] [get_bd_pins proc_sys_reset_write_to_ram/slowest_sync_clk] [get_bd_pins proc_sys_reset_xadc/slowest_sync_clk] [get_bd_pins reset_manager_0/clk] [get_bd_pins selectio_wiz_1/clk_in] [get_bd_pins system/S_AXI_HP0_ACLK] [get_bd_pins util_ds_buf_0/OBUF_IN] [get_bd_pins write_to_ram/aclk] [get_bd_pins xadc_wiz_0/s_axi_aclk]
   connect_bd_net -net clk_wiz_0_clk_pdm [get_bd_pins clk_div_0/clk] [get_bd_pins clk_wiz_0/clk_pdm]
@@ -2634,7 +2587,6 @@ CONFIG.DOUT_WIDTH {8} \
   connect_bd_net -net system_peripheral_aresetn [get_bd_pins reset_manager_0/peripheral_aresetn] [get_bd_pins system/peripheral_aresetn]
   connect_bd_net -net util_ds_buf_0_OBUF_DS_N [get_bd_ports adc_enc_n_o] [get_bd_pins util_ds_buf_0/OBUF_DS_N]
   connect_bd_net -net util_ds_buf_0_OBUF_DS_P [get_bd_ports adc_enc_p_o] [get_bd_pins util_ds_buf_0/OBUF_DS_P]
-  connect_bd_net -net util_ds_buf_1_BUFG_O [get_bd_pins pdm/pdm_clk] [get_bd_pins util_ds_buf_1/BUFG_O]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins system/adc_sts] [get_bd_pins write_to_ram/sts_data]
   connect_bd_net -net xlconcat_0_dout1 [get_bd_ports dac_pwm_o] [get_bd_pins pdm/dout]
   connect_bd_net -net xlconstant_0_dout [get_bd_pins clk_wiz_0/clk_in_sel] [get_bd_pins xlconstant_0/dout]
