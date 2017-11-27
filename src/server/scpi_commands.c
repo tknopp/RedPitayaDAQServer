@@ -276,6 +276,13 @@ static scpi_result_t RP_ADC_SetPeriodsPerFrame(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 
+        if(numPeriodsPerFrame > 1 && numSlowDACChan > 0) {
+          if(slowDACLUT != NULL) {
+            free(slowDACLUT);
+          }
+          slowDACLUT = (float *)malloc(numSlowDACChan * numPeriodsPerFrame * sizeof(float));
+        }
+
 	return SCPI_RES_OK;
 }
 
@@ -284,6 +291,25 @@ static scpi_result_t RP_ADC_GetPeriodsPerFrame(scpi_t * context) {
 
 	return SCPI_RES_OK;
 }
+
+static scpi_result_t RP_ADC_SetNumSlowDACChan(scpi_t * context) {
+        if(rxEnabled) {
+                return SCPI_RES_ERR;
+        }
+
+        if (!SCPI_ParamInt32(context, &numSlowDACChan, TRUE)) {
+                return SCPI_RES_ERR;
+        }
+
+        return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_ADC_GetNumSlowDACChan(scpi_t * context) {
+        SCPI_ResultInt32(context, numSlowDACChan);
+
+        return SCPI_RES_OK;
+}
+
 
 static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t * context) {
         // Reading is only possible while an acquisition is running
@@ -609,6 +635,23 @@ static scpi_result_t RP_InstantResetStatus(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
+
+static scpi_result_t RP_DAC_SetSlowDACLUT(scpi_t * context) {
+
+    for(int i=0; i<numPeriodsPerFrame; i++) {
+      for(int l=0; l<numSlowDACChan; l++) {
+        if (!SCPI_ParamFloat(context, slowDACLUT+i*numSlowDACChan + l, TRUE)) {
+                return SCPI_RES_ERR;
+        }
+        printf("LUT=%f \n", slowDACLUT[i*numSlowDACChan + l]);
+      }
+    }
+
+    return SCPI_RES_OK;
+}
+
+
+
 const scpi_command_t scpi_commands[] = {
     /* IEEE Mandated Commands (SCPI std V1999.0 4.1.1) */
     { .pattern = "*CLS", .callback = SCPI_CoreCls,},
@@ -660,6 +703,9 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:DECimation?", .callback = RP_ADC_GetDecimation,},
 	{.pattern = "RP:ADC:PERiod", .callback = RP_ADC_SetSamplesPerPeriod,},
 	{.pattern = "RP:ADC:PERiod?", .callback = RP_ADC_GetSamplesPerPeriod,},
+	{.pattern = "RP:ADC:SlowDAC", .callback = RP_ADC_SetNumSlowDACChan,},
+	{.pattern = "RP:ADC:SlowDAC?", .callback = RP_ADC_GetNumSlowDACChan,},
+	{.pattern = "RP:ADC:SlowDACLUT", .callback = RP_DAC_SetSlowDACLUT,},
 	{.pattern = "RP:ADC:FRAme", .callback = RP_ADC_SetPeriodsPerFrame,},
 	{.pattern = "RP:ADC:FRAme?", .callback = RP_ADC_GetPeriodsPerFrame,},
 	{.pattern = "RP:ADC:FRAmes:CURRent?", .callback = RP_ADC_GetCurrentFrame,},

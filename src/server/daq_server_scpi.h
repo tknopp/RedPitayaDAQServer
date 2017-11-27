@@ -28,7 +28,7 @@
 #include "../lib/rp-daq-lib.h"
 #include "../server/scpi_commands.h"
 
-#define SCPI_INPUT_BUFFER_LENGTH 256
+#define SCPI_INPUT_BUFFER_LENGTH 25600
 #define SCPI_ERROR_QUEUE_SIZE 17
 #define SCPI_IDN1 "CUSTOM"
 #define SCPI_IDN2 "REDPITAYA"
@@ -37,6 +37,7 @@
 
 extern int numSamplesPerPeriod;
 extern int numPeriodsPerFrame;
+extern int numSlowDACChan;
 extern uint64_t numSamplesPerFrame;
 extern uint64_t numFramesInMemoryBuffer;
 extern uint64_t buff_size;
