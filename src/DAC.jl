@@ -6,6 +6,9 @@ function amplitudeDAC(rp::RedPitaya, channel, component)
   return query(rp, command, Int64)
 end
 function amplitudeDAC(rp::RedPitaya, channel, component, value)
+  if value > 8191
+    error("$value is larger than 8191!")
+  end
   command = string("RP:DAC:CH", Int(channel)-1, ":COMP",
                    Int(component)-1, ":AMP ", Int64(value))
   return send(rp, command)
