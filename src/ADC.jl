@@ -49,14 +49,19 @@ stopADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQSTATUS OFF")
 
 # Low level read. One has to take care that the numFrames are available
 function readData_(rp::RedPitaya, startFrame, numFrames)
+  numSampPerPeriod = rp.samplesPerPeriod
+  numSamp = numSampPerPeriod * numFrames
+  numPeriods = rp.periodsPerFrame
+  numSampPerFrame = numSampPerPeriod * numPeriods
+
   command = string("RP:ADC:FRAMES:DATA ",Int64(startFrame),",",Int64(numFrames))
   println(command)
   send(rp, command)
 
   println("read data ...")
-  u = read(rp.dataSocket, Int16, 2 * numFrames * rp.samplesPerPeriod)
+  u = read(rp.dataSocket, Int16, 2 * numFrames * numSampPerFrame)
   println("read data!")
-  return reshape(u, 2, rp.samplesPerPeriod, numFrames)
+  return reshape(u, 2, rp.samplesPerPeriod, numPeriods, numFrames)
 end
 
 # High level read. numFrames can adress a future frame. Data is read in
@@ -99,9 +104,3 @@ function readData(rp::RedPitaya, startFrame, numFrames)
 
   return data
 end
-
-
-###fprintf(cli, 'RP:ADC:FRAMES:DATA %d,1\n', currect_frame);
-
-#data = int32(zeros(1, samples_per_period*periods_per_frame));
-###data = int32(fread(con, 300*samples_per_period*periods_per_frame, 'int32'));

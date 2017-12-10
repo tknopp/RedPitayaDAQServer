@@ -1,7 +1,7 @@
 using RedPitayaDAQServer
 using GR
 
-#rp = RedPitaya("192.168.1.7")
+rp = RedPitaya("192.168.1.7")
 rp = RedPitaya("10.167.6.172")
 
 dec = 16

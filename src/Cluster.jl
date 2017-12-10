@@ -78,9 +78,6 @@ function modeDAC(rpc::RedPitayaCluster, mode::String)
 end
 
 
-
-
-
 # High level read. numFrames can adress a future frame. Data is read in
 # chunks
 function readData(rpc::RedPitayaCluster, startFrame, numFrames)
