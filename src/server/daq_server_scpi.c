@@ -77,6 +77,7 @@ bool acquisitionThreadRunning = false;
 float *slowDACLUT = NULL;
 
 pthread_t pAcq;
+pthread_t pSlowDAC;
 
 int datasockfd;
 
@@ -221,14 +222,14 @@ void* acquisitionThread(void* ch) {
 	printf("Starting acquisition thread\n");
 
 	// Set priority of this thread
-	struct sched_param p;
+	/*struct sched_param p;
 	p.sched_priority = sched_get_priority_max(SCHED_FIFO);
 	pthread_t this_thread = pthread_self();
 	int ret = pthread_setschedparam(this_thread, SCHED_FIFO, &p);
 	if (ret != 0) {
 		printf("Unsuccessful in setting thread realtime prio.\n");
 		return NULL;     
-	}
+	}*/
 
 	// Loop until the acquisition is started
 	while(acquisitionThreadRunning) {
@@ -273,7 +274,7 @@ void* acquisitionThread(void* ch) {
 				uint32_t size = getWritePointerDistance(wp_old, wp)-1;
 				//printf("____ %d %d %d \n", size, wp_old, wp);
 				if(size > 512*1024) {
-					printf("I think we lost a step %d %d %d \n", size, wp_old, wp);
+			//		printf("I think we lost a step %d %d %d \n", size, wp_old, wp);
 				}
 
 				if(firstCycle) {
@@ -376,7 +377,109 @@ void releaseBuffer() {
 
 void* slowDACThread(void* ch) { 
 
+	uint32_t wp, wp_old;
+	int64_t currentPeriodTotal;
+	int64_t oldPeriodTotal;
+	bool firstCycle;
 
+	int64_t currentFrameTotal;
+	int64_t data_read_total;
+	int64_t oldFrameTotal;
+	int64_t data_read;
+	int64_t numSamplesPerFrame; 
+
+	printf("Starting slowDAC thread\n");
+
+	// Set priority of this thread
+	struct sched_param p;
+	p.sched_priority = sched_get_priority_max(SCHED_FIFO);
+	pthread_t this_thread = pthread_self();
+	int ret = pthread_setschedparam(this_thread, SCHED_FIFO, &p);
+	if (ret != 0) {
+		printf("Unsuccessful in setting thread realtime prio.\n");
+		return NULL;     
+	}
+
+	// Loop until the acquisition is started
+	while(acquisitionThreadRunning) {
+		// Reset everything in order to provide a fresh start
+		// everytime the acquisition is started
+		if(rxEnabled) {
+			printf("Starting acquisition...\n");
+			currentFrameTotal = 0;
+			data_read_total = 0; 
+			data_read = 0; 
+			oldFrameTotal = -1;
+			oldPeriodTotal = -1;
+
+			numSamplesPerFrame = numSamplesPerPeriod * numPeriodsPerFrame; 
+			
+			wp_old = 0;
+            while(getTriggerStatus() == 0 && rxEnabled)
+            {
+              	printf("Waiting for external trigger SlowDAC thread! \n");
+                fflush(stdout);
+                usleep(100);
+            }
+
+			printf("Trigger received, start sending\n");		
+			
+			while(rxEnabled) {
+				//printf("Get write pointer\n");
+				wp = getWritePointer();
+
+				//printf("Get write pointer distance\n");
+				uint32_t size = getWritePointerDistance(wp_old, wp)-1;
+
+				if (size > 0) {
+					data_read_total += size;
+			    	wp_old = (wp_old + size) % ADC_BUFF_SIZE;
+				
+					currentFrameTotal = data_read_total / numSamplesPerFrame;
+					currentPeriodTotal = data_read_total / (numSamplesPerPeriod);
+
+         			if(currentPeriodTotal > oldPeriodTotal + 1) {
+           				printf("WARNING: We lost an ff step! oldFr %lld newFr %lld size=%d\n", 
+                   			oldPeriodTotal, currentPeriodTotal, size);
+         			}
+         			if(true) { //currentPatchTotal > oldPatchTotal || params.ffLinear) {
+           			float factor = ((float)data_read_total - currentPeriodTotal*numSamplesPerPeriod )/
+                       			  numSamplesPerPeriod;
+           			int currFFStep = currentPeriodTotal % numPeriodsPerFrame;
+           			//printf("++++ currFrame: %lld\n",  currFFStep);
+           			for (int i=0; i< numSlowDACChan; i++) {
+             			float val;
+             			if(false) {//params.ffLinear) {
+               				val = (1-factor)*slowDACLUT[currFFStep*numSlowDACChan+i] +
+                     		 factor*slowDACLUT[((currFFStep+1) % numPeriodsPerFrame)*numSlowDACChan+i];
+             			} else {
+               				val = slowDACLUT[currFFStep*numSlowDACChan+i];
+             			}
+             			//printf("Set ff channel %d in cycle %d to value %f totalper %lld.\n", 
+             			//            i, currFFStep,val, currentPeriodTotal);
+             
+             			int status = setPDMNextValueVolt(val, i);             
+
+             			//uint64_t curr = getPDMRegisterValue();
+
+             			if (status != 0) {
+                 			printf("Could not set AO[%d] voltage.\n", i);
+            			 }
+           		  	  }
+         			}
+					oldFrameTotal = currentFrameTotal;
+					oldPeriodTotal = currentPeriodTotal;
+				} else {
+					//printf("Counter not increased %d %d \n", wp_old, wp);
+					//usleep(2);
+				}
+			}
+		}
+		// Wait for the acquisition to start
+		usleep(40);
+	}
+
+	printf("Slow daq thread finished\n");
 }
 
 
@@ -402,6 +505,7 @@ int main(int argc, char** argv) {
 	acquisitionThreadRunning = true;
 	rxEnabled = false;
 	pthread_create(&pAcq, NULL, acquisitionThread, NULL);
+	pthread_create(&pSlowDAC, NULL, slowDACThread, NULL);
 
 	/* User_context will be pointer to socket */
 	scpi_context.user_context = NULL;
@@ -472,6 +576,7 @@ int main(int argc, char** argv) {
 	setMasterTrigger(MASTER_TRIGGER_OFF);
 	rxEnabled = false;
 	pthread_join(pAcq, NULL);
+	pthread_join(pSlowDAC, NULL);
 	releaseBuffer();
 
 	return (EXIT_SUCCESS);
