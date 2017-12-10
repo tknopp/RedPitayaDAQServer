@@ -322,6 +322,18 @@ static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_ADC_GetCurrentPeriod(scpi_t * context) {
+        // Reading is only possible while an acquisition is running
+        if(!rxEnabled) {
+                return SCPI_RES_ERR;
+        }
+
+	SCPI_ResultInt64(context, currentPeriodTotal-1);
+
+    return SCPI_RES_OK;
+}
+
+
 
 static scpi_result_t RP_ADC_GetFrames(scpi_t * context) {
 	// Reading is only possible while an acquisition is running
@@ -340,7 +352,29 @@ static scpi_result_t RP_ADC_GetFrames(scpi_t * context) {
 	}
 	
 	//printf("invoke sendDataToHost()");
-	sendDataToHost(frame, numFrames);
+	sendFramesToHost(frame, numFrames);
+	
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_ADC_GetPeriods(scpi_t * context) {
+	// Reading is only possible while an acquisition is running
+	if(!rxEnabled) {
+		return SCPI_RES_ERR;
+	}
+	
+	int64_t period;
+    if (!SCPI_ParamInt64(context, &period, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+	
+	int64_t numPeriods;
+	if (!SCPI_ParamInt64(context, &numPeriods, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+	
+	//printf("invoke sendDataToHost()");
+	sendPeriodsToHost(period, numPeriods);
 	
     return SCPI_RES_OK;
 }
@@ -703,6 +737,8 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:DECimation?", .callback = RP_ADC_GetDecimation,},
 	{.pattern = "RP:ADC:PERiod", .callback = RP_ADC_SetSamplesPerPeriod,},
 	{.pattern = "RP:ADC:PERiod?", .callback = RP_ADC_GetSamplesPerPeriod,},
+	{.pattern = "RP:ADC:PERiod:CURRent?", .callback = RP_ADC_GetCurrentPeriod,},
+	{.pattern = "RP:ADC:PERiod:DATa", .callback = RP_ADC_GetPeriods,},
 	{.pattern = "RP:ADC:SlowDAC", .callback = RP_ADC_SetNumSlowDACChan,},
 	{.pattern = "RP:ADC:SlowDAC?", .callback = RP_ADC_GetNumSlowDACChan,},
 	{.pattern = "RP:ADC:SlowDACLUT", .callback = RP_DAC_SetSlowDACLUT,},

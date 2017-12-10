@@ -63,11 +63,12 @@ int numPeriodsPerFrame = 20;
 int numSlowDACChan = 0;
 uint64_t numSamplesPerFrame = -1;
 uint64_t numFramesInMemoryBuffer = -1;
+uint64_t numPeriodsInMemoryBuffer = -1;
 uint64_t buff_size = 0;
 
 volatile int64_t currentFrameTotal;
+volatile int64_t currentPeriodTotal;
 volatile int64_t data_read, data_read_total;
-volatile int64_t oldFrameTotal;
 volatile int64_t channel;
 
 uint32_t *buffer = NULL;
@@ -215,8 +216,6 @@ int waitServer(int fd) {
 
 void* acquisitionThread(void* ch) { 
 	uint32_t wp, wp_old;
-	int64_t currentPeriodTotal;
-	int64_t oldPeriodTotal;
 	bool firstCycle;
 
 	printf("Starting acquisition thread\n");
@@ -238,13 +237,13 @@ void* acquisitionThread(void* ch) {
 		if(rxEnabled) {
 			printf("Starting acquisition...\n");
 			currentFrameTotal = 0;
+			currentPeriodTotal = 0;
 			data_read_total = 0; 
 			data_read = 0; 
-			oldFrameTotal = -1;
-			oldPeriodTotal = -1;
 
 			numSamplesPerFrame = numSamplesPerPeriod * numPeriodsPerFrame; 
 			numFramesInMemoryBuffer = 16*1024*1024 / numSamplesPerFrame;
+			numPeriodsInMemoryBuffer = numFramesInMemoryBuffer*numPeriodsPerFrame;
 			//printf("Release old buffer\n");
 			releaseBuffer();
 			printf("Initializing new buffer...\n");
@@ -254,14 +253,14 @@ void* acquisitionThread(void* ch) {
 			wp_old = 0;
 			firstCycle = true;
 
-                	while(getTriggerStatus() == 0 && rxEnabled)
-                	{
-                        	printf("Waiting for external trigger! \n");
-                        	fflush(stdout);
-                        	usleep(100);
-                	}
+			while(getTriggerStatus() == 0 && rxEnabled)
+            {
+				printf("Waiting for external trigger! \n");
+                fflush(stdout);
+                usleep(100);
+            }
 
-		printf("Trigger received, start reading\n");		
+			printf("Trigger received, start reading\n");		
 		
 			
 			// TODO: Remove possible concurrency issue; if rxEnabled is set to true here, the 
@@ -274,7 +273,7 @@ void* acquisitionThread(void* ch) {
 				uint32_t size = getWritePointerDistance(wp_old, wp)-1;
 				//printf("____ %d %d %d \n", size, wp_old, wp);
 				if(size > 512*1024) {
-			//		printf("I think we lost a step %d %d %d \n", size, wp_old, wp);
+					printf("I think we lost a step %d %d %d \n", size, wp_old, wp);
 				}
 
 				if(firstCycle) {
@@ -317,22 +316,20 @@ void* acquisitionThread(void* ch) {
 					//				                    data_read, data_read_total, currentFrameTotal);
 					//                                fflush(stdout);
 
-					oldFrameTotal = currentFrameTotal;
-					oldPeriodTotal = currentPeriodTotal;
 				} else {
 					//printf("Counter not increased %d %d \n", wp_old, wp);
-					usleep(40);
+					usleep(10);
 				}
 			}
 		}
 		// Wait for the acquisition to start
-		usleep(40);
+		usleep(10);
 	}
 
 	printf("Acquisition thread finished\n");
 }
 
-void sendDataToHost(int64_t frame, int64_t numFrames) {
+void sendFramesToHost(int64_t frame, int64_t numFrames) {
 	int n;
 	int64_t frameInBuff = frame % numFramesInMemoryBuffer;
 
@@ -365,6 +362,39 @@ void sendDataToHost(int64_t frame, int64_t numFrames) {
 	}
 }
 
+void sendPeriodsToHost(int64_t period, int64_t numPeriods) {
+	int n;
+	int64_t periodInBuff = period % numPeriodsInMemoryBuffer;
+
+	if(numPeriods+periodInBuff < numPeriodsInMemoryBuffer) {
+		n = write(newdatasockfd, buffer+periodInBuff*numSamplesPerPeriod, 
+				numSamplesPerPeriod * numPeriods * sizeof(uint32_t));
+
+		if (n < 0) {
+			printf("Error in sendToHost()\n");
+			perror("ERROR writing to socket"); 
+		}
+	} else {
+		int64_t period1 = numPeriodsInMemoryBuffer - periodInBuff;
+		int64_t period2 = numPeriods - period1;
+		n = write(newdatasockfd, buffer+periodInBuff*numSamplesPerPeriod,
+				numSamplesPerPeriod * period1 *sizeof(uint32_t));
+
+		if (n < 0) {
+			printf("Error in sendToHost() (else part 1)\n");
+			perror("ERROR writing to socket");
+		}
+
+		n = write(newdatasockfd, buffer,
+				numSamplesPerPeriod * period2 * sizeof(uint32_t));
+
+		if (n < 0) {
+			printf("Error in sendToHost() (else part 2)\n");
+			perror("ERROR writing to socket");
+		}
+	}
+}
+
 void initBuffer() {
 	buff_size = numSamplesPerFrame*numFramesInMemoryBuffer;
 	buffer = (uint32_t*)malloc(buff_size * sizeof(uint32_t));
@@ -382,10 +412,7 @@ void* slowDACThread(void* ch) {
 	int64_t oldPeriodTotal;
 	bool firstCycle;
 
-	int64_t currentFrameTotal;
 	int64_t data_read_total;
-	int64_t oldFrameTotal;
-	int64_t data_read;
 	int64_t numSamplesPerFrame; 
 
 	printf("Starting slowDAC thread\n");
@@ -406,10 +433,7 @@ void* slowDACThread(void* ch) {
 		// everytime the acquisition is started
 		if(rxEnabled) {
 			printf("Starting acquisition...\n");
-			currentFrameTotal = 0;
 			data_read_total = 0; 
-			data_read = 0; 
-			oldFrameTotal = -1;
 			oldPeriodTotal = -1;
 
 			numSamplesPerFrame = numSamplesPerPeriod * numPeriodsPerFrame; 
@@ -467,7 +491,6 @@ void* slowDACThread(void* ch) {
             			 }
            		  	  }
          			}
-					oldFrameTotal = currentFrameTotal;
 					oldPeriodTotal = currentPeriodTotal;
 				} else {
 					//printf("Counter not increased %d %d \n", wp_old, wp);
