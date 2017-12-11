@@ -1,6 +1,6 @@
 export decimation, samplesPerPeriod, periodsPerFrame, masterTrigger, currentFrame,
-     ramWriterMode, connectADC, startADC, stopADC, readData, numSlowDACChan,
-     setSlowDACLUT
+     currentPeriod, ramWriterMode, connectADC, startADC, stopADC, readData,
+     numSlowDACChan, setSlowDACLUT
 
 
 decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
@@ -32,6 +32,7 @@ function periodsPerFrame(rp::RedPitaya, value)
 end
 
 currentFrame(rp::RedPitaya) = query(rp,"RP:ADC:FRAMES:CURRENT?", Int64)
+currentPeriod(rp::RedPitaya) = query(rp,"RP:ADC:PERIODS:CURRENT?", Int64)
 
 function masterTrigger(rp::RedPitaya, val::Bool)
   valStr = val ? "ON" : "OFF"
