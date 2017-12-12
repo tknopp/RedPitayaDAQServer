@@ -1,4 +1,4 @@
-export RedPitayaCluster, master
+export RedPitayaCluster, master, readDataPeriods
 
 import Base: length
 
@@ -21,6 +21,12 @@ function currentFrame(rpc::RedPitayaCluster)
   currentFrames = [ currentFrame(rp) for rp in rpc.rp ]
   println("Current frame: $currentFrames")
   return minimum(currentFrames)
+end
+
+function currentPeriod(rpc::RedPitayaCluster)
+  currentPeriods = [ currentPeriod(rp) for rp in rpc.rp ]
+  println("Current frame: $currentPeriod")
+  return minimum(currentPeriods)
 end
 
 for op in [:periodsPerFrame,  :samplesPerPeriod, :decimation]
@@ -113,6 +119,46 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames)
       u = readData_(rp, Int64(wpRead), Int64(chunk))
 
       data[:,:,d,:,l:(l+chunk-1)] = u
+    end
+
+    l += chunk
+    wpRead += chunk
+  end
+
+  return data
+end
+
+function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods)
+  dec = master(rpc).decimation
+  numSampPerPeriod = master(rpc).samplesPerPeriod
+  numSamp = numSampPerPeriod * numPeriods
+  numRP = length(rpc)
+
+  data = zeros(Int16, 2, numSampPerPeriod, numRP, numPeriods)
+  wpRead = startPeriod
+  l=1
+
+  # This is a wild guess for a good chunk size
+  chunkSize = max(1,  round(Int, 1000000 / numSampPerPeriod)  )
+  println("chunkSize = $chunkSize; numPeriods = $numPeriods")
+  while l<=numPeriods
+    wpWrite = currentPeriod(rpc)
+    while wpRead >= wpWrite # Wait that startPeriod is reached
+      wpWrite = currentPeriod(rpc)
+      println(wpWrite)
+    end
+    chunk = min(wpWrite-wpRead,chunkSize) # Determine how many periods to read
+    println(chunk)
+    if l+chunk > numPeriods
+      chunk = numPeriods - l + 1
+    end
+
+    println("Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)")
+
+    for (d,rp) in enumerate(rpc.rp)
+      u = readDataPeriods_(rp, Int64(wpRead), Int64(chunk))
+
+      data[:,:,d,l:(l+chunk-1)] = u
     end
 
     l += chunk
