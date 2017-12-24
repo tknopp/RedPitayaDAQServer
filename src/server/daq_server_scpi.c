@@ -449,10 +449,8 @@ void* slowDACThread(void* ch) {
 			printf("Trigger received, start sending\n");		
 			
 			while(rxEnabled) {
-				//printf("Get write pointer\n");
 				wp = getWritePointer();
 
-				//printf("Get write pointer distance\n");
 				uint32_t size = getWritePointerDistance(wp_old, wp)-1;
 
 				if (size > 0) {
@@ -462,7 +460,7 @@ void* slowDACThread(void* ch) {
 					currentFrameTotal = data_read_total / numSamplesPerFrame;
 					currentPeriodTotal = data_read_total / (numSamplesPerPeriod);
 
-         			if(currentPeriodTotal > oldPeriodTotal + 1) {
+         			if(currentPeriodTotal > oldPeriodTotal + 1 && numPeriodsPerFrame > 1) {
            				printf("WARNING: We lost an ff step! oldFr %lld newFr %lld size=%d\n", 
                    			oldPeriodTotal, currentPeriodTotal, size);
          			}
@@ -471,7 +469,8 @@ void* slowDACThread(void* ch) {
                        			  numSamplesPerPeriod;
            			int currFFStep = currentPeriodTotal % numPeriodsPerFrame;
            			//printf("++++ currFrame: %lld\n",  currFFStep);
-           			for (int i=0; i< numSlowDACChan; i++) {
+           		
+					for (int i=0; i< numSlowDACChan; i++) {
              			float val;
              			if(false) {//params.ffLinear) {
                				val = (1-factor)*slowDACLUT[currFFStep*numSlowDACChan+i] +

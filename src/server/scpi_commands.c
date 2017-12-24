@@ -230,6 +230,7 @@ static scpi_result_t RP_ADC_SetDecimation(scpi_t * context) {
         printf("set dec = %d \n", decimation);
 	int result = setDecimation((uint16_t)decimation);
 	if (result < 0) {
+        printf("Could not set decimation!");
 		return SCPI_RES_ERR;
 	}
 
@@ -275,13 +276,6 @@ static scpi_result_t RP_ADC_SetPeriodsPerFrame(scpi_t * context) {
 	if (!SCPI_ParamInt32(context, &numPeriodsPerFrame, TRUE)) {
 		return SCPI_RES_ERR;
 	}
-
-        if(numPeriodsPerFrame > 1 && numSlowDACChan > 0) {
-          if(slowDACLUT != NULL) {
-            free(slowDACLUT);
-          }
-          slowDACLUT = (float *)malloc(numSlowDACChan * numPeriodsPerFrame * sizeof(float));
-        }
 
 	return SCPI_RES_OK;
 }
@@ -672,12 +666,21 @@ static scpi_result_t RP_InstantResetStatus(scpi_t * context) {
 
 static scpi_result_t RP_DAC_SetSlowDACLUT(scpi_t * context) {
 
+	if(numPeriodsPerFrame > 0 && numSlowDACChan > 0) {
+    	if(slowDACLUT != NULL) {
+            free(slowDACLUT);
+        }
+        printf("Allocating slowDACLUT\n");
+        slowDACLUT = (float *)malloc(numSlowDACChan * numPeriodsPerFrame * sizeof(float));
+    }
+
+
     for(int i=0; i<numPeriodsPerFrame; i++) {
       for(int l=0; l<numSlowDACChan; l++) {
         if (!SCPI_ParamFloat(context, slowDACLUT+i*numSlowDACChan + l, TRUE)) {
                 return SCPI_RES_ERR;
         }
-        printf("LUT=%f \n", slowDACLUT[i*numSlowDACChan + l]);
+        //printf("LUT=%f \n", slowDACLUT[i*numSlowDACChan + l]);
       }
     }
 
