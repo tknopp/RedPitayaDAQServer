@@ -12,7 +12,7 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h> /* for socket(), connect(), send(), and recv() */
 #include <arpa/inet.h>  /* for sockaddr_in and inet_addr() */
-
+#include <time.h> 
 #include "rp-daq-lib.h"
 
 bool verbose = false;
@@ -447,9 +447,21 @@ uint32_t getWritePointerDistance(uint32_t start_pos, uint32_t end_pos) {
 }
 
 void readADCData(uint32_t wp, uint32_t size, uint32_t* buffer) {
-	//printf("Reading and copying ADC data");
+	int i;
+    //printf("Reading and copying ADC data");
 	if(wp+size <= ADC_BUFF_SIZE) {
-		memcpy(buffer, ram + sizeof(uint32_t)*wp, size*sizeof(uint32_t));
+        struct timespec start_time;
+        clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start_time);
+
+    	memcpy(buffer, ram + sizeof(uint32_t)*wp, size*sizeof(uint32_t));
+		/*for(i=0; i<2*size; i++) {
+            ((uint16_t*)buffer)[i] = ((uint16_t*)ram)[wp+i];
+        }*/
+
+    	struct timespec end_time;
+    	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end_time);
+    	long nsec = end_time.tv_nsec - start_time.tv_nsec;        
+        //printf("Time taken %ld nanoseconds, size %ld, data rate %e GB/sec \n", nsec, size, (size*4)/((float)nsec) );
 	} else {
 		uint32_t size1 = ADC_BUFF_SIZE - wp;
 		uint32_t size2 = size - size1;
