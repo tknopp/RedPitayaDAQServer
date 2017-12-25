@@ -60,19 +60,29 @@ function ramWriterMode(rpc::RedPitayaCluster, mode::String)
 end
 
 for op in [:amplitudeDAC,  :frequencyDAC, :phaseDAC, :modulusFactorDAC, :modulusDAC]
-  @eval begin $op(rpc::RedPitayaCluster, idxRP::Integer, channel::Integer, component::Integer) =
-           $op(rpc.rp[idxRP], channel, component)
+  @eval function $op(rpc::RedPitayaCluster, chan::Integer, component::Integer)
+    idxRP = div(chan-1, 2) + 1
+    chanRP = mod1(chan, 2)
+    return $op(rpc.rp[idxRP], chanRP, component)
   end
-  @eval begin $op(rpc::RedPitayaCluster, idxRP::Integer, channel::Integer, component::Integer, value) =
-           $op(rpc.rp[idxRP], channel, component, value)
+  @eval function $op(rpc::RedPitayaCluster, chan::Integer, component::Integer, value)
+    idxRP = div(chan-1, 2) + 1
+    chanRP = mod1(chan, 2)
+    return $op(rpc.rp[idxRP], chanRP, component, value)
   end
 end
 
-setSlowDAC(rpc::RedPitayaCluster, idxRP::Integer, channel::Integer, value) =
-  setSlowDAC(rpc.rp[idxRP], channel, value)
+function setSlowDAC(rpc::RedPitayaCluster, chan, value)
+  idxRP = div(chan-1, 2) + 1
+  chanRP = mod1(chan, 2)
+  setSlowDAC(rpc.rp[idxRP], chanRP, value)
+end
 
-getSlowADC(rpc::RedPitayaCluster, idxRP::Integer, channel::Integer) =
-  getSlowADC(rpc.rp[idxRP], channel)
+function getSlowADC(rpc::RedPitayaCluster, chan::Integer)
+  idxRP = div(chan-1, 2) + 1
+  chanRP = mod1(chan, 2)
+  getSlowADC(rpc.rp[idxRP], chanRP)
+end
 
 #"STANDARD" or "RASTERIZED"
 modeDAC(rpc::RedPitayaCluster) = modeDAC(master(rpc))
@@ -94,7 +104,7 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames)
   numSampPerFrame = numSampPerPeriod * numPeriods
   numRP = length(rpc)
 
-  data = zeros(Int16, 2, numSampPerPeriod, numRP, numPeriods, numFrames)
+  data = zeros(Int16, numSampPerPeriod, 2*numRP, numPeriods, numFrames)
   wpRead = startFrame
   l=1
 
@@ -118,7 +128,8 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames)
     for (d,rp) in enumerate(rpc.rp)
       u = readData_(rp, Int64(wpRead), Int64(chunk))
 
-      data[:,:,d,:,l:(l+chunk-1)] = u
+      data[:,2*d-1,:,l:(l+chunk-1)] = u[1,:,:,:]
+      data[:,2*d,:,l:(l+chunk-1)] = u[2,:,:,:]
     end
 
     l += chunk
@@ -134,7 +145,7 @@ function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods)
   numSamp = numSampPerPeriod * numPeriods
   numRP = length(rpc)
 
-  data = zeros(Int16, 2, numSampPerPeriod, numRP, numPeriods)
+  data = zeros(Int16, numSampPerPeriod, 2*numRP, numPeriods)
   wpRead = startPeriod
   l=1
 
@@ -158,7 +169,8 @@ function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods)
     for (d,rp) in enumerate(rpc.rp)
       u = readDataPeriods_(rp, Int64(wpRead), Int64(chunk))
 
-      data[:,:,d,l:(l+chunk-1)] = u
+      data[:,2*d-1,l:(l+chunk-1)] = u[1,:,:]
+      data[:,2*d,l:(l+chunk-1)] = u[2,:,:]
     end
 
     l += chunk
