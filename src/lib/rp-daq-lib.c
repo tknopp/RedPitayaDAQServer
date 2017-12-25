@@ -14,6 +14,7 @@
 #include <arpa/inet.h>  /* for sockaddr_in and inet_addr() */
 #include <time.h> 
 #include "rp-daq-lib.h"
+#include "rp-config.h"
 
 bool verbose = false;
 
@@ -38,11 +39,12 @@ static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
 // Init stuff
 
 void loadBitstream() {
-   //system("cat /root/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");
   if(isMaster()) {		
-     system("cat /root/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");		
+    printf("loading bitstream /root/RedPitayaDAQServer/bitfiles/master.bit\n"); 
+    system("cat /root/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");		
   } else {		
-     system("cat /root/RedPitayaDAQServer/bitfiles/slave.bit > /dev/xdevcfg");		
+    printf("loading bitstream /root/RedPitayaDAQServer/bitfiles/slave.bit\n"); 
+    system("cat /root/RedPitayaDAQServer/bitfiles/slave.bit > /dev/xdevcfg");		
   }
 }
 
@@ -106,7 +108,7 @@ int init() {
 }
 
 
-bool master = true;
+bool master = IS_MASTER;
 
 // TODO: Implement getting the status directly from the FPGA
 bool isMaster() {
