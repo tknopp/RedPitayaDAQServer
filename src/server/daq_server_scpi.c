@@ -273,12 +273,12 @@ void* acquisitionThread(void* ch) {
 					printf("I think we lost a step %d %d %d \n", size, wp_old, wp);
 				}
 
-			//	if(firstCycle) {
-			//		firstCycle = false;
-			//	} else {
-			//		// Limit size to be read to period length
-			//		size = MIN(size, numSamplesPerPeriod);
-			//	}
+				if(firstCycle) {
+					firstCycle = false;
+				} else {
+					// Limit size to be read to period length
+					size = MIN(size, numSamplesPerPeriod);
+				}
 
 				if (size > 0) {
 					if(data_read + size <= buff_size) { 
