@@ -428,7 +428,7 @@ void* slowDACThread(void* ch) {
 	while(acquisitionThreadRunning) {
 		// Reset everything in order to provide a fresh start
 		// everytime the acquisition is started
-		if(rxEnabled) {
+		if(rxEnabled && numSlowDACChan > 0) {
 			printf("Starting acquisition...\n");
 			data_read_total = 0; 
 			oldPeriodTotal = -1;
