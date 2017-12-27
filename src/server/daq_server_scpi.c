@@ -82,6 +82,23 @@ pthread_t pSlowDAC;
 
 int datasockfd;
 
+
+static void getprio( pthread_t id ) {
+   int policy;
+   struct sched_param param;
+   printf("\t->Thread %ld: ", id);
+   if((pthread_getschedparam(id, &policy, &param)) == 0  ) {
+      printf("Scheduler: ");
+      switch( policy ) {
+         case SCHED_OTHER :  printf("SCHED_OTHER; "); break;
+         case SCHED_FIFO  :  printf("SCHED_FIFO; ");  break;
+         case SCHED_RR    :  printf("SCHED_RR; ");    break;
+         default          :  printf("Unknown; ");  break;
+      }
+      printf("Priority: %d\n", param.sched_priority);
+   }
+}
+
 size_t SCPI_Write(scpi_t * context, const char * data, size_t len) {
 	(void) context;
 
@@ -219,16 +236,7 @@ void* acquisitionThread(void* ch) {
 	bool firstCycle;
 
 	printf("Starting acquisition thread\n");
-
-	// Set priority of this thread
-	/*struct sched_param p;
-	p.sched_priority = sched_get_priority_max(SCHED_FIFO);
-	pthread_t this_thread = pthread_self();
-	int ret = pthread_setschedparam(this_thread, SCHED_FIFO, &p);
-	if (ret != 0) {
-		printf("Unsuccessful in setting thread realtime prio.\n");
-		return NULL;     
-	}*/
+    getprio(pthread_self());
 
 	// Loop until the acquisition is started
 	while(acquisitionThreadRunning) {
@@ -413,16 +421,7 @@ void* slowDACThread(void* ch) {
 	int64_t numSamplesPerFrame; 
 
 	printf("Starting slowDAC thread\n");
-
-	// Set priority of this thread
-	struct sched_param p;
-	p.sched_priority = sched_get_priority_max(SCHED_FIFO);
-	pthread_t this_thread = pthread_self();
-	int ret = pthread_setschedparam(this_thread, SCHED_FIFO, &p);
-	if (ret != 0) {
-		printf("Unsuccessful in setting thread realtime prio.\n");
-		return NULL;     
-	}
+    getprio(pthread_self());
 
 	// Loop until the acquisition is started
 	while(acquisitionThreadRunning) {
@@ -461,7 +460,7 @@ void* slowDACThread(void* ch) {
            				printf("WARNING: We lost an ff step! oldFr %lld newFr %lld size=%d\n", 
                    			oldPeriodTotal, currentPeriodTotal, size);
          			}
-         			if(true) { //currentPatchTotal > oldPatchTotal || params.ffLinear) {
+         			if(currentPeriodTotal > oldPeriodTotal) { // || params.ffLinear) {
            			float factor = ((float)data_read_total - currentPeriodTotal*numSamplesPerPeriod )/
                        			  numSamplesPerPeriod;
            			int currFFStep = currentPeriodTotal % numPeriodsPerFrame;
@@ -502,6 +501,7 @@ void* slowDACThread(void* ch) {
 }
 
 
+
 /*
  *
  */
@@ -523,8 +523,38 @@ int main(int argc, char** argv) {
 	// Start acquisition thread
 	acquisitionThreadRunning = true;
 	rxEnabled = false;
-	pthread_create(&pAcq, NULL, acquisitionThread, NULL);
-	pthread_create(&pSlowDAC, NULL, slowDACThread, NULL);
+
+    struct sched_param scheduleAcq;
+    pthread_attr_t attrAcq;
+
+    scheduleAcq.sched_priority = 30; //SCHED_RR goes from 1 -99
+    pthread_attr_init(&attrAcq);
+    pthread_attr_setinheritsched(&attrAcq, PTHREAD_EXPLICIT_SCHED);
+    pthread_attr_setschedpolicy(&attrAcq, SCHED_RR);
+    if( pthread_attr_setschedparam(&attrAcq, &scheduleAcq) != 0) printf("Failed to set sched param on acq thread");
+	pthread_create(&pAcq, &attrAcq, acquisitionThread, NULL);
+
+    struct sched_param scheduleSlowDAC;
+    pthread_attr_t attrSlowDAC;
+
+    scheduleSlowDAC.sched_priority = 99; //SCHED_RR goes from 1 -99
+    pthread_attr_init(&attrSlowDAC);
+    pthread_attr_setinheritsched(&attrSlowDAC, PTHREAD_EXPLICIT_SCHED);
+    pthread_attr_setschedpolicy(&attrSlowDAC, SCHED_RR);
+    if( pthread_attr_setschedparam(&attrSlowDAC, &scheduleSlowDAC) != 0) printf("Failed to set sched param on slow dac thread");
+	pthread_create(&pSlowDAC, &attrSlowDAC, slowDACThread, NULL);
+
+    // Set priority of this thread
+    //struct sched_param p;
+    //p.sched_priority = 30; //sched_get_priority_max(SCHED_FIFO);
+    /*pthread_t this_thread = pthread_self();
+    int ret = pthread_setschedparam(this_thread, SCHED_OTHER, &p);
+    if (ret != 0) {
+        printf("Unsuccessful in setting thread realtime prio.\n");
+        return NULL;     
+    }*/
+
+    getprio(pthread_self());
 
 	/* User_context will be pointer to socket */
 	scpi_context.user_context = NULL;
