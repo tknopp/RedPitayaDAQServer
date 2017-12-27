@@ -137,13 +137,15 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
 
     println("Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)")
 
-    for (d,rp) in enumerate(rpc.rp)
-      u = readData_(rp, Int64(wpRead), Int64(chunk))
-      utmp1 = reshape(u,2,numAveragedSampPerPeriod,numBlockAverages,size(u,3),size(u,4))
-      utmp2 = numBlockAverages > 1 ? mean(utmp1,3) : utmp1
+    @sync for (d,rp) in enumerate(rpc.rp)
+      @async begin
+        u = readData_(rp, Int64(wpRead), Int64(chunk))
+        utmp1 = reshape(u,2,numAveragedSampPerPeriod,numBlockAverages,size(u,3),size(u,4))
+        utmp2 = numBlockAverages > 1 ? mean(utmp1,3) : utmp1
 
-      data[:,2*d-1,:,l:(l+chunk-1)] = utmp2[1,:,1,:,:]
-      data[:,2*d,:,l:(l+chunk-1)] = utmp2[2,:,1,:,:]
+        data[:,2*d-1,:,l:(l+chunk-1)] = utmp2[1,:,1,:,:]
+        data[:,2*d,:,l:(l+chunk-1)] = utmp2[2,:,1,:,:]
+      end
     end
 
     l += chunk
@@ -185,14 +187,16 @@ function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBloc
 
     println("Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)")
 
-    for (d,rp) in enumerate(rpc.rp)
-      u = readDataPeriods_(rp, Int64(wpRead), Int64(chunk))
+    @sync for (d,rp) in enumerate(rpc.rp)
+      @async begin
+        u = readDataPeriods_(rp, Int64(wpRead), Int64(chunk))
 
-      utmp1 = reshape(u,2,numAveragedSampPerPeriod,numBlockAverages,size(u,3))
-      utmp2 = numBlockAverages > 1 ? mean(utmp1,3) : utmp1
+        utmp1 = reshape(u,2,numAveragedSampPerPeriod,numBlockAverages,size(u,3))
+        utmp2 = numBlockAverages > 1 ? mean(utmp1,3) : utmp1
 
-      data[:,2*d-1,l:(l+chunk-1)] = utmp2[1,:,1,:]
-      data[:,2*d,l:(l+chunk-1)] = utmp2[2,:,1,:]
+        data[:,2*d-1,l:(l+chunk-1)] = utmp2[1,:,1,:]
+        data[:,2*d,l:(l+chunk-1)] = utmp2[2,:,1,:]
+      end
     end
 
     l += chunk
