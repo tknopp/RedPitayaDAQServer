@@ -113,6 +113,9 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
   wpRead = startFrame
   l=1
 
+  numFramesInMemoryBuffer = 16*1024*1024 / numSamp
+  println("numFramesInMemoryBuffer = $numFramesInMemoryBuffer")
+
   # This is a wild guess for a good chunk size
   chunkSize = max(1,  round(Int, 1000000 / numSampPerFrame)  )
   println("chunkSize = $chunkSize")
@@ -126,6 +129,10 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
     println(chunk)
     if l+chunk > numFrames
       chunk = numFrames - l + 1
+    end
+
+    if wpWrite - numFramesInMemoryBuffer > wpRead
+      println("WARNING: We have lost data !!!!!!!!!!")
     end
 
     println("Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)")
