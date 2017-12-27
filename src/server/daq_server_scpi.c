@@ -527,7 +527,7 @@ int main(int argc, char** argv) {
     struct sched_param scheduleAcq;
     pthread_attr_t attrAcq;
 
-    scheduleAcq.sched_priority = 30; //SCHED_RR goes from 1 -99
+    scheduleAcq.sched_priority = 99; //SCHED_RR goes from 1 -99
     pthread_attr_init(&attrAcq);
     pthread_attr_setinheritsched(&attrAcq, PTHREAD_EXPLICIT_SCHED);
     pthread_attr_setschedpolicy(&attrAcq, SCHED_RR);
@@ -545,14 +545,14 @@ int main(int argc, char** argv) {
 	pthread_create(&pSlowDAC, &attrSlowDAC, slowDACThread, NULL);
 
     // Set priority of this thread
-    //struct sched_param p;
-    //p.sched_priority = 30; //sched_get_priority_max(SCHED_FIFO);
-    /*pthread_t this_thread = pthread_self();
-    int ret = pthread_setschedparam(this_thread, SCHED_OTHER, &p);
+    struct sched_param p;
+    p.sched_priority = 99; //sched_get_priority_max(SCHED_FIFO);
+    pthread_t this_thread = pthread_self();
+    int ret = pthread_setschedparam(this_thread, SCHED_RR, &p);
     if (ret != 0) {
         printf("Unsuccessful in setting thread realtime prio.\n");
         return NULL;     
-    }*/
+    }
 
     getprio(pthread_self());
 
