@@ -1,3 +1,4 @@
+__precompile__()
 module RedPitayaDAQServer
 
 # package code goes here
