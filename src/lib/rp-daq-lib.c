@@ -39,13 +39,22 @@ static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
 // Init stuff
 
 void loadBitstream() {
-  if(isMaster()) {		
-    printf("loading bitstream /root/RedPitayaDAQServer/bitfiles/master.bit\n"); 
-    system("cat /root/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");		
-  } else {		
-    printf("loading bitstream /root/RedPitayaDAQServer/bitfiles/slave.bit\n"); 
-    system("cat /root/RedPitayaDAQServer/bitfiles/slave.bit > /dev/xdevcfg");		
-  }
+    if(!access("/tmp/bitstreamLoaded", F_OK )){
+      printf("Bitfile already loaded\n");
+    } else {
+      printf("Load Bitfile\n");
+      if(isMaster()) {		
+        printf("loading bitstream /root/RedPitayaDAQServer/bitfiles/master.bit\n"); 
+        system("cat /root/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");		
+      } else {		
+        printf("loading bitstream /root/RedPitayaDAQServer/bitfiles/slave.bit\n"); 
+        system("cat /root/RedPitayaDAQServer/bitfiles/slave.bit > /dev/xdevcfg");		
+      }
+      FILE* fp = fopen("/tmp/bitstreamLoaded" ,"a");
+      fprintf(fp, "loaded \n");
+      fclose(fp);
+    }
+
 }
 
 int init() {
