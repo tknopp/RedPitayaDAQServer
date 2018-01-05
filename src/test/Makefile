@@ -1,5 +1,5 @@
-CFLAGS  = -O3 -std=gnu99 -g
-CFLAGS += -I/opt/redpitaya/include
+CFLAGS  = -O3 -std=gnu99
+CFLAGS +=
 LDFLAGS = /root/RedPitayaDAQServer/build/lib/librp-daq.so
 LDLIBS = -lm -lpthread -lscpi
 
