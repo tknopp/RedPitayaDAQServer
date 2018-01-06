@@ -250,7 +250,7 @@ void* acquisitionThread(void* ch) {
 			data_read = 0; 
 
 			numSamplesPerFrame = numSamplesPerPeriod * numPeriodsPerFrame; 
-			numFramesInMemoryBuffer = 16*1024*1024 / numSamplesPerFrame;
+			numFramesInMemoryBuffer = 64*1024*1024 / numSamplesPerFrame;
 			numPeriodsInMemoryBuffer = numFramesInMemoryBuffer*numPeriodsPerFrame;
 			//printf("Release old buffer\n");
 			releaseBuffer();
