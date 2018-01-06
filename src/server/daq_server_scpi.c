@@ -500,7 +500,41 @@ void* slowDACThread(void* ch) {
 	printf("Slow daq thread finished\n");
 }
 
+void createThreads()
+{
+    acquisitionThreadRunning = true;
 
+    struct sched_param scheduleAcq;
+    pthread_attr_t attrAcq;
+
+    scheduleAcq.sched_priority = 60; //SCHED_RR goes from 1 -99
+    pthread_attr_init(&attrAcq);
+    pthread_attr_setinheritsched(&attrAcq, PTHREAD_EXPLICIT_SCHED);
+    pthread_attr_setschedpolicy(&attrAcq, SCHED_RR);
+    if( pthread_attr_setschedparam(&attrAcq, &scheduleAcq) != 0) printf("Failed to set sched param on acq thread");
+	pthread_create(&pAcq, &attrAcq, acquisitionThread, NULL);
+
+
+    struct sched_param scheduleSlowDAC;
+    pthread_attr_t attrSlowDAC;
+
+    scheduleSlowDAC.sched_priority = 60; //SCHED_RR goes from 1 -99
+    pthread_attr_init(&attrSlowDAC);
+    pthread_attr_setinheritsched(&attrSlowDAC, PTHREAD_EXPLICIT_SCHED);
+    pthread_attr_setschedpolicy(&attrSlowDAC, SCHED_RR);
+    if( pthread_attr_setschedparam(&attrSlowDAC, &scheduleSlowDAC) != 0) printf("Failed to set sched param on slow dac thread");
+	pthread_create(&pSlowDAC, &attrSlowDAC, slowDACThread, NULL);
+
+ return;
+}
+
+void joinThreads()
+{
+  acquisitionThreadRunning = false;
+  rxEnabled = false;
+  pthread_join(pAcq, NULL);
+  pthread_join(pSlowDAC, NULL);
+}
 
 /*
  *
@@ -509,51 +543,27 @@ int main(int argc, char** argv) {
 	(void) argc;
 	(void) argv;
 	int rc;
+	bool firstConnection = true;
 
 	int listenfd;
 	char smbuffer[10];
-
-	// Init FPGA
-	init();
 
 	// Start socket for sending the data
 	datasockfd = createServer(5026);
 	newdatasockfd = 0;
 
-	// Start acquisition thread
-	acquisitionThreadRunning = true;
 	rxEnabled = false;
 
-    struct sched_param scheduleAcq;
-    pthread_attr_t attrAcq;
-
-    scheduleAcq.sched_priority = 99; //SCHED_RR goes from 1 -99
-    pthread_attr_init(&attrAcq);
-    pthread_attr_setinheritsched(&attrAcq, PTHREAD_EXPLICIT_SCHED);
-    pthread_attr_setschedpolicy(&attrAcq, SCHED_RR);
-    if( pthread_attr_setschedparam(&attrAcq, &scheduleAcq) != 0) printf("Failed to set sched param on acq thread");
-	pthread_create(&pAcq, &attrAcq, acquisitionThread, NULL);
-
-    struct sched_param scheduleSlowDAC;
-    pthread_attr_t attrSlowDAC;
-
-    scheduleSlowDAC.sched_priority = 99; //SCHED_RR goes from 1 -99
-    pthread_attr_init(&attrSlowDAC);
-    pthread_attr_setinheritsched(&attrSlowDAC, PTHREAD_EXPLICIT_SCHED);
-    pthread_attr_setschedpolicy(&attrSlowDAC, SCHED_RR);
-    if( pthread_attr_setschedparam(&attrSlowDAC, &scheduleSlowDAC) != 0) printf("Failed to set sched param on slow dac thread");
-	pthread_create(&pSlowDAC, &attrSlowDAC, slowDACThread, NULL);
-
     // Set priority of this thread
-    struct sched_param p;
-    p.sched_priority = 99; //sched_get_priority_max(SCHED_FIFO);
+    /*struct sched_param p;
+    p.sched_priority = 99; 
     pthread_t this_thread = pthread_self();
     int ret = pthread_setschedparam(this_thread, SCHED_RR, &p);
     if (ret != 0) {
         printf("Unsuccessful in setting thread realtime prio.\n");
         return NULL;     
-    }
-
+    }*/
+ 
     getprio(pthread_self());
 
 	/* User_context will be pointer to socket */
@@ -569,7 +579,7 @@ int main(int argc, char** argv) {
 
 	listenfd = createServer(5025);
 
-	while (1) {
+	while (true) {
 		int clifd;
 		struct sockaddr_in cliaddr;
 		socklen_t clilen;
@@ -584,7 +594,16 @@ int main(int argc, char** argv) {
 
 		scpi_context.user_context = &clifd;
 
-		while (1) {
+		if(firstConnection) 
+		{
+	          // Init FPGA
+	          init();
+		  firstConnection = false;
+		}
+
+		createThreads();
+
+		while (true) {
 			rc = waitServer(clifd);
 			if (rc < 0) { /* failed */
 				perror("  recv() failed");
@@ -605,6 +624,7 @@ int main(int argc, char** argv) {
 					stopTx();
 					setMasterTrigger(MASTER_TRIGGER_OFF);
 					rxEnabled = false;
+					joinThreads();
 					break;
 				} else {
 					SCPI_Input(&scpi_context, smbuffer, rc);

@@ -5,7 +5,8 @@ all:
 	@$(MAKE) -C src/lib
 	@$(MAKE) -C src/server
 	@$(MAKE) -C src/test
-	cp scripts/daq_server.service /etc/systemd/system/
+	cp scripts/daqserver.start /etc/local.d/
+#	cp scripts/daq_server.service /etc/systemd/system/
 
 .PHONY: clean
 clean:

@@ -457,9 +457,9 @@ void init_daq()
   if(isFirstConnection)
   {
     if(params.isMaster) {
-      setMaster();
+      //setMaster();
     } else {
-      setSlave();
+      //setSlave();
     }
     init();
     setDACMode(DAC_MODE_RASTERIZED);
