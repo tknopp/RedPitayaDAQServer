@@ -630,6 +630,7 @@ int main(int argc, char** argv) {
 					SCPI_Input(&scpi_context, smbuffer, rc);
 				}
 			}
+		      usleep(400);
 		}
 
 		close(clifd);
