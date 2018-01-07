@@ -113,7 +113,7 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
   wpRead = startFrame
   l=1
 
-  numFramesInMemoryBuffer = 16*1024*1024 / numSamp
+  numFramesInMemoryBuffer = 32*1024*1024 / numSamp
   println("numFramesInMemoryBuffer = $numFramesInMemoryBuffer")
 
   # This is a wild guess for a good chunk size
