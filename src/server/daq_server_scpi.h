@@ -35,12 +35,12 @@
 #define SCPI_IDN3 NULL
 #define SCPI_IDN4 "0.1"
 
-extern int numSamplesPerPeriod;
-extern int numPeriodsPerFrame;
+extern volatile int numSamplesPerPeriod;
+extern volatile int numPeriodsPerFrame;
 extern int numSlowDACChan;
-extern uint64_t numSamplesPerFrame;
-extern uint64_t numFramesInMemoryBuffer;
-extern uint64_t buff_size;
+extern volatile int64_t numSamplesPerFrame;
+extern volatile int64_t numFramesInMemoryBuffer;
+extern volatile int64_t buff_size;
 
 extern volatile int64_t currentFrameTotal;
 extern volatile int64_t currentPeriodTotal;

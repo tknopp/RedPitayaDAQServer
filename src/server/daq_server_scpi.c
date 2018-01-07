@@ -58,13 +58,13 @@
 #include "../lib/rp-daq-lib.h"
 #include "../server/scpi_commands.h"
 
-int numSamplesPerPeriod = 5000;
-int numPeriodsPerFrame = 20;
+volatile int numSamplesPerPeriod = 5000;
+volatile int numPeriodsPerFrame = 20;
 int numSlowDACChan = 0;
-uint64_t numSamplesPerFrame = -1;
-uint64_t numFramesInMemoryBuffer = -1;
-uint64_t numPeriodsInMemoryBuffer = -1;
-uint64_t buff_size = 0;
+volatile int64_t numSamplesPerFrame = -1;
+volatile int64_t numFramesInMemoryBuffer = -1;
+volatile int64_t numPeriodsInMemoryBuffer = -1;
+volatile int64_t buff_size = 0;
 
 volatile int64_t currentFrameTotal;
 volatile int64_t currentPeriodTotal;
@@ -253,8 +253,14 @@ void* acquisitionThread(void* ch) {
       data_read = 0; 
 
       numSamplesPerFrame = numSamplesPerPeriod * numPeriodsPerFrame; 
-      numFramesInMemoryBuffer = 64*1024*1024 / numSamplesPerFrame;
+      printf("numPeriodsPerFrame = %d \n", numPeriodsPerFrame);
+      printf("numSamplesPerPeriod = %d \n", numSamplesPerPeriod);
+      printf("numSamplesPerFrame = %lld \n", numSamplesPerFrame);
+      
+      numFramesInMemoryBuffer = 32*1024*1024 / numSamplesPerFrame;
       numPeriodsInMemoryBuffer = numFramesInMemoryBuffer*numPeriodsPerFrame;
+      
+      printf("numFramesInMemoryBuffer = %lld \n", numFramesInMemoryBuffer);
       //printf("Release old buffer\n");
       releaseBuffer();
       printf("Initializing new buffer...\n");
@@ -405,6 +411,13 @@ void sendPeriodsToHost(int64_t period, int64_t numPeriods) {
 
 void initBuffer() {
   buff_size = numSamplesPerFrame*numFramesInMemoryBuffer;
+  printf("numFramesInMemoryBuffer = %lld \n", numFramesInMemoryBuffer);
+  printf("buff_size = %lld \n", buff_size);
+  printf("numSamplesPerFrame = %lld \n", numSamplesPerFrame);
+
+
+  printf("numFramesInMemoryBuffer = %lld \n", numFramesInMemoryBuffer);
+  printf("Allocating buffer of size %lld \n", buff_size*sizeof(uint32_t));
   buffer = (uint32_t*)malloc(buff_size * sizeof(uint32_t));
   memset(buffer, 0, buff_size * sizeof(uint32_t));
 }
@@ -432,7 +445,7 @@ void* slowDACThread(void* ch)
     // Reset everything in order to provide a fresh start
     // everytime the acquisition is started
     if(rxEnabled && numSlowDACChan > 0) {
-      printf("Starting acquisition...\n");
+      printf("Start sending...\n");
       data_read_total = 0; 
       oldPeriodTotal = -1;
 
@@ -665,6 +678,9 @@ int main(int argc, char** argv) {
       init();
       firstConnection = false;
     }
+
+    // if comm thread still running -> join it
+    // 
 
     createThreads();
     pthread_join(pComm, NULL);
