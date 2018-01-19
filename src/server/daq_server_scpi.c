@@ -74,6 +74,7 @@ volatile int64_t channel;
 uint32_t *buffer = NULL;
 bool rxEnabled = false;
 bool acquisitionThreadRunning = false;
+bool commThreadRunning = false;
 
 float *slowDACLUT = NULL;
 
@@ -226,7 +227,7 @@ int waitServer(int fd) {
   max_fd = fd;
   FD_SET(fd, &fds);
 
-  timeout.tv_sec = 5;
+  timeout.tv_sec = 1;
   timeout.tv_usec = 0;
 
   rc = select(max_fd + 1, &fds, NULL, NULL, &timeout);
@@ -539,7 +540,17 @@ void* communicationThread(void* p)
   int clifd = (int)p;
   int rc;
   char smbuffer[10];
-  while (true) {
+
+  while(true) {
+    printf("Comm thread loop\n");
+    if(!commThreadRunning)
+    {
+      stopTx();
+      setMasterTrigger(MASTER_TRIGGER_OFF);
+      rxEnabled = false;
+      joinThreads();
+      break;
+    }
     rc = waitServer(clifd);
     if (rc < 0) { /* failed */
       perror("  recv() failed");
@@ -561,6 +572,7 @@ void* communicationThread(void* p)
         setMasterTrigger(MASTER_TRIGGER_OFF);
         rxEnabled = false;
         joinThreads();
+        commThreadRunning = false;
         break;
       } else {
         SCPI_Input(&scpi_context, smbuffer, rc);
@@ -568,6 +580,7 @@ void* communicationThread(void* p)
     }
     usleep(400);
   }
+  printf("Comm almost done\n");
 
   close(clifd);
   if(newdatasockfd > 0) {
@@ -575,13 +588,14 @@ void* communicationThread(void* p)
     newdatasockfd = 0;
   }
 
-
+  printf("Comm thread done\n");
   return NULL;
 }
 
 void createThreads()
 {
   acquisitionThreadRunning = true;
+  commThreadRunning = true;
 
   struct sched_param scheduleAcq;
   pthread_attr_t attrAcq;
@@ -662,28 +676,34 @@ int main(int argc, char** argv) {
 
   while (true) 
   {
-    //printf("Waiting for new connection\n");
+    printf("Waiting for new connection\n");
     clilen = sizeof (cliaddr);
-    clifd = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
+    int clifdTmp = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
 
-    if (clifd < 0) continue;
-
-    printf("Connection established %s\r\n", inet_ntoa(cliaddr.sin_addr));
-
-    scpi_context.user_context = &clifd;
-
-    if(firstConnection) 
+    if (clifdTmp >= 0) 
     {
-      // Init FPGA
-      init();
-      firstConnection = false;
+      printf("Connection established %s\r\n", inet_ntoa(cliaddr.sin_addr));
+      clifd = clifdTmp;
+
+      scpi_context.user_context = &clifd;
+
+      if(firstConnection) 
+      {
+        // Init FPGA
+        init();
+        firstConnection = false;
+      }
+
+      // if comm thread still running -> join it
+      if(commThreadRunning)
+      {
+        commThreadRunning = false;
+        pthread_join(pComm, NULL);
+      }
+
+      createThreads();
     }
-
-    // if comm thread still running -> join it
-    // 
-
-    createThreads();
-    pthread_join(pComm, NULL);
+    sleep(1.0);
   }
 
   // Exit gracefully
