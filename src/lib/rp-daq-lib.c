@@ -87,7 +87,8 @@ int init() {
 	// Explicitly set default values
 	setDecimation(16);
 	printf("Decimation = %d \n", getDecimation());
-	setDACMode(DAC_MODE_STANDARD);
+	//setDACMode(DAC_MODE_STANDARD);
+	setDACMode(DAC_MODE_RASTERIZED);
 	setWatchdogMode(WATCHDOG_OFF);
 	setRAMWriterMode(ADC_MODE_CONTINUOUS);
 	setMasterTrigger(MASTER_TRIGGER_OFF);
@@ -95,14 +96,14 @@ int init() {
 
 	stopTx();
 
-	setFrequency(25000, 0, 0);
+	/*setFrequency(25000, 0, 0);
 	setFrequency(25000, 0, 1);
 	setFrequency(25000, 0, 2);
 	setFrequency(25000, 0, 3);
 	setFrequency(25000, 1, 0);
 	setFrequency(25000, 1, 1);
 	setFrequency(25000, 1, 2);
-	setFrequency(25000, 1, 3);
+	setFrequency(25000, 1, 3);*/
 
 	setPhase(0, 0, 0);
 	setPhase(0, 0, 1);
@@ -112,6 +113,15 @@ int init() {
 	setPhase(0, 1, 1);
 	setPhase(0, 1, 2);
 	setPhase(0, 1, 3);
+
+	setAmplitude(0, 0, 0);
+	setAmplitude(0, 0, 1);
+	setAmplitude(0, 0, 2);
+	setAmplitude(0, 0, 3);
+	setAmplitude(0, 1, 0);
+	setAmplitude(0, 1, 1);
+	setAmplitude(0, 1, 2);
+	setAmplitude(0, 1, 3);
 
 	return 0;
 }
