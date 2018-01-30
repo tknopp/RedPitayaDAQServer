@@ -256,12 +256,12 @@ void* acquisitionThread(void* ch) {
       numSamplesPerFrame = numSamplesPerPeriod * numPeriodsPerFrame; 
       printf("numPeriodsPerFrame = %d \n", numPeriodsPerFrame);
       printf("numSamplesPerPeriod = %d \n", numSamplesPerPeriod);
-      printf("numSamplesPerFrame = %lld \n", numSamplesPerFrame);
+      printf("numSamplesPerFrame = %ld \n", numSamplesPerFrame);
       
       numFramesInMemoryBuffer = 32*1024*1024 / numSamplesPerFrame;
       numPeriodsInMemoryBuffer = numFramesInMemoryBuffer*numPeriodsPerFrame;
       
-      printf("numFramesInMemoryBuffer = %lld \n", numFramesInMemoryBuffer);
+      printf("numFramesInMemoryBuffer = %ld \n", numFramesInMemoryBuffer);
       //printf("Release old buffer\n");
       releaseBuffer();
       printf("Initializing new buffer...\n");
@@ -308,7 +308,7 @@ void* acquisitionThread(void* ch) {
             data_read_total += size;
             wp_old = (wp_old + size) % ADC_BUFF_SIZE;
           } else {
-            printf("OVERFLOW %lld %d  %lld\n", data_read, size, buff_size);
+            printf("OVERFLOW %ld %d  %ld\n", data_read, size, buff_size);
             uint32_t size1 = buff_size - data_read; 
             uint32_t size2 = size - size1; 
 
@@ -412,13 +412,13 @@ void sendPeriodsToHost(int64_t period, int64_t numPeriods) {
 
 void initBuffer() {
   buff_size = numSamplesPerFrame*numFramesInMemoryBuffer;
-  printf("numFramesInMemoryBuffer = %lld \n", numFramesInMemoryBuffer);
-  printf("buff_size = %lld \n", buff_size);
-  printf("numSamplesPerFrame = %lld \n", numSamplesPerFrame);
+  printf("numFramesInMemoryBuffer = %ld \n", numFramesInMemoryBuffer);
+  printf("buff_size = %ld \n", buff_size);
+  printf("numSamplesPerFrame = %ld \n", numSamplesPerFrame);
 
 
-  printf("numFramesInMemoryBuffer = %lld \n", numFramesInMemoryBuffer);
-  printf("Allocating buffer of size %lld \n", buff_size*sizeof(uint32_t));
+  printf("numFramesInMemoryBuffer = %ld \n", numFramesInMemoryBuffer);
+  printf("Allocating buffer of size %ld \n", buff_size*sizeof(uint32_t));
   buffer = (uint32_t*)malloc(buff_size * sizeof(uint32_t));
   memset(buffer, 0, buff_size * sizeof(uint32_t));
 }
@@ -478,7 +478,7 @@ void* slowDACThread(void* ch)
 
           if(currentPeriodTotal > oldPeriodTotal + 1 && numPeriodsPerFrame > 1) 
           {
-            printf("WARNING: We lost an ff step! oldFr %lld newFr %lld size=%d\n", 
+            printf("WARNING: We lost an ff step! oldFr %ld newFr %ld size=%d\n", 
                 oldPeriodTotal, currentPeriodTotal, size);
           }
           if(currentPeriodTotal > oldPeriodTotal) // || params.ffLinear) 
@@ -486,7 +486,7 @@ void* slowDACThread(void* ch)
             float factor = ((float)data_read_total - currentPeriodTotal*numSamplesPerPeriod )/
               numSamplesPerPeriod;
             int currFFStep = currentPeriodTotal % numPeriodsPerFrame;
-            //printf("++++ currFrame: %lld\n",  currFFStep);
+            //printf("++++ currFrame: %ld\n",  currFFStep);
 
             for (int i=0; i< numSlowDACChan; i++) 
             {
@@ -499,7 +499,7 @@ void* slowDACThread(void* ch)
               {
                 val = slowDACLUT[currFFStep*numSlowDACChan+i];
               }
-              //printf("Set ff channel %d in cycle %d to value %f totalper %lld.\n", 
+              //printf("Set ff channel %d in cycle %d to value %f totalper %ld.\n", 
               //            i, currFFStep,val, currentPeriodTotal);
 
               int status = setPDMNextValueVolt(val, i);             
