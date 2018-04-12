@@ -76,16 +76,25 @@ end
 
 # High level read. numFrames can adress a future frame. Data is read in
 # chunks
-function readData(rp::RedPitaya, startFrame, numFrames)
+function readData(rp::RedPitaya, startFrame, numFrames, numBlockAverages=1)
   dec = rp.decimation
   numSampPerPeriod = rp.samplesPerPeriod
   numSamp = numSampPerPeriod * numFrames
   numPeriods = rp.periodsPerFrame
   numSampPerFrame = numSampPerPeriod * numPeriods
 
-  data = zeros(Int16, 2, numSampPerPeriod, numPeriods, numFrames)
+  if rem(numSampPerPeriod,numBlockAverages) != 0
+    error("block averages has to be a divider of numSampPerPeriod")
+  end
+
+  numAveragedSampPerPeriod = div(numSampPerPeriod,numBlockAverages)
+
+  data = zeros(Float32, numAveragedSampPerPeriod, 2, numPeriods, numFrames)
   wpRead = startFrame
   l=1
+
+  numFramesInMemoryBuffer = 32*1024*1024 / numSamp
+  println("numFramesInMemoryBuffer = $numFramesInMemoryBuffer")
 
   # This is a wild guess for a good chunk size
   chunkSize = max(1,  round(Int, 1000000 / numSampPerFrame)  )
@@ -102,11 +111,19 @@ function readData(rp::RedPitaya, startFrame, numFrames)
       chunk = numFrames - l + 1
     end
 
+    if wpWrite - numFramesInMemoryBuffer > wpRead
+      println("WARNING: We have lost data !!!!!!!!!!")
+    end
+
     println("Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)")
 
-    u = readData_(rp, Int64(wpRead), Int64(chunk))
 
-    data[:,:,:,l:(l+chunk-1)] = u
+    u = readData_(rp, Int64(wpRead), Int64(chunk))
+    utmp1 = reshape(u,2,numAveragedSampPerPeriod,numBlockAverages,size(u,3),size(u,4))
+    utmp2 = numBlockAverages > 1 ? mean(utmp1,3) : utmp1
+
+    data[:,1,:,l:(l+chunk-1)] = utmp2[1,:,1,:,:]
+    data[:,2,:,l:(l+chunk-1)] = utmp2[2,:,1,:,:]
 
     l += chunk
     wpRead += chunk
