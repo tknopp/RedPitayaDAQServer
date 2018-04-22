@@ -1,6 +1,6 @@
 export decimation, samplesPerPeriod, periodsPerFrame, masterTrigger, currentFrame,
      currentPeriod, ramWriterMode, connectADC, startADC, stopADC, readData,
-     numSlowDACChan, setSlowDACLUT
+     numSlowDACChan, setSlowDACLUT, enableSlowDAC
 
 
 decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
@@ -23,6 +23,11 @@ end
 function setSlowDACLUT(rp::RedPitaya, lut::Array)
   lutStr = join([string(",", lut[l]) for l=2:length(lut)])
   send(rp, string("RP:ADC:SlowDACLUT ", lut[1], lutStr))
+end
+
+function enableSlowDAC(rp::RedPitaya, enable::Bool)
+  enableI = Int32(enable)
+  send(rp, string("RP:ADC:SlowDACEnable ", enableI))
 end
 
 periodsPerFrame(rp::RedPitaya) = query(rp,"RP:ADC:FRAme?", Int64)

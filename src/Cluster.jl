@@ -93,6 +93,11 @@ function modeDAC(rpc::RedPitayaCluster, mode::String)
   end
 end
 
+function enableSlowDAC(rpc::RedPitayaCluster, enable::Bool)
+  for rp in rpc.rp
+    enableSlowDAC(rp, enable)
+  end
+end
 
 # High level read. numFrames can adress a future frame. Data is read in
 # chunks
