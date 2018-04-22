@@ -60,7 +60,8 @@
 
 volatile int numSamplesPerPeriod = 5000;
 volatile int numPeriodsPerFrame = 20;
-int numSlowDACChan = 0;
+volatile int numSlowDACChan = 0;
+volatile int enableSlowDAC = 1;
 volatile int64_t numSamplesPerFrame = -1;
 volatile int64_t numFramesInMemoryBuffer = -1;
 volatile int64_t numPeriodsInMemoryBuffer = -1;
@@ -501,6 +502,11 @@ void* slowDACThread(void* ch)
               }
               //printf("Set ff channel %d in cycle %d to value %f totalper %ld.\n", 
               //            i, currFFStep,val, currentPeriodTotal);
+
+              if(!enableSlowDAC)
+	      {
+                val = 0.0;
+	      }
 
               int status = setPDMNextValueVolt(val, i);             
 
