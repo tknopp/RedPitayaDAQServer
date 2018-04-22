@@ -1,1 +1,1 @@
-/root/RedPitayaDAQServer/build/server/daq_server_scpi > /tmp/daqserver.output &
+/root/RedPitayaDAQServer/build/server/daq_server_scpi  &
