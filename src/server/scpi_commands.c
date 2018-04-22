@@ -306,7 +306,7 @@ static scpi_result_t RP_ADC_GetNumSlowDACChan(scpi_t * context) {
 
 static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
 
-        if (!SCPI_ParamInt32(context, &enableSlowDAC, FALSE)) {
+        if (!SCPI_ParamInt32(context, &enableSlowDAC, TRUE)) {
                 return SCPI_RES_ERR;
         }
 
