@@ -37,7 +37,6 @@ int main () {
     usleep(40);
     setMasterTrigger(MASTER_TRIGGER_ON);
     usleep(40);
-    wp_old = 0; 
 
     while(getTriggerStatus() == 0)
     {
@@ -45,13 +44,15 @@ int main () {
       usleep(40);
     }
 
+    wp_old = getWritePointer();
+    usleep(10000);
     wp = getWritePointer();
 
     uint32_t size = getWritePointerDistance(wp_old, wp)-1;
 
     printf("____ %d %d %d \n", size, wp_old, wp);
     if(size == 0) {
-      printf("Write Pointer remains zero!");
+      printf("Write Pointer remains the same!");
       return 1;
     }
 

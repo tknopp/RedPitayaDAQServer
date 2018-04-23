@@ -43,15 +43,26 @@ void loadBitstream() {
       printf("Bitfile already loaded\n");
     } else {
       printf("Load Bitfile\n");
+      int catResult = 0;
       if(isMaster()) {		
         printf("loading bitstream /root/RedPitayaDAQServer/bitfiles/master.bit\n"); 
-        system("cat /root/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");		
+        catResult = system("cat /root/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");		
       } else {		
         printf("loading bitstream /root/RedPitayaDAQServer/bitfiles/slave.bit\n"); 
-        system("cat /root/RedPitayaDAQServer/bitfiles/slave.bit > /dev/xdevcfg");		
+        catResult = system("cat /root/RedPitayaDAQServer/bitfiles/slave.bit > /dev/xdevcfg");		
       }
+
+      if(catResult <= -1) {
+        printf("Error while writing the image to the FPGA.\n");
+      }
+
       FILE* fp = fopen("/tmp/bitstreamLoaded" ,"a");
-      fprintf(fp, "loaded \n");
+      int writeResult = fprintf(fp, "loaded \n");
+
+      if(writeResult <= -1) {
+        printf("Error while writing to the status file.\n");
+      }
+
       fclose(fp);
     }
 
@@ -616,7 +627,12 @@ uint32_t getXADCValue(int channel) {
         default:
             return 1;
     }
-    fscanf (fp, "%d", &value);
+    int scanResult = fscanf (fp, "%d", &value);
+
+    if(scanResult <= -1) {
+        printf("Error while reading XADC value.\n");
+    }
+
     fclose(fp);
     return value;
 }
