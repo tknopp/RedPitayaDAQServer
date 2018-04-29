@@ -326,9 +326,9 @@ static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t * context) {
 
 static scpi_result_t RP_ADC_GetCurrentWP(scpi_t * context) {
         // Reading is only possible while an acquisition is running
-        if(!rxEnabled) {
-                return SCPI_RES_ERR;
-        }
+        //if(!rxEnabled) {
+        //        return SCPI_RES_ERR;
+        //}
 
 	SCPI_ResultInt64(context, getWritePointer());
 
@@ -432,7 +432,11 @@ static scpi_result_t RP_ADC_SetAcquisitionStatus(scpi_t * context) {
     if (!SCPI_ParamChoice(context, acquisition_status_modes, &acquisition_status_selection, TRUE)) {
 		return SCPI_RES_ERR;
 	}
-	
+
+	if (!SCPI_ParamInt64(context, &startWP, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
 	if(acquisition_status_selection == ACQUISITION_ON) {
 		rxEnabled = true;
 	} else {

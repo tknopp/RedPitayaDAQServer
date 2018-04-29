@@ -66,6 +66,7 @@ volatile int64_t numSamplesPerFrame = -1;
 volatile int64_t numFramesInMemoryBuffer = -1;
 volatile int64_t numPeriodsInMemoryBuffer = -1;
 volatile int64_t buff_size = 0;
+int64_t startWP = -1;
 
 volatile int64_t currentFrameTotal;
 volatile int64_t currentPeriodTotal;
@@ -269,15 +270,15 @@ void* acquisitionThread(void* ch) {
       initBuffer();
       printf("New buffer initialized\n");
 
-      wp_old = 0;
+      wp_old = startWP;
       firstCycle = true;
 
-      while(getTriggerStatus() == 0 && rxEnabled)
-      {
-        printf("Waiting for external trigger! \n");
-        fflush(stdout);
-        usleep(100);
-      }
+      //while(getTriggerStatus() == 0 && rxEnabled)
+      //{
+      //  printf("Waiting for external trigger! \n");
+      //  fflush(stdout);
+      //  usleep(100);
+      //}
 
       printf("Trigger received, start reading\n");		
 

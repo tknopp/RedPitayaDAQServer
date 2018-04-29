@@ -44,6 +44,7 @@ extern volatile int64_t numFramesInMemoryBuffer;
 extern volatile int64_t buff_size;
 
 extern volatile int64_t currentFrameTotal;
+extern int64_t startWP;
 extern volatile int64_t currentPeriodTotal;
 extern volatile int64_t data_read, data_read_total;
 extern volatile int64_t channel;
