@@ -229,8 +229,8 @@ int waitServer(int fd) {
   max_fd = fd;
   FD_SET(fd, &fds);
 
-  timeout.tv_sec = 1;
-  timeout.tv_usec = 0;
+  timeout.tv_sec = 0;
+  timeout.tv_usec = 400;
 
   rc = select(max_fd + 1, &fds, NULL, NULL, &timeout);
 
@@ -454,13 +454,13 @@ void* slowDACThread(void* ch)
 
       numSamplesPerFrame = numSamplesPerPeriod * numPeriodsPerFrame; 
 
-      wp_old = 0;
-      while(getTriggerStatus() == 0 && rxEnabled)
+      wp_old = startWP;
+      /*while(getTriggerStatus() == 0 && rxEnabled)
       {
         printf("Waiting for external trigger SlowDAC thread! \n");
         fflush(stdout);
         usleep(100);
-      }
+      }*/
 
       printf("Trigger received, start sending\n");		
 
@@ -585,7 +585,7 @@ void* communicationThread(void* p)
         SCPI_Input(&scpi_context, smbuffer, rc);
       }
     }
-    usleep(400);
+    usleep(200);
   }
   printf("Comm almost done\n");
 
