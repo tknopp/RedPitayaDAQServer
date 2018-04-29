@@ -306,7 +306,7 @@ static scpi_result_t RP_ADC_GetNumSlowDACChan(scpi_t * context) {
 
 static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
 
-        if (!SCPI_ParamInt32(context, &enableSlowDAC, FALSE)) {
+        if (!SCPI_ParamInt32(context, &enableSlowDAC, TRUE)) {
                 return SCPI_RES_ERR;
         }
 
@@ -320,6 +320,17 @@ static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t * context) {
         }
 
 	SCPI_ResultInt64(context, currentFrameTotal-1);
+
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_ADC_GetCurrentWP(scpi_t * context) {
+        // Reading is only possible while an acquisition is running
+        if(!rxEnabled) {
+                return SCPI_RES_ERR;
+        }
+
+	SCPI_ResultInt64(context, getWritePointer());
 
     return SCPI_RES_OK;
 }
@@ -757,6 +768,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:FRAme", .callback = RP_ADC_SetPeriodsPerFrame,},
 	{.pattern = "RP:ADC:FRAme?", .callback = RP_ADC_GetPeriodsPerFrame,},
 	{.pattern = "RP:ADC:FRAmes:CURRent?", .callback = RP_ADC_GetCurrentFrame,},
+	{.pattern = "RP:ADC:WP:CURRent?", .callback = RP_ADC_GetCurrentWP,},
 	{.pattern = "RP:ADC:FRAmes:DATa", .callback = RP_ADC_GetFrames,},
 	{.pattern = "RP:ADC:ACQCONNect", .callback = RP_ADC_StartAcquisitionConnection,},
 	{.pattern = "RP:ADC:ACQSTATus", .callback = RP_ADC_SetAcquisitionStatus,},
