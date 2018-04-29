@@ -1,6 +1,6 @@
 export decimation, samplesPerPeriod, periodsPerFrame, masterTrigger, currentFrame,
      currentPeriod, ramWriterMode, connectADC, startADC, stopADC, readData,
-     numSlowDACChan, setSlowDACLUT, enableSlowDAC
+     numSlowDACChan, setSlowDACLUT, enableSlowDAC, currentWP
 
 
 decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
@@ -38,11 +38,13 @@ end
 
 currentFrame(rp::RedPitaya) = query(rp,"RP:ADC:FRAMES:CURRENT?", Int64)
 currentPeriod(rp::RedPitaya) = query(rp,"RP:ADC:PERIODS:CURRENT?", Int64)
+currentWP(rp::RedPitaya) = query(rp,"RP:ADC:WP:CURRENT?", Int64)
 
 function masterTrigger(rp::RedPitaya, val::Bool)
   valStr = val ? "ON" : "OFF"
   send(rp, string("RP:MasterTrigger ", valStr))
 end
+masterTrigger(rp::RedPitaya) = contains(query(rp,"RP:MasterTrigger?"),"ON")
 
 # "TRIGGERED" or "CONTINUOUS"
 function ramWriterMode(rp::RedPitaya, mode::String)
@@ -50,8 +52,8 @@ function ramWriterMode(rp::RedPitaya, mode::String)
 end
 
 connectADC(rp::RedPitaya) = query(rp, "RP:ADC:ACQCONNect")
-startADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQSTATUS ON")
-stopADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQSTATUS OFF")
+startADC(rp::RedPitaya, wp::Integer) = send(rp, "RP:ADC:ACQSTATUS ON,$wp")
+stopADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQSTATUS OFF,0")
 
 # Low level read. One has to take care that the numFrames are available
 function readData_(rp::RedPitaya, startFrame, numFrames)

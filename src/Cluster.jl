@@ -40,7 +40,7 @@ for op in [:periodsPerFrame,  :samplesPerPeriod, :decimation]
   end
 end
 
-for op in [:connectADC,  :startADC, :stopADC, :disconnect, :connect]
+for op in [:connectADC, :stopADC, :disconnect, :connect]
   @eval begin
     function $op(rpc::RedPitayaCluster)
       for rp in rpc.rp
@@ -50,7 +50,15 @@ for op in [:connectADC,  :startADC, :stopADC, :disconnect, :connect]
   end
 end
 
+function startADC(rpc::RedPitayaCluster)
+  wp = currentWP(rpc.rp[1])
+  for rp in rpc.rp
+    startADC(rp, wp)
+  end
+end
+
 masterTrigger(rpc::RedPitayaCluster, val::Bool) = masterTrigger(master(rpc), val)
+masterTrigger(rpc::RedPitayaCluster) = masterTrigger(master(rpc))
 
 # "TRIGGERED" or "CONTINUOUS"
 function ramWriterMode(rpc::RedPitayaCluster, mode::String)

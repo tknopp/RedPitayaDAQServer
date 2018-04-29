@@ -40,8 +40,8 @@ sleep(1.0)
 # High Level
 println(decimation(rp))
 
-u = readData(rp, 0, 2)
-#u = readData(rp, currentFrame(rp), 10)
+#u = readData(rp, 0, 2)
+u = readData(rp, currentFrame(rp), 2)
 
 plot(vec(u[:,1,:,:]))
 

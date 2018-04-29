@@ -53,6 +53,8 @@ function connect(rp::RedPitaya)
   if !rp.isConnected
     rp.socket = connect(rp.host, 5025)
     rp.dataSocket = connect(rp.host, 5026)
+    connectADC(rp)
+
     rp.isConnected = true
   end
 end
