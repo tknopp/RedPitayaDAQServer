@@ -325,7 +325,8 @@ static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t * context) {
 }
 
 static scpi_result_t RP_ADC_GetCurrentWP(scpi_t * context) {
-        // Reading is only possible while an acquisition is running
+        printf("RP_ADC_GetCurrentWP\n");
+	// Reading is only possible while an acquisition is running
         //if(!rxEnabled) {
         //        return SCPI_RES_ERR;
         //}
@@ -395,6 +396,7 @@ static scpi_result_t RP_ADC_GetPeriods(scpi_t * context) {
 static scpi_result_t RP_ADC_StartAcquisitionConnection(scpi_t * context) {
 	bool connectionEstablished = false;
 	
+printf("RP_ADC_StartAcquisitionConnection\n");
 	while(!connectionEstablished) {
 		newdatasocklen = sizeof (newdatasockaddr);
 		newdatasockfd = accept(datasockfd, (struct sockaddr *) &newdatasockaddr, &newdatasocklen);
@@ -428,14 +430,16 @@ static scpi_result_t RP_ADC_GetAcquisitionStatus(scpi_t * context) {
 
 static scpi_result_t RP_ADC_SetAcquisitionStatus(scpi_t * context) {
 	int32_t acquisition_status_selection;
+printf("Test 0\n");
 
     if (!SCPI_ParamChoice(context, acquisition_status_modes, &acquisition_status_selection, TRUE)) {
 		return SCPI_RES_ERR;
 	}
-
+printf("Test 1\n");
 	if (!SCPI_ParamInt64(context, &startWP, TRUE)) {
 		return SCPI_RES_ERR;
 	}
+printf("Test 2\n");
 
 	if(acquisition_status_selection == ACQUISITION_ON) {
 		rxEnabled = true;
