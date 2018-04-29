@@ -60,8 +60,8 @@
 
 volatile int numSamplesPerPeriod = 5000;
 volatile int numPeriodsPerFrame = 20;
-volatile int numSlowDACChan = 0;
-volatile int enableSlowDAC = 1;
+int numSlowDACChan = 0;
+int enableSlowDAC = 1;
 volatile int64_t numSamplesPerFrame = -1;
 volatile int64_t numFramesInMemoryBuffer = -1;
 volatile int64_t numPeriodsInMemoryBuffer = -1;
