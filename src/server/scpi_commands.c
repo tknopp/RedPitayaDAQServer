@@ -685,24 +685,24 @@ static scpi_result_t RP_InstantResetStatus(scpi_t * context) {
 
 static scpi_result_t RP_ADC_SetSlowDACLUT(scpi_t * context) {
 
-	if(numPeriodsPerFrame > 0 && numSlowDACChan > 0) {
+    if(numPeriodsPerFrame > 0 && numSlowDACChan > 0) {
     	if(slowDACLUT != NULL) {
             free(slowDACLUT);
         }
         printf("Allocating slowDACLUT\n");
         slowDACLUT = (float *)malloc(numSlowDACChan * numPeriodsPerFrame * sizeof(float));
-    }
+    
 
 
-    for(int i=0; i<numPeriodsPerFrame; i++) {
-      for(int l=0; l<numSlowDACChan; l++) {
-        if (!SCPI_ParamFloat(context, slowDACLUT+i*numSlowDACChan + l, TRUE)) {
-                return SCPI_RES_ERR;
+      for(int i=0; i<numPeriodsPerFrame; i++) {
+        for(int l=0; l<numSlowDACChan; l++) {
+          if (!SCPI_ParamFloat(context, slowDACLUT+i*numSlowDACChan + l, TRUE)) {
+                  return SCPI_RES_ERR;
+          }
+          //printf("LUT=%f \n", slowDACLUT[i*numSlowDACChan + l]);
         }
-        //printf("LUT=%f \n", slowDACLUT[i*numSlowDACChan + l]);
       }
-    }
-
+   }
     return SCPI_RES_OK;
 }
 
