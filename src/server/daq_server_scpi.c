@@ -288,7 +288,6 @@ void* acquisitionThread(void* ch) {
 
         //printf("Get write pointer distance\n");
         uint32_t size = getWritePointerDistance(wp_old, wp)-1;
-        //printf("____ %d %d %d \n", size, wp_old, wp);
         if(size > 512*1024) {
           printf("I think we lost a step %d %d %d \n", size, wp_old, wp);
         }
@@ -311,6 +310,12 @@ void* acquisitionThread(void* ch) {
             wp_old = (wp_old + size) % ADC_BUFF_SIZE;
           } else {
             printf("OVERFLOW %ld %d  %ld\n", data_read, size, buff_size);
+            printf("____ %d %d %d \n", size, wp_old, wp);
+            printf("data_read_total = %lld \n", data_read_total);
+            printf("currentFrameTotal = %lld \n", currentFrameTotal);
+            printf("currentPeriodTotal = %lld \n", currentPeriodTotal);
+
+
             uint32_t size1 = buff_size - data_read; 
             uint32_t size2 = size - size1; 
 
@@ -475,8 +480,7 @@ void* slowDACThread(void* ch)
           data_read_total += size;
           wp_old = (wp_old + size) % ADC_BUFF_SIZE;
 
-          currentFrameTotal = data_read_total / numSamplesPerFrame;
-          currentPeriodTotal = data_read_total / (numSamplesPerPeriod);
+          currentPeriodTotal = data_read_total / numSamplesPerPeriod;
 
           if(currentPeriodTotal > oldPeriodTotal + 1 && numPeriodsPerFrame > 1) 
           {
@@ -549,7 +553,7 @@ void* communicationThread(void* p)
   char smbuffer[10];
 
   while(true) {
-    printf("Comm thread loop\n");
+    //printf("Comm thread loop\n");
     if(!commThreadRunning)
     {
       stopTx();
