@@ -313,6 +313,17 @@ static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
         return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_ADC_SlowDACInterpolation(scpi_t * context) {
+
+	int32_t tmp;
+        if (!SCPI_ParamInt32(context, &tmp, TRUE)) {
+                return SCPI_RES_ERR;
+        }
+	slowDACInterpolation = (tmp == 1);
+
+        return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t * context) {
         // Reading is only possible while an acquisition is running
         if(!rxEnabled) {
@@ -773,6 +784,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:SlowDAC?", .callback = RP_ADC_GetNumSlowDACChan,},
 	{.pattern = "RP:ADC:SlowDACLUT", .callback = RP_ADC_SetSlowDACLUT,},
 	{.pattern = "RP:ADC:SlowDACEnable", .callback = RP_ADC_EnableSlowDAC,},
+	{.pattern = "RP:ADC:SlowDACInterpolation", .callback = RP_ADC_SlowDACInterpolation,},
 	{.pattern = "RP:ADC:FRAme", .callback = RP_ADC_SetPeriodsPerFrame,},
 	{.pattern = "RP:ADC:FRAme?", .callback = RP_ADC_GetPeriodsPerFrame,},
 	{.pattern = "RP:ADC:FRAmes:CURRent?", .callback = RP_ADC_GetCurrentFrame,},

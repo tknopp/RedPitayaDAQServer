@@ -79,6 +79,7 @@ bool acquisitionThreadRunning = false;
 bool commThreadRunning = false;
 
 float *slowDACLUT = NULL;
+bool slowDACInterpolation = false;
 
 pthread_t pAcq;
 pthread_t pSlowDAC;
@@ -487,7 +488,7 @@ void* slowDACThread(void* ch)
             printf("WARNING: We lost an ff step! oldFr %ld newFr %ld size=%d\n", 
                 oldPeriodTotal, currentPeriodTotal, size);
           }
-          if(currentPeriodTotal > oldPeriodTotal) // || params.ffLinear) 
+          if(currentPeriodTotal > oldPeriodTotal || slowDACInterpolation) 
           {
             float factor = ((float)data_read_total - currentPeriodTotal*numSamplesPerPeriod )/
               numSamplesPerPeriod;
@@ -497,7 +498,7 @@ void* slowDACThread(void* ch)
             for (int i=0; i< numSlowDACChan; i++) 
             {
               float val;
-              if(false) //params.ffLinear) 
+              if(slowDACInterpolation) 
               {
                 val = (1-factor)*slowDACLUT[currFFStep*numSlowDACChan+i] +
                   factor*slowDACLUT[((currFFStep+1) % numPeriodsPerFrame)*numSlowDACChan+i];
