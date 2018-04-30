@@ -25,7 +25,7 @@ end
 
 function currentPeriod(rpc::RedPitayaCluster)
   currentPeriods = [ currentPeriod(rp) for rp in rpc.rp ]
-  println("Current frame: $currentPeriod")
+  println("Current period: $currentPeriods")
   return minimum(currentPeriods)
 end
 
