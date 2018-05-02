@@ -107,6 +107,12 @@ function enableSlowDAC(rpc::RedPitayaCluster, enable::Bool)
   end
 end
 
+function slowDACInterpolation(rpc::RedPitayaCluster, enable::Bool)
+  for rp in rpc.rp
+    slowDACInterpolation(rp, enable)
+  end
+end
+
 # High level read. numFrames can adress a future frame. Data is read in
 # chunks
 function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages=1)
