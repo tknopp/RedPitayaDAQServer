@@ -21,7 +21,7 @@ function numSlowDACChan(rp::RedPitaya, value)
 end
 
 function setSlowDACLUT(rp::RedPitaya, lut::Array)
-  lutStr = join([string(",", lut[l]) for l=2:length(lut)])
+  lutStr = join([string(",", @sprintf("%.3f",lut[l])) for l=2:length(lut)])
   send(rp, string("RP:ADC:SlowDACLUT ", lut[1], lutStr))
 end
 
