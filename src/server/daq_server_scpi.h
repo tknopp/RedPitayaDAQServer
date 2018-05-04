@@ -39,6 +39,8 @@ extern volatile int numSamplesPerPeriod;
 extern volatile int numPeriodsPerFrame;
 extern int numSlowDACChan;
 extern int enableSlowDAC;
+extern int enableSlowDACAck;
+extern int64_t frameSlowDACEnabled;
 extern volatile int64_t numSamplesPerFrame;
 extern volatile int64_t numFramesInMemoryBuffer;
 extern volatile int64_t buff_size;

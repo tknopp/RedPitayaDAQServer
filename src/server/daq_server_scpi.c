@@ -62,6 +62,8 @@ volatile int numSamplesPerPeriod = 5000;
 volatile int numPeriodsPerFrame = 20;
 int numSlowDACChan = 0;
 int enableSlowDAC = 1;
+int enableSlowDACAck = 0;
+int64_t frameSlowDACEnabled = -1;
 volatile int64_t numSamplesPerFrame = -1;
 volatile int64_t numFramesInMemoryBuffer = -1;
 volatile int64_t numPeriodsInMemoryBuffer = -1;
@@ -496,9 +498,12 @@ void* slowDACThread(void* ch)
             int currFFStep = currentPeriodTotal % numPeriodsPerFrame;
             //printf("++++ currFrame: %ld\n",  currFFStep);
 
-            if(enableSlowDAC && (currFFStep == numPeriodsPerFrame-1)) 
+            if(enableSlowDAC && !enableSlowDACAck && 
+			     (currFFStep == numPeriodsPerFrame-1)) 
             {
               enableSlowDACLocal = true;
+	      frameSlowDACEnabled = currentFrameTotal;
+	      enableSlowDACAck = true;
 	    }
             if(!enableSlowDAC) 
             {

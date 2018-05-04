@@ -310,8 +310,18 @@ static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
                 return SCPI_RES_ERR;
         }
        enableSlowDAC = result;
-       SCPI_ResultInt64(context, currentFrameTotal);
-       
+       if(enableSlowDAC && rxEnabled)
+       {
+	 enableSlowDACAck = false;
+	 while(!enableSlowDACAck)
+	 {
+           usleep(1.0);
+	 }
+         SCPI_ResultInt64(context, frameSlowDACEnabled);
+       } else
+       {
+         SCPI_ResultInt64(context, 0);
+       }
         if(rxEnabled && !enableSlowDAC)
         {
           for (int i=0; i<4; i++)                        
