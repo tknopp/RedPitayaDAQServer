@@ -27,7 +27,7 @@ end
 
 function enableSlowDAC(rp::RedPitaya, enable::Bool)
   enableI = Int32(enable)
-  send(rp, string("RP:ADC:SlowDACEnable ", enableI))
+  return query(rp, string("RP:ADC:SlowDACEnable ", enableI), Int64)
 end
 
 function slowDACInterpolation(rp::RedPitaya, enable::Bool)

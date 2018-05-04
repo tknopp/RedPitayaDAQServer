@@ -18,15 +18,17 @@ numChan(rpc::RedPitayaCluster) = 2*length(rpc)
 master(rpc::RedPitayaCluster) = rpc.rp[1]
 
 function currentFrame(rpc::RedPitayaCluster)
-  currentFrames = [ currentFrame(rp) for rp in rpc.rp ]
+  currentFrames = currentFrame(rpc.rp[1]) #[ currentFrame(rp) for rp in rpc.rp ]
   println("Current frame: $currentFrames")
-  return minimum(currentFrames)
+  #return minimum(currentFrames)
+  return currentFrames
 end
 
 function currentPeriod(rpc::RedPitayaCluster)
-  currentPeriods = [ currentPeriod(rp) for rp in rpc.rp ]
+  currentPeriods = currentPeriod(rpc.rp[1])  #[ currentPeriod(rp) for rp in rpc.rp ]
   println("Current period: $currentPeriods")
-  return minimum(currentPeriods)
+  #return minimum(currentPeriods)
+  return currentPeriods
 end
 
 for op in [:periodsPerFrame,  :samplesPerPeriod, :decimation]
@@ -102,9 +104,10 @@ function modeDAC(rpc::RedPitayaCluster, mode::String)
 end
 
 function enableSlowDAC(rpc::RedPitayaCluster, enable::Bool)
-  for rp in rpc.rp
-    enableSlowDAC(rp, enable)
-  end
+  # We just use the first rp currently
+  #res = [enableSlowDAC(rp, enable) for rp in rpc.rp]
+  #return maximum(res)
+  return enableSlowDAC(rpc.rp[1], enable)
 end
 
 function slowDACInterpolation(rpc::RedPitayaCluster, enable::Bool)
