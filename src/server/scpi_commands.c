@@ -305,11 +305,14 @@ static scpi_result_t RP_ADC_GetNumSlowDACChan(scpi_t * context) {
 }
 
 static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
-
-        if (!SCPI_ParamInt32(context, &enableSlowDAC, TRUE)) {
+    int result;
+        if (!SCPI_ParamInt32(context, &result, TRUE)) {
                 return SCPI_RES_ERR;
         }
-        if(!enableSlowDAC)
+       enableSlowDAC = result;
+       SCPI_ResultInt64(context, currentFrameTotal);
+       
+        if(rxEnabled && !enableSlowDAC)
         {
           for (int i=0; i<4; i++)                        
           {
@@ -337,7 +340,7 @@ static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t * context) {
                 return SCPI_RES_ERR;
         }
 
-	SCPI_ResultInt64(context, currentFrameTotal-1);
+	SCPI_ResultInt64(context, currentFrameTotal);
 
     return SCPI_RES_OK;
 }
@@ -360,7 +363,7 @@ static scpi_result_t RP_ADC_GetCurrentPeriod(scpi_t * context) {
                 return SCPI_RES_ERR;
         }
 
-	SCPI_ResultInt64(context, currentPeriodTotal-1);
+	SCPI_ResultInt64(context, currentPeriodTotal);
 
     return SCPI_RES_OK;
 }

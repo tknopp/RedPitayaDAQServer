@@ -445,6 +445,7 @@ void* slowDACThread(void* ch)
 
   int64_t data_read_total;
   int64_t numSamplesPerFrame; 
+  int enableSlowDACLocal=0;
 
   printf("Starting slowDAC thread\n");
   getprio(pthread_self());
@@ -495,6 +496,15 @@ void* slowDACThread(void* ch)
             int currFFStep = currentPeriodTotal % numPeriodsPerFrame;
             //printf("++++ currFrame: %ld\n",  currFFStep);
 
+            if(enableSlowDAC && (currFFStep == numPeriodsPerFrame-1)) 
+            {
+              enableSlowDACLocal = true;
+	    }
+            if(!enableSlowDAC) 
+            {
+              enableSlowDACLocal = false;
+	    }
+
             for (int i=0; i< numSlowDACChan; i++) 
             {
               float val;
@@ -510,7 +520,7 @@ void* slowDACThread(void* ch)
               //            i, currFFStep,val, currentPeriodTotal);
 
               int status = 0;          
-              if(enableSlowDAC)
+              if(enableSlowDACLocal)
 	      {
                 status = setPDMNextValueVolt(val, i);             
 	      }
