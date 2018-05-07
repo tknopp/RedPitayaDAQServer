@@ -2,7 +2,7 @@ export RedPitayaCluster, master, readDataPeriods, numChan
 
 import Base: length
 
-mutable struct RedPitayaCluster
+struct RedPitayaCluster
   rp::Vector{RedPitaya}
 end
 
