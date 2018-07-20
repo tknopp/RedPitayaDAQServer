@@ -307,9 +307,13 @@ static scpi_result_t RP_ADC_GetNumSlowDACChan(scpi_t * context) {
 static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
     int result;
         if (!SCPI_ParamInt32(context, &result, TRUE)) {
-                return SCPI_RES_ERR;
+            return SCPI_RES_ERR;
         }
+       if (!SCPI_ParamInt32(context, &numSlowDACFramesEnabled, TRUE)) {
+            return SCPI_RES_ERR;
+       }
        enableSlowDAC = result;
+
        if(enableSlowDAC && rxEnabled && numSlowDACChan>0)
        {
 	 enableSlowDACAck = false;
