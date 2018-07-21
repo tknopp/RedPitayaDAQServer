@@ -21,8 +21,12 @@ function numSlowDACChan(rp::RedPitaya, value)
 end
 
 function setSlowDACLUT(rp::RedPitaya, lut::Array)
-  lutStr = join([string(",", @sprintf("%.3f",lut[l])) for l=2:length(lut)])
-  send(rp, string("RP:ADC:SlowDACLUT ", lut[1], lutStr))
+  #lutStr = join([string(",", @sprintf("%.3f",lut[l])) for l=2:length(lut)])
+  #send(rp, string("RP:ADC:SlowDACLUT ", lut[1], lutStr))
+  lutFloat32 = map(Float32, lut)
+  send(rp, string("RP:ADC:SlowDACLUT"))
+  println("Writing slow DAC LUT")
+  write(rp.dataSocket, lutFloat32)
 end
 
 function enableSlowDAC(rp::RedPitaya, enable::Bool, numFrames::Int64=0)
