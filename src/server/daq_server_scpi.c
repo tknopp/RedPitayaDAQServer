@@ -451,6 +451,7 @@ void* slowDACThread(void* ch)
   int64_t frameRampUpStarted=-1; 
   int enableSlowDACLocal=0;
   int rampUpPeriods=-1;
+  int rampUpFrames=-1;
 
   printf("Starting slowDAC thread\n");
   getprio(pthread_self());
@@ -503,7 +504,7 @@ void* slowDACThread(void* ch)
 
             if(enableSlowDACLocal && numSlowDACFramesEnabled>0 && frameSlowDACEnabled >=0)
 	    {
- 	      //printf("currentFrameTotal %lld  numSlowDACFramesEnabled = %d  frameSlowDACEnabled %lld \n", currentFrameTotal, numSlowDACFramesEnabled, frameSlowDACEnabled);
+ 	      printf("currentFrameTotal %lld  numSlowDACFramesEnabled = %d  frameSlowDACEnabled %lld \n", currentFrameTotal, numSlowDACFramesEnabled, frameSlowDACEnabled);
 	      if(currentFrameTotal > numSlowDACFramesEnabled + frameSlowDACEnabled)
 	      { // We now have measured enough frames and switch of the slow DAC
                 enableSlowDAC = false;
@@ -520,10 +521,10 @@ void* slowDACThread(void* ch)
 			     (currFFStep == 0)) 
             {
               float period = numSamplesPerFrame / (125e6 / getDecimation()) * 1000;
-              int rampUpFrames = ceil(slowDACRampUpTime / period);
+              rampUpFrames = ceil(slowDACRampUpTime / period);
               rampUpPeriods = ceil(slowDACRampUpTime / (numSamplesPerPeriod / (125e6 / getDecimation())*1000) );
 
-              //printf("rampUpFrames = %d, rampUpPeriods = %d \n", rampUpFrames,rampUpPeriods);
+              printf("rampUpFrames = %d, rampUpPeriods = %d \n", rampUpFrames,rampUpPeriods);
 
 	      frameRampUpStarted = currentFrameTotal;
 	      enableSlowDACLocal = true;
@@ -548,6 +549,7 @@ void* slowDACThread(void* ch)
               }
 
 	      if(frameRampUpStarted == currentFrameTotal && 
+	         rampUpFrames == 1 &&
 	         rampUpPeriods > 2 &&
 		 currFFStep < rampUpPeriods)
 	      {
