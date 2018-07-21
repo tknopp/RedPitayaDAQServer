@@ -734,18 +734,21 @@ static scpi_result_t RP_ADC_SetSlowDACLUT(scpi_t * context) {
         }
         printf("Allocating slowDACLUT\n");
         slowDACLUT = (float *)malloc(numSlowDACChan * numPeriodsPerFrame * sizeof(float));
-    
+   
+        int n = read(newdatasockfd,slowDACLUT,numSlowDACChan * numPeriodsPerFrame * sizeof(float));
+        //for(int i=0;i<params.numFFChannels* params.numPatches; i++) printf(" %f ",ffValues[i]);
+        //printf("\n");
+        if (n < 0) perror("ERROR reading from socket");
 
 
-      for(int i=0; i<numPeriodsPerFrame; i++) {
-        for(int l=0; l<numSlowDACChan; l++) {
-          if (!SCPI_ParamFloat(context, slowDACLUT+i*numSlowDACChan + l, TRUE)) {
+        /*for(int i=0; i<numPeriodsPerFrame; i++) {
+          for(int l=0; l<numSlowDACChan; l++) {
+            if (!SCPI_ParamFloat(context, slowDACLUT+i*numSlowDACChan + l, TRUE)) {
                   return SCPI_RES_ERR;
+            }
           }
-          //printf("LUT=%f \n", slowDACLUT[i*numSlowDACChan + l]);
-        }
-      }
-   }
+        }*/
+     }
     return SCPI_RES_OK;
 }
 
