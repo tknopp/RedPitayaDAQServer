@@ -63,7 +63,8 @@ extern int newdatasockfd;
 
 extern float *slowDACLUT;
 extern bool slowDACInterpolation;
-extern float slowDACRampUpTime;
+extern double slowDACRampUpTime;
+extern double slowDACFractionRampUp;
 
 extern size_t SCPI_Write(scpi_t *, const char *, size_t);
 extern scpi_result_t SCPI_Flush(scpi_t *);

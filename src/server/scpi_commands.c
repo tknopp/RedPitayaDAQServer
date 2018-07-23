@@ -306,10 +306,17 @@ static scpi_result_t RP_ADC_GetNumSlowDACChan(scpi_t * context) {
 
 static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
     int result;
-        if (!SCPI_ParamInt32(context, &result, TRUE)) {
+       if (!SCPI_ParamInt32(context, &result, TRUE)) {
             return SCPI_RES_ERR;
-        }
+       }
+       
        if (!SCPI_ParamInt32(context, &numSlowDACFramesEnabled, TRUE)) {
+            return SCPI_RES_ERR;
+       }
+       if (!SCPI_ParamDouble(context, &slowDACRampUpTime, TRUE)) {
+            return SCPI_RES_ERR;
+       }
+       if (!SCPI_ParamDouble(context, &slowDACFractionRampUp, TRUE)) {
             return SCPI_RES_ERR;
        }
        enableSlowDAC = result;
@@ -740,14 +747,6 @@ static scpi_result_t RP_ADC_SetSlowDACLUT(scpi_t * context) {
         //printf("\n");
         if (n < 0) perror("ERROR reading from socket");
 
-
-        /*for(int i=0; i<numPeriodsPerFrame; i++) {
-          for(int l=0; l<numSlowDACChan; l++) {
-            if (!SCPI_ParamFloat(context, slowDACLUT+i*numSlowDACChan + l, TRUE)) {
-                  return SCPI_RES_ERR;
-            }
-          }
-        }*/
      }
     return SCPI_RES_OK;
 }
