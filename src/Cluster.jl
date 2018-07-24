@@ -103,11 +103,12 @@ function modeDAC(rpc::RedPitayaCluster, mode::String)
   end
 end
 
-function enableSlowDAC(rpc::RedPitayaCluster, enable::Bool, numFrames::Int64=0)
+function enableSlowDAC(rpc::RedPitayaCluster, enable::Bool, numFrames::Int64=0,
+                       ffRampUpTime::Float64=0.4, ffRampUpFraction::Float64=0.8)
   # We just use the first rp currently
   #res = [enableSlowDAC(rp, enable) for rp in rpc.rp]
   #return maximum(res)
-  return enableSlowDAC(rpc.rp[1], enable, numFrames)
+  return enableSlowDAC(rpc.rp[1], enable, numFrames, ffRampUpTime, ffRampUpFraction)
 end
 
 function slowDACInterpolation(rpc::RedPitayaCluster, enable::Bool)

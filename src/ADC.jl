@@ -29,9 +29,11 @@ function setSlowDACLUT(rp::RedPitaya, lut::Array)
   write(rp.dataSocket, lutFloat32)
 end
 
-function enableSlowDAC(rp::RedPitaya, enable::Bool, numFrames::Int64=0)
+function enableSlowDAC(rp::RedPitaya, enable::Bool, numFrames::Int64=0,
+            ffRampUpTime::Float64=0.4, ffRampUpFraction::Float64=0.8)
   enableI = Int32(enable)
-  return query(rp, string("RP:ADC:SlowDACEnable ", enableI, ",", numFrames), Int64)
+  return query(rp, string("RP:ADC:SlowDACEnable ", enableI,
+              ",", numFrames, ",", ffRampUpTime, ",", ffRampUpFraction), Int64)
 end
 
 function slowDACInterpolation(rp::RedPitaya, enable::Bool)
