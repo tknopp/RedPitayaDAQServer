@@ -119,7 +119,7 @@ end
 
 # High level read. numFrames can adress a future frame. Data is read in
 # chunks
-function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages=1)
+function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1)
   dec = master(rpc).decimation
   numSampPerPeriod = master(rpc).samplesPerPeriod
   numSamp = numSampPerPeriod * numFrames
@@ -130,9 +130,9 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
     error("block averages has to be a divider of numSampPerPeriod")
   end
 
-  numAveragedSampPerPeriod = div(numSampPerPeriod,numBlockAverages)
+  numTrueSampPerPeriod = div(numSampPerPeriod,numBlockAverages*numPeriodsPerPatch)
 
-  data = zeros(Float32, numAveragedSampPerPeriod, numChan(rpc), numPeriods, numFrames)
+  data = zeros(Float32, numTrueSampPerPeriod, numChan(rpc), numPeriods*numPeriodsPerPatch, numFrames)
   wpRead = startFrame
   l=1
 
@@ -163,7 +163,8 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
     for (d,rp) in enumerate(rpc.rp)
      # @sync  @async begin
         u = readData_(rp, Int64(wpRead), Int64(chunk))
-        utmp1 = reshape(u,2,numAveragedSampPerPeriod,numBlockAverages,size(u,3),size(u,4))
+        utmp1 = reshape(u,2,numTrueSampPerPeriod,numBlockAverages,
+                            size(u,3)*numPeriodsPerPatch,size(u,4))
         utmp2 = numBlockAverages > 1 ? mean(utmp1,3) : utmp1
 
         data[:,2*d-1,:,l:(l+chunk-1)] = utmp2[1,:,1,:,:]
