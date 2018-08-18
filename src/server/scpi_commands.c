@@ -310,7 +310,7 @@ static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
                 return SCPI_RES_ERR;
         }
        enableSlowDAC = result;
-       if(enableSlowDAC && rxEnabled)
+       if(enableSlowDAC && rxEnabled && numSlowDACChan>0)
        {
 	 enableSlowDACAck = false;
 	 while(!enableSlowDACAck)
