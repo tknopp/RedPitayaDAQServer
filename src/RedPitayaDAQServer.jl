@@ -1,9 +1,11 @@
-__precompile__()
 module RedPitayaDAQServer
 
 # package code goes here
 
-import Base: send, start, reset, connect
+using Sockets
+import Sockets: send, connect
+
+import Base: start, reset
 
 export RedPitaya, receive, query, stop, disconnect
 
