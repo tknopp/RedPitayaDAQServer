@@ -5,6 +5,9 @@ module RedPitayaDAQServer
 using Sockets
 import Sockets: send, connect
 
+using Statistics
+using LinearAlgebra
+
 import Base: start, reset
 
 export RedPitaya, receive, query, stop, disconnect
@@ -85,7 +88,7 @@ function RedPitaya(host, port=5025)
   rp.samplesPerPeriod = samplesPerPeriod(rp)
   rp.periodsPerFrame = periodsPerFrame(rp)
 
-  finalizer(rp, d -> disconnect(d))
+  finalizer(d -> disconnect(d), rp)
   return rp
 end
 
