@@ -55,7 +55,7 @@ function masterTrigger(rp::RedPitaya, val::Bool)
   valStr = val ? "ON" : "OFF"
   send(rp, string("RP:MasterTrigger ", valStr))
 end
-masterTrigger(rp::RedPitaya) = contains(query(rp,"RP:MasterTrigger?"),"ON")
+masterTrigger(rp::RedPitaya) = occursin("ON", query(rp,"RP:MasterTrigger?"))
 
 # "TRIGGERED" or "CONTINUOUS"
 function ramWriterMode(rp::RedPitaya, mode::String)
@@ -76,7 +76,7 @@ function readData_(rp::RedPitaya, startFrame, numFrames)
   send(rp, command)
 
   println("read data ...")
-  u = read(rp.dataSocket, Int16, 2 * numFrames * numSampPerFrame)
+  u = read!(rp.dataSocket, Array{Int16}(undef, 2 * numFrames * numSampPerFrame))
   println("read data!")
   return reshape(u, 2, rp.samplesPerPeriod, numPeriods, numFrames)
 end
@@ -87,7 +87,7 @@ function readDataPeriods_(rp::RedPitaya, startPeriod, numPeriods)
   send(rp, command)
 
   println("read data ...")
-  u = read(rp.dataSocket, Int16, 2 * numPeriods * rp.samplesPerPeriod)
+  u = read!(rp.dataSocket, Array{Int16}(undef, 2 * numPeriods * rp.samplesPerPeriod))
   println("read data!")
   return reshape(u, 2, rp.samplesPerPeriod, numPeriods)
 end
@@ -138,7 +138,7 @@ function readData(rp::RedPitaya, startFrame, numFrames, numBlockAverages=1)
 
     u = readData_(rp, Int64(wpRead), Int64(chunk))
     utmp1 = reshape(u,2,numAveragedSampPerPeriod,numBlockAverages,size(u,3),size(u,4))
-    utmp2 = numBlockAverages > 1 ? mean(utmp1,3) : utmp1
+    utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
 
     data[:,1,:,l:(l+chunk-1)] = utmp2[1,:,1,:,:]
     data[:,2,:,l:(l+chunk-1)] = utmp2[2,:,1,:,:]

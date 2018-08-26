@@ -165,7 +165,7 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
         u = readData_(rp, Int64(wpRead), Int64(chunk))
         utmp1 = reshape(u,2,numTrueSampPerPeriod,numBlockAverages,
                             size(u,3)*numPeriodsPerPatch,size(u,4))
-        utmp2 = numBlockAverages > 1 ? mean(utmp1,3) : utmp1
+        utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
 
         data[:,2*d-1,:,l:(l+chunk-1)] = utmp2[1,:,1,:,:]
         data[:,2*d,:,l:(l+chunk-1)] = utmp2[2,:,1,:,:]
@@ -216,7 +216,7 @@ function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBloc
         u = readDataPeriods_(rp, Int64(wpRead), Int64(chunk))
 
         utmp1 = reshape(u,2,numAveragedSampPerPeriod,numBlockAverages,size(u,3))
-        utmp2 = numBlockAverages > 1 ? mean(utmp1,3) : utmp1
+        utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
 
         data[:,2*d-1,l:(l+chunk-1)] = utmp2[1,:,1,:]
         data[:,2*d,l:(l+chunk-1)] = utmp2[2,:,1,:]
