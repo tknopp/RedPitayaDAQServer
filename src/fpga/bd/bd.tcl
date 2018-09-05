@@ -2309,8 +2309,22 @@ CONFIG.AXIS_TDATA_WIDTH {32} \
   # Create instance: clk_div_0, and set properties
   set clk_div_0 [ create_bd_cell -type ip -vlnv referencedesigner.com:user:clk_div:1.0 clk_div_0 ]
 
-  # Create instance: clk_wiz_0, and set properties
-  set clk_wiz_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:5.4 clk_wiz_0 ]
+  # Create instance: clk_wiz_1, and set properties
+  set clk_wiz_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:5.4 clk_wiz_1 ]
+  set_property -dict [ list \
+CONFIG.CLKIN1_JITTER_PS {80.0} \
+CONFIG.CLKOUT1_JITTER {119.348} \
+CONFIG.CLKOUT1_PHASE_ERROR {96.948} \
+CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {125.000} \
+CONFIG.MMCM_CLKFBOUT_MULT_F {8.000} \
+CONFIG.MMCM_CLKIN1_PERIOD {8.000} \
+CONFIG.MMCM_CLKOUT0_DIVIDE_F {8.000} \
+CONFIG.MMCM_DIVCLK_DIVIDE {1} \
+CONFIG.PRIM_IN_FREQ {125.000} \
+ ] $clk_wiz_1
+
+  # Create instance: clk_wiz_2, and set properties
+  set clk_wiz_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:5.4 clk_wiz_2 ]
   set_property -dict [ list \
 CONFIG.CLKIN1_JITTER_PS {80.0} \
 CONFIG.CLKIN2_JITTER_PS {80.0} \
@@ -2327,13 +2341,12 @@ CONFIG.CLKOUT3_REQUESTED_OUT_FREQ {375.000} \
 CONFIG.CLKOUT3_USED {true} \
 CONFIG.CLKOUT4_JITTER {224.358} \
 CONFIG.CLKOUT4_PHASE_ERROR {112.379} \
-CONFIG.CLKOUT4_REQUESTED_OUT_FREQ {7.8125} \
+CONFIG.CLKOUT4_REQUESTED_OUT_FREQ {7.812} \
 CONFIG.CLKOUT4_USED {true} \
 CONFIG.CLK_OUT1_PORT {clk_ddr} \
 CONFIG.CLK_OUT2_PORT {clk_internal} \
 CONFIG.CLK_OUT3_PORT {clk_375MHz} \
 CONFIG.CLK_OUT4_PORT {clk_pdm} \
-CONFIG.ENABLE_CLOCK_MONITOR {false} \
 CONFIG.MMCM_CLKFBOUT_MULT_F {6.000} \
 CONFIG.MMCM_CLKIN1_PERIOD {8.000} \
 CONFIG.MMCM_CLKIN2_PERIOD {8.000} \
@@ -2343,28 +2356,11 @@ CONFIG.MMCM_CLKOUT2_DIVIDE {2} \
 CONFIG.MMCM_CLKOUT3_DIVIDE {96} \
 CONFIG.MMCM_DIVCLK_DIVIDE {1} \
 CONFIG.NUM_OUT_CLKS {4} \
-CONFIG.PRIMITIVE {MMCM} \
 CONFIG.PRIM_IN_FREQ {125.000} \
-CONFIG.PRIM_SOURCE {Single_ended_clock_capable_pin} \
 CONFIG.SECONDARY_IN_FREQ {125.000} \
 CONFIG.SECONDARY_SOURCE {Single_ended_clock_capable_pin} \
 CONFIG.USE_INCLK_SWITCHOVER {true} \
-CONFIG.USE_RESET {true} \
- ] $clk_wiz_0
-
-  # Create instance: clk_wiz_1, and set properties
-  set clk_wiz_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:5.4 clk_wiz_1 ]
-  set_property -dict [ list \
-CONFIG.CLKIN1_JITTER_PS {80.0} \
-CONFIG.CLKOUT1_JITTER {119.348} \
-CONFIG.CLKOUT1_PHASE_ERROR {96.948} \
-CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {125.000} \
-CONFIG.MMCM_CLKFBOUT_MULT_F {8.000} \
-CONFIG.MMCM_CLKIN1_PERIOD {8.000} \
-CONFIG.MMCM_CLKOUT0_DIVIDE_F {8.000} \
-CONFIG.MMCM_DIVCLK_DIVIDE {1} \
-CONFIG.PRIM_IN_FREQ {125.000} \
- ] $clk_wiz_1
+ ] $clk_wiz_2
 
   # Create instance: fourier_synth_rasterized
   create_hier_cell_fourier_synth_rasterized [current_bd_instance .] fourier_synth_rasterized
@@ -2545,7 +2541,7 @@ CONFIG.DOUT_WIDTH {8} \
   connect_bd_net -net adc_clk_p_i_1 [get_bd_ports adc_clk_p_i] [get_bd_pins axis_red_pitaya_adc_0/adc_clk_p]
   connect_bd_net -net adc_dat_a_i_1 [get_bd_ports adc_dat_a_i] [get_bd_pins axis_red_pitaya_adc_0/adc_dat_a]
   connect_bd_net -net adc_dat_b_i_1 [get_bd_ports adc_dat_b_i] [get_bd_pins axis_red_pitaya_adc_0/adc_dat_b]
-  connect_bd_net -net axis_red_pitaya_adc_0_adc_clk [get_bd_pins axis_red_pitaya_adc_0/adc_clk] [get_bd_pins clk_wiz_0/clk_in1]
+  connect_bd_net -net axis_red_pitaya_adc_0_adc_clk [get_bd_pins axis_red_pitaya_adc_0/adc_clk] [get_bd_pins clk_wiz_2/clk_in1]
   connect_bd_net -net axis_red_pitaya_adc_0_adc_csn [get_bd_ports adc_csn_o] [get_bd_pins axis_red_pitaya_adc_0/adc_csn]
   connect_bd_net -net axis_red_pitaya_adc_0_m_axis_tdata [get_bd_pins axis_red_pitaya_adc_0/m_axis_tdata] [get_bd_pins write_to_ram/Din]
   connect_bd_net -net axis_red_pitaya_adc_0_m_axis_tvalid [get_bd_pins axis_red_pitaya_adc_0/m_axis_tvalid] [get_bd_pins write_to_ram/s_axis_data_tvalid]
@@ -2555,12 +2551,12 @@ CONFIG.DOUT_WIDTH {8} \
   connect_bd_net -net axis_red_pitaya_dac_0_dac_sel [get_bd_ports dac_sel_o] [get_bd_pins axis_red_pitaya_dac_0/dac_sel]
   connect_bd_net -net axis_red_pitaya_dac_0_dac_wrt [get_bd_ports dac_wrt_o] [get_bd_pins axis_red_pitaya_dac_0/dac_wrt]
   connect_bd_net -net clk_div_0_clk_out [get_bd_pins clk_div_0/clk_out] [get_bd_pins pdm/pdm_clk]
-  connect_bd_net -net clk_wiz_0_clk_ddr [get_bd_pins axis_red_pitaya_dac_0/ddr_clk] [get_bd_pins clk_wiz_0/clk_ddr] [get_bd_pins pdm/ddr_clk]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins axis_red_pitaya_dac_0/aclk] [get_bd_pins clk_wiz_0/clk_internal] [get_bd_pins fourier_synth_rasterized/aclk] [get_bd_pins fourier_synth_standard/aclk] [get_bd_pins pdm/aclk] [get_bd_pins proc_sys_reset_fourier_synth/slowest_sync_clk] [get_bd_pins proc_sys_reset_pdm/slowest_sync_clk] [get_bd_pins proc_sys_reset_write_to_ram/slowest_sync_clk] [get_bd_pins proc_sys_reset_xadc/slowest_sync_clk] [get_bd_pins reset_manager_0/clk] [get_bd_pins selectio_wiz_1/clk_in] [get_bd_pins system/S_AXI_HP0_ACLK] [get_bd_pins util_ds_buf_0/OBUF_IN] [get_bd_pins write_to_ram/aclk] [get_bd_pins xadc_wiz_0/s_axi_aclk]
-  connect_bd_net -net clk_wiz_0_clk_pdm [get_bd_pins clk_div_0/clk] [get_bd_pins clk_wiz_0/clk_pdm]
-  connect_bd_net -net clk_wiz_0_locked [get_bd_pins axis_red_pitaya_dac_0/locked] [get_bd_pins clk_wiz_0/locked] [get_bd_pins selectio_wiz_1/clock_enable] [get_bd_pins system/dcm_locked]
-  connect_bd_net -net clk_wiz_1_clk_out1 [get_bd_pins clk_wiz_0/clk_in2] [get_bd_pins clk_wiz_1/clk_out1]
+  connect_bd_net -net clk_wiz_0_clk_ddr [get_bd_pins axis_red_pitaya_dac_0/ddr_clk] [get_bd_pins clk_wiz_2/clk_ddr] [get_bd_pins pdm/ddr_clk]
+  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins axis_red_pitaya_dac_0/aclk] [get_bd_pins clk_wiz_2/clk_internal] [get_bd_pins fourier_synth_rasterized/aclk] [get_bd_pins fourier_synth_standard/aclk] [get_bd_pins pdm/aclk] [get_bd_pins proc_sys_reset_fourier_synth/slowest_sync_clk] [get_bd_pins proc_sys_reset_pdm/slowest_sync_clk] [get_bd_pins proc_sys_reset_write_to_ram/slowest_sync_clk] [get_bd_pins proc_sys_reset_xadc/slowest_sync_clk] [get_bd_pins reset_manager_0/clk] [get_bd_pins selectio_wiz_1/clk_in] [get_bd_pins system/S_AXI_HP0_ACLK] [get_bd_pins util_ds_buf_0/OBUF_IN] [get_bd_pins write_to_ram/aclk] [get_bd_pins xadc_wiz_0/s_axi_aclk]
+  connect_bd_net -net clk_wiz_0_locked [get_bd_pins axis_red_pitaya_dac_0/locked] [get_bd_pins clk_wiz_2/locked] [get_bd_pins selectio_wiz_1/clock_enable] [get_bd_pins system/dcm_locked]
+  connect_bd_net -net clk_wiz_1_clk_out1 [get_bd_pins clk_wiz_1/clk_out1] [get_bd_pins clk_wiz_2/clk_in2]
   connect_bd_net -net clk_wiz_1_locked [get_bd_pins clk_wiz_1/locked] [get_bd_pins util_vector_logic_0/Op1]
+  connect_bd_net -net clk_wiz_2_clk_pdm [get_bd_pins clk_div_0/clk] [get_bd_pins clk_wiz_2/clk_pdm]
   connect_bd_net -net daisy_n_i_1 [get_bd_ports daisy_n_i] [get_bd_pins selectio_wiz_2/data_in_from_pins_n]
   connect_bd_net -net daisy_p_i_1 [get_bd_ports daisy_p_i] [get_bd_pins selectio_wiz_2/data_in_from_pins_p]
   connect_bd_net -net forurier_synth_rasterized_synth_tdata [get_bd_pins axis_select_0/s_axis_tdata_channel_2] [get_bd_pins fourier_synth_rasterized/synth_tdata]
@@ -2589,9 +2585,9 @@ CONFIG.DOUT_WIDTH {8} \
   connect_bd_net -net util_ds_buf_0_OBUF_DS_P [get_bd_ports adc_enc_p_o] [get_bd_pins util_ds_buf_0/OBUF_DS_P]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins system/adc_sts] [get_bd_pins write_to_ram/sts_data]
   connect_bd_net -net xlconcat_0_dout1 [get_bd_ports dac_pwm_o] [get_bd_pins pdm/dout]
-  connect_bd_net -net xlconstant_0_dout [get_bd_pins clk_wiz_0/clk_in_sel] [get_bd_pins xlconstant_0/dout]
+  connect_bd_net -net xlconstant_0_dout [get_bd_pins clk_wiz_2/clk_in_sel] [get_bd_pins xlconstant_0/dout]
   connect_bd_net -net xlconstant_2_dout [get_bd_pins clk_div_0/reset] [get_bd_pins xlconstant_2/dout]
-  connect_bd_net -net xlconstant_5_dout [get_bd_pins clk_wiz_0/reset] [get_bd_pins clk_wiz_1/reset] [get_bd_pins util_vector_logic_1/Res]
+  connect_bd_net -net xlconstant_5_dout [get_bd_pins clk_wiz_1/reset] [get_bd_pins clk_wiz_2/reset] [get_bd_pins util_vector_logic_1/Res]
   connect_bd_net -net xlslice_0_Dout [get_bd_pins pdm/Din] [get_bd_pins system/pdm_data]
   connect_bd_net -net xlslice_0_Dout1 [get_bd_pins axis_select_0/selection] [get_bd_pins xlslice_0/Dout]
   connect_bd_net -net xlslice_2_Dout [get_bd_pins write_to_ram/decimation] [get_bd_pins xlslice_2/Dout]
