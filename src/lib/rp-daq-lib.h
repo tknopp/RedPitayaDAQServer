@@ -32,6 +32,13 @@
 #define INSTANT_RESET_OFF 0
 #define INSTANT_RESET_ON 1
 
+#define SIGNAL_TYPE_SINE 0
+#define SIGNAL_TYPE_DC 1
+#define SIGNAL_TYPE_SQUARE 2
+#define SIGNAL_TYPE_TRIANGLE 3
+#define SIGNAL_TYPE_SAWTOOTH 4
+
+
 extern bool verbose;
 
 extern int mmapfd;
@@ -57,10 +64,11 @@ extern int getModulusFactor(int, int);
 extern int setModulusFactor(uint32_t, int, int);
 extern double getPhase(int, int);
 extern int setPhase(double, int, int);
-extern int setDACMode(int);
-extern int getDACMode();
+extern int setDACMode(int, int);
+extern int getDACMode(int);
 extern int reconfigureDACModulus(int, int, int);
 extern int getDACModulus(int, int);
+extern int setSignalType(int, int);
 
 // fast ADC
 extern int setDecimation(uint16_t decimation);
