@@ -38,11 +38,16 @@
 extern volatile int numSamplesPerPeriod;
 extern volatile int numPeriodsPerFrame;
 extern int numSlowDACChan;
+extern int enableSlowDAC;
+extern int enableSlowDACAck;
+extern int numSlowDACFramesEnabled;
+extern int64_t frameSlowDACEnabled;
 extern volatile int64_t numSamplesPerFrame;
 extern volatile int64_t numFramesInMemoryBuffer;
 extern volatile int64_t buff_size;
 
 extern volatile int64_t currentFrameTotal;
+extern int64_t startWP;
 extern volatile int64_t currentPeriodTotal;
 extern volatile int64_t data_read, data_read_total;
 extern volatile int64_t channel;
@@ -57,6 +62,9 @@ extern int datasockfd;
 extern int newdatasockfd;
 
 extern float *slowDACLUT;
+extern bool slowDACInterpolation;
+extern double slowDACRampUpTime;
+extern double slowDACFractionRampUp;
 
 extern size_t SCPI_Write(scpi_t *, const char *, size_t);
 extern scpi_result_t SCPI_Flush(scpi_t *);

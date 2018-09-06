@@ -341,6 +341,56 @@ static scpi_result_t RP_ADC_GetNumSlowDACChan(scpi_t * context) {
         return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
+    int result;
+       if (!SCPI_ParamInt32(context, &result, TRUE)) {
+            return SCPI_RES_ERR;
+       }
+       
+       if (!SCPI_ParamInt32(context, &numSlowDACFramesEnabled, TRUE)) {
+            return SCPI_RES_ERR;
+       }
+       if (!SCPI_ParamDouble(context, &slowDACRampUpTime, TRUE)) {
+            return SCPI_RES_ERR;
+       }
+       if (!SCPI_ParamDouble(context, &slowDACFractionRampUp, TRUE)) {
+            return SCPI_RES_ERR;
+       }
+       enableSlowDAC = result;
+
+       if(enableSlowDAC && rxEnabled && numSlowDACChan>0)
+       {
+	 enableSlowDACAck = false;
+	 while(!enableSlowDACAck)
+	 {
+           usleep(1.0);
+	 }
+         SCPI_ResultInt64(context, frameSlowDACEnabled);
+       } else
+       {
+         SCPI_ResultInt64(context, 0);
+       }
+        if(rxEnabled && !enableSlowDAC)
+        {
+          for (int i=0; i<4; i++)                        
+          {
+             setPDMNextValueVolt(0.0, i);
+          }  
+        }
+
+        return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_ADC_SlowDACInterpolation(scpi_t * context) {
+
+	int32_t tmp;
+        if (!SCPI_ParamInt32(context, &tmp, TRUE)) {
+                return SCPI_RES_ERR;
+        }
+	slowDACInterpolation = (tmp == 1);
+
+        return SCPI_RES_OK;
+}
 
 static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t * context) {
         // Reading is only possible while an acquisition is running
@@ -348,7 +398,19 @@ static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t * context) {
                 return SCPI_RES_ERR;
         }
 
-	SCPI_ResultInt64(context, currentFrameTotal-1);
+	SCPI_ResultInt64(context, currentFrameTotal);
+
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_ADC_GetCurrentWP(scpi_t * context) {
+        printf("RP_ADC_GetCurrentWP\n");
+	// Reading is only possible while an acquisition is running
+        //if(!rxEnabled) {
+        //        return SCPI_RES_ERR;
+        //}
+
+	SCPI_ResultInt64(context, getWritePointer());
 
     return SCPI_RES_OK;
 }
@@ -359,7 +421,7 @@ static scpi_result_t RP_ADC_GetCurrentPeriod(scpi_t * context) {
                 return SCPI_RES_ERR;
         }
 
-	SCPI_ResultInt64(context, currentPeriodTotal-1);
+	SCPI_ResultInt64(context, currentPeriodTotal);
 
     return SCPI_RES_OK;
 }
@@ -411,6 +473,7 @@ static scpi_result_t RP_ADC_GetPeriods(scpi_t * context) {
 static scpi_result_t RP_ADC_StartAcquisitionConnection(scpi_t * context) {
 	bool connectionEstablished = false;
 	
+printf("RP_ADC_StartAcquisitionConnection\n");
 	while(!connectionEstablished) {
 		newdatasocklen = sizeof (newdatasockaddr);
 		newdatasockfd = accept(datasockfd, (struct sockaddr *) &newdatasockaddr, &newdatasocklen);
@@ -444,11 +507,17 @@ static scpi_result_t RP_ADC_GetAcquisitionStatus(scpi_t * context) {
 
 static scpi_result_t RP_ADC_SetAcquisitionStatus(scpi_t * context) {
 	int32_t acquisition_status_selection;
+printf("Test 0\n");
 
     if (!SCPI_ParamChoice(context, acquisition_status_modes, &acquisition_status_selection, TRUE)) {
 		return SCPI_RES_ERR;
 	}
-	
+printf("Test 1\n");
+	if (!SCPI_ParamInt64(context, &startWP, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+printf("Test 2\n");
+
 	if(acquisition_status_selection == ACQUISITION_ON) {
 		rxEnabled = true;
 	} else {
@@ -699,26 +768,21 @@ static scpi_result_t RP_InstantResetStatus(scpi_t * context) {
 }
 
 
-static scpi_result_t RP_DAC_SetSlowDACLUT(scpi_t * context) {
+static scpi_result_t RP_ADC_SetSlowDACLUT(scpi_t * context) {
 
-	if(numPeriodsPerFrame > 0 && numSlowDACChan > 0) {
+    if(numPeriodsPerFrame > 0 && numSlowDACChan > 0) {
     	if(slowDACLUT != NULL) {
             free(slowDACLUT);
         }
         printf("Allocating slowDACLUT\n");
         slowDACLUT = (float *)malloc(numSlowDACChan * numPeriodsPerFrame * sizeof(float));
-    }
+   
+        int n = read(newdatasockfd,slowDACLUT,numSlowDACChan * numPeriodsPerFrame * sizeof(float));
+        //for(int i=0;i<params.numFFChannels* params.numPatches; i++) printf(" %f ",ffValues[i]);
+        //printf("\n");
+        if (n < 0) perror("ERROR reading from socket");
 
-
-    for(int i=0; i<numPeriodsPerFrame; i++) {
-      for(int l=0; l<numSlowDACChan; l++) {
-        if (!SCPI_ParamFloat(context, slowDACLUT+i*numSlowDACChan + l, TRUE)) {
-                return SCPI_RES_ERR;
-        }
-        //printf("LUT=%f \n", slowDACLUT[i*numSlowDACChan + l]);
-      }
-    }
-
+     }
     return SCPI_RES_OK;
 }
 
@@ -781,10 +845,13 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:PERiods:DATa", .callback = RP_ADC_GetPeriods,},
 	{.pattern = "RP:ADC:SlowDAC", .callback = RP_ADC_SetNumSlowDACChan,},
 	{.pattern = "RP:ADC:SlowDAC?", .callback = RP_ADC_GetNumSlowDACChan,},
-	{.pattern = "RP:ADC:SlowDACLUT", .callback = RP_DAC_SetSlowDACLUT,},
+	{.pattern = "RP:ADC:SlowDACLUT", .callback = RP_ADC_SetSlowDACLUT,},
+	{.pattern = "RP:ADC:SlowDACEnable", .callback = RP_ADC_EnableSlowDAC,},
+	{.pattern = "RP:ADC:SlowDACInterpolation", .callback = RP_ADC_SlowDACInterpolation,},
 	{.pattern = "RP:ADC:FRAme", .callback = RP_ADC_SetPeriodsPerFrame,},
 	{.pattern = "RP:ADC:FRAme?", .callback = RP_ADC_GetPeriodsPerFrame,},
 	{.pattern = "RP:ADC:FRAmes:CURRent?", .callback = RP_ADC_GetCurrentFrame,},
+	{.pattern = "RP:ADC:WP:CURRent?", .callback = RP_ADC_GetCurrentWP,},
 	{.pattern = "RP:ADC:FRAmes:DATa", .callback = RP_ADC_GetFrames,},
 	{.pattern = "RP:ADC:ACQCONNect", .callback = RP_ADC_StartAcquisitionConnection,},
 	{.pattern = "RP:ADC:ACQSTATus", .callback = RP_ADC_SetAcquisitionStatus,},
