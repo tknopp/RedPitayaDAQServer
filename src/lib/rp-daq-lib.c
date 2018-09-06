@@ -384,11 +384,23 @@ int setPhase(double phase, int channel, int component)
     return 0;
 }
 
-int setDACMode(int mode) {
+int setDACMode(int channel, int mode) {
+	if(channel < 0 || channel > 1) {
+        return -3;
+    }
+	
     if(mode == DAC_MODE_STANDARD) {
-        *((uint32_t *)(cfg + 0)) &= ~8;
+		if(channel == 0) {
+            *((uint32_t *)(cfg + 0)) &= ~64;
+        } else {
+            *((uint32_t *)(cfg + 0)) &= ~128;
+        }
     } else if(mode == DAC_MODE_RASTERIZED) {
-        *((uint32_t *)(cfg + 0)) |= 8;
+        if(channel == 0) {
+            *((uint32_t *)(cfg + 0)) |= 64;
+        } else {
+            *((uint32_t *)(cfg + 0)) |= 128;
+        }
     } else {
         return -1;
     }
@@ -396,9 +408,17 @@ int setDACMode(int mode) {
     return 0;
 }
 
-int getDACMode() {
+int getDACMode(int channel) {
+	if(channel < 0 || channel > 1) {
+        return -3;
+    }
+	
     uint32_t register_value = *((uint32_t *)(cfg + 0));
-    return ((register_value & 0x00000008) >> 3);
+	if(channel == 0) {
+		return ((register_value & 0x00000040) >> 6);
+	} else {
+		return ((register_value & 0x00000080) >> 7);
+	}
 }
 
 /**
@@ -441,13 +461,51 @@ int getDACModulus(int channel, int component) {
     
     if(channel == 0) {
         return dac_channel_A_modulus[component];
-    }
-    
-    if(channel == 1) {
+    } else if(channel == 1) {
         return dac_channel_B_modulus[component];
     }
     
     return -1;
+}
+
+int setSignalType(int channel, int signal_type) {
+	if(channel < 0 || channel > 1) {
+        return -3;
+    }
+	
+	if((signal_type != SIGNAL_TYPE_SINE)
+		|| (signal_type != SIGNAL_TYPE_DC)
+		|| (signal_type != SIGNAL_TYPE_SQUARE)
+		|| (signal_type != SIGNAL_TYPE_TRIANGLE)
+		|| (signal_type != SIGNAL_TYPE_SAWTOOTH)) {
+        return -2;
+    }
+	
+	if(channel == 0) {
+		uint32_t mask = 0x07;
+        *((uint32_t *)(cfg + 0)) &= (~mask | (signal_type << 0));
+    } else if(channel == 1) {
+        uint32_t mask = 0x38;
+        *((uint32_t *)(cfg + 0)) &= (~mask | (signal_type << 3));
+    }
+    
+    return 0;
+}
+
+int getSignalType(int channel) {
+	if(channel < 0 || channel > 1) {
+        return -3;
+    }
+	
+	if(channel == 0) {
+		uint32_t mask = 0x07;
+		return (*((uint32_t *)(cfg + 0)) >>> 0) & mask;
+    } else if(channel == 1) {
+        uint32_t mask = 0x38;
+        return (*((uint32_t *)(cfg + 0)) >>> 3) & mask;
+    }
+    
+    return 0;
 }
 
 // Fast ADC
@@ -473,8 +531,9 @@ uint32_t getWritePointer() {
 uint32_t getWritePointerDistance(uint32_t start_pos, uint32_t end_pos) {
     end_pos   = end_pos   % ADC_BUFF_SIZE;
     start_pos = start_pos % ADC_BUFF_SIZE;
-    if (end_pos < start_pos)
+    if (end_pos < start_pos) {
         end_pos += ADC_BUFF_SIZE;
+	}
     return end_pos - start_pos + 1;
 }
 
