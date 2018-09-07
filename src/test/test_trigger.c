@@ -25,7 +25,8 @@ int main () {
 
   setMaster();
   init();
-  setDACMode(DAC_MODE_RASTERIZED);
+  setDACMode(0, DAC_MODE_RASTERIZED);
+  setDACMode(1, DAC_MODE_RASTERIZED);
   setWatchdogMode(WATCHDOG_OFF);  
 
   setMasterTrigger(MASTER_TRIGGER_OFF);

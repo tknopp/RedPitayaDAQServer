@@ -162,13 +162,17 @@ scpi_choice_def_t DAC_modes[] = {
 };
 
 static scpi_result_t RP_DAC_SetDACMode(scpi_t * context) {
+    int32_t numbers[1];
+    SCPI_CommandNumbers(context, numbers, 1, 1);
+    int channel = numbers[0];
+
     int32_t DAC_mode_selection;
 
     if (!SCPI_ParamChoice(context, DAC_modes, &DAC_mode_selection, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 	
-	int result = setDACMode(DAC_mode_selection);
+	int result = setDACMode(channel, DAC_mode_selection);
 	if (result < 0) {
 		return SCPI_RES_ERR;
 	}
@@ -177,9 +181,13 @@ static scpi_result_t RP_DAC_SetDACMode(scpi_t * context) {
 }
 
 static scpi_result_t RP_DAC_GetDACMode(scpi_t * context) {
-	const char * name;
+    int32_t numbers[1];
+    SCPI_CommandNumbers(context, numbers, 1, 1);
+    int channel = numbers[0];
 
-    SCPI_ChoiceToName(DAC_modes, getDACMode(), &name);
+    const char * name;
+
+    SCPI_ChoiceToName(DAC_modes, getDACMode(channel), &name);
 	SCPI_ResultText(context, name);
 
     return SCPI_RES_OK;
@@ -244,10 +252,52 @@ static scpi_result_t RP_DAC_SetSignalType(scpi_t * context) {
 }
 
 static scpi_result_t RP_DAC_GetSignalType(scpi_t * context) {
+	int32_t numbers[1];
+        SCPI_CommandNumbers(context, numbers, 1, 1);
+        int channel = numbers[0];
+
 	const char * name;
 
-    SCPI_ChoiceToName(Dsignal_types, getSignalType(), &name);
+    SCPI_ChoiceToName(signal_types, getSignalType(channel), &name);
 	SCPI_ResultText(context, name);
+
+    return SCPI_RES_OK;
+}
+
+scpi_choice_def_t DC_sign[] = {
+    {"POSITIVE", DC_SIGN_POSITIVE},
+    {"NEGATIVE", DC_SIGN_NEGATIVE},
+    SCPI_CHOICE_LIST_END /* termination of option list */
+};
+
+static scpi_result_t RP_DAC_SetDCSign(scpi_t * context) {
+    int32_t numbers[1];
+    SCPI_CommandNumbers(context, numbers, 1, 1);
+    int channel = numbers[0];
+
+    int32_t DC_sign_selection;
+
+    if (!SCPI_ParamChoice(context, DC_sign, &DC_sign_selection, TRUE)) {
+                return SCPI_RES_ERR;
+        }
+
+        int result = setDCSign(channel, DC_sign_selection);
+        if (result < 0) {
+                return SCPI_RES_ERR;
+        }
+
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_GetDCSign(scpi_t * context) {
+    int32_t numbers[1];
+    SCPI_CommandNumbers(context, numbers, 1, 1);
+    int channel = numbers[0];
+
+    const char * name;
+
+    SCPI_ChoiceToName(DC_sign, getDCSign(channel), &name);
+        SCPI_ResultText(context, name);
 
     return SCPI_RES_OK;
 }
@@ -837,6 +887,8 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:MODulus?", .callback = RP_DAC_GetDACModulus,},
 	{.pattern = "RP:DAC:CHannel#:SIGnaltype", .callback = RP_DAC_SetSignalType,},
 	{.pattern = "RP:DAC:CHannel#:SIGnaltype?", .callback = RP_DAC_GetSignalType,},
+        {.pattern = "RP:DAC:CHannel#:DC:SIGn", .callback = RP_DAC_SetDCSign,},
+        {.pattern = "RP:DAC:CHannel#:DC:SIGn?", .callback = RP_DAC_GetDCSign,},
 	{.pattern = "RP:ADC:DECimation", .callback = RP_ADC_SetDecimation,},
 	{.pattern = "RP:ADC:DECimation?", .callback = RP_ADC_GetDecimation,},
 	{.pattern = "RP:ADC:PERiod", .callback = RP_ADC_SetSamplesPerPeriod,},

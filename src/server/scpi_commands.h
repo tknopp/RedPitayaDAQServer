@@ -56,6 +56,8 @@ extern static scpi_result_t RP_DAC_ReconfigureDACModulus(scpi_t *);
 extern static scpi_result_t RP_DAC_GetDACModulus(scpi_t *);
 extern static scpi_result_t RP_DAC_SetSignalType(scpi_t *);
 extern static scpi_result_t RP_DAC_GetSignalType(scpi_t *);
+extern static scpi_result_t RP_DAC_SetDCSign(scpi_t *);
+extern static scpi_result_t RP_DAC_GetDCSign(scpi_t *);
 
 extern static scpi_result_t RP_ADC_SetDecimation(scpi_t *);
 extern static scpi_result_t RP_ADC_GetDecimation(scpi_t *);

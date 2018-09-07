@@ -38,6 +38,8 @@
 #define SIGNAL_TYPE_TRIANGLE 3
 #define SIGNAL_TYPE_SAWTOOTH 4
 
+#define DC_SIGN_POSITIVE 0
+#define DC_SIGN_NEGATIVE 1
 
 extern bool verbose;
 
@@ -69,6 +71,9 @@ extern int getDACMode(int);
 extern int reconfigureDACModulus(int, int, int);
 extern int getDACModulus(int, int);
 extern int setSignalType(int, int);
+extern int getSignalType(int);
+extern int setDCSign(int, int);
+extern int getDCSign(int);
 
 // fast ADC
 extern int setDecimation(uint16_t decimation);
