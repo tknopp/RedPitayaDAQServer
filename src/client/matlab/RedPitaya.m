@@ -16,6 +16,7 @@ classdef RedPitaya < handle
         decimation
         samplesPerPeriod
         periodsPerFrame
+        printStatus = false
     end
     
     methods
@@ -91,12 +92,14 @@ classdef RedPitaya < handle
         %   See also RECEIVE, QUERY.
         
             flushinput(RP.socket)
-            fprintf('Sending command: %s\n\r', command);
+            if RP.printStatus
+                fprintf('Sending command: %s\n\r', command);
+            end
             fprintf(RP.socket, strcat(command, RP.delim));
         end
         
         function data = receive(RP)
-        % SEND  Receive a value from the RedPitaya
+        % RECEIVE  Receive a value from the RedPitaya
         %
         %   See also SEND, QUERY.
             
@@ -104,12 +107,18 @@ classdef RedPitaya < handle
         end
         
         function data = query(RP, command)
-        % SEND  Send a command and then receive a value from the RedPitaya
+        % QUERY  Send a command and then receive a value from the RedPitaya
         %
         %   See also SEND, RECEIVE.
         
             RP.send(command);
             data = RP.receive();
+        end
+        
+        function setPrintStatus(RP, printStatus)
+        % SETPRINTSTATUS  Set flag for printing status messages
+        
+            RP.printStatus = printStatus;
         end
         
         %% Data acquisition
@@ -119,11 +128,15 @@ classdef RedPitaya < handle
             RP.send(sprintf('RP:ADC:FRAMES:DATA %.0f,%.0f', startFrame, numFrames));
             
             % Read specified amount of data
-            fprintf('Read data...\n\r');
+            if RP.printStatus
+                fprintf('Read data...\n\r');
+            end
             numSampPerFrame = RP.samplesPerPeriod*RP.periodsPerFrame;
             data = int16(fread(RP.dataSocket, 2*numSampPerFrame*numFrames, 'int16'));
             data = swapbytes(data);
-            fprintf('Read data!\n\r');
+            if RP.printStatus
+                fprintf('Read data!\n\r');
+            end
             
             % Reshape to one row per ADC channel
             data = reshape(data, 2, numSampPerFrame, numFrames);
@@ -140,23 +153,31 @@ classdef RedPitaya < handle
 
             % This is a wild guess for a good chunk size
             chunkSize = max(1, round(1000000 / numSampPerFrame));
-            fprintf("chunkSize = %d\n\r", chunkSize);
+            if RP.printStatus
+                fprintf("chunkSize = %d\n\r", chunkSize);
+            end
             while l<=numFrames
                 wpWrite = RP.getCurrentFrame();
                 while wpRead >= wpWrite % Wait that startFrame is reached
                     wpWrite = RP.getCurrentFrame();
-                    fprintf("wpWrite=%d\n\r", wpWrite);
+                    if RP.printStatus
+                        fprintf("wpWrite=%d\n\r", wpWrite);
+                    end
                 end
                 
                 chunk = min(wpWrite-wpRead,chunkSize); % Determine how many frames to read
-                fprintf("chunk=%d\n\r", chunk);
+                if RP.printStatus
+                    fprintf("chunk=%d\n\r", chunk);
+                end
                 
                 if l+chunk > numFrames
                     chunk = numFrames-l+1;
                 end
 
-                fprintf("Read from %.0f until %.0f, WpWrite %.0f, chunk=%.0f\n\r", wpRead, wpRead+chunk-1, wpWrite, chunk);
-
+                if RP.printStatus
+                    fprintf("Read from %.0f until %.0f, WpWrite %.0f, chunk=%.0f\n\r", wpRead, wpRead+chunk-1, wpWrite, chunk);
+                end
+                
                 u = RP.readDataLowLevel(wpRead, chunk);
 
                 data(:,:,:,l:(l+chunk-1)) = u;

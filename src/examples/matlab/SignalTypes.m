@@ -8,6 +8,7 @@ addpath('../../client/matlab/')
 % Connect to the Red Pitaya
 rp = RedPitaya('rp-f00806.local');
 rp.connect();
+rp.setPrintStatus(true);
 
 % Define acquisition parameters
 dec = 8;
