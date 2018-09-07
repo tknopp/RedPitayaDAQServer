@@ -205,15 +205,15 @@ classdef RedPitaya < handle
             RP.send(sprintf('RP:DAC:CHannel%d:COMPonent%d:PHAse %d', channel, component, phase));
         end
         
-        function data = getDACMode(RP)
-            data = RP.query(sprintf('RP:DAC:MODe?'));
+        function data = getDACMode(RP, channel)
+            data = RP.query(sprintf('RP:DAC:CHannel%d:MODe?', channel));
             data = lower(data);
         end
         
         function setDACMode(RP, channel, mode)
-            if mode == 'rasterized'
+            if strcmp(mode, 'rasterized')
                 RP.send(sprintf('RP:DAC:CHannel%d:MODe %s', channel, 'RASTERIZED'));
-            elseif mode == 'standard'
+            elseif strcmp(mode, 'standard')
                 RP.send(sprintf('RP:DAC:CHannel%d:MODe %s', channel, 'STANDARD'));
             else
                 error('Invalid DAC mode.');
@@ -230,15 +230,15 @@ classdef RedPitaya < handle
         end
         
         function setSignalType(RP, channel, signalType)
-            if signalType == 'sine'
+            if strcmp(signalType, 'sine')
                 RP.send(sprintf('RP:DAC:CHannel%d:SIGnaltype %s', channel, 'SINE'));
-            elseif signalType == 'dc'
+            elseif strcmp(signalType, 'dc')
                 RP.send(sprintf('RP:DAC:CHannel%d:SIGnaltype %s', channel, 'DC'));
-            elseif signalType == 'square'
+            elseif strcmp(signalType, 'square')
                 RP.send(sprintf('RP:DAC:CHannel%d:SIGnaltype %s', channel, 'SQUARE'));
-            elseif signalType == 'triangle'
+            elseif strcmp(signalType, 'triangle')
                 RP.send(sprintf('RP:DAC:CHannel%d:SIGnaltype %s', channel, 'TRIANGLE'));
-            elseif signalType == 'sawtooth'
+            elseif strcmp(signalType, 'sawtooth')
                 RP.send(sprintf('RP:DAC:CHannel%d:SIGnaltype %s', channel, 'SAWTOOTH'));
             else
                 error('Invalid signal type.');
