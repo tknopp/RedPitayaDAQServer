@@ -28,10 +28,12 @@ rp.setDACMode(1, "standard");
 
 rp.setAmplitude(0, 0, 7000);
 rp.setAmplitude(1, 0, 7000);
-
+%%
 rp.setSignalType(0, 'sine');
 pause(3);
 rp.setSignalType(0, 'dc');
+pause(3);
+rp.setDCSign(0, 'negative');
 pause(3);
 rp.setSignalType(0, 'square');
 pause(3);
@@ -42,6 +44,8 @@ pause(3);
 rp.setSignalType(1, 'sine');
 pause(3);
 rp.setSignalType(1, 'dc');
+pause(3);
+rp.setDCSign(1, 'negative');
 pause(3);
 rp.setSignalType(1, 'square');
 pause(3);

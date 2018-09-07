@@ -250,6 +250,11 @@ classdef RedPitaya < handle
             RP.send(sprintf('RP:DAC:CHannel%d:COMPonent%d:MODulus %d', channel, component, modulus));
         end
         
+        function data = getSignalType(RP, channel)
+            data = RP.query(sprintf('RP:DAC:CHannel%d:SIGnaltype?', channel));
+            data = lower(data);
+        end
+        
         function setSignalType(RP, channel, signalType)
             if strcmp(signalType, 'sine')
                 RP.send(sprintf('RP:DAC:CHannel%d:SIGnaltype %s', channel, 'SINE'));
@@ -266,9 +271,19 @@ classdef RedPitaya < handle
             end
         end
         
-        function data = getSignalType(RP, channel)
-            data = RP.query(sprintf('RP:DAC:CHannel%d:SIGnaltype?', channel));
+        function data = getDCSign(RP, channel)
+            data = RP.query(sprintf('RP:DAC:CHannel%d:DC:SIGn?', channel));
             data = lower(data);
+        end
+        
+        function setDCSign(RP, channel, sign)
+            if strcmp(sign, 'positive')
+                RP.send(sprintf('RP:DAC:CHannel%d:DC:SIGn %s', channel, 'POSITIVE'));
+            elseif strcmp(sign, 'negative')
+                RP.send(sprintf('RP:DAC:CHannel%d:DC:SIGn %s', channel, 'NEGATIVE'));
+            else
+                error('Invalid DC sign.');
+            end
         end
         
         function data = getDecimation(RP)
