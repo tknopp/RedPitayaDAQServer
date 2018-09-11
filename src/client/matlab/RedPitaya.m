@@ -218,7 +218,7 @@ classdef RedPitaya < handle
         end
         
         function data = getPhase(RP, channel, component)
-            data = RP.query(sprintf('RP:DAC:CHannel%d:COMPonent%d:FACtor?', channel, component));
+            data = RP.query(sprintf('RP:DAC:CHannel%d:COMPonent%d:PHAse?', channel, component));
             data = str2double(data);
         end
         
@@ -370,6 +370,21 @@ classdef RedPitaya < handle
         function data = getXADCValueVolt(RP, channel)
             data = RP.query(sprintf('RP:XADC:CHannel%d?', channel));
             data = str2double(data);
+        end
+        
+        function data = getDIOOutput(RP, pin)
+            data = RP.query(sprintf('RP:DIO:PIN%d?', pin));
+            data = lower(data);
+        end
+        
+        function setDIOOutput(RP, pin, value)
+            if strcmp(value, 'on')
+                RP.send(sprintf('RP:DIO:PIN%d %s', pin, 'ON'));
+            elseif strcmp(value, 'off')
+                RP.send(sprintf('RP:DIO:PIN%d %s', pin, 'OFF'));
+            else
+                error('Invalid DIO output.');
+            end
         end
         
         function mode = getWatchDogMode(RP)
