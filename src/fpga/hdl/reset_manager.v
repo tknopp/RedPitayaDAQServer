@@ -9,7 +9,7 @@ module reset_manager #
 (
     input clk,
     input peripheral_aresetn,
-    input [7:0] reset_cfg,
+    input [3:0] reset_cfg,
     inout trigger,
     inout watchdog,
     inout instant_reset,
