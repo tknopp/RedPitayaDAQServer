@@ -389,9 +389,9 @@ classdef RedPitaya < handle
         
         function mode = getWatchDogMode(RP)
             data = RP.query(sprintf('RP:WatchDogMode?'));
-            if data == 'ON'
+            if strcmp(data, 'ON')
                 mode = true;
-            elseif data == 'OFF'
+            elseif strcmp(data, 'OFF')
                 mode = false;
             else
                 error('Invalid watchdog mode returned');
@@ -412,9 +412,9 @@ classdef RedPitaya < handle
         end
         
         function setRamWriterMode(RP, mode)
-            if mode == 'continuous'
+            if strcmp(mode, 'continuous')
                 RP.send(sprintf('RP:RamWriterMode %s', 'CONTINUOUS'));
-            elseif mode == 'triggered'
+            elseif strcmp(mode, 'triggered')
                 RP.send(sprintf('RP:RamWriterMode %s', 'TRIGGERED'));
             else
                 error('Invalid RAM writer mode.');
@@ -436,9 +436,9 @@ classdef RedPitaya < handle
         
         function mode = getInstantResetMode(RP)
             data = RP.query(sprintf('RP:InstantResetMode?'));
-            if data == 'ON'
+            if strcmp(data, 'ON')
                 mode = true;
-            elseif data == 'OFF'
+            elseif strcmp(data, 'OFF')
                 mode = false;
             else
                 error('Invalid instant reset mode returned');
