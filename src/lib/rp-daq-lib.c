@@ -742,6 +742,37 @@ float getXADCValueVolt(int channel) {
     return (((float)value_raw / ANALOG_IN_MAX_VAL_INTEGER) * (ANALOG_IN_MAX_VAL - ANALOG_IN_MIN_VAL)) + ANALOG_IN_MIN_VAL;
 }
 
+
+// DIO
+
+int setDIOOutput(int pin, int value) {
+        if(pin < 0 || pin > 3) {
+        return -3;
+    }
+
+    if(value == DIO_PIN_OFF) {
+            *((uint32_t *)(cfg + 1)) &= ~(0x00000001 << (4+pin));
+    } else if(value == DIO_PIN_ON) {
+            *((uint32_t *)(cfg + 1)) |= (0x00000001 << (4+pin));
+    } else {
+        return -1;
+    }
+
+    return 0;
+}
+
+int getDIOOutput(int pin) {
+        if(pin < 0 || pin > 3) {
+        return -3;
+    }
+
+    uint32_t register_value = *((uint32_t *)(cfg + 1));
+    return ((register_value & (0x00000001 << (4+pin))) >> (4+pin));
+}
+
+
+// Resets
+
 int getWatchdogMode() {
 	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x02) >> 1);
 	

@@ -41,6 +41,9 @@
 #define DC_SIGN_POSITIVE 0
 #define DC_SIGN_NEGATIVE 1
 
+#define DIO_PIN_OFF 0
+#define DIO_PIN_ON 1
+
 extern bool verbose;
 
 extern int mmapfd;
