@@ -143,10 +143,4 @@ module fourier_synthesizer #
     assign m_axis_tvalid = 1;
     assign m_axis_tdata = dac_out;
 
-    // The core is always ready
-    assign s_axis_tready_channel_1 = 1'b1;
-    assign s_axis_tready_channel_2 = 1'b1;
-    assign s_axis_tready_channel_3 = 1'b1;
-    assign s_axis_tready_channel_4 = 1'b1;
-
 endmodule

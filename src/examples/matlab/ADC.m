@@ -7,7 +7,6 @@ addpath('../../client/matlab/')
 % Connect to the Red Pitaya
 rp = RedPitaya('rp-f00806.local');
 rp.connect();
-rp.setPrintStatus(true);
 
 % Define acquisition parameters
 dec = 8;
@@ -22,23 +21,20 @@ rp.setDecimation(dec);
 rp.setSamplesPerPeriod(samples_per_period);
 rp.setPeriodsPerFrame(periods_per_frame);
 
-rp.setDACMode(0, "rasterized");
-rp.setDACMode(1, "rasterized");
+rp.setDACMode("rasterized");
 rp.reconfigureDACModulus(0, 0, 4800);
 rp.setModulusFactor(0, 0, 1);
-rp.setModulusFactor(1, 0, 1);
 
 fprintf('DAC frequency is %fHz.\n\r', rp.getFrequency(0, 0))
 rp.setAmplitude(0, 0, 7000);
-rp.setAmplitude(1, 0, 7000);
 rp.setPhase(0, 0, 0.33);
-rp.setMasterTrigger('off');
-rp.setRamWriterMode('triggered');
+rp.setMasterTrigger(false);
+rp.setRamWriterMode("triggered");
 
-pause(0.5);
+pause(0.1);
 
-rp.setAcquisitionStatus('on', 0);
-rp.setMasterTrigger('on');
+rp.setAcquisitionStatus(true);
+rp.setMasterTrigger(true);
 
 % Wait for valid frames
 while (rp.getCurrentFrame() == -1)
@@ -46,19 +42,10 @@ while (rp.getCurrentFrame() == -1)
 end
 
 startFrame = rp.getCurrentFrame();
-startFrame = 0;
-u = rp.readData(startFrame, 16);
+u = rp.readData(startFrame, 2);
 
-rp.setAcquisitionStatus('off', 0);
-rp.setMasterTrigger('off');
-
-rp.setAcquisitionStatus('on', 0);
-rp.setMasterTrigger('on');
-
-rp.getCurrentFrame()
-pause(0.1);
-rp.getCurrentFrame()
-
+rp.setAcquisitionStatus(false);
+rp.setMasterTrigger(false);
 rp.disconnect();
 
 figure;

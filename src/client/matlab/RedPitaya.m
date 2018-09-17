@@ -345,13 +345,11 @@ classdef RedPitaya < handle
             data = lower(data);
         end
         
-        function setAcquisitionStatus(RP, status, writePointer)
-            if strcmp(status, 'on')
-                RP.send(sprintf('RP:ADC:ACQSTATus %s,%d', 'ON', writePointer));
-            elseif strcmp(status, 'off')
-                RP.send(sprintf('RP:ADC:ACQSTATus %s,%d', 'OFF', writePointer));
+        function setAcquisitionStatus(RP, status)
+            if status == true
+                RP.send(sprintf('RP:ADC:ACQSTATus %s', 'ON'));
             else
-                error('Invalid acquisition status.');
+                RP.send(sprintf('RP:ADC:ACQSTATus %s', 'OFF'));
             end
         end
         
@@ -429,20 +427,18 @@ classdef RedPitaya < handle
         end
         
         function setMasterTrigger(RP, mode)
-            if strcmp(mode, 'on')
+            if mode == true
                 RP.send(sprintf('RP:MasterTrigger %s', 'ON'));
-            elseif strcmp(mode, 'off')
-                RP.send(sprintf('RP:MasterTrigger %s', 'OFF'));
             else
-                error('Invalid master trigger mode');
+                RP.send(sprintf('RP:MasterTrigger %s', 'OFF'));
             end
         end
         
         function mode = getInstantResetMode(RP)
             data = RP.query(sprintf('RP:InstantResetMode?'));
-            if strcmp(data, 'on')
+            if strcmp(data, 'ON')
                 mode = true;
-            elseif strcmp(data, 'off')
+            elseif strcmp(data, 'OFF')
                 mode = false;
             else
                 error('Invalid instant reset mode returned');
@@ -450,12 +446,10 @@ classdef RedPitaya < handle
         end
         
         function setInstantResetMode(RP, mode)
-            if strcmp(mode, 'on')
+            if mode == true
                 RP.send(sprintf('RP:InstantResetMode %s', 'ON'));
-            elseif strcmp(mode, 'off')
-                RP.send(sprintf('RP:InstantResetMode %s', 'OFF'));
             else
-                error('Invalid instant reset mode');
+                RP.send(sprintf('RP:InstantResetMode %s', 'OFF'));
             end
         end
         

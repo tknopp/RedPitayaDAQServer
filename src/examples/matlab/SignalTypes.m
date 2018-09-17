@@ -26,15 +26,6 @@ rp.setPeriodsPerFrame(periods_per_frame);
 rp.setDACMode(0, "standard");
 rp.setDACMode(1, "standard");
 
-rp.setFrequency(0, 0, 25000);
-rp.setFrequency(0, 1, 25000);
-rp.setFrequency(0, 2, 25000);
-rp.setFrequency(0, 3, 25000);
-rp.setFrequency(1, 0, 25000);
-rp.setFrequency(1, 1, 25000);
-rp.setFrequency(1, 2, 25000);
-rp.setFrequency(1, 3, 25000);
-
 rp.setAmplitude(0, 0, 7000);
 rp.setAmplitude(1, 0, 7000);
 %%
