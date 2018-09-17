@@ -345,11 +345,13 @@ classdef RedPitaya < handle
             data = lower(data);
         end
         
-        function setAcquisitionStatus(RP, status)
-            if status == true
-                RP.send(sprintf('RP:ADC:ACQSTATus %s', 'ON'));
+        function setAcquisitionStatus(RP, status, writePointer)
+            if strcmp(status, 'on')
+                RP.send(sprintf('RP:ADC:ACQSTATus %s,%d', 'ON', writePointer));
+            elseif strcmp(status, 'off')
+                RP.send(sprintf('RP:ADC:ACQSTATus %s,%d', 'OFF', writePointer));
             else
-                RP.send(sprintf('RP:ADC:ACQSTATus %s', 'OFF'));
+                error('Invalid acquisition status.');
             end
         end
         
@@ -427,18 +429,20 @@ classdef RedPitaya < handle
         end
         
         function setMasterTrigger(RP, mode)
-            if mode == true
+            if strcmp(mode, 'on')
                 RP.send(sprintf('RP:MasterTrigger %s', 'ON'));
-            else
+            elseif strcmp(mode, 'off')
                 RP.send(sprintf('RP:MasterTrigger %s', 'OFF'));
+            else
+                error('Invalid master trigger mode');
             end
         end
         
         function mode = getInstantResetMode(RP)
             data = RP.query(sprintf('RP:InstantResetMode?'));
-            if strcmp(data, 'ON')
+            if strcmp(data, 'on')
                 mode = true;
-            elseif strcmp(data, 'OFF')
+            elseif strcmp(data, 'off')
                 mode = false;
             else
                 error('Invalid instant reset mode returned');
@@ -446,10 +450,12 @@ classdef RedPitaya < handle
         end
         
         function setInstantResetMode(RP, mode)
-            if mode == true
+            if strcmp(mode, 'on')
                 RP.send(sprintf('RP:InstantResetMode %s', 'ON'));
-            else
+            elseif strcmp(mode, 'off')
                 RP.send(sprintf('RP:InstantResetMode %s', 'OFF'));
+            else
+                error('Invalid instant reset mode');
             end
         end
         
