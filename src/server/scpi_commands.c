@@ -557,16 +557,14 @@ static scpi_result_t RP_ADC_GetAcquisitionStatus(scpi_t * context) {
 
 static scpi_result_t RP_ADC_SetAcquisitionStatus(scpi_t * context) {
 	int32_t acquisition_status_selection;
-printf("Test 0\n");
 
     if (!SCPI_ParamChoice(context, acquisition_status_modes, &acquisition_status_selection, TRUE)) {
 		return SCPI_RES_ERR;
 	}
-printf("Test 1\n");
+
 	if (!SCPI_ParamInt64(context, &startWP, TRUE)) {
 		return SCPI_RES_ERR;
 	}
-printf("Test 2\n");
 
 	if(acquisition_status_selection == ACQUISITION_ON) {
 		rxEnabled = true;
