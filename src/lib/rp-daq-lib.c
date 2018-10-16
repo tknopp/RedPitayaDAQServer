@@ -22,8 +22,8 @@ int mmapfd;
 volatile uint32_t *slcr, *axi_hp0;
 void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *reset_sts, *cfg, *ram, *buf;
 
-uint16_t dac_channel_A_modulus[4] = {4800, 4864, 4800, 4800};
-uint16_t dac_channel_B_modulus[4] = {4800, 4864, 4800, 4800};
+uint16_t dac_channel_A_modulus[4] = {4800, 4864, 4800, 5000};
+uint16_t dac_channel_B_modulus[4] = {4800, 4864, 4800, 5000};
 
 static const uint32_t ANALOG_OUT_MASK            = 0xFF;
 static const uint32_t ANALOG_OUT_BITS            = 16;

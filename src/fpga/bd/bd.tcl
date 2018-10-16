@@ -1148,7 +1148,7 @@ CONFIG.Spurious_Free_Dynamic_Range {84} \
 CONFIG.Amplitude_Mode {Full_Range} \
 CONFIG.DATA_Has_TLAST {Not_Required} \
 CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {26041} \
+CONFIG.Frequency_Resolution {25000} \
 CONFIG.Has_ARESETn {true} \
 CONFIG.Has_Phase_Out {false} \
 CONFIG.Has_TREADY {false} \
@@ -1157,9 +1157,9 @@ CONFIG.Latency_Configuration {Auto} \
 CONFIG.M_DATA_Has_TUSER {Not_Required} \
 CONFIG.M_PHASE_Has_TUSER {Not_Required} \
 CONFIG.Mode_of_Operation {Rasterized} \
-CONFIG.Modulus {4800} \
+CONFIG.Modulus {5000} \
 CONFIG.Noise_Shaping {None} \
-CONFIG.Output_Frequency1 {0.027} \
+CONFIG.Output_Frequency1 {0.025} \
 CONFIG.Output_Selection {Sine} \
 CONFIG.Output_Width {14} \
 CONFIG.PINC1 {1} \
@@ -1276,7 +1276,7 @@ CONFIG.Spurious_Free_Dynamic_Range {84} \
 CONFIG.Amplitude_Mode {Full_Range} \
 CONFIG.DATA_Has_TLAST {Not_Required} \
 CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {26041} \
+CONFIG.Frequency_Resolution {25000} \
 CONFIG.Has_ARESETn {true} \
 CONFIG.Has_Phase_Out {false} \
 CONFIG.Has_TREADY {false} \
@@ -1285,9 +1285,9 @@ CONFIG.Latency_Configuration {Auto} \
 CONFIG.M_DATA_Has_TUSER {Not_Required} \
 CONFIG.M_PHASE_Has_TUSER {Not_Required} \
 CONFIG.Mode_of_Operation {Rasterized} \
-CONFIG.Modulus {4800} \
+CONFIG.Modulus {5000} \
 CONFIG.Noise_Shaping {None} \
-CONFIG.Output_Frequency1 {0.027} \
+CONFIG.Output_Frequency1 {0.025} \
 CONFIG.Output_Selection {Sine} \
 CONFIG.Output_Width {14} \
 CONFIG.PINC1 {1} \
@@ -2248,10 +2248,6 @@ proc create_hier_cell_DDS { parentCell nameHier } {
   # Create instance: signal_generator_0, and set properties
   set signal_generator_0 [ create_bd_cell -type ip -vlnv jbeuke:user:signal_generator:1.0 signal_generator_0 ]
 
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {4} \
- ] [get_bd_intf_pins /DDS/signal_generator_0/m_axis]
-
   # Create interface connections
   connect_bd_intf_net -intf_net fourier_synth_rasterized_M_AXIS_PHASE_A [get_bd_intf_pins fourier_synth_rasterized/M_AXIS_PHASE_A] [get_bd_intf_pins signal_generator_0/s_axis_phase_rasterized_A]
   connect_bd_intf_net -intf_net fourier_synth_rasterized_M_AXIS_PHASE_B [get_bd_intf_pins fourier_synth_rasterized/M_AXIS_PHASE_B] [get_bd_intf_pins signal_generator_0/s_axis_phase_rasterized_B]
@@ -2702,4 +2698,6 @@ CONFIG.DOUT_WIDTH {4} \
 
 create_root_design ""
 
+
+common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
