@@ -8,9 +8,9 @@ import Sockets: send, connect
 using Statistics
 using LinearAlgebra
 
-import Base: start, reset
+import Base: reset
 
-export RedPitaya, receive, query, stop, disconnect
+export RedPitaya, receive, query, start, stop, disconnect
 
 mutable struct RedPitaya
   host::String
