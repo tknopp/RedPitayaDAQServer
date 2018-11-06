@@ -199,6 +199,29 @@ classdef RedPitaya < handle
             RP.send(sprintf('RP:DAC:CHannel%d:COMPonent%d:AMPlitude %d', channel, component, amplitude));
         end
         
+        function rampAmplitude(RP, channel, component, amplitude, maxIncrease)
+            if nargin < 5
+                maxIncrease = 5;
+            end
+            
+            currentAmplitude = RP.getAmplitude(channel, component);
+            
+            diff = amplitude-currentAmplitude;
+            steps = round(abs(diff)/maxIncrease);
+            pauseTime = 0.01; % s
+            speed = round(diff/steps);
+            
+            if speed == 0
+                error('maxIncrease is too low!');
+            end
+            
+            for step=1:steps
+                RP.setAmplitude(channel, component, currentAmplitude+step*speed);
+                pause(pauseTime);
+            end
+            RP.setAmplitude(channel, component, amplitude);
+        end
+        
         function data = getFrequency(RP, channel, component)
             data = RP.query(sprintf('RP:DAC:CHannel%d:COMPonent%d:FREQuency?', channel, component));
             data = str2double(data);
@@ -224,6 +247,29 @@ classdef RedPitaya < handle
         
         function setPhase(RP, channel, component, phase)
             RP.send(sprintf('RP:DAC:CHannel%d:COMPonent%d:PHAse %d', channel, component, phase));
+        end
+        
+        function rampPhase(RP, channel, component, phase, maxIncrease)
+            if nargin < 5
+                maxIncrease = 2*pi/200;
+            end
+            
+            currentPhase = RP.getPhase(channel, component);
+            
+            diff = phase-currentPhase;
+            steps = abs(diff)/maxIncrease;
+            pauseTime = 0.01; % s
+            speed = diff/steps;
+            
+            if speed == 0
+                error('maxIncrease is too low!');
+            end
+            
+            for step=1:steps
+                RP.setPhase(channel, component, currentPhase+step*speed);
+                pause(pauseTime);
+            end
+            RP.setPhase(channel, component, phase);
         end
         
         function data = getDACMode(RP, channel)
