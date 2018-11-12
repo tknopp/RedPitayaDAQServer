@@ -201,7 +201,7 @@ classdef RedPitaya < handle
         
         function rampAmplitude(RP, channel, component, amplitude, maxIncrease)
             if nargin < 5
-                maxIncrease = 5;
+                maxIncrease = 20;
             end
             
             currentAmplitude = RP.getAmplitude(channel, component);
