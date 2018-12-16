@@ -38,6 +38,7 @@
 extern volatile int numSamplesPerPeriod;
 extern volatile int numPeriodsPerFrame;
 extern int numSlowDACChan;
+extern int numSlowADCChan;
 extern int enableSlowDAC;
 extern int enableSlowDACAck;
 extern int numSlowDACFramesEnabled;
@@ -65,6 +66,7 @@ extern float *slowDACLUT;
 extern bool slowDACInterpolation;
 extern double slowDACRampUpTime;
 extern double slowDACFractionRampUp;
+extern float *slowADCBuffer;
 
 extern size_t SCPI_Write(scpi_t *, const char *, size_t);
 extern scpi_result_t SCPI_Flush(scpi_t *);
@@ -84,6 +86,7 @@ extern void* acquisitionThread(void*);
 extern void* slowDACThread(void*);
 extern void sendFramesToHost(int64_t, int64_t);
 extern void sendPeriodsToHost(int64_t, int64_t);
+extern void sendSlowFramesToHost(int64_t, int64_t);
 extern void initBuffer();
 extern void releaseBuffer();
 

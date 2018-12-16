@@ -355,6 +355,24 @@ static scpi_result_t RP_ADC_SlowDACInterpolation(scpi_t * context) {
         return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_ADC_SetNumSlowADCChan(scpi_t * context) {
+        if(rxEnabled) {
+                return SCPI_RES_ERR;
+        }
+
+        if (!SCPI_ParamInt32(context, &numSlowADCChan, TRUE)) {
+                return SCPI_RES_ERR;
+        }
+
+        return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_ADC_GetNumSlowADCChan(scpi_t * context) {
+        SCPI_ResultInt32(context, numSlowADCChan);
+
+        return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t * context) {
         // Reading is only possible while an acquisition is running
         if(!rxEnabled) {
@@ -431,6 +449,28 @@ static scpi_result_t RP_ADC_GetPeriods(scpi_t * context) {
 	
 	//printf("invoke sendDataToHost()");
 	sendPeriodsToHost(period, numPeriods);
+	
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_ADC_Slow_GetFrames(scpi_t * context) {
+	// Reading is only possible while an acquisition is running
+	if(!rxEnabled) {
+		return SCPI_RES_ERR;
+	}
+	
+	int64_t frame;
+    if (!SCPI_ParamInt64(context, &frame, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+	
+	int64_t numFrames;
+	if (!SCPI_ParamInt64(context, &numFrames, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+	
+	//printf("invoke sendDataToHost()");
+	sendSlowFramesToHost(frame, numFrames);
 	
     return SCPI_RES_OK;
 }
@@ -800,6 +840,8 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:MODe?", .callback = RP_DAC_GetDACMode,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:MODulus", .callback = RP_DAC_ReconfigureDACModulus,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:MODulus?", .callback = RP_DAC_GetDACModulus,},
+	{.pattern = "RP:DAC:SlowDAC", .callback = RP_ADC_SetNumSlowADCChan,},
+	{.pattern = "RP:DAC:SlowDAC?", .callback = RP_ADC_GetNumSlowADCChan,},
 	{.pattern = "RP:ADC:DECimation", .callback = RP_ADC_SetDecimation,},
 	{.pattern = "RP:ADC:DECimation?", .callback = RP_ADC_GetDecimation,},
 	{.pattern = "RP:ADC:PERiod", .callback = RP_ADC_SetSamplesPerPeriod,},
@@ -816,6 +858,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:FRAmes:CURRent?", .callback = RP_ADC_GetCurrentFrame,},
 	{.pattern = "RP:ADC:WP:CURRent?", .callback = RP_ADC_GetCurrentWP,},
 	{.pattern = "RP:ADC:FRAmes:DATa", .callback = RP_ADC_GetFrames,},
+	{.pattern = "RP:ADC:Slow:FRAmes:DATa", .callback = RP_ADC_Slow_GetFrames,},
 	{.pattern = "RP:ADC:ACQCONNect", .callback = RP_ADC_StartAcquisitionConnection,},
 	{.pattern = "RP:ADC:ACQSTATus", .callback = RP_ADC_SetAcquisitionStatus,},
 	{.pattern = "RP:ADC:ACQSTATus?", .callback = RP_ADC_GetAcquisitionStatus,},

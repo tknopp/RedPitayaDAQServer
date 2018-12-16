@@ -61,6 +61,7 @@
 volatile int numSamplesPerPeriod = 5000;
 volatile int numPeriodsPerFrame = 20;
 int numSlowDACChan = 0;
+int numSlowADCChan = 0;
 int numSlowDACFramesEnabled = 0;
 int enableSlowDAC = 0;
 int enableSlowDACAck = true;
@@ -85,6 +86,8 @@ float *slowDACLUT = NULL;
 bool slowDACInterpolation = false;
 double slowDACRampUpTime = 0.4;
 double slowDACFractionRampUp = 0.8;
+float *slowADCBuffer = NULL;
+
 
 pthread_t pAcq;
 pthread_t pSlowDAC;
@@ -423,6 +426,39 @@ void sendPeriodsToHost(int64_t period, int64_t numPeriods) {
   }
 }
 
+void sendSlowFramesToHost(int64_t frame, int64_t numFrames) {
+  int n;
+  int64_t frameInBuff = frame % numFramesInMemoryBuffer;
+
+  if(numFrames+frameInBuff < numFramesInMemoryBuffer) {
+    n = write(newdatasockfd, slowADCBuffer+frameInBuff*numPeriodsPerFrame, 
+        numPeriodsPerFrame * numFrames * numSlowADCChan * sizeof(float));
+
+    if (n < 0) {
+      printf("Error in sendToHost()\n");
+      perror("ERROR writing to socket"); 
+    }
+  } else {
+    int64_t frames1 = numFramesInMemoryBuffer - frameInBuff;
+    int64_t frames2 = numFrames - frames1;
+    n = write(newdatasockfd, slowADCBuffer+frameInBuff*numPeriodsPerFrame,
+        numPeriodsPerFrame * numSlowADCChan * frames1 *sizeof(float));
+
+    if (n < 0) {
+      printf("Error in sendToHost() (else part 1)\n");
+      perror("ERROR writing to socket");
+    }
+
+    n = write(newdatasockfd, slowADCBuffer,
+        numPeriodsPerFrame * numSlowADCChan * frames2 * sizeof(float));
+
+    if (n < 0) {
+      printf("Error in sendToHost() (else part 2)\n");
+      perror("ERROR writing to socket");
+    }
+  }
+}
+
 void initBuffer() {
   buff_size = numSamplesPerFrame*numFramesInMemoryBuffer;
   printf("numFramesInMemoryBuffer = %ld \n", numFramesInMemoryBuffer);
@@ -434,10 +470,15 @@ void initBuffer() {
   printf("Allocating buffer of size %ld \n", buff_size*sizeof(uint32_t));
   buffer = (uint32_t*)malloc(buff_size * sizeof(uint32_t));
   memset(buffer, 0, buff_size * sizeof(uint32_t));
+  slowADCBuffer = (float*)malloc(numFramesInMemoryBuffer * 
+		                 numPeriodsPerFrame * numSlowADCChan * sizeof(float));
+  memset(slowADCBuffer, 0, numFramesInMemoryBuffer * numSlowADCChan *
+		           numPeriodsPerFrame * sizeof(float));
 }
 
 void releaseBuffer() {
   free(buffer);
+  free(slowADCBuffer);
 }
 
 void* slowDACThread(void* ch) 
@@ -542,9 +583,20 @@ void* slowDACThread(void* ch)
 	      frameSlowDACEnabled = currentFrameTotal + rampUpTotalFrames;
 	      enableSlowDACAck = true;
 	    }
+
             if(!enableSlowDAC) 
             {
               enableSlowDACLocal = false;
+	    }
+            
+	    if (numSlowADCChan > 0) 
+	    {
+              int currPeriodADC = currentPeriodTotal % ( numFramesInMemoryBuffer * numPeriodsPerFrame);
+            
+              for( int i=0; i< numSlowADCChan; i++)
+	      { 
+	        slowADCBuffer[i + currPeriodADC*numSlowADCChan] = getXADCValue(i);
+	      }
 	    }
 
             for (int i=0; i< numSlowDACChan; i++) 
@@ -588,6 +640,7 @@ void* slowDACThread(void* ch)
 	      {
                 status = setPDMNextValueVolt(val, i);             
 	      }
+
 
               //uint64_t curr = getPDMRegisterValue();
 
