@@ -55,6 +55,7 @@ extern volatile int64_t channel;
 
 extern uint32_t *buffer;
 extern bool rxEnabled;
+extern bool buffInitialized;
 extern bool acquisitionThreadRunning;
 
 extern pthread_t pAcq;

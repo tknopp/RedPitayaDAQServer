@@ -527,6 +527,7 @@ printf("Test 2\n");
 		rxEnabled = true;
 	} else {
 		rxEnabled = false;
+		buffInitialized = false;
 	}
 	
     return SCPI_RES_OK;
@@ -840,8 +841,8 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:MODe?", .callback = RP_DAC_GetDACMode,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:MODulus", .callback = RP_DAC_ReconfigureDACModulus,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:MODulus?", .callback = RP_DAC_GetDACModulus,},
-	{.pattern = "RP:DAC:SlowDAC", .callback = RP_ADC_SetNumSlowADCChan,},
-	{.pattern = "RP:DAC:SlowDAC?", .callback = RP_ADC_GetNumSlowADCChan,},
+	{.pattern = "RP:ADC:SlowADC", .callback = RP_ADC_SetNumSlowADCChan,},
+	{.pattern = "RP:ADC:SlowADC?", .callback = RP_ADC_GetNumSlowADCChan,},
 	{.pattern = "RP:ADC:DECimation", .callback = RP_ADC_SetDecimation,},
 	{.pattern = "RP:ADC:DECimation?", .callback = RP_ADC_GetDecimation,},
 	{.pattern = "RP:ADC:PERiod", .callback = RP_ADC_SetSamplesPerPeriod,},

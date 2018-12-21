@@ -79,6 +79,7 @@ volatile int64_t channel;
 
 uint32_t *buffer = NULL;
 bool rxEnabled = false;
+bool buffInitialized = false;
 bool acquisitionThreadRunning = false;
 bool commThreadRunning = false;
 
@@ -474,11 +475,14 @@ void initBuffer() {
 		                 numPeriodsPerFrame * numSlowADCChan * sizeof(float));
   memset(slowADCBuffer, 0, numFramesInMemoryBuffer * numSlowADCChan *
 		           numPeriodsPerFrame * sizeof(float));
+
+  buffInitialized = true;
 }
 
 void releaseBuffer() {
   free(buffer);
   free(slowADCBuffer);
+  buffInitialized = false;
 }
 
 void* slowDACThread(void* ch) 
@@ -507,7 +511,7 @@ void* slowDACThread(void* ch)
   while(acquisitionThreadRunning) {
     // Reset everything in order to provide a fresh start
     // everytime the acquisition is started
-    if(rxEnabled && numSlowDACChan > 0) {
+    if(rxEnabled && buffInitialized && numSlowDACChan > 0) {
       printf("Start sending...\n");
       data_read_total = 0; 
       oldPeriodTotal = -1;
@@ -669,6 +673,7 @@ void joinThreads()
 {
   acquisitionThreadRunning = false;
   rxEnabled = false;
+  buffInitialized = false;
   pthread_join(pAcq, NULL);
   pthread_join(pSlowDAC, NULL);
 }
@@ -685,7 +690,6 @@ void* communicationThread(void* p)
     {
       stopTx();
       //setMasterTrigger(MASTER_TRIGGER_OFF);
-      rxEnabled = false;
       joinThreads();
       break;
     }
@@ -708,7 +712,6 @@ void* communicationThread(void* p)
         printf("Connection closed\r\n");
         stopTx();
         //setMasterTrigger(MASTER_TRIGGER_OFF);
-        rxEnabled = false;
         joinThreads();
         commThreadRunning = false;
         break;
@@ -786,6 +789,7 @@ int main(int argc, char** argv) {
   newdatasockfd = 0;
 
   rxEnabled = false;
+  buffInitialized = false;
 
   // Set priority of this thread
   /*struct sched_param p;
@@ -848,7 +852,6 @@ int main(int argc, char** argv) {
   acquisitionThreadRunning = false;
   stopTx();
   //setMasterTrigger(MASTER_TRIGGER_OFF);
-  rxEnabled = false;
   pthread_join(pAcq, NULL);
   pthread_join(pSlowDAC, NULL);
   releaseBuffer();
