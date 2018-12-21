@@ -432,7 +432,7 @@ void sendSlowFramesToHost(int64_t frame, int64_t numFrames) {
   int64_t frameInBuff = frame % numFramesInMemoryBuffer;
 
   if(numFrames+frameInBuff < numFramesInMemoryBuffer) {
-    n = write(newdatasockfd, slowADCBuffer+frameInBuff*numPeriodsPerFrame, 
+    n = write(newdatasockfd, slowADCBuffer+frameInBuff*numPeriodsPerFrame*numSlowADCChan, 
         numPeriodsPerFrame * numFrames * numSlowADCChan * sizeof(float));
 
     if (n < 0) {
@@ -442,7 +442,7 @@ void sendSlowFramesToHost(int64_t frame, int64_t numFrames) {
   } else {
     int64_t frames1 = numFramesInMemoryBuffer - frameInBuff;
     int64_t frames2 = numFrames - frames1;
-    n = write(newdatasockfd, slowADCBuffer+frameInBuff*numPeriodsPerFrame,
+    n = write(newdatasockfd, slowADCBuffer+frameInBuff*numPeriodsPerFrame*numSlowADCChan,
         numPeriodsPerFrame * numSlowADCChan * frames1 *sizeof(float));
 
     if (n < 0) {
