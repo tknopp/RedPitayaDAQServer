@@ -21,6 +21,8 @@ bool verbose = false;
 int mmapfd;
 volatile uint32_t *slcr, *axi_hp0;
 void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *reset_sts, *cfg, *ram, *buf;
+volatile int32_t *xadc;
+
 
 uint16_t dac_channel_A_modulus[4] = {4800, 4864, 4800, 4800};
 uint16_t dac_channel_B_modulus[4] = {4800, 4864, 4800, 4800};
@@ -88,6 +90,7 @@ int init() {
 	cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40004000);
 	ram = mmap(NULL, 2048*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x1E000000);
 	buf = mmap(NULL, 2048*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS, -1, 0);
+        xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
 
 	// Set HP0 bus width to 64 bits
 	slcr[2] = 0xDF0D;
@@ -620,20 +623,13 @@ uint32_t getXADCValue(int channel) {
     FILE *fp;
     uint32_t value;
     switch (channel) {
-        case 0:  fp = fopen ("/sys/bus/iio/devices/iio:device0/in_voltage11_vaux8_raw", "r");  break;
-        case 1:  fp = fopen ("/sys/bus/iio/devices/iio:device0/in_voltage9_vaux0_raw" , "r");  break;
-        case 2:  fp = fopen ("/sys/bus/iio/devices/iio:device0/in_voltage10_vaux1_raw", "r");  break;
-        case 3:  fp = fopen ("/sys/bus/iio/devices/iio:device0/in_voltage12_vaux9_raw", "r");  break;
+        case 0:  value = xadc[152] >> 4; break;
+        case 1:  value = xadc[144] >> 4; break;
+        case 2:  value = xadc[145] >> 4; break;
+        case 3:  value = xadc[153] >> 4; break;
         default:
             return 1;
     }
-    int scanResult = fscanf (fp, "%d", &value);
-
-    if(scanResult <= -1) {
-        printf("Error while reading XADC value.\n");
-    }
-
-    fclose(fp);
     return value;
 }
 

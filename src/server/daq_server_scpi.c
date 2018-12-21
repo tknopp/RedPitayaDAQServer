@@ -599,7 +599,7 @@ void* slowDACThread(void* ch)
             
               for( int i=0; i< numSlowADCChan; i++)
 	      { 
-	        slowADCBuffer[i + currPeriodADC*numSlowADCChan] = getXADCValue(i);
+	        slowADCBuffer[i + currPeriodADC*numSlowADCChan] = getXADCValueVolt(i);
 	      }
 	    }
 
