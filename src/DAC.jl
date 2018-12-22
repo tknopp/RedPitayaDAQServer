@@ -55,9 +55,12 @@ function modulusDAC(rp::RedPitaya, channel, component, value)
 end
 
 #"STANDARD" or "RASTERIZED"
-function modeDAC(rp::RedPitaya)
+function modeDAC(rp::RedPitaya, channel=1)
+  #return query(rp, "RP:DAC:CH:", Int(channel)-1,"MODe?")[2:end-1]
   return query(rp, "RP:DAC:MODe?")[2:end-1]
 end
 function modeDAC(rp::RedPitaya, mode::String)
-  return send(rp, string("RP:DAC:MODe ", mode))
+  #send(rp, string("RP:DAC:CH", 0,":MODe ", mode))
+  #send(rp, string("RP:DAC:CH", 1,":MODe ", mode))
+  send(rp, string("RP:DAC:MODe ", mode))
 end

@@ -1,4 +1,4 @@
-export RedPitayaCluster, master, readDataPeriods, numChan
+export RedPitayaCluster, master, readDataPeriods, numChan, readDataSlow
 
 import Base: length
 
@@ -94,6 +94,16 @@ function getSlowADC(rpc::RedPitayaCluster, chan::Integer)
   getSlowADC(rpc.rp[idxRP], chanRP)
 end
 
+function numSlowADCChan(rpc::RedPitayaCluster)
+  return sum([ numSlowADCChan(rp) for rp in rpc.rp])
+end
+
+function numSlowADCChan(rpc::RedPitayaCluster, num)
+  for rp in rpc.rp
+    numSlowADCChan(rp, num)
+  end
+end
+
 #"STANDARD" or "RASTERIZED"
 modeDAC(rpc::RedPitayaCluster) = modeDAC(master(rpc))
 
@@ -120,7 +130,6 @@ end
 # High level read. numFrames can adress a future frame. Data is read in
 # chunks
 function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1)
-  dec = master(rpc).decimation
   numSampPerPeriod = master(rpc).samplesPerPeriod
   numSamp = numSampPerPeriod * numFrames
   numPeriods = master(rpc).periodsPerFrame
@@ -180,7 +189,6 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
 end
 
 function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAverages=1)
-  dec = master(rpc).decimation
   numSampPerPeriod = master(rpc).samplesPerPeriod
   numSamp = numSampPerPeriod * numPeriods
 
@@ -221,6 +229,54 @@ function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBloc
         data[:,2*d-1,l:(l+chunk-1)] = utmp2[1,:,1,:]
         data[:,2*d,l:(l+chunk-1)] = utmp2[2,:,1,:]
     #  end
+    end
+
+    l += chunk
+    wpRead += chunk
+  end
+
+  return data
+end
+
+
+# High level read. numFrames can adress a future frame.
+function readDataSlow(rpc::RedPitayaCluster, startFrame, numFrames, numPeriodsPerPatch=1)
+  numPeriods = master(rpc).periodsPerFrame
+  numChan = numSlowADCChan(rpc)
+  numSampPerFrame = numPeriods * numPeriodsPerPatch * numChan
+
+  data = zeros(Float32, numChan, numPeriods*numPeriodsPerPatch, numFrames)
+  wpRead = startFrame
+  l=1
+
+  # This is a wild guess for a good chunk size
+  chunkSize = max(1,  round(Int, 1000000 / numSampPerFrame)  )
+  println("chunkSize = $chunkSize")
+  while l<=numFrames
+    wpWrite = currentFrame(rpc)
+    while wpRead >= wpWrite # Wait that startFrame is reached
+      wpWrite = currentFrame(rpc)
+      println(wpWrite)
+    end
+    chunk = min(wpWrite-wpRead,chunkSize) # Determine how many frames to read
+    println(chunk)
+    if l+chunk > numFrames
+      chunk = numFrames - l + 1
+    end
+
+    println("Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)")
+
+    p = 1
+    for (d,rp) in enumerate(rpc.rp)
+      u = readDataSlow_(rp, Int64(wpRead), Int64(chunk))
+      numChan = size(u,1)
+
+      #utmp1 = reshape(u, numChan, numBlockAverages,
+      #                    div(size(u,2),numBlockAverages),size(u,3))
+      #utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=2) : utmp1
+
+      data[p:(p+numChan-1),:,l:(l+chunk-1)] = u #utmp2[:,1,:,:]
+      p += numChan
     end
 
     l += chunk

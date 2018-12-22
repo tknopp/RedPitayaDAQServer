@@ -1,6 +1,7 @@
 export decimation, samplesPerPeriod, periodsPerFrame, masterTrigger, currentFrame,
      currentPeriod, ramWriterMode, connectADC, startADC, stopADC, readData,
-     numSlowDACChan, setSlowDACLUT, enableSlowDAC, currentWP, slowDACInterpolation
+     numSlowDACChan, setSlowDACLUT, enableSlowDAC, currentWP, slowDACInterpolation,
+     numSlowADCChan
 
 
 decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
@@ -40,6 +41,12 @@ function slowDACInterpolation(rp::RedPitaya, enable::Bool)
   enableI = Int32(enable)
   send(rp, string("RP:ADC:SlowDACInterpolation ", enableI))
 end
+
+numSlowADCChan(rp::RedPitaya) = query(rp,"RP:ADC:SlowADC?", Int64)
+function numSlowADCChan(rp::RedPitaya, value)
+  send(rp, string("RP:ADC:SlowADC ", Int64(value)))
+end
+
 
 periodsPerFrame(rp::RedPitaya) = query(rp,"RP:ADC:FRAme?", Int64)
 function periodsPerFrame(rp::RedPitaya, value)
@@ -148,4 +155,19 @@ function readData(rp::RedPitaya, startFrame, numFrames, numBlockAverages=1)
   end
 
   return data
+end
+
+
+# Low level read. One has to take care that the numFrames are available
+function readDataSlow_(rp::RedPitaya, startFrame, numFrames)
+  numPeriods = rp.periodsPerFrame
+  numChan = numSlowADCChan(rp)
+
+  command = string("RP:ADC:SLOW:FRAMES:DATA ",Int64(startFrame),",",Int64(numFrames))
+  send(rp, command)
+
+  println("read data ...")
+  u = read!(rp.dataSocket, Array{Float32}(undef, numChan * numFrames * numPeriods))
+  println("read data!")
+  return reshape(u, numChan, numPeriods, numFrames)
 end
