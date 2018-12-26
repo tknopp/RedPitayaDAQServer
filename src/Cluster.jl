@@ -164,7 +164,7 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
     end
 
     if wpWrite - numFramesInMemoryBuffer > wpRead
-      println("WARNING: We have lost data !!!!!!!!!!")
+      error("WARNING: We have lost data !!!!!!!!!!")
     end
 
     println("Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)")
