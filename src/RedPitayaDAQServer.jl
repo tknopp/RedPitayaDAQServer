@@ -21,6 +21,7 @@ mutable struct RedPitaya
   samplesPerPeriod::Int64
   periodsPerFrame::Int64
   isConnected::Bool
+  isMaster::Bool
 end
 
 """
@@ -28,14 +29,14 @@ Send a command to the RedPitaya
 """
 function send(rp::RedPitaya,cmd::String)
   println("send command: ", cmd)
-  write(rp.socket,cmd*rp.delim)
+  @time write(rp.socket,cmd*rp.delim)
 end
 
 """
 Receive a String from the RedPitaya
 """
 function receive(rp::RedPitaya)
-  readline(rp.socket)[1:end] #-2
+  @time readline(rp.socket)[1:end] #-2
 end
 
 """
@@ -56,11 +57,14 @@ end
 
 function connect(rp::RedPitaya)
   if !rp.isConnected
+    @time begin
     rp.socket = connect(rp.host, 5025)
-    rp.dataSocket = connect(rp.host, 5026)
+    send(rp, string("RP:Init ", Int(rp.isMaster)))
     connectADC(rp)
+    rp.dataSocket = connect(rp.host, 5026)
 
     rp.isConnected = true
+    end
   end
 end
 
@@ -78,15 +82,15 @@ include("DAC.jl")
 include("Cluster.jl")
 include("SlowIO.jl")
 
-function RedPitaya(host, port=5025)
+function RedPitaya(host, port=5025, isMaster=true)
 
-  rp = RedPitaya(host,"\n", TCPSocket(), TCPSocket(), 1, 1, 1, false)
+  rp = RedPitaya(host,"\n", TCPSocket(), TCPSocket(), 1, 1, 1, false, isMaster)
 
   connect(rp)
 
-  rp.decimation = decimation(rp)
-  rp.samplesPerPeriod = samplesPerPeriod(rp)
-  rp.periodsPerFrame = periodsPerFrame(rp)
+  #rp.decimation = decimation(rp)
+  #rp.samplesPerPeriod = samplesPerPeriod(rp)
+  #rp.periodsPerFrame = periodsPerFrame(rp)
 
   finalizer(d -> disconnect(d), rp)
   return rp

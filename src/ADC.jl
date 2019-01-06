@@ -69,7 +69,7 @@ function ramWriterMode(rp::RedPitaya, mode::String)
   send(rp, string("RP:RamWriterMode ", mode))
 end
 
-connectADC(rp::RedPitaya) = query(rp, "RP:ADC:ACQCONNect")
+connectADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQCONNect")
 startADC(rp::RedPitaya, wp::Integer) = send(rp, "RP:ADC:ACQSTATUS ON,$wp")
 stopADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQSTATUS OFF,0")
 

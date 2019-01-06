@@ -8,7 +8,8 @@ end
 
 #TODO: set first RP to master
 function RedPitayaCluster(hosts::Vector{String}, port=5025)
-  rp = RedPitaya[ RedPitaya(host, port) for host in hosts ]
+  # the first RP is the master
+  rp = RedPitaya[ RedPitaya(host, port, i==1) for (i,host) in enumerate(hosts) ]
 
   return RedPitayaCluster(rp)
 end
