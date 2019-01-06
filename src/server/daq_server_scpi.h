@@ -54,6 +54,7 @@ extern volatile int64_t data_read, data_read_total;
 extern volatile int64_t channel;
 
 extern uint32_t *buffer;
+extern bool initialized;
 extern bool rxEnabled;
 extern bool buffInitialized;
 extern bool acquisitionThreadRunning;

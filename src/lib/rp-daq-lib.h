@@ -47,6 +47,8 @@ extern int init();
 extern void loadBitstream();
 extern bool isMaster();
 extern bool isSlave();
+extern void setMaster();
+extern void setSlave();
 
 // fast DAC
 extern uint16_t getAmplitude(int, int);

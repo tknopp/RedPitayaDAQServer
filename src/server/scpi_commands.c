@@ -29,6 +29,29 @@ int newdatasockfd;
 struct sockaddr_in newdatasockaddr;
 socklen_t newdatasocklen;
 
+static scpi_result_t RP_Init(scpi_t * context) {
+    int64_t isMast;
+    if (!SCPI_ParamInt64(context, &isMast, TRUE)) {
+	return SCPI_RES_ERR;
+    }
+
+    if(!initialized)
+    {
+	if(isMast) {
+	    setMaster();
+	} else {
+	    setSlave();
+	}
+        init();
+        initialized = true;
+    }
+	
+    return SCPI_RES_OK;
+}
+
+
+
+
 static scpi_result_t RP_DAC_GetAmplitude(scpi_t * context) {
     int32_t numbers[2];
 	SCPI_CommandNumbers(context, numbers, 2, 1);
@@ -829,6 +852,7 @@ const scpi_command_t scpi_commands[] = {
     {.pattern = "STATus:PRESet", .callback = SCPI_StatusPreset,},
 
     /* RP-DAQ */
+    {.pattern = "RP:Init", .callback = RP_Init,},
     {.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude?", .callback = RP_DAC_GetAmplitude,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude", .callback = RP_DAC_SetAmplitude,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency?", .callback = RP_DAC_GetFrequency,},

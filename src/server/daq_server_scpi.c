@@ -78,6 +78,7 @@ volatile int64_t data_read, data_read_total;
 volatile int64_t channel;
 
 uint32_t *buffer = NULL;
+bool initialized = false;
 bool rxEnabled = false;
 bool buffInitialized = false;
 bool acquisitionThreadRunning = false;
@@ -780,7 +781,6 @@ int main(int argc, char** argv) {
   (void) argc;
   (void) argv;
   int rc;
-  bool firstConnection = true;
 
   int listenfd;
 
@@ -828,13 +828,6 @@ int main(int argc, char** argv) {
       clifd = clifdTmp;
 
       scpi_context.user_context = &clifd;
-
-      if(firstConnection) 
-      {
-        // Init FPGA
-        init();
-        firstConnection = false;
-      }
 
       // if comm thread still running -> join it
       if(commThreadRunning)
