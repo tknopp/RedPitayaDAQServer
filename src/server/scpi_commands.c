@@ -513,7 +513,7 @@ printf("RP_ADC_StartAcquisitionConnection\n");
 		}
 	}
 	
-	SCPI_ResultBool(context, connectionEstablished);
+//	SCPI_ResultBool(context, connectionEstablished);
 	
     return SCPI_RES_OK;
 }

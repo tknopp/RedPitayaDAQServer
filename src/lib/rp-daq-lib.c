@@ -620,7 +620,6 @@ int* getPDMCurrentValues() {
 // Slow Analog Inputs
 
 uint32_t getXADCValue(int channel) {
-    FILE *fp;
     uint32_t value;
     switch (channel) {
         case 0:  value = xadc[152] >> 4; break;
