@@ -96,7 +96,8 @@ function getSlowADC(rpc::RedPitayaCluster, chan::Integer)
 end
 
 function numSlowADCChan(rpc::RedPitayaCluster)
-  return sum([ numSlowADCChan(rp) for rp in rpc.rp])
+  tmp = [ numSlowADCChan(rp) for rp in rpc.rp]
+  return sum(tmp)
 end
 
 function numSlowADCChan(rpc::RedPitayaCluster, num)
@@ -241,12 +242,12 @@ end
 
 
 # High level read. numFrames can adress a future frame.
-function readDataSlow(rpc::RedPitayaCluster, startFrame, numFrames, numPeriodsPerPatch=1)
+function readDataSlow(rpc::RedPitayaCluster, startFrame, numFrames)
   numPeriods = master(rpc).periodsPerFrame
-  numChan = numSlowADCChan(rpc)
-  numSampPerFrame = numPeriods * numPeriodsPerPatch * numChan
+  numChanTotal = numSlowADCChan(rpc)
+  numSampPerFrame = numPeriods * numChanTotal
 
-  data = zeros(Float32, numChan, numPeriods*numPeriodsPerPatch, numFrames)
+  data = zeros(Float32, numChanTotal, numPeriods, numFrames)
   wpRead = startFrame
   l=1
 

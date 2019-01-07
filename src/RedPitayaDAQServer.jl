@@ -29,14 +29,14 @@ Send a command to the RedPitaya
 """
 function send(rp::RedPitaya,cmd::String)
   println("send command: ", cmd)
-  @time write(rp.socket,cmd*rp.delim)
+  write(rp.socket,cmd*rp.delim)
 end
 
 """
 Receive a String from the RedPitaya
 """
 function receive(rp::RedPitaya)
-  @time readline(rp.socket)[1:end] #-2
+  readline(rp.socket)[1:end] #-2
 end
 
 """
@@ -57,7 +57,7 @@ end
 
 function connect(rp::RedPitaya)
   if !rp.isConnected
-    @time begin
+    begin
     rp.socket = connect(rp.host, 5025)
     send(rp, string("RP:Init ", Int(rp.isMaster)))
     connectADC(rp)
