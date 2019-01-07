@@ -62,8 +62,8 @@ function connect(rp::RedPitaya)
     send(rp, string("RP:Init ", Int(rp.isMaster)))
     connectADC(rp)
     rp.dataSocket = connect(rp.host, 5026)
-
     rp.isConnected = true
+    decimation(rp)
     end
   end
 end
