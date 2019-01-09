@@ -22,6 +22,7 @@ mutable struct RedPitaya
   periodsPerFrame::Int64
   isConnected::Bool
   isMaster::Bool
+  destroyed::Bool
 end
 
 """
@@ -69,10 +70,12 @@ function connect(rp::RedPitaya)
 end
 
 function disconnect(rp::RedPitaya)
-  if rp.isConnected
-    close(rp.socket)
-    close(rp.dataSocket)
-    rp.isConnected = false
+  if rp.isConnected && !rp.destroyed
+    @async begin
+      close(rp.socket)
+      close(rp.dataSocket)
+      rp.isConnected = false
+    end
   end
   return nothing
 end
@@ -82,9 +85,14 @@ include("DAC.jl")
 include("Cluster.jl")
 include("SlowIO.jl")
 
+function destroy(rp::RedPitaya)
+  disconnect(rp)
+  rp.destroyed = true
+end
+
 function RedPitaya(host, port=5025, isMaster=true)
 
-  rp = RedPitaya(host,"\n", TCPSocket(), TCPSocket(), 1, 1, 1, false, isMaster)
+  rp = RedPitaya(host,"\n", TCPSocket(), TCPSocket(), 1, 1, 1, false, isMaster, false)
 
   connect(rp)
 
@@ -92,7 +100,7 @@ function RedPitaya(host, port=5025, isMaster=true)
   #rp.samplesPerPeriod = samplesPerPeriod(rp)
   #rp.periodsPerFrame = periodsPerFrame(rp)
 
-  finalizer(d -> disconnect(d), rp)
+  finalizer(d -> destroy(d), rp)
   return rp
 end
 
