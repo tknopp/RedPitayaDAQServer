@@ -29,6 +29,11 @@ static uint64_t currentSlowDACStepTotal;
 static uint64_t currentSetSlowDACStepTotal; //Up to which step are the values already set
 static uint64_t currentSequenceTotal;
 static uint64_t oldSlowDACStepTotal;
+static bool sequencePrepared = false;
+static bool sequenceFinished = false;
+static bool sequenceStarted = false;
+static int  sleepTime = 0;
+static int baseSleep = 20;
 
 static int lookahead=110;
 
@@ -37,7 +42,7 @@ void cleanUpSequence(sequenceData_t *seqData) {
 		free(seqData->LUT);
 		seqData->LUT = NULL;
 	}
-	
+
 	if (seqData->enableLUT != NULL) {
 		free(seqData->enableLUT);
 		seqData->enableLUT = NULL;
@@ -68,8 +73,9 @@ float getPauseSequenceValue(sequenceData_t *seqData, int step, int channel) {
 
 float getRangeSequenceValue(sequenceData_t *seqData, int step, int channel){
 	if (seqData->type == RANGE) {
-		//TODO Implement range computation per channel
-		return 1;
+		float start = seqData->LUT[0 * seqData->numSlowDACChan + channel];
+		float stepSize = seqData->LUT[1 * seqData->numSlowDACChan + channel];
+		return start + step * stepSize;
 	}
 	return 0;
 }
@@ -80,20 +86,23 @@ static float getSequenceVal(sequence_t *sequence, int step, int channel) {
 }
 
 sequenceInterval_t computeInterval(sequenceData_t *seqData, int localRepetition, int localStep) {
-	
+
 	int stepInSequence = seqData->numStepsPerRepetition * localRepetition + localStep;
-	//printf("%d stepInSequence ", stepInSequence);
+	printf("%d stepInSequence ", stepInSequence);
 	//Regular
 	if (seqData->rampingRepetitions <= localRepetition && localRepetition < seqData->rampingRepetitions + seqData->numRepetitions) {
+		printf("reg ");
 		return REGULAR;
 	} 
 	//RampUp
 	else if (localRepetition < seqData->rampingRepetitions) {
 		// Before the last rampingSteps in rampup intervall
 		if (stepInSequence < seqData->rampingTotalSteps - seqData->rampingSteps) {
+			printf("bef ");
 			return BEFORE;
 		}
 		else {
+			printf("up ");
 			return RAMPUP;
 		}
 	}
@@ -101,9 +110,11 @@ sequenceInterval_t computeInterval(sequenceData_t *seqData, int localRepetition,
 	else {
 		int stepsInRampUpandRegular = seqData->numStepsPerRepetition * (seqData->rampingRepetitions + seqData->numRepetitions);
 		if (stepInSequence <= stepsInRampUpandRegular + seqData->rampingSteps) {
+			printf("dwn ");
 			return RAMPDOWN;
 		}
 		else {
+			printf("aft ");
 			return AFTER;
 		}
 	}
@@ -136,12 +147,11 @@ static float getFactor(sequenceData_t *seqData, int localRepetition, int localSt
 	}
 }
 
-static float getSlowDACVal(int step, int i) {
+static float getSlowDACVal(int step, int channel) {
 	uint64_t localRepetition = step / dacSequence.data.numStepsPerRepetition;
 	int localStep = step % dacSequence.data.numStepsPerRepetition;
-	float val = getSequenceVal(&dacSequence, localStep, i);
+	float val = getSequenceVal(&dacSequence, localStep, channel);
 	float factor = getFactor(&dacSequence.data, localRepetition, localStep);
-	//printf("%d ", computeInterval(&dacSequence.data, localRepetition, localStep));
 	return factor * val;
 }
 
@@ -175,7 +185,7 @@ static void setLUTValuesFrom(uint64_t baseStep) {
 	uint64_t nextSetStep = 0;
 	int64_t nonRedundantSteps = baseStep + lookahead - currentSetSlowDACStepTotal; //upcoming nextSetStep - currentSetStep
 	int start = MAX(0, lookahead - nonRedundantSteps);
-	printf("Set values from base %lld\n", baseStep);
+	//printf("Set values from base %lld\n", baseStep);
 	for (int i = 0; i < dacSequence.data.numSlowDACChan; i++) {
 		//lookahead
 		for (int y = start; y < lookahead; y++) {
@@ -183,7 +193,7 @@ static void setLUTValuesFrom(uint64_t baseStep) {
 			uint64_t currPDMIndex = localStep % PDM_BUFF_SIZE;
 			float val = getSlowDACVal(localStep, i);
 
-			//printf("%lld future step, %lld currPDMIndex, %f value\n", localStep, currPDMIndex, val);
+			printf("%lld future step, %lld currPDMIndex, %f value\n", localStep, currPDMIndex, val);
 			int status = setPDMValueVolt(val, i, currPDMIndex);
 
 			if (status != 0) {
@@ -207,6 +217,26 @@ static void setLUTValuesFrom(uint64_t baseStep) {
 	}
 	currentSetSlowDACStepTotal = nextSetStep + 1;
 	//printf("%lld nextSetStep\n", nextSetStep);
+}
+
+
+
+bool prepareSequences() {
+	if (!sequencePrepared && dacSequence.data.LUT != NULL && dacSequence.getSequenceValue != NULL) {
+		printf("Preparing Sequence\n");
+		initSlowDAC();
+		avgDeltaControl = 0;
+		avgDeltaSet = 0;
+		minDeltaControl = 0xFF;
+		maxDeltaSet = 0x00;
+		sleepTime = baseSleep;
+		setLUTValuesFrom(0);
+		printf("Prepared Sequence\n");
+		sequenceFinished = false;
+		sequencePrepared = true;
+		return true;
+	}
+	return false;
 }
 
 static void handleLostSlowDACSteps(uint64_t oldSlowDACStep, uint64_t currentSlowDACStep) {
@@ -241,12 +271,13 @@ void *controlThread(void *ch) {
 
 	//Book keeping 
 	sequencePrepared = false;
-	bool sequenceFinished = false;
+	sequenceFinished = false;
+	 sequenceStarted = false;
 	currentSetSlowDACStepTotal = 0;
 
 	//Sleep
-	int baseSleep = 20;
-	int sleepTime = baseSleep;
+	baseSleep = 20;
+	sleepTime = baseSleep;
 
 	//If not initialized then image not loaded and mmaped
 	while(!initialized) {
@@ -256,17 +287,20 @@ void *controlThread(void *ch) {
 	printf("Entering control loop\n");
 
 	while (controlThreadRunning) {
-		if (getMasterTrigger() && !sequenceFinished) {
+		if (getMasterTrigger() && sequencePrepared) {
+			if (!sequenceStarted) {
+				sequenceFinished = false;
+				sequenceStarted = true;
+			}
+
 			// Handle sequence
 			wp = getTotalWritePointer();
 			currentSlowDACStepTotal = wp / numSamplesPerSlowDACStep;
-			
-			sequencePrepared = false;
 
 			if (currentSlowDACStepTotal > oldSlowDACStepTotal) {
-				
+
 				currentSequenceTotal = wp / (numSamplesPerSlowDACStep * dacSequence.data.numStepsPerRepetition);
-			
+
 				if (currentSlowDACStepTotal > oldSlowDACStepTotal + lookahead && dacSequence.data.numStepsPerRepetition > 1) {
 					handleLostSlowDACSteps(oldSlowDACStepTotal, currentSlowDACStepTotal);
 				}
@@ -291,19 +325,14 @@ void *controlThread(void *ch) {
 			usleep(sleepTime);
 
 		} else {
-			if (!sequencePrepared && dacSequence.data.LUT != NULL) {
-				printf("Preparing Sequence\n");
-				initSlowDAC();
-				avgDeltaControl = 0;
-				avgDeltaSet = 0;
-				minDeltaControl = 0xFF;
-				maxDeltaSet = 0x00;
-				sleepTime = baseSleep;
-				sequencePrepared = true;
-				setLUTValuesFrom(0);
-				printf("Prepared Sequence\n");
-				sequenceFinished = false;
+
+			if (sequenceStarted && !sequenceFinished && sequencePrepared) {
+				printf("Sequence was stopped before finishing\n");
+				sequenceStarted = false;
+				sequencePrepared = false;
 			}
+
+			// Wait for sequence to be prepared and master trigger	
 			usleep(500);
 		}
 	}

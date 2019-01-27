@@ -85,7 +85,6 @@ extern void joinControlThread();
 // Global settings
 extern int numSamplesPerSlowDACStep;
 extern int numSlowDACLostSteps;
-extern bool sequencePrepared;
 extern bool slowDACInterpolation;
 extern float *slowADCBuffer;
 
@@ -119,6 +118,7 @@ extern float getRangeSequenceValue(sequenceData_t*, int, int);
 extern sequence_t dacSequence;
 extern double rampUpTime;
 extern double rampUpFraction;
+extern bool prepareSequences();
 
 // Sequence Utility functions
 typedef enum {BEFORE, RAMPUP, REGULAR, RAMPDOWN, AFTER} sequenceInterval_t;

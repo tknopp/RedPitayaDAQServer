@@ -1028,7 +1028,7 @@ static int readAll(int fd, void *buf,  size_t len) {
 	return len;
 }
 
-static scpi_result_t RP_DAC_SetSlowDACLUT(scpi_t * context) {
+static scpi_result_t RP_DAC_SetLookupLUT(scpi_t * context) {
 
 	if(dacSequence.data.numStepsPerRepetition > 0 && dacSequence.data.numSlowDACChan > 0) {
 		if(dacSequence.data.LUT != NULL) {
@@ -1041,10 +1041,10 @@ static scpi_result_t RP_DAC_SetSlowDACLUT(scpi_t * context) {
 		int n = readAll(newdatasockfd, temp, dacSequence.data.numSlowDACChan * dacSequence.data.numStepsPerRepetition * sizeof(float));
 		if (n < 0) perror("ERROR reading from socket");
 	
-		printf("Setting LUT\n");
-		dacSequence.data.LUT = temp;
+		printf("Setting Arbitray LUT\n");
 		dacSequence.getSequenceValue = &getLookupSequenceValue;
-		sequencePrepared = false;	
+		dacSequence.data.type = LOOKUP;
+		dacSequence.data.LUT = temp;
 		return SCPI_RES_OK;
 	}
 	else {
@@ -1052,6 +1052,74 @@ static scpi_result_t RP_DAC_SetSlowDACLUT(scpi_t * context) {
 	}
 }
 
+static scpi_result_t RP_DAC_SetConstantLUT(scpi_t * context) {
+
+	if(dacSequence.data.numStepsPerRepetition > 0 && dacSequence.data.numSlowDACChan > 0) {
+		if(dacSequence.data.LUT != NULL) {
+			free(dacSequence.data.LUT);
+			dacSequence.data.LUT = NULL;
+		}
+		printf("Allocating slowDACLUT\n");
+		float * temp  = (float *)malloc(dacSequence.data.numSlowDACChan * sizeof(float));
+
+		int n = readAll(newdatasockfd, temp, dacSequence.data.numSlowDACChan * sizeof(float));
+		if (n < 0) perror("ERROR reading from socket");
+	
+		printf("Setting LUT\n");
+		dacSequence.data.LUT = temp;
+		dacSequence.getSequenceValue = &getConstantSequenceValue;
+		dacSequence.data.type = CONSTANT;
+		return SCPI_RES_OK;
+	}
+	else {
+		return SCPI_RES_ERR;
+	}
+}
+
+static scpi_result_t RP_DAC_SetPauseLUT(scpi_t * context) {
+
+	if(dacSequence.data.numStepsPerRepetition > 0 && dacSequence.data.numSlowDACChan > 0) {
+		if(dacSequence.data.LUT != NULL) {
+			free(dacSequence.data.LUT);
+			dacSequence.data.LUT = NULL;
+		}
+		printf("Allocating slowDACLUT\n");
+		float * temp  = (float *)malloc(1 * sizeof(float)); //Place holder for != NULL
+
+		printf("Setting LUT\n");
+		dacSequence.data.LUT = temp;
+		dacSequence.getSequenceValue = &getPauseSequenceValue;
+		dacSequence.data.type = PAUSE;
+		return SCPI_RES_OK;
+	}
+	else {
+		return SCPI_RES_ERR;
+	}
+}
+
+static scpi_result_t RP_DAC_SetRangeLUT(scpi_t * context) {
+
+	if(dacSequence.data.numStepsPerRepetition > 0 && dacSequence.data.numSlowDACChan > 0) {
+		if(dacSequence.data.LUT != NULL) {
+			free(dacSequence.data.LUT);
+			dacSequence.data.LUT = NULL;
+		}
+		printf("Allocating slowDACLUT\n");
+		float * temp  = (float *)malloc(dacSequence.data.numSlowDACChan * 2  * sizeof(float));
+
+		int n = readAll(newdatasockfd, temp, dacSequence.data.numSlowDACChan * 2 * sizeof(float));
+		if (n < 0) perror("ERROR reading from socket");
+	
+		printf("Setting LUT\n");
+		dacSequence.data.LUT = temp;
+		dacSequence.getSequenceValue = &getRangeSequenceValue;
+		dacSequence.data.type = RANGE;
+		return SCPI_RES_OK;
+	}
+	else {
+		return SCPI_RES_ERR;
+	}
+}
 
 static scpi_result_t RP_DAC_SetEnableDACLUT(scpi_t * context) {
 
@@ -1071,6 +1139,16 @@ static scpi_result_t RP_DAC_SetEnableDACLUT(scpi_t * context) {
 	else {
 		return SCPI_RES_ERR;
 	}
+}
+
+static scpi_result_t RP_DAC_PrepareSequences(scpi_t * context) {
+	bool result = false;
+	if (!getMasterTrigger() && !rxEnabled) {
+		printf("Trying to prepare!\n");
+		result = prepareSequences();
+	}
+	SCPI_ResultBool(context, result);
+	return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_GetOverwrittenStatus(scpi_t * context) {
@@ -1163,22 +1241,26 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:CHannel#:JumpSharpness", .callback = RP_DAC_SetJumpSharpness,},
 	{.pattern = "RP:DAC:CHannel#:JumpSharpness?", .callback = RP_DAC_GetJumpSharpness,},
 	// SlowDAC / Sequences
-	{.pattern = "RP:DAC:SLoW", .callback = RP_DAC_SetNumSlowDACChan,},
-	{.pattern = "RP:DAC:SLoW?", .callback = RP_DAC_GetNumSlowDACChan,},
-	{.pattern = "RP:DAC:SLoW:LUT", .callback = RP_DAC_SetSlowDACLUT,},
-	{.pattern = "RP:DAC:SLoW:LUT:ENaBle", .callback = RP_DAC_SetEnableDACLUT,},
-	{.pattern = "RP:DAC:SLoW:LostSteps?", .callback = RP_DAC_GetSlowDACLostSteps,},
-	{.pattern = "RP:DAC:SLoW:STEPsPerSequence", .callback = RP_DAC_SetSlowDACStepsPerSequence,},
-	{.pattern = "RP:DAC:SLoW:STEPsPerSequence?", .callback = RP_DAC_GetSlowDACStepsPerSequence,},
-	{.pattern = "RP:DAC:SLoW:SAMPlesPerStep", .callback = RP_DAC_SetSamplesPerSlowDACStep,},
-	{.pattern = "RP:DAC:SLoW:SAMPlesPerStep?", .callback = RP_DAC_GetSamplesPerSlowDACStep,},
-	{.pattern = "RP:DAC:SLoW:RaMPup", .callback = RP_DAC_SetRampUp,},
-	{.pattern = "RP:DAC:SLoW:RaMPup:TIME?", .callback = RP_DAC_SetRampUpTime,},
-	{.pattern = "RP:DAC:SLoW:RaMPup:TIME", .callback = RP_DAC_GetRampUpTime,},
-	{.pattern = "RP:DAC:SLoW:RaMPup:FRACtion", .callback = RP_DAC_SetRampUpFraction,},
-	{.pattern = "RP:DAC:SLoW:RaMPup:FRACtion?", .callback = RP_DAC_GetRampUpFraction,},
-	{.pattern = "RP:DAC:SLoW:SEQuences", .callback = RP_DAC_SetSequenceRepetitions,},
-	{.pattern = "RP:DAC:SLoW:SEQuences?", .callback = RP_DAC_GetSequenceRepetitions,},
+	{.pattern = "RP:DAC:SEQ:CHan", .callback = RP_DAC_SetNumSlowDACChan,},
+	{.pattern = "RP:DAC:SEQ:CHan?", .callback = RP_DAC_GetNumSlowDACChan,},
+	{.pattern = "RP:DAC:SEQ:LUT:LOOKUP", .callback = RP_DAC_SetLookupLUT,},
+	{.pattern = "RP:DAC:SEQ:LUT:CONSTANT", .callback = RP_DAC_SetConstantLUT,},
+	{.pattern = "RP:DAC:SEQ:LUT:PAUSE", .callback = RP_DAC_SetPauseLUT,},
+	{.pattern = "RP:DAC:SEQ:LUT:RANGE", .callback = RP_DAC_SetRangeLUT,},
+	{.pattern = "RP:DAC:SEQ:LUT:ENaBle", .callback = RP_DAC_SetEnableDACLUT,},
+	{.pattern = "RP:DAC:SEQ:LostSteps?", .callback = RP_DAC_GetSlowDACLostSteps,},
+	{.pattern = "RP:DAC:SEQ:STEPsPerSequence", .callback = RP_DAC_SetSlowDACStepsPerSequence,},
+	{.pattern = "RP:DAC:SEQ:STEPsPerSequence?", .callback = RP_DAC_GetSlowDACStepsPerSequence,},
+	{.pattern = "RP:DAC:SEQ:SAMPlesperstep", .callback = RP_DAC_SetSamplesPerSlowDACStep,},
+	{.pattern = "RP:DAC:SEQ:SAMPlesperstep?", .callback = RP_DAC_GetSamplesPerSlowDACStep,},
+	{.pattern = "RP:DAC:SEQ:RaMPing", .callback = RP_DAC_SetRampUp,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:TIME?", .callback = RP_DAC_SetRampUpTime,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:TIME", .callback = RP_DAC_GetRampUpTime,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:FRACtion", .callback = RP_DAC_SetRampUpFraction,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:FRACtion?", .callback = RP_DAC_GetRampUpFraction,},
+	{.pattern = "RP:DAC:SEQ:REPetitions", .callback = RP_DAC_SetSequenceRepetitions,},
+	{.pattern = "RP:DAC:SEQ:REPetitions?", .callback = RP_DAC_GetSequenceRepetitions,},
+	{.pattern = "RP:DAC:SEQ:PREPare?", .callback = RP_DAC_PrepareSequences,},
 	// ADC
 	{.pattern = "RP:ADC:SlowADC", .callback = RP_ADC_SetNumSlowADCChan,},
 	{.pattern = "RP:ADC:SlowADC?", .callback = RP_ADC_GetNumSlowADCChan,},
