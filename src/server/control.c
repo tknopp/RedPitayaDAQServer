@@ -193,17 +193,32 @@ void *controlThread(void *ch) {
 	float alpha = 0.7;
 
 	bool prepared = false;
+	bool started = false;
 
 	//Sleep
 	int baseSleep = 20;
-	int sleep;
+	int sleepTime = baseSleep;
 
-	LOG_INFO("Starting control thread");
-	getprio(pthread_self());
+	//If not initialized then image not loaded and mmaped
+	while(!initialized) {
+		sleep(1);
+	}
+
+	printf("Entering control loop\n");
+	/*while (controlThreadRunning) {
+		if (getMasterTrigger()) {
+	 		 printf("Master trigger detected\n");
+	 		 break;
+	 	 }
+		sleep(1);
+	}*/
 
 	while (controlThreadRunning) {
 		if (getMasterTrigger()) {
-
+			if (!started) {
+				started = true;
+				printf("Started sequence for %d repetitions\n", dacSequence.numRepetitions);
+			}
 			// Handle sequence
 			wp = getTotalWritePointer();
 			currentSlowDACStepTotal = wp / numSamplesPerSlowDACStep;
@@ -225,39 +240,36 @@ void *controlThread(void *ch) {
 					updatePerformance(alpha);
 				}
 			} else {
-				sleep += baseSleep;
+				sleepTime += baseSleep;
 			}
 			oldSlowDACStepTotal = currentSlowDACStepTotal;
-			usleep(sleep);
+			usleep(sleepTime);
 
 		} else {
 			if (!prepared && dacSequence.slowDACLUT != NULL) {
+				printf("Preparing Sequence\n");
 				initSlowDAC();
 				avgDeltaControl = 0;
 				avgDeltaSet = 0;
 				minDeltaControl = 0xFF;
 				maxDeltaSet = 0x00;
-				sleep = baseSleep;
+				sleepTime = baseSleep;
 				prepared = true;
 				setLUTValuesFrom(0);
 				printf("Prepared Sequence\n");
-			} else {
-				usleep(sleep);
-				if (!getMasterTrigger()) { // ??????
-					prepared = false;
-				}
 			}
-        }
-    }
+			usleep(500);
+		}
+	}
 
-    // clean up
-    cleanUpSlowDAC();
+	// clean up
+	cleanUpSlowDAC();
 
-    printf("Control thread finished\n");
+	printf("Control thread finished\n");
 }
 
 void joinControlThread() {
-    controlThreadRunning = false;
-    rxEnabled = false;
-    pthread_join(pControl, NULL);
+	controlThreadRunning = false;
+	rxEnabled = false;
+	pthread_join(pControl, NULL);
 }

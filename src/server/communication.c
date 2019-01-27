@@ -397,6 +397,7 @@ void* communicationThread(void* p) {
 	// Prepare loop
 	userspaceBuffer = malloc(userspaceSizeBytes);
 
+	printf("Entering communication loop\n");
 	while(true) {
 
 		// Loop exit

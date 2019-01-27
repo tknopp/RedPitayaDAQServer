@@ -278,8 +278,14 @@ int main(int argc, char** argv) {
 			if(controlThreadRunning) {
 				joinControlThread();
 			}
+			
+			if(!initialized) {
+				init();
+				initialized = true;
+			}
 
 			createThreads();
+			printf("Created threads\n");
 		}
 		
 	}

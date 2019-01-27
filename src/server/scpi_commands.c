@@ -360,11 +360,9 @@ static scpi_result_t RP_ADC_SetDecimation(scpi_t * context) {
 }
 
 static scpi_result_t RP_ADC_GetDecimation(scpi_t * context) {
-
 	uint16_t dec = getDecimation();
 	
 	SCPI_ResultUInt16(context, dec);
-
 	return SCPI_RES_OK;
 }
 
@@ -1046,11 +1044,13 @@ static scpi_result_t RP_DAC_SetSlowDACLUT(scpi_t * context) {
 			dacSequence.slowDACLUT = NULL;
 		}
 		printf("Allocating slowDACLUT\n");
-		dacSequence.slowDACLUT = (float *)malloc(dacSequence.numSlowDACChan * dacSequence.numStepsPerSequence * sizeof(float));
+		float * temp  = (float *)malloc(dacSequence.numSlowDACChan * dacSequence.numStepsPerSequence * sizeof(float));
 
-		int n = readAll(newdatasockfd,dacSequence.slowDACLUT,dacSequence.numSlowDACChan * dacSequence.numStepsPerSequence * sizeof(float));
+		int n = readAll(newdatasockfd, temp, dacSequence.numSlowDACChan * dacSequence.numStepsPerSequence * sizeof(float));
 		if (n < 0) perror("ERROR reading from socket");
 		
+		dacSequence.slowDACLUT = temp;
+
 		return SCPI_RES_OK;
 	}
 	else {
