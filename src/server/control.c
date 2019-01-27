@@ -114,6 +114,15 @@ void cleanUpSequenceList() {
 			node = next;
 		}
 	}
+	setPDMAllValuesVolt(0.0, 0);
+	setPDMAllValuesVolt(0.0, 1);
+	setPDMAllValuesVolt(0.0, 2);
+	setPDMAllValuesVolt(0.0, 3);
+
+
+	for(int d=0; d<4; d++) {
+		setEnableDACAll(1,d);
+	}
 	head = NULL;
 	tail = NULL;
 }

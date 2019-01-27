@@ -256,7 +256,7 @@ int main(int argc, char** argv) {
 
 	listenfd = createServer(5025);
 
-	cleanUpSequenceList();
+	//cleanUpSequenceList();
 
 	while (true) {
 		logger_flush();
