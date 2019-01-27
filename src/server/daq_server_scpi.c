@@ -429,7 +429,7 @@ void* slowDACThread(void* ch)
     // Reset everything in order to provide a fresh start
     // everytime the acquisition is started
     if(rxEnabled && numSlowDACChan > 0) {
-      printf("Start sending...\n");
+      printf("SLOW_DAQ: Start sending...\n");
       data_read_total = 0; 
       oldPeriodTotal = 0;
       oldSubPeriodTotal = 0;
@@ -445,7 +445,7 @@ void* slowDACThread(void* ch)
         usleep(100);
       }*/
 
-      printf("Trigger received, start sending\n");		
+      printf("SLOW_DAQ: Trigger received, start sending\n");		
 
       while(rxEnabled) 
       {
@@ -492,8 +492,9 @@ void* slowDACThread(void* ch)
 	      }
 	    }
 
-            if(enableSlowDAC && !enableSlowDACAck && (wpPDMOld == wpPDM) &&
-			    ( currSubSlowDACStep > getNumSubPeriodsPerFrame()-lookprehead-3 )) 
+            if(enableSlowDAC && !enableSlowDACAck && (wpPDMOld == wpPDM) && (
+			    ( currSubSlowDACStep > getNumSubPeriodsPerFrame()-lookprehead-3 ) || 
+			     (numPeriodsPerFrame == 1) )) 
             {
 	      // we are now 10 subperiods or less before the next frame
               double bandwidth = 125e6 / getDecimation();
@@ -731,7 +732,13 @@ int main(int argc, char** argv) {
 
       createThreads();
     }
-    sleep(1.0);
+    sleep(5.0);
+    if(commThreadRunning)
+    {
+      sleep(5.0);
+    } else {
+      usleep(100000);
+    }
   }
 
   // Exit gracefully
