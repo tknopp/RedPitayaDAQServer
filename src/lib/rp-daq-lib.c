@@ -47,11 +47,11 @@ void loadBitstream() {
       printf("Load Bitfile\n");
       int catResult = 0;
       if(isMaster()) {		
-        printf("loading bitstream /root/RedPitayaDAQServer/bitfiles/master.bit\n"); 
-        catResult = system("cat /root/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");		
+        printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/master.bit\n"); 
+        catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");		
       } else {		
-        printf("loading bitstream /root/RedPitayaDAQServer/bitfiles/slave.bit\n"); 
-        catResult = system("cat /root/RedPitayaDAQServer/bitfiles/slave.bit > /dev/xdevcfg");		
+        printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/slave.bit\n"); 
+        catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/slave.bit > /dev/xdevcfg");		
       }
 
       if(catResult <= -1) {

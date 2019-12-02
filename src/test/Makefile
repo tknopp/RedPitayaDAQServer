@@ -1,6 +1,6 @@
 CFLAGS  = -O3 -std=gnu99
 CFLAGS +=
-LDFLAGS = /root/RedPitayaDAQServer/build/lib/librp-daq.so
+LDFLAGS = /root/apps/RedPitayaDAQServer/build/lib/librp-daq.so
 LDLIBS = -lm -lpthread -lscpi
 
 all: test_trigger.c
