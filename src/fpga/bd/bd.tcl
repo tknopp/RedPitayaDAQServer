@@ -20,7 +20,7 @@ set script_folder [_tcl::get_script_folder]
 ################################################################
 # Check if script is running in correct Vivado version.
 ################################################################
-set scripts_vivado_version 2017.2
+set scripts_vivado_version 2019.2
 set current_vivado_version [version -short]
 
 if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
@@ -55,6 +55,7 @@ if { $list_projs eq "" } {
 
 
 # CHANGE DESIGN NAME HERE
+variable design_name
 set design_name system
 
 # If you do not already have an existing IP Integrator design open,
@@ -115,11 +116,98 @@ if { ${design_name} eq "" } {
 
 }
 
+  # Add USER_COMMENTS on $design_name
+  set_property USER_COMMENTS.comment_0 "1: primary clock
+0: secondary clock" [get_bd_designs $design_name]
+
 common::send_msg_id "BD_TCL-005" "INFO" "Currently the variable <design_name> is equal to \"$design_name\"."
 
 if { $nRet != 0 } {
    catch {common::send_msg_id "BD_TCL-114" "ERROR" $errMsg}
    return $nRet
+}
+
+set bCheckIPsPassed 1
+##################################################################
+# CHECK IPs
+##################################################################
+set bCheckIPs 1
+if { $bCheckIPs == 1 } {
+   set list_check_ips "\ 
+pavel-demin:user:axis_red_pitaya_adc:1.0\
+pavel-demin:user:axis_red_pitaya_dac:1.0\
+referencedesigner.com:user:clk_div:1.0\
+xilinx.com:ip:clk_wiz:6.0\
+jbeuke:user:dio:1.0\
+xilinx.com:ip:proc_sys_reset:5.0\
+xilinx.com:ip:selectio_wiz:5.1\
+xilinx.com:ip:util_ds_buf:2.1\
+xilinx.com:ip:util_vector_logic:2.0\
+xilinx.com:ip:xadc_wiz:3.3\
+xilinx.com:ip:xlconcat:2.1\
+xilinx.com:ip:xlconstant:1.1\
+xilinx.com:ip:xlslice:1.0\
+jbeuke:user:signal_generator:1.0\
+koheron:user:pdm:1.0\
+jbeuke:user:pdm_value_supply:1.0\
+pavel-demin:user:axi_cfg_register:1.0\
+pavel-demin:user:axi_sts_register:1.0\
+xilinx.com:ip:processing_system7:5.5\
+xilinx.com:ip:axis_dwidth_converter:1.1\
+pavel-demin:user:axis_ram_writer:1.0\
+pavel-demin:user:axis_variable:1.0\
+xilinx.com:ip:cic_compiler:4.0\
+jbeuke:user:divide_by_two:1.0\
+xilinx.com:ip:fir_compiler:7.2\
+xilinx.com:ip:dds_compiler:6.0\
+jbeuke:user:fourier_synthesizer:1.0\
+"
+
+   set list_ips_missing ""
+   common::send_msg_id "BD_TCL-006" "INFO" "Checking if the following IPs exist in the project's IP catalog: $list_check_ips ."
+
+   foreach ip_vlnv $list_check_ips {
+      set ip_obj [get_ipdefs -all $ip_vlnv]
+      if { $ip_obj eq "" } {
+         lappend list_ips_missing $ip_vlnv
+      }
+   }
+
+   if { $list_ips_missing ne "" } {
+      catch {common::send_msg_id "BD_TCL-115" "ERROR" "The following IPs are not found in the IP Catalog:\n  $list_ips_missing\n\nResolution: Please add the repository containing the IP(s) to the project." }
+      set bCheckIPsPassed 0
+   }
+
+}
+
+##################################################################
+# CHECK Modules
+##################################################################
+set bCheckModules 1
+if { $bCheckModules == 1 } {
+   set list_check_mods "\ 
+reset_manager\
+"
+
+   set list_mods_missing ""
+   common::send_msg_id "BD_TCL-006" "INFO" "Checking if the following modules exist in the project's sources: $list_check_mods ."
+
+   foreach mod_vlnv $list_check_mods {
+      if { [can_resolve_reference $mod_vlnv] == 0 } {
+         lappend list_mods_missing $mod_vlnv
+      }
+   }
+
+   if { $list_mods_missing ne "" } {
+      catch {common::send_msg_id "BD_TCL-115" "ERROR" "The following module(s) are not found in the project: $list_mods_missing" }
+      common::send_msg_id "BD_TCL-008" "INFO" "Please add source files for the missing module(s) above."
+      set bCheckIPsPassed 0
+   }
+}
+
+if { $bCheckIPsPassed != 1 } {
+  common::send_msg_id "BD_TCL-1003" "WARNING" "Will not continue with creation of design due to the error(s) above."
+  return 3
 }
 
 ##################################################################
@@ -170,19 +258,19 @@ proc create_hier_cell_sign_extend_B { parentCell nameHier } {
   # Create instance: xlconcat_2, and set properties
   set xlconcat_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_2 ]
   set_property -dict [ list \
-CONFIG.IN0_WIDTH {14} \
-CONFIG.IN1_WIDTH {1} \
-CONFIG.IN2_WIDTH {1} \
-CONFIG.NUM_PORTS {3} \
+   CONFIG.IN0_WIDTH {14} \
+   CONFIG.IN1_WIDTH {1} \
+   CONFIG.IN2_WIDTH {1} \
+   CONFIG.NUM_PORTS {3} \
  ] $xlconcat_2
 
   # Create instance: xlslice_2, and set properties
   set xlslice_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_2 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {13} \
-CONFIG.DIN_TO {13} \
-CONFIG.DIN_WIDTH {14} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {13} \
+   CONFIG.DIN_TO {13} \
+   CONFIG.DIN_WIDTH {14} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $xlslice_2
 
   # Create port connections
@@ -237,19 +325,19 @@ proc create_hier_cell_sign_extend_A { parentCell nameHier } {
   # Create instance: xlconcat_2, and set properties
   set xlconcat_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_2 ]
   set_property -dict [ list \
-CONFIG.IN0_WIDTH {14} \
-CONFIG.IN1_WIDTH {1} \
-CONFIG.IN2_WIDTH {1} \
-CONFIG.NUM_PORTS {3} \
+   CONFIG.IN0_WIDTH {14} \
+   CONFIG.IN1_WIDTH {1} \
+   CONFIG.IN2_WIDTH {1} \
+   CONFIG.NUM_PORTS {3} \
  ] $xlconcat_2
 
   # Create instance: xlslice_2, and set properties
   set xlslice_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_2 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {13} \
-CONFIG.DIN_TO {13} \
-CONFIG.DIN_WIDTH {14} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {13} \
+   CONFIG.DIN_TO {13} \
+   CONFIG.DIN_WIDTH {14} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $xlslice_2
 
   # Create port connections
@@ -297,9 +385,13 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
 
   # Create interface pins
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS_PHASE_A
+
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS_PHASE_B
+
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 m_axis_signal_A
+
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 m_axis_signal_B
+
 
   # Create pins
   create_bd_pin -dir I -type clk aclk
@@ -311,361 +403,361 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
   # Create instance: amplitude_A_channel_1_slice, and set properties
   set amplitude_A_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_A_channel_1_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DIN_TO {0} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DIN_TO {0} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $amplitude_A_channel_1_slice
 
   # Create instance: amplitude_A_channel_2_slice, and set properties
   set amplitude_A_channel_2_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_A_channel_2_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {31} \
-CONFIG.DIN_TO {16} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {31} \
+   CONFIG.DIN_TO {16} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $amplitude_A_channel_2_slice
 
   # Create instance: amplitude_A_channel_3_slice, and set properties
   set amplitude_A_channel_3_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_A_channel_3_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {47} \
-CONFIG.DIN_TO {32} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {47} \
+   CONFIG.DIN_TO {32} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_A_channel_3_slice
 
   # Create instance: amplitude_A_channel_4_slice, and set properties
   set amplitude_A_channel_4_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_A_channel_4_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {63} \
-CONFIG.DIN_TO {48} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {63} \
+   CONFIG.DIN_TO {48} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_A_channel_4_slice
 
   # Create instance: amplitude_B_channel_1_slice, and set properties
   set amplitude_B_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_B_channel_1_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {79} \
-CONFIG.DIN_TO {64} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {79} \
+   CONFIG.DIN_TO {64} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_B_channel_1_slice
 
   # Create instance: amplitude_B_channel_2_slice, and set properties
   set amplitude_B_channel_2_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_B_channel_2_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {95} \
-CONFIG.DIN_TO {80} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {95} \
+   CONFIG.DIN_TO {80} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_B_channel_2_slice
 
   # Create instance: amplitude_B_channel_3_slice, and set properties
   set amplitude_B_channel_3_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_B_channel_3_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {111} \
-CONFIG.DIN_TO {96} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {111} \
+   CONFIG.DIN_TO {96} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_B_channel_3_slice
 
   # Create instance: amplitude_B_channel_4_slice, and set properties
   set amplitude_B_channel_4_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_B_channel_4_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {127} \
-CONFIG.DIN_TO {112} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {127} \
+   CONFIG.DIN_TO {112} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_B_channel_4_slice
 
   # Create instance: axis_variable_A_channel_1, and set properties
   set axis_variable_A_channel_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_1 ]
   set_property -dict [ list \
-CONFIG.AXIS_TDATA_WIDTH {64} \
+   CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_A_channel_1
 
   # Create instance: axis_variable_A_channel_2, and set properties
   set axis_variable_A_channel_2 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_2 ]
   set_property -dict [ list \
-CONFIG.AXIS_TDATA_WIDTH {64} \
+   CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_A_channel_2
 
   # Create instance: axis_variable_A_channel_3, and set properties
   set axis_variable_A_channel_3 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_3 ]
   set_property -dict [ list \
-CONFIG.AXIS_TDATA_WIDTH {64} \
+   CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_A_channel_3
 
   # Create instance: axis_variable_A_channel_4, and set properties
   set axis_variable_A_channel_4 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_4 ]
   set_property -dict [ list \
-CONFIG.AXIS_TDATA_WIDTH {64} \
+   CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_A_channel_4
 
   # Create instance: axis_variable_B_channel_1, and set properties
   set axis_variable_B_channel_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_1 ]
   set_property -dict [ list \
-CONFIG.AXIS_TDATA_WIDTH {64} \
+   CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_B_channel_1
 
   # Create instance: axis_variable_B_channel_2, and set properties
   set axis_variable_B_channel_2 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_2 ]
   set_property -dict [ list \
-CONFIG.AXIS_TDATA_WIDTH {64} \
+   CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_B_channel_2
 
   # Create instance: axis_variable_B_channel_3, and set properties
   set axis_variable_B_channel_3 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_3 ]
   set_property -dict [ list \
-CONFIG.AXIS_TDATA_WIDTH {64} \
+   CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_B_channel_3
 
   # Create instance: axis_variable_B_channel_4, and set properties
   set axis_variable_B_channel_4 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_B_channel_4 ]
   set_property -dict [ list \
-CONFIG.AXIS_TDATA_WIDTH {64} \
+   CONFIG.AXIS_TDATA_WIDTH {64} \
  ] $axis_variable_B_channel_4
 
   # Create instance: dds_compiler_A_channel_1, and set properties
   set dds_compiler_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_A_channel_1 ]
   set_property -dict [ list \
-CONFIG.Amplitude_Mode {Full_Range} \
-CONFIG.DATA_Has_TLAST {Not_Required} \
-CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {0.03} \
-CONFIG.Has_ARESETn {true} \
-CONFIG.Has_Phase_Out {true} \
-CONFIG.Has_TREADY {false} \
-CONFIG.Latency {9} \
-CONFIG.Latency_Configuration {Auto} \
-CONFIG.M_DATA_Has_TUSER {Not_Required} \
-CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Noise_Shaping {Auto} \
-CONFIG.Output_Frequency1 {0.025} \
-CONFIG.Output_Selection {Sine} \
-CONFIG.Output_Width {14} \
-CONFIG.PINC1 {11010001101101110001} \
-CONFIG.POFF1 {0} \
-CONFIG.Parameter_Entry {System_Parameters} \
-CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-CONFIG.Phase_Increment {Programmable} \
-CONFIG.Phase_Offset_Angles1 {0.0} \
-CONFIG.Phase_Width {32} \
-CONFIG.Phase_offset {Programmable} \
-CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Spurious_Free_Dynamic_Range {84} \
+   CONFIG.Amplitude_Mode {Full_Range} \
+   CONFIG.DATA_Has_TLAST {Not_Required} \
+   CONFIG.DDS_Clock_Rate {125} \
+   CONFIG.Frequency_Resolution {0.03} \
+   CONFIG.Has_ARESETn {true} \
+   CONFIG.Has_Phase_Out {true} \
+   CONFIG.Has_TREADY {false} \
+   CONFIG.Latency {9} \
+   CONFIG.Latency_Configuration {Auto} \
+   CONFIG.M_DATA_Has_TUSER {Not_Required} \
+   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Noise_Shaping {Auto} \
+   CONFIG.Output_Frequency1 {0.025} \
+   CONFIG.Output_Selection {Sine} \
+   CONFIG.Output_Width {14} \
+   CONFIG.PINC1 {11010001101101110001} \
+   CONFIG.POFF1 {0} \
+   CONFIG.Parameter_Entry {System_Parameters} \
+   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
+   CONFIG.Phase_Increment {Programmable} \
+   CONFIG.Phase_Offset_Angles1 {0.0} \
+   CONFIG.Phase_Width {32} \
+   CONFIG.Phase_offset {Programmable} \
+   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Spurious_Free_Dynamic_Range {84} \
  ] $dds_compiler_A_channel_1
 
   # Create instance: dds_compiler_A_channel_2, and set properties
   set dds_compiler_A_channel_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_A_channel_2 ]
   set_property -dict [ list \
-CONFIG.Amplitude_Mode {Full_Range} \
-CONFIG.DATA_Has_TLAST {Not_Required} \
-CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {0.03} \
-CONFIG.Has_ARESETn {true} \
-CONFIG.Has_Phase_Out {false} \
-CONFIG.Has_TREADY {false} \
-CONFIG.Latency {9} \
-CONFIG.Latency_Configuration {Auto} \
-CONFIG.M_DATA_Has_TUSER {Not_Required} \
-CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Noise_Shaping {Auto} \
-CONFIG.Output_Frequency1 {0.025} \
-CONFIG.Output_Selection {Sine} \
-CONFIG.Output_Width {14} \
-CONFIG.PINC1 {11010001101101110001} \
-CONFIG.POFF1 {0} \
-CONFIG.Parameter_Entry {System_Parameters} \
-CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-CONFIG.Phase_Increment {Programmable} \
-CONFIG.Phase_Offset_Angles1 {0.0} \
-CONFIG.Phase_Width {32} \
-CONFIG.Phase_offset {Programmable} \
-CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Spurious_Free_Dynamic_Range {84} \
+   CONFIG.Amplitude_Mode {Full_Range} \
+   CONFIG.DATA_Has_TLAST {Not_Required} \
+   CONFIG.DDS_Clock_Rate {125} \
+   CONFIG.Frequency_Resolution {0.03} \
+   CONFIG.Has_ARESETn {true} \
+   CONFIG.Has_Phase_Out {false} \
+   CONFIG.Has_TREADY {false} \
+   CONFIG.Latency {9} \
+   CONFIG.Latency_Configuration {Auto} \
+   CONFIG.M_DATA_Has_TUSER {Not_Required} \
+   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Noise_Shaping {Auto} \
+   CONFIG.Output_Frequency1 {0.025} \
+   CONFIG.Output_Selection {Sine} \
+   CONFIG.Output_Width {14} \
+   CONFIG.PINC1 {11010001101101110001} \
+   CONFIG.POFF1 {0} \
+   CONFIG.Parameter_Entry {System_Parameters} \
+   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
+   CONFIG.Phase_Increment {Programmable} \
+   CONFIG.Phase_Offset_Angles1 {0.0} \
+   CONFIG.Phase_Width {32} \
+   CONFIG.Phase_offset {Programmable} \
+   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Spurious_Free_Dynamic_Range {84} \
  ] $dds_compiler_A_channel_2
 
   # Create instance: dds_compiler_A_channel_3, and set properties
   set dds_compiler_A_channel_3 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_A_channel_3 ]
   set_property -dict [ list \
-CONFIG.Amplitude_Mode {Full_Range} \
-CONFIG.DATA_Has_TLAST {Not_Required} \
-CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {0.03} \
-CONFIG.Has_ARESETn {true} \
-CONFIG.Has_Phase_Out {false} \
-CONFIG.Has_TREADY {false} \
-CONFIG.Latency {9} \
-CONFIG.Latency_Configuration {Auto} \
-CONFIG.M_DATA_Has_TUSER {Not_Required} \
-CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Noise_Shaping {Auto} \
-CONFIG.Output_Frequency1 {0.025} \
-CONFIG.Output_Selection {Sine} \
-CONFIG.Output_Width {14} \
-CONFIG.PINC1 {11010001101101110001} \
-CONFIG.POFF1 {0} \
-CONFIG.Parameter_Entry {System_Parameters} \
-CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-CONFIG.Phase_Increment {Programmable} \
-CONFIG.Phase_Offset_Angles1 {0.0} \
-CONFIG.Phase_Width {32} \
-CONFIG.Phase_offset {Programmable} \
-CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Spurious_Free_Dynamic_Range {84} \
+   CONFIG.Amplitude_Mode {Full_Range} \
+   CONFIG.DATA_Has_TLAST {Not_Required} \
+   CONFIG.DDS_Clock_Rate {125} \
+   CONFIG.Frequency_Resolution {0.03} \
+   CONFIG.Has_ARESETn {true} \
+   CONFIG.Has_Phase_Out {false} \
+   CONFIG.Has_TREADY {false} \
+   CONFIG.Latency {9} \
+   CONFIG.Latency_Configuration {Auto} \
+   CONFIG.M_DATA_Has_TUSER {Not_Required} \
+   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Noise_Shaping {Auto} \
+   CONFIG.Output_Frequency1 {0.025} \
+   CONFIG.Output_Selection {Sine} \
+   CONFIG.Output_Width {14} \
+   CONFIG.PINC1 {11010001101101110001} \
+   CONFIG.POFF1 {0} \
+   CONFIG.Parameter_Entry {System_Parameters} \
+   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
+   CONFIG.Phase_Increment {Programmable} \
+   CONFIG.Phase_Offset_Angles1 {0.0} \
+   CONFIG.Phase_Width {32} \
+   CONFIG.Phase_offset {Programmable} \
+   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Spurious_Free_Dynamic_Range {84} \
  ] $dds_compiler_A_channel_3
 
   # Create instance: dds_compiler_A_channel_4, and set properties
   set dds_compiler_A_channel_4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_A_channel_4 ]
   set_property -dict [ list \
-CONFIG.Amplitude_Mode {Full_Range} \
-CONFIG.DATA_Has_TLAST {Not_Required} \
-CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {0.03} \
-CONFIG.Has_ARESETn {true} \
-CONFIG.Has_Phase_Out {false} \
-CONFIG.Has_TREADY {false} \
-CONFIG.Latency {9} \
-CONFIG.Latency_Configuration {Auto} \
-CONFIG.M_DATA_Has_TUSER {Not_Required} \
-CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Noise_Shaping {Auto} \
-CONFIG.Output_Frequency1 {0.025} \
-CONFIG.Output_Selection {Sine} \
-CONFIG.Output_Width {14} \
-CONFIG.PINC1 {11010001101101110001} \
-CONFIG.POFF1 {0} \
-CONFIG.Parameter_Entry {System_Parameters} \
-CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-CONFIG.Phase_Increment {Programmable} \
-CONFIG.Phase_Offset_Angles1 {0.0} \
-CONFIG.Phase_Width {32} \
-CONFIG.Phase_offset {Programmable} \
-CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Spurious_Free_Dynamic_Range {84} \
+   CONFIG.Amplitude_Mode {Full_Range} \
+   CONFIG.DATA_Has_TLAST {Not_Required} \
+   CONFIG.DDS_Clock_Rate {125} \
+   CONFIG.Frequency_Resolution {0.03} \
+   CONFIG.Has_ARESETn {true} \
+   CONFIG.Has_Phase_Out {false} \
+   CONFIG.Has_TREADY {false} \
+   CONFIG.Latency {9} \
+   CONFIG.Latency_Configuration {Auto} \
+   CONFIG.M_DATA_Has_TUSER {Not_Required} \
+   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Noise_Shaping {Auto} \
+   CONFIG.Output_Frequency1 {0.025} \
+   CONFIG.Output_Selection {Sine} \
+   CONFIG.Output_Width {14} \
+   CONFIG.PINC1 {11010001101101110001} \
+   CONFIG.POFF1 {0} \
+   CONFIG.Parameter_Entry {System_Parameters} \
+   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
+   CONFIG.Phase_Increment {Programmable} \
+   CONFIG.Phase_Offset_Angles1 {0.0} \
+   CONFIG.Phase_Width {32} \
+   CONFIG.Phase_offset {Programmable} \
+   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Spurious_Free_Dynamic_Range {84} \
  ] $dds_compiler_A_channel_4
 
   # Create instance: dds_compiler_B_channel_1, and set properties
   set dds_compiler_B_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_B_channel_1 ]
   set_property -dict [ list \
-CONFIG.Amplitude_Mode {Full_Range} \
-CONFIG.DATA_Has_TLAST {Not_Required} \
-CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {0.03} \
-CONFIG.Has_ARESETn {true} \
-CONFIG.Has_Phase_Out {true} \
-CONFIG.Has_TREADY {false} \
-CONFIG.Latency {9} \
-CONFIG.Latency_Configuration {Auto} \
-CONFIG.M_DATA_Has_TUSER {Not_Required} \
-CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Noise_Shaping {Auto} \
-CONFIG.Output_Frequency1 {0.025} \
-CONFIG.Output_Selection {Sine} \
-CONFIG.Output_Width {14} \
-CONFIG.PINC1 {11010001101101110001} \
-CONFIG.POFF1 {0} \
-CONFIG.Parameter_Entry {System_Parameters} \
-CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-CONFIG.Phase_Increment {Programmable} \
-CONFIG.Phase_Offset_Angles1 {0.0} \
-CONFIG.Phase_Width {32} \
-CONFIG.Phase_offset {Programmable} \
-CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Spurious_Free_Dynamic_Range {84} \
+   CONFIG.Amplitude_Mode {Full_Range} \
+   CONFIG.DATA_Has_TLAST {Not_Required} \
+   CONFIG.DDS_Clock_Rate {125} \
+   CONFIG.Frequency_Resolution {0.03} \
+   CONFIG.Has_ARESETn {true} \
+   CONFIG.Has_Phase_Out {true} \
+   CONFIG.Has_TREADY {false} \
+   CONFIG.Latency {9} \
+   CONFIG.Latency_Configuration {Auto} \
+   CONFIG.M_DATA_Has_TUSER {Not_Required} \
+   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Noise_Shaping {Auto} \
+   CONFIG.Output_Frequency1 {0.025} \
+   CONFIG.Output_Selection {Sine} \
+   CONFIG.Output_Width {14} \
+   CONFIG.PINC1 {11010001101101110001} \
+   CONFIG.POFF1 {0} \
+   CONFIG.Parameter_Entry {System_Parameters} \
+   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
+   CONFIG.Phase_Increment {Programmable} \
+   CONFIG.Phase_Offset_Angles1 {0.0} \
+   CONFIG.Phase_Width {32} \
+   CONFIG.Phase_offset {Programmable} \
+   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Spurious_Free_Dynamic_Range {84} \
  ] $dds_compiler_B_channel_1
 
   # Create instance: dds_compiler_B_channel_2, and set properties
   set dds_compiler_B_channel_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_B_channel_2 ]
   set_property -dict [ list \
-CONFIG.Amplitude_Mode {Full_Range} \
-CONFIG.DATA_Has_TLAST {Not_Required} \
-CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {0.03} \
-CONFIG.Has_ARESETn {true} \
-CONFIG.Has_Phase_Out {false} \
-CONFIG.Has_TREADY {false} \
-CONFIG.Latency {9} \
-CONFIG.Latency_Configuration {Auto} \
-CONFIG.M_DATA_Has_TUSER {Not_Required} \
-CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Noise_Shaping {Auto} \
-CONFIG.Output_Frequency1 {0.025} \
-CONFIG.Output_Selection {Sine} \
-CONFIG.Output_Width {14} \
-CONFIG.PINC1 {11010001101101110001} \
-CONFIG.POFF1 {0} \
-CONFIG.Parameter_Entry {System_Parameters} \
-CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-CONFIG.Phase_Increment {Programmable} \
-CONFIG.Phase_Offset_Angles1 {0.0} \
-CONFIG.Phase_Width {32} \
-CONFIG.Phase_offset {Programmable} \
-CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Spurious_Free_Dynamic_Range {84} \
+   CONFIG.Amplitude_Mode {Full_Range} \
+   CONFIG.DATA_Has_TLAST {Not_Required} \
+   CONFIG.DDS_Clock_Rate {125} \
+   CONFIG.Frequency_Resolution {0.03} \
+   CONFIG.Has_ARESETn {true} \
+   CONFIG.Has_Phase_Out {false} \
+   CONFIG.Has_TREADY {false} \
+   CONFIG.Latency {9} \
+   CONFIG.Latency_Configuration {Auto} \
+   CONFIG.M_DATA_Has_TUSER {Not_Required} \
+   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Noise_Shaping {Auto} \
+   CONFIG.Output_Frequency1 {0.025} \
+   CONFIG.Output_Selection {Sine} \
+   CONFIG.Output_Width {14} \
+   CONFIG.PINC1 {11010001101101110001} \
+   CONFIG.POFF1 {0} \
+   CONFIG.Parameter_Entry {System_Parameters} \
+   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
+   CONFIG.Phase_Increment {Programmable} \
+   CONFIG.Phase_Offset_Angles1 {0.0} \
+   CONFIG.Phase_Width {32} \
+   CONFIG.Phase_offset {Programmable} \
+   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Spurious_Free_Dynamic_Range {84} \
  ] $dds_compiler_B_channel_2
 
   # Create instance: dds_compiler_B_channel_3, and set properties
   set dds_compiler_B_channel_3 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_B_channel_3 ]
   set_property -dict [ list \
-CONFIG.Amplitude_Mode {Full_Range} \
-CONFIG.DATA_Has_TLAST {Not_Required} \
-CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {0.03} \
-CONFIG.Has_ARESETn {true} \
-CONFIG.Has_Phase_Out {false} \
-CONFIG.Has_TREADY {false} \
-CONFIG.Latency {9} \
-CONFIG.Latency_Configuration {Auto} \
-CONFIG.M_DATA_Has_TUSER {Not_Required} \
-CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Noise_Shaping {Auto} \
-CONFIG.Output_Frequency1 {0.025} \
-CONFIG.Output_Selection {Sine} \
-CONFIG.Output_Width {14} \
-CONFIG.PINC1 {11010001101101110001} \
-CONFIG.POFF1 {0} \
-CONFIG.Parameter_Entry {System_Parameters} \
-CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-CONFIG.Phase_Increment {Programmable} \
-CONFIG.Phase_Offset_Angles1 {0.0} \
-CONFIG.Phase_Width {32} \
-CONFIG.Phase_offset {Programmable} \
-CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Spurious_Free_Dynamic_Range {84} \
+   CONFIG.Amplitude_Mode {Full_Range} \
+   CONFIG.DATA_Has_TLAST {Not_Required} \
+   CONFIG.DDS_Clock_Rate {125} \
+   CONFIG.Frequency_Resolution {0.03} \
+   CONFIG.Has_ARESETn {true} \
+   CONFIG.Has_Phase_Out {false} \
+   CONFIG.Has_TREADY {false} \
+   CONFIG.Latency {9} \
+   CONFIG.Latency_Configuration {Auto} \
+   CONFIG.M_DATA_Has_TUSER {Not_Required} \
+   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Noise_Shaping {Auto} \
+   CONFIG.Output_Frequency1 {0.025} \
+   CONFIG.Output_Selection {Sine} \
+   CONFIG.Output_Width {14} \
+   CONFIG.PINC1 {11010001101101110001} \
+   CONFIG.POFF1 {0} \
+   CONFIG.Parameter_Entry {System_Parameters} \
+   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
+   CONFIG.Phase_Increment {Programmable} \
+   CONFIG.Phase_Offset_Angles1 {0.0} \
+   CONFIG.Phase_Width {32} \
+   CONFIG.Phase_offset {Programmable} \
+   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Spurious_Free_Dynamic_Range {84} \
  ] $dds_compiler_B_channel_3
 
   # Create instance: dds_compiler_B_channel_4, and set properties
   set dds_compiler_B_channel_4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_B_channel_4 ]
   set_property -dict [ list \
-CONFIG.Amplitude_Mode {Full_Range} \
-CONFIG.DATA_Has_TLAST {Not_Required} \
-CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {0.03} \
-CONFIG.Has_ARESETn {true} \
-CONFIG.Has_Phase_Out {false} \
-CONFIG.Has_TREADY {false} \
-CONFIG.Latency {9} \
-CONFIG.Latency_Configuration {Auto} \
-CONFIG.M_DATA_Has_TUSER {Not_Required} \
-CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Noise_Shaping {Auto} \
-CONFIG.Output_Frequency1 {0.025} \
-CONFIG.Output_Selection {Sine} \
-CONFIG.Output_Width {14} \
-CONFIG.PINC1 {11010001101101110001} \
-CONFIG.POFF1 {0} \
-CONFIG.Parameter_Entry {System_Parameters} \
-CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-CONFIG.Phase_Increment {Programmable} \
-CONFIG.Phase_Offset_Angles1 {0.0} \
-CONFIG.Phase_Width {32} \
-CONFIG.Phase_offset {Programmable} \
-CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Spurious_Free_Dynamic_Range {84} \
+   CONFIG.Amplitude_Mode {Full_Range} \
+   CONFIG.DATA_Has_TLAST {Not_Required} \
+   CONFIG.DDS_Clock_Rate {125} \
+   CONFIG.Frequency_Resolution {0.03} \
+   CONFIG.Has_ARESETn {true} \
+   CONFIG.Has_Phase_Out {false} \
+   CONFIG.Has_TREADY {false} \
+   CONFIG.Latency {9} \
+   CONFIG.Latency_Configuration {Auto} \
+   CONFIG.M_DATA_Has_TUSER {Not_Required} \
+   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Noise_Shaping {Auto} \
+   CONFIG.Output_Frequency1 {0.025} \
+   CONFIG.Output_Selection {Sine} \
+   CONFIG.Output_Width {14} \
+   CONFIG.PINC1 {11010001101101110001} \
+   CONFIG.POFF1 {0} \
+   CONFIG.Parameter_Entry {System_Parameters} \
+   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
+   CONFIG.Phase_Increment {Programmable} \
+   CONFIG.Phase_Offset_Angles1 {0.0} \
+   CONFIG.Phase_Width {32} \
+   CONFIG.Phase_offset {Programmable} \
+   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Spurious_Free_Dynamic_Range {84} \
  ] $dds_compiler_B_channel_4
 
   # Create instance: fourier_synthesizer_A, and set properties
@@ -677,145 +769,145 @@ CONFIG.Spurious_Free_Dynamic_Range {84} \
   # Create instance: freq_A_channel_1_slice, and set properties
   set freq_A_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_A_channel_1_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {159} \
-CONFIG.DIN_TO {128} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {159} \
+   CONFIG.DIN_TO {128} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_1_slice
 
   # Create instance: freq_A_channel_2_slice, and set properties
   set freq_A_channel_2_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_A_channel_2_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {191} \
-CONFIG.DIN_TO {160} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {191} \
+   CONFIG.DIN_TO {160} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_2_slice
 
   # Create instance: freq_A_channel_3_slice, and set properties
   set freq_A_channel_3_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_A_channel_3_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {223} \
-CONFIG.DIN_TO {192} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {223} \
+   CONFIG.DIN_TO {192} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_3_slice
 
   # Create instance: freq_A_channel_4_slice, and set properties
   set freq_A_channel_4_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_A_channel_4_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {255} \
-CONFIG.DIN_TO {224} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {255} \
+   CONFIG.DIN_TO {224} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_4_slice
 
   # Create instance: freq_B_channel_1_slice, and set properties
   set freq_B_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_B_channel_1_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {287} \
-CONFIG.DIN_TO {256} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {287} \
+   CONFIG.DIN_TO {256} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_1_slice
 
   # Create instance: freq_B_channel_2_slice, and set properties
   set freq_B_channel_2_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_B_channel_2_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {319} \
-CONFIG.DIN_TO {288} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {319} \
+   CONFIG.DIN_TO {288} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_2_slice
 
   # Create instance: freq_B_channel_3_slice, and set properties
   set freq_B_channel_3_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_B_channel_3_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {351} \
-CONFIG.DIN_TO {320} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {351} \
+   CONFIG.DIN_TO {320} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_3_slice
 
   # Create instance: freq_B_channel_4_slice, and set properties
   set freq_B_channel_4_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_B_channel_4_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {383} \
-CONFIG.DIN_TO {352} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {383} \
+   CONFIG.DIN_TO {352} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_4_slice
 
   # Create instance: phase_A_channel_1_slice, and set properties
   set phase_A_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_A_channel_1_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {415} \
-CONFIG.DIN_TO {384} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {415} \
+   CONFIG.DIN_TO {384} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_1_slice
 
   # Create instance: phase_A_channel_2_slice, and set properties
   set phase_A_channel_2_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_A_channel_2_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {447} \
-CONFIG.DIN_TO {416} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {447} \
+   CONFIG.DIN_TO {416} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_2_slice
 
   # Create instance: phase_A_channel_3_slice, and set properties
   set phase_A_channel_3_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_A_channel_3_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {479} \
-CONFIG.DIN_TO {448} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {479} \
+   CONFIG.DIN_TO {448} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_3_slice
 
   # Create instance: phase_A_channel_4_slice, and set properties
   set phase_A_channel_4_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_A_channel_4_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {511} \
-CONFIG.DIN_TO {480} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {511} \
+   CONFIG.DIN_TO {480} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_4_slice
 
   # Create instance: phase_B_channel_1_slice, and set properties
   set phase_B_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_B_channel_1_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {543} \
-CONFIG.DIN_TO {512} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {543} \
+   CONFIG.DIN_TO {512} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_1_slice
 
   # Create instance: phase_B_channel_2_slice, and set properties
   set phase_B_channel_2_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_B_channel_2_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {575} \
-CONFIG.DIN_TO {544} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {575} \
+   CONFIG.DIN_TO {544} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_2_slice
 
   # Create instance: phase_B_channel_3_slice, and set properties
   set phase_B_channel_3_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_B_channel_3_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {607} \
-CONFIG.DIN_TO {576} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {607} \
+   CONFIG.DIN_TO {576} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_3_slice
 
   # Create instance: phase_B_channel_4_slice, and set properties
   set phase_B_channel_4_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_B_channel_4_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {639} \
-CONFIG.DIN_TO {608} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {639} \
+   CONFIG.DIN_TO {608} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_4_slice
 
   # Create instance: xlconcat_A_channel_1, and set properties
@@ -941,9 +1033,13 @@ proc create_hier_cell_fourier_synth_rasterized { parentCell nameHier } {
 
   # Create interface pins
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS_PHASE_A
+
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 M_AXIS_PHASE_B
+
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 m_axis_signal_A
+
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 m_axis_signal_B
+
 
   # Create pins
   create_bd_pin -dir I -type clk aclk
@@ -953,73 +1049,73 @@ proc create_hier_cell_fourier_synth_rasterized { parentCell nameHier } {
   # Create instance: amplitude_A_channel_1_slice, and set properties
   set amplitude_A_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_A_channel_1_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DIN_TO {0} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DIN_TO {0} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $amplitude_A_channel_1_slice
 
   # Create instance: amplitude_A_channel_2_slice, and set properties
   set amplitude_A_channel_2_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_A_channel_2_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {31} \
-CONFIG.DIN_TO {16} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {31} \
+   CONFIG.DIN_TO {16} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $amplitude_A_channel_2_slice
 
   # Create instance: amplitude_A_channel_3_slice, and set properties
   set amplitude_A_channel_3_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_A_channel_3_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {47} \
-CONFIG.DIN_TO {32} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {47} \
+   CONFIG.DIN_TO {32} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_A_channel_3_slice
 
   # Create instance: amplitude_A_channel_4_slice, and set properties
   set amplitude_A_channel_4_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_A_channel_4_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {63} \
-CONFIG.DIN_TO {48} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {63} \
+   CONFIG.DIN_TO {48} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_A_channel_4_slice
 
   # Create instance: amplitude_B_channel_1_slice, and set properties
   set amplitude_B_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_B_channel_1_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {79} \
-CONFIG.DIN_TO {64} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {79} \
+   CONFIG.DIN_TO {64} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_B_channel_1_slice
 
   # Create instance: amplitude_B_channel_2_slice, and set properties
   set amplitude_B_channel_2_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_B_channel_2_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {95} \
-CONFIG.DIN_TO {80} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {95} \
+   CONFIG.DIN_TO {80} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_B_channel_2_slice
 
   # Create instance: amplitude_B_channel_3_slice, and set properties
   set amplitude_B_channel_3_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_B_channel_3_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {111} \
-CONFIG.DIN_TO {96} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {111} \
+   CONFIG.DIN_TO {96} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_B_channel_3_slice
 
   # Create instance: amplitude_B_channel_4_slice, and set properties
   set amplitude_B_channel_4_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_B_channel_4_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {127} \
-CONFIG.DIN_TO {112} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {127} \
+   CONFIG.DIN_TO {112} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_B_channel_4_slice
 
   # Create instance: axis_variable_A_channel_1, and set properties
@@ -1049,257 +1145,257 @@ CONFIG.DOUT_WIDTH {1} \
   # Create instance: dds_compiler_A_channel_1, and set properties
   set dds_compiler_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_A_channel_1 ]
   set_property -dict [ list \
-CONFIG.Amplitude_Mode {Full_Range} \
-CONFIG.DATA_Has_TLAST {Not_Required} \
-CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {26041} \
-CONFIG.Has_ARESETn {true} \
-CONFIG.Has_Phase_Out {true} \
-CONFIG.Has_TREADY {false} \
-CONFIG.Latency {10} \
-CONFIG.Latency_Configuration {Auto} \
-CONFIG.M_DATA_Has_TUSER {Not_Required} \
-CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Mode_of_Operation {Rasterized} \
-CONFIG.Modulus {4800} \
-CONFIG.Noise_Shaping {None} \
-CONFIG.Output_Frequency1 {0.027} \
-CONFIG.Output_Selection {Sine} \
-CONFIG.Output_Width {14} \
-CONFIG.PINC1 {1} \
-CONFIG.POFF1 {0} \
-CONFIG.Parameter_Entry {System_Parameters} \
-CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-CONFIG.Phase_Increment {Programmable} \
-CONFIG.Phase_Offset_Angles1 {0.0} \
-CONFIG.Phase_Width {13} \
-CONFIG.Phase_offset {Programmable} \
-CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Spurious_Free_Dynamic_Range {84} \
+   CONFIG.Amplitude_Mode {Full_Range} \
+   CONFIG.DATA_Has_TLAST {Not_Required} \
+   CONFIG.DDS_Clock_Rate {125} \
+   CONFIG.Frequency_Resolution {26041} \
+   CONFIG.Has_ARESETn {true} \
+   CONFIG.Has_Phase_Out {true} \
+   CONFIG.Has_TREADY {false} \
+   CONFIG.Latency {10} \
+   CONFIG.Latency_Configuration {Auto} \
+   CONFIG.M_DATA_Has_TUSER {Not_Required} \
+   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Mode_of_Operation {Rasterized} \
+   CONFIG.Modulus {4800} \
+   CONFIG.Noise_Shaping {None} \
+   CONFIG.Output_Frequency1 {0.027} \
+   CONFIG.Output_Selection {Sine} \
+   CONFIG.Output_Width {14} \
+   CONFIG.PINC1 {1} \
+   CONFIG.POFF1 {0} \
+   CONFIG.Parameter_Entry {System_Parameters} \
+   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
+   CONFIG.Phase_Increment {Programmable} \
+   CONFIG.Phase_Offset_Angles1 {0.0} \
+   CONFIG.Phase_Width {13} \
+   CONFIG.Phase_offset {Programmable} \
+   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Spurious_Free_Dynamic_Range {84} \
  ] $dds_compiler_A_channel_1
 
   # Create instance: dds_compiler_A_channel_2, and set properties
   set dds_compiler_A_channel_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_A_channel_2 ]
   set_property -dict [ list \
-CONFIG.Amplitude_Mode {Full_Range} \
-CONFIG.DATA_Has_TLAST {Not_Required} \
-CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {25699} \
-CONFIG.Has_ARESETn {true} \
-CONFIG.Has_Phase_Out {false} \
-CONFIG.Has_TREADY {false} \
-CONFIG.Latency {10} \
-CONFIG.Latency_Configuration {Auto} \
-CONFIG.M_DATA_Has_TUSER {Not_Required} \
-CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Mode_of_Operation {Rasterized} \
-CONFIG.Modulus {4864} \
-CONFIG.Noise_Shaping {None} \
-CONFIG.Output_Frequency1 {0.027} \
-CONFIG.Output_Selection {Sine} \
-CONFIG.Output_Width {14} \
-CONFIG.PINC1 {1} \
-CONFIG.POFF1 {0} \
-CONFIG.Parameter_Entry {System_Parameters} \
-CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-CONFIG.Phase_Increment {Programmable} \
-CONFIG.Phase_Offset_Angles1 {0.0} \
-CONFIG.Phase_Width {13} \
-CONFIG.Phase_offset {Programmable} \
-CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Spurious_Free_Dynamic_Range {84} \
+   CONFIG.Amplitude_Mode {Full_Range} \
+   CONFIG.DATA_Has_TLAST {Not_Required} \
+   CONFIG.DDS_Clock_Rate {125} \
+   CONFIG.Frequency_Resolution {25699} \
+   CONFIG.Has_ARESETn {true} \
+   CONFIG.Has_Phase_Out {false} \
+   CONFIG.Has_TREADY {false} \
+   CONFIG.Latency {10} \
+   CONFIG.Latency_Configuration {Auto} \
+   CONFIG.M_DATA_Has_TUSER {Not_Required} \
+   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Mode_of_Operation {Rasterized} \
+   CONFIG.Modulus {4864} \
+   CONFIG.Noise_Shaping {None} \
+   CONFIG.Output_Frequency1 {0.027} \
+   CONFIG.Output_Selection {Sine} \
+   CONFIG.Output_Width {14} \
+   CONFIG.PINC1 {1} \
+   CONFIG.POFF1 {0} \
+   CONFIG.Parameter_Entry {System_Parameters} \
+   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
+   CONFIG.Phase_Increment {Programmable} \
+   CONFIG.Phase_Offset_Angles1 {0.0} \
+   CONFIG.Phase_Width {13} \
+   CONFIG.Phase_offset {Programmable} \
+   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Spurious_Free_Dynamic_Range {84} \
  ] $dds_compiler_A_channel_2
 
   # Create instance: dds_compiler_A_channel_3, and set properties
   set dds_compiler_A_channel_3 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_A_channel_3 ]
   set_property -dict [ list \
-CONFIG.Amplitude_Mode {Full_Range} \
-CONFIG.DATA_Has_TLAST {Not_Required} \
-CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {26041} \
-CONFIG.Has_ARESETn {true} \
-CONFIG.Has_Phase_Out {false} \
-CONFIG.Has_TREADY {false} \
-CONFIG.Latency {10} \
-CONFIG.Latency_Configuration {Auto} \
-CONFIG.M_DATA_Has_TUSER {Not_Required} \
-CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Mode_of_Operation {Rasterized} \
-CONFIG.Modulus {4800} \
-CONFIG.Noise_Shaping {None} \
-CONFIG.Output_Frequency1 {0.027} \
-CONFIG.Output_Selection {Sine} \
-CONFIG.Output_Width {14} \
-CONFIG.PINC1 {1} \
-CONFIG.POFF1 {0} \
-CONFIG.Parameter_Entry {System_Parameters} \
-CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-CONFIG.Phase_Increment {Programmable} \
-CONFIG.Phase_Offset_Angles1 {0.0} \
-CONFIG.Phase_Width {13} \
-CONFIG.Phase_offset {Programmable} \
-CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Spurious_Free_Dynamic_Range {84} \
+   CONFIG.Amplitude_Mode {Full_Range} \
+   CONFIG.DATA_Has_TLAST {Not_Required} \
+   CONFIG.DDS_Clock_Rate {125} \
+   CONFIG.Frequency_Resolution {26041} \
+   CONFIG.Has_ARESETn {true} \
+   CONFIG.Has_Phase_Out {false} \
+   CONFIG.Has_TREADY {false} \
+   CONFIG.Latency {10} \
+   CONFIG.Latency_Configuration {Auto} \
+   CONFIG.M_DATA_Has_TUSER {Not_Required} \
+   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Mode_of_Operation {Rasterized} \
+   CONFIG.Modulus {4800} \
+   CONFIG.Noise_Shaping {None} \
+   CONFIG.Output_Frequency1 {0.027} \
+   CONFIG.Output_Selection {Sine} \
+   CONFIG.Output_Width {14} \
+   CONFIG.PINC1 {1} \
+   CONFIG.POFF1 {0} \
+   CONFIG.Parameter_Entry {System_Parameters} \
+   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
+   CONFIG.Phase_Increment {Programmable} \
+   CONFIG.Phase_Offset_Angles1 {0.0} \
+   CONFIG.Phase_Width {13} \
+   CONFIG.Phase_offset {Programmable} \
+   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Spurious_Free_Dynamic_Range {84} \
  ] $dds_compiler_A_channel_3
 
   # Create instance: dds_compiler_A_channel_4, and set properties
   set dds_compiler_A_channel_4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_A_channel_4 ]
   set_property -dict [ list \
-CONFIG.Amplitude_Mode {Full_Range} \
-CONFIG.DATA_Has_TLAST {Not_Required} \
-CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {25000} \
-CONFIG.Has_ARESETn {true} \
-CONFIG.Has_Phase_Out {false} \
-CONFIG.Has_TREADY {false} \
-CONFIG.Latency {10} \
-CONFIG.Latency_Configuration {Auto} \
-CONFIG.M_DATA_Has_TUSER {Not_Required} \
-CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Mode_of_Operation {Rasterized} \
-CONFIG.Modulus {5000} \
-CONFIG.Noise_Shaping {None} \
-CONFIG.Output_Frequency1 {0.025} \
-CONFIG.Output_Selection {Sine} \
-CONFIG.Output_Width {14} \
-CONFIG.PINC1 {1} \
-CONFIG.POFF1 {0} \
-CONFIG.Parameter_Entry {System_Parameters} \
-CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-CONFIG.Phase_Increment {Programmable} \
-CONFIG.Phase_Offset_Angles1 {0.0} \
-CONFIG.Phase_Width {13} \
-CONFIG.Phase_offset {Programmable} \
-CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Spurious_Free_Dynamic_Range {84} \
+   CONFIG.Amplitude_Mode {Full_Range} \
+   CONFIG.DATA_Has_TLAST {Not_Required} \
+   CONFIG.DDS_Clock_Rate {125} \
+   CONFIG.Frequency_Resolution {25000} \
+   CONFIG.Has_ARESETn {true} \
+   CONFIG.Has_Phase_Out {false} \
+   CONFIG.Has_TREADY {false} \
+   CONFIG.Latency {10} \
+   CONFIG.Latency_Configuration {Auto} \
+   CONFIG.M_DATA_Has_TUSER {Not_Required} \
+   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Mode_of_Operation {Rasterized} \
+   CONFIG.Modulus {5000} \
+   CONFIG.Noise_Shaping {None} \
+   CONFIG.Output_Frequency1 {0.025} \
+   CONFIG.Output_Selection {Sine} \
+   CONFIG.Output_Width {14} \
+   CONFIG.PINC1 {1} \
+   CONFIG.POFF1 {0} \
+   CONFIG.Parameter_Entry {System_Parameters} \
+   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
+   CONFIG.Phase_Increment {Programmable} \
+   CONFIG.Phase_Offset_Angles1 {0.0} \
+   CONFIG.Phase_Width {13} \
+   CONFIG.Phase_offset {Programmable} \
+   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Spurious_Free_Dynamic_Range {84} \
  ] $dds_compiler_A_channel_4
 
   # Create instance: dds_compiler_B_channel_1, and set properties
   set dds_compiler_B_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_B_channel_1 ]
   set_property -dict [ list \
-CONFIG.Amplitude_Mode {Full_Range} \
-CONFIG.DATA_Has_TLAST {Not_Required} \
-CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {26041} \
-CONFIG.Has_ARESETn {true} \
-CONFIG.Has_Phase_Out {true} \
-CONFIG.Has_TREADY {false} \
-CONFIG.Latency {10} \
-CONFIG.Latency_Configuration {Auto} \
-CONFIG.M_DATA_Has_TUSER {Not_Required} \
-CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Mode_of_Operation {Rasterized} \
-CONFIG.Modulus {4800} \
-CONFIG.Noise_Shaping {None} \
-CONFIG.Output_Frequency1 {0.027} \
-CONFIG.Output_Selection {Sine} \
-CONFIG.Output_Width {14} \
-CONFIG.PINC1 {1} \
-CONFIG.POFF1 {0} \
-CONFIG.Parameter_Entry {System_Parameters} \
-CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-CONFIG.Phase_Increment {Programmable} \
-CONFIG.Phase_Offset_Angles1 {0.0} \
-CONFIG.Phase_Width {13} \
-CONFIG.Phase_offset {Programmable} \
-CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Spurious_Free_Dynamic_Range {84} \
+   CONFIG.Amplitude_Mode {Full_Range} \
+   CONFIG.DATA_Has_TLAST {Not_Required} \
+   CONFIG.DDS_Clock_Rate {125} \
+   CONFIG.Frequency_Resolution {26041} \
+   CONFIG.Has_ARESETn {true} \
+   CONFIG.Has_Phase_Out {true} \
+   CONFIG.Has_TREADY {false} \
+   CONFIG.Latency {10} \
+   CONFIG.Latency_Configuration {Auto} \
+   CONFIG.M_DATA_Has_TUSER {Not_Required} \
+   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Mode_of_Operation {Rasterized} \
+   CONFIG.Modulus {4800} \
+   CONFIG.Noise_Shaping {None} \
+   CONFIG.Output_Frequency1 {0.027} \
+   CONFIG.Output_Selection {Sine} \
+   CONFIG.Output_Width {14} \
+   CONFIG.PINC1 {1} \
+   CONFIG.POFF1 {0} \
+   CONFIG.Parameter_Entry {System_Parameters} \
+   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
+   CONFIG.Phase_Increment {Programmable} \
+   CONFIG.Phase_Offset_Angles1 {0.0} \
+   CONFIG.Phase_Width {13} \
+   CONFIG.Phase_offset {Programmable} \
+   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Spurious_Free_Dynamic_Range {84} \
  ] $dds_compiler_B_channel_1
 
   # Create instance: dds_compiler_B_channel_2, and set properties
   set dds_compiler_B_channel_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_B_channel_2 ]
   set_property -dict [ list \
-CONFIG.Amplitude_Mode {Full_Range} \
-CONFIG.DATA_Has_TLAST {Not_Required} \
-CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {25699} \
-CONFIG.Has_ARESETn {true} \
-CONFIG.Has_Phase_Out {false} \
-CONFIG.Has_TREADY {false} \
-CONFIG.Latency {10} \
-CONFIG.Latency_Configuration {Auto} \
-CONFIG.M_DATA_Has_TUSER {Not_Required} \
-CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Mode_of_Operation {Rasterized} \
-CONFIG.Modulus {4864} \
-CONFIG.Noise_Shaping {None} \
-CONFIG.Output_Frequency1 {0.027} \
-CONFIG.Output_Selection {Sine} \
-CONFIG.Output_Width {14} \
-CONFIG.PINC1 {1} \
-CONFIG.POFF1 {0} \
-CONFIG.Parameter_Entry {System_Parameters} \
-CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-CONFIG.Phase_Increment {Programmable} \
-CONFIG.Phase_Offset_Angles1 {0.0} \
-CONFIG.Phase_Width {13} \
-CONFIG.Phase_offset {Programmable} \
-CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Spurious_Free_Dynamic_Range {84} \
+   CONFIG.Amplitude_Mode {Full_Range} \
+   CONFIG.DATA_Has_TLAST {Not_Required} \
+   CONFIG.DDS_Clock_Rate {125} \
+   CONFIG.Frequency_Resolution {25699} \
+   CONFIG.Has_ARESETn {true} \
+   CONFIG.Has_Phase_Out {false} \
+   CONFIG.Has_TREADY {false} \
+   CONFIG.Latency {10} \
+   CONFIG.Latency_Configuration {Auto} \
+   CONFIG.M_DATA_Has_TUSER {Not_Required} \
+   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Mode_of_Operation {Rasterized} \
+   CONFIG.Modulus {4864} \
+   CONFIG.Noise_Shaping {None} \
+   CONFIG.Output_Frequency1 {0.027} \
+   CONFIG.Output_Selection {Sine} \
+   CONFIG.Output_Width {14} \
+   CONFIG.PINC1 {1} \
+   CONFIG.POFF1 {0} \
+   CONFIG.Parameter_Entry {System_Parameters} \
+   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
+   CONFIG.Phase_Increment {Programmable} \
+   CONFIG.Phase_Offset_Angles1 {0.0} \
+   CONFIG.Phase_Width {13} \
+   CONFIG.Phase_offset {Programmable} \
+   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Spurious_Free_Dynamic_Range {84} \
  ] $dds_compiler_B_channel_2
 
   # Create instance: dds_compiler_B_channel_3, and set properties
   set dds_compiler_B_channel_3 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_B_channel_3 ]
   set_property -dict [ list \
-CONFIG.Amplitude_Mode {Full_Range} \
-CONFIG.DATA_Has_TLAST {Not_Required} \
-CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {26041} \
-CONFIG.Has_ARESETn {true} \
-CONFIG.Has_Phase_Out {false} \
-CONFIG.Has_TREADY {false} \
-CONFIG.Latency {10} \
-CONFIG.Latency_Configuration {Auto} \
-CONFIG.M_DATA_Has_TUSER {Not_Required} \
-CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Mode_of_Operation {Rasterized} \
-CONFIG.Modulus {4800} \
-CONFIG.Noise_Shaping {None} \
-CONFIG.Output_Frequency1 {0.027} \
-CONFIG.Output_Selection {Sine} \
-CONFIG.Output_Width {14} \
-CONFIG.PINC1 {1} \
-CONFIG.POFF1 {0} \
-CONFIG.Parameter_Entry {System_Parameters} \
-CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-CONFIG.Phase_Increment {Programmable} \
-CONFIG.Phase_Offset_Angles1 {0.0} \
-CONFIG.Phase_Width {13} \
-CONFIG.Phase_offset {Programmable} \
-CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Spurious_Free_Dynamic_Range {84} \
+   CONFIG.Amplitude_Mode {Full_Range} \
+   CONFIG.DATA_Has_TLAST {Not_Required} \
+   CONFIG.DDS_Clock_Rate {125} \
+   CONFIG.Frequency_Resolution {26041} \
+   CONFIG.Has_ARESETn {true} \
+   CONFIG.Has_Phase_Out {false} \
+   CONFIG.Has_TREADY {false} \
+   CONFIG.Latency {10} \
+   CONFIG.Latency_Configuration {Auto} \
+   CONFIG.M_DATA_Has_TUSER {Not_Required} \
+   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Mode_of_Operation {Rasterized} \
+   CONFIG.Modulus {4800} \
+   CONFIG.Noise_Shaping {None} \
+   CONFIG.Output_Frequency1 {0.027} \
+   CONFIG.Output_Selection {Sine} \
+   CONFIG.Output_Width {14} \
+   CONFIG.PINC1 {1} \
+   CONFIG.POFF1 {0} \
+   CONFIG.Parameter_Entry {System_Parameters} \
+   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
+   CONFIG.Phase_Increment {Programmable} \
+   CONFIG.Phase_Offset_Angles1 {0.0} \
+   CONFIG.Phase_Width {13} \
+   CONFIG.Phase_offset {Programmable} \
+   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Spurious_Free_Dynamic_Range {84} \
  ] $dds_compiler_B_channel_3
 
   # Create instance: dds_compiler_B_channel_4, and set properties
   set dds_compiler_B_channel_4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_B_channel_4 ]
   set_property -dict [ list \
-CONFIG.Amplitude_Mode {Full_Range} \
-CONFIG.DATA_Has_TLAST {Not_Required} \
-CONFIG.DDS_Clock_Rate {125} \
-CONFIG.Frequency_Resolution {25000} \
-CONFIG.Has_ARESETn {true} \
-CONFIG.Has_Phase_Out {false} \
-CONFIG.Has_TREADY {false} \
-CONFIG.Latency {10} \
-CONFIG.Latency_Configuration {Auto} \
-CONFIG.M_DATA_Has_TUSER {Not_Required} \
-CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Mode_of_Operation {Rasterized} \
-CONFIG.Modulus {5000} \
-CONFIG.Noise_Shaping {None} \
-CONFIG.Output_Frequency1 {0.025} \
-CONFIG.Output_Selection {Sine} \
-CONFIG.Output_Width {14} \
-CONFIG.PINC1 {1} \
-CONFIG.POFF1 {0} \
-CONFIG.Parameter_Entry {System_Parameters} \
-CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-CONFIG.Phase_Increment {Programmable} \
-CONFIG.Phase_Offset_Angles1 {0.0} \
-CONFIG.Phase_Width {13} \
-CONFIG.Phase_offset {Programmable} \
-CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-CONFIG.Spurious_Free_Dynamic_Range {84} \
+   CONFIG.Amplitude_Mode {Full_Range} \
+   CONFIG.DATA_Has_TLAST {Not_Required} \
+   CONFIG.DDS_Clock_Rate {125} \
+   CONFIG.Frequency_Resolution {25000} \
+   CONFIG.Has_ARESETn {true} \
+   CONFIG.Has_Phase_Out {false} \
+   CONFIG.Has_TREADY {false} \
+   CONFIG.Latency {10} \
+   CONFIG.Latency_Configuration {Auto} \
+   CONFIG.M_DATA_Has_TUSER {Not_Required} \
+   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Mode_of_Operation {Rasterized} \
+   CONFIG.Modulus {5000} \
+   CONFIG.Noise_Shaping {None} \
+   CONFIG.Output_Frequency1 {0.025} \
+   CONFIG.Output_Selection {Sine} \
+   CONFIG.Output_Width {14} \
+   CONFIG.PINC1 {1} \
+   CONFIG.POFF1 {0} \
+   CONFIG.Parameter_Entry {System_Parameters} \
+   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
+   CONFIG.Phase_Increment {Programmable} \
+   CONFIG.Phase_Offset_Angles1 {0.0} \
+   CONFIG.Phase_Width {13} \
+   CONFIG.Phase_offset {Programmable} \
+   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
+   CONFIG.Spurious_Free_Dynamic_Range {84} \
  ] $dds_compiler_B_channel_4
 
   # Create instance: fourier_synthesizer_A, and set properties
@@ -1311,145 +1407,145 @@ CONFIG.Spurious_Free_Dynamic_Range {84} \
   # Create instance: freq_A_channel_1_slice, and set properties
   set freq_A_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_A_channel_1_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {159} \
-CONFIG.DIN_TO {128} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {159} \
+   CONFIG.DIN_TO {128} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_1_slice
 
   # Create instance: freq_A_channel_2_slice, and set properties
   set freq_A_channel_2_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_A_channel_2_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {191} \
-CONFIG.DIN_TO {160} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {191} \
+   CONFIG.DIN_TO {160} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_2_slice
 
   # Create instance: freq_A_channel_3_slice, and set properties
   set freq_A_channel_3_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_A_channel_3_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {223} \
-CONFIG.DIN_TO {192} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {223} \
+   CONFIG.DIN_TO {192} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_3_slice
 
   # Create instance: freq_A_channel_4_slice, and set properties
   set freq_A_channel_4_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_A_channel_4_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {255} \
-CONFIG.DIN_TO {224} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {255} \
+   CONFIG.DIN_TO {224} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_4_slice
 
   # Create instance: freq_B_channel_1_slice, and set properties
   set freq_B_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_B_channel_1_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {287} \
-CONFIG.DIN_TO {256} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {287} \
+   CONFIG.DIN_TO {256} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_1_slice
 
   # Create instance: freq_B_channel_2_slice, and set properties
   set freq_B_channel_2_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_B_channel_2_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {319} \
-CONFIG.DIN_TO {288} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {319} \
+   CONFIG.DIN_TO {288} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_2_slice
 
   # Create instance: freq_B_channel_3_slice, and set properties
   set freq_B_channel_3_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_B_channel_3_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {351} \
-CONFIG.DIN_TO {320} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {351} \
+   CONFIG.DIN_TO {320} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_3_slice
 
   # Create instance: freq_B_channel_4_slice, and set properties
   set freq_B_channel_4_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_B_channel_4_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {383} \
-CONFIG.DIN_TO {352} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {383} \
+   CONFIG.DIN_TO {352} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_4_slice
 
   # Create instance: phase_A_channel_1_slice, and set properties
   set phase_A_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_A_channel_1_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {415} \
-CONFIG.DIN_TO {384} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {415} \
+   CONFIG.DIN_TO {384} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_1_slice
 
   # Create instance: phase_A_channel_2_slice, and set properties
   set phase_A_channel_2_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_A_channel_2_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {447} \
-CONFIG.DIN_TO {416} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {447} \
+   CONFIG.DIN_TO {416} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_2_slice
 
   # Create instance: phase_A_channel_3_slice, and set properties
   set phase_A_channel_3_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_A_channel_3_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {479} \
-CONFIG.DIN_TO {448} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {479} \
+   CONFIG.DIN_TO {448} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_3_slice
 
   # Create instance: phase_A_channel_4_slice, and set properties
   set phase_A_channel_4_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_A_channel_4_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {511} \
-CONFIG.DIN_TO {480} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {511} \
+   CONFIG.DIN_TO {480} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_4_slice
 
   # Create instance: phase_B_channel_1_slice, and set properties
   set phase_B_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_B_channel_1_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {543} \
-CONFIG.DIN_TO {512} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {543} \
+   CONFIG.DIN_TO {512} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_1_slice
 
   # Create instance: phase_B_channel_2_slice, and set properties
   set phase_B_channel_2_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_B_channel_2_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {575} \
-CONFIG.DIN_TO {544} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {575} \
+   CONFIG.DIN_TO {544} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_2_slice
 
   # Create instance: phase_B_channel_3_slice, and set properties
   set phase_B_channel_3_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_B_channel_3_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {607} \
-CONFIG.DIN_TO {576} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {607} \
+   CONFIG.DIN_TO {576} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_3_slice
 
   # Create instance: phase_B_channel_4_slice, and set properties
   set phase_B_channel_4_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_B_channel_4_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {639} \
-CONFIG.DIN_TO {608} \
-CONFIG.DIN_WIDTH {640} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {639} \
+   CONFIG.DIN_TO {608} \
+   CONFIG.DIN_WIDTH {640} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_4_slice
 
   # Create instance: xlconcat_A_channel_1, and set properties
@@ -1479,113 +1575,113 @@ CONFIG.DOUT_WIDTH {1} \
   # Create instance: xlslice_lower_0, and set properties
   set xlslice_lower_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_lower_0 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $xlslice_lower_0
 
   # Create instance: xlslice_lower_1, and set properties
   set xlslice_lower_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_lower_1 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $xlslice_lower_1
 
   # Create instance: xlslice_lower_2, and set properties
   set xlslice_lower_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_lower_2 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $xlslice_lower_2
 
   # Create instance: xlslice_lower_3, and set properties
   set xlslice_lower_3 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_lower_3 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $xlslice_lower_3
 
   # Create instance: xlslice_lower_4, and set properties
   set xlslice_lower_4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_lower_4 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $xlslice_lower_4
 
   # Create instance: xlslice_lower_5, and set properties
   set xlslice_lower_5 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_lower_5 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $xlslice_lower_5
 
   # Create instance: xlslice_lower_6, and set properties
   set xlslice_lower_6 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_lower_6 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $xlslice_lower_6
 
   # Create instance: xlslice_lower_7, and set properties
   set xlslice_lower_7 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_lower_7 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $xlslice_lower_7
 
   # Create instance: xlslice_lower_8, and set properties
   set xlslice_lower_8 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_lower_8 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $xlslice_lower_8
 
   # Create instance: xlslice_lower_9, and set properties
   set xlslice_lower_9 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_lower_9 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $xlslice_lower_9
 
   # Create instance: xlslice_lower_10, and set properties
   set xlslice_lower_10 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_lower_10 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $xlslice_lower_10
 
   # Create instance: xlslice_lower_11, and set properties
   set xlslice_lower_11 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_lower_11 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $xlslice_lower_11
 
   # Create instance: xlslice_lower_12, and set properties
   set xlslice_lower_12 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_lower_12 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $xlslice_lower_12
 
   # Create instance: xlslice_lower_13, and set properties
   set xlslice_lower_13 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_lower_13 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $xlslice_lower_13
 
   # Create instance: xlslice_lower_14, and set properties
   set xlslice_lower_14 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_lower_14 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $xlslice_lower_14
 
   # Create instance: xlslice_lower_15, and set properties
   set xlslice_lower_15 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_lower_15 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $xlslice_lower_15
 
   # Create interface connections
@@ -1704,6 +1800,7 @@ proc create_hier_cell_write_to_ram { parentCell nameHier } {
   # Create interface pins
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 m_axi
 
+
   # Create pins
   create_bd_pin -dir I -from 31 -to 0 Din
   create_bd_pin -dir I -type clk aclk
@@ -1715,8 +1812,8 @@ proc create_hier_cell_write_to_ram { parentCell nameHier } {
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
-CONFIG.M_TDATA_NUM_BYTES {8} \
-CONFIG.S_TDATA_NUM_BYTES {4} \
+   CONFIG.M_TDATA_NUM_BYTES {8} \
+   CONFIG.S_TDATA_NUM_BYTES {4} \
  ] $axis_dwidth_converter_0
 
   # Create instance: axis_ram_writer_1, and set properties
@@ -1725,49 +1822,49 @@ CONFIG.S_TDATA_NUM_BYTES {4} \
   # Create instance: axis_variable_decimation_A, and set properties
   set axis_variable_decimation_A [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_decimation_A ]
   set_property -dict [ list \
-CONFIG.AXIS_TDATA_WIDTH {16} \
+   CONFIG.AXIS_TDATA_WIDTH {16} \
  ] $axis_variable_decimation_A
 
   # Create instance: axis_variable_decimation_B, and set properties
   set axis_variable_decimation_B [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_decimation_B ]
   set_property -dict [ list \
-CONFIG.AXIS_TDATA_WIDTH {16} \
+   CONFIG.AXIS_TDATA_WIDTH {16} \
  ] $axis_variable_decimation_B
 
   # Create instance: cic_compiler_A, and set properties
   set cic_compiler_A [ create_bd_cell -type ip -vlnv xilinx.com:ip:cic_compiler:4.0 cic_compiler_A ]
   set_property -dict [ list \
-CONFIG.Clock_Frequency {125} \
-CONFIG.Filter_Type {Decimation} \
-CONFIG.Fixed_Or_Initial_Rate {8} \
-CONFIG.HAS_ARESETN {true} \
-CONFIG.Input_Data_Width {16} \
-CONFIG.Input_Sample_Frequency {125} \
-CONFIG.Maximum_Rate {8192} \
-CONFIG.Minimum_Rate {4} \
-CONFIG.Number_Of_Stages {6} \
-CONFIG.Output_Data_Width {16} \
-CONFIG.Quantization {Truncation} \
-CONFIG.SamplePeriod {1} \
-CONFIG.Sample_Rate_Changes {Programmable} \
+   CONFIG.Clock_Frequency {125} \
+   CONFIG.Filter_Type {Decimation} \
+   CONFIG.Fixed_Or_Initial_Rate {8} \
+   CONFIG.HAS_ARESETN {true} \
+   CONFIG.Input_Data_Width {16} \
+   CONFIG.Input_Sample_Frequency {125} \
+   CONFIG.Maximum_Rate {8192} \
+   CONFIG.Minimum_Rate {4} \
+   CONFIG.Number_Of_Stages {6} \
+   CONFIG.Output_Data_Width {16} \
+   CONFIG.Quantization {Truncation} \
+   CONFIG.SamplePeriod {1} \
+   CONFIG.Sample_Rate_Changes {Programmable} \
  ] $cic_compiler_A
 
   # Create instance: cic_compiler_B, and set properties
   set cic_compiler_B [ create_bd_cell -type ip -vlnv xilinx.com:ip:cic_compiler:4.0 cic_compiler_B ]
   set_property -dict [ list \
-CONFIG.Clock_Frequency {125} \
-CONFIG.Filter_Type {Decimation} \
-CONFIG.Fixed_Or_Initial_Rate {8} \
-CONFIG.HAS_ARESETN {true} \
-CONFIG.Input_Data_Width {16} \
-CONFIG.Input_Sample_Frequency {125} \
-CONFIG.Maximum_Rate {8192} \
-CONFIG.Minimum_Rate {4} \
-CONFIG.Number_Of_Stages {6} \
-CONFIG.Output_Data_Width {16} \
-CONFIG.Quantization {Truncation} \
-CONFIG.SamplePeriod {1} \
-CONFIG.Sample_Rate_Changes {Programmable} \
+   CONFIG.Clock_Frequency {125} \
+   CONFIG.Filter_Type {Decimation} \
+   CONFIG.Fixed_Or_Initial_Rate {8} \
+   CONFIG.HAS_ARESETN {true} \
+   CONFIG.Input_Data_Width {16} \
+   CONFIG.Input_Sample_Frequency {125} \
+   CONFIG.Maximum_Rate {8192} \
+   CONFIG.Minimum_Rate {4} \
+   CONFIG.Number_Of_Stages {6} \
+   CONFIG.Output_Data_Width {16} \
+   CONFIG.Quantization {Truncation} \
+   CONFIG.SamplePeriod {1} \
+   CONFIG.Sample_Rate_Changes {Programmable} \
  ] $cic_compiler_B
 
   # Create instance: divide_by_two_0, and set properties
@@ -1776,55 +1873,55 @@ CONFIG.Sample_Rate_Changes {Programmable} \
   # Create instance: fir_compiler_A, and set properties
   set fir_compiler_A [ create_bd_cell -type ip -vlnv xilinx.com:ip:fir_compiler:7.2 fir_compiler_A ]
   set_property -dict [ list \
-CONFIG.BestPrecision {true} \
-CONFIG.Clock_Frequency {125.0} \
-CONFIG.CoefficientVector {1.864885e-05, 1.294666e-05, -3.770850e-05, -4.311539e-05, 5.300379e-05, 9.817273e-05, -5.008376e-05, -1.792568e-04, 9.065278e-06, 2.779881e-04, 9.210241e-05, -3.728498e-04, -2.718314e-04, 4.275765e-04, 5.370248e-04, -3.929370e-04, -8.743719e-04, 2.129371e-04, 1.242726e-03, 1.642698e-04, -1.568912e-03, -7.715215e-04, 1.749326e-03, 1.605770e-03, -1.659122e-03, -2.612204e-03, 1.169717e-03, 3.673090e-03, -1.737946e-04, -4.605147e-03, -1.384765e-03, 5.168595e-03, 3.480177e-03, -5.089591e-03, -5.978548e-03, 4.095682e-03, 8.621744e-03, -1.961567e-03, -1.102610e-02, -1.439735e-03, 1.269893e-02, 6.086744e-03, -1.307282e-02, -1.176712e-02, 1.155437e-02, 1.804827e-02, -7.579900e-03, -2.426236e-02, 6.667354e-04, 2.949956e-02, 9.555878e-03, -3.258853e-02, -2.335979e-02, 3.200919e-02, 4.101456e-02, -2.558662e-02, -6.305221e-02, 9.473435e-03, 9.090422e-02, 2.565442e-02, -1.282244e-01, -1.138063e-01, 1.755209e-01, 4.883955e-01, 4.883955e-01, 1.755209e-01, -1.138063e-01, -1.282244e-01, 2.565442e-02, 9.090422e-02, 9.473435e-03, -6.305221e-02, -2.558662e-02, 4.101456e-02, 3.200919e-02, -2.335979e-02, -3.258853e-02, 9.555878e-03, 2.949956e-02, 6.667354e-04, -2.426236e-02, -7.579900e-03, 1.804827e-02, 1.155437e-02, -1.176712e-02, -1.307282e-02, 6.086744e-03, 1.269893e-02, -1.439735e-03, -1.102610e-02, -1.961567e-03, 8.621744e-03, 4.095682e-03, -5.978548e-03, -5.089591e-03, 3.480177e-03, 5.168595e-03, -1.384765e-03, -4.605147e-03, -1.737946e-04, 3.673090e-03, 1.169717e-03, -2.612204e-03, -1.659122e-03, 1.605770e-03, 1.749326e-03, -7.715215e-04, -1.568912e-03, 1.642698e-04, 1.242726e-03, 2.129371e-04, -8.743719e-04, -3.929370e-04, 5.370248e-04, 4.275765e-04, -2.718314e-04, -3.728498e-04, 9.210241e-05, 2.779881e-04, 9.065278e-06, -1.792568e-04, -5.008376e-05, 9.817273e-05, 5.300379e-05, -4.311539e-05, -3.770850e-05, 1.294666e-05, 1.864885e-05} \
-CONFIG.Coefficient_Fractional_Bits {16} \
-CONFIG.Coefficient_Reload {false} \
-CONFIG.Coefficient_Sets {1} \
-CONFIG.Coefficient_Sign {Signed} \
-CONFIG.Coefficient_Structure {Inferred} \
-CONFIG.Coefficient_Width {16} \
-CONFIG.ColumnConfig {8} \
-CONFIG.Data_Width {16} \
-CONFIG.Decimation_Rate {2} \
-CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
-CONFIG.Filter_Type {Decimation} \
-CONFIG.Interpolation_Rate {1} \
-CONFIG.Number_Channels {1} \
-CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
-CONFIG.Output_Width {16} \
-CONFIG.Quantization {Quantize_Only} \
-CONFIG.RateSpecification {Frequency_Specification} \
-CONFIG.Sample_Frequency {31.25} \
-CONFIG.Zero_Pack_Factor {1} \
+   CONFIG.BestPrecision {true} \
+   CONFIG.Clock_Frequency {125.0} \
+   CONFIG.CoefficientVector {1.864885e-05, 1.294666e-05, -3.770850e-05, -4.311539e-05, 5.300379e-05, 9.817273e-05, -5.008376e-05, -1.792568e-04, 9.065278e-06, 2.779881e-04, 9.210241e-05, -3.728498e-04, -2.718314e-04, 4.275765e-04, 5.370248e-04, -3.929370e-04, -8.743719e-04, 2.129371e-04, 1.242726e-03, 1.642698e-04, -1.568912e-03, -7.715215e-04, 1.749326e-03, 1.605770e-03, -1.659122e-03, -2.612204e-03, 1.169717e-03, 3.673090e-03, -1.737946e-04, -4.605147e-03, -1.384765e-03, 5.168595e-03, 3.480177e-03, -5.089591e-03, -5.978548e-03, 4.095682e-03, 8.621744e-03, -1.961567e-03, -1.102610e-02, -1.439735e-03, 1.269893e-02, 6.086744e-03, -1.307282e-02, -1.176712e-02, 1.155437e-02, 1.804827e-02, -7.579900e-03, -2.426236e-02, 6.667354e-04, 2.949956e-02, 9.555878e-03, -3.258853e-02, -2.335979e-02, 3.200919e-02, 4.101456e-02, -2.558662e-02, -6.305221e-02, 9.473435e-03, 9.090422e-02, 2.565442e-02, -1.282244e-01, -1.138063e-01, 1.755209e-01, 4.883955e-01, 4.883955e-01, 1.755209e-01, -1.138063e-01, -1.282244e-01, 2.565442e-02, 9.090422e-02, 9.473435e-03, -6.305221e-02, -2.558662e-02, 4.101456e-02, 3.200919e-02, -2.335979e-02, -3.258853e-02, 9.555878e-03, 2.949956e-02, 6.667354e-04, -2.426236e-02, -7.579900e-03, 1.804827e-02, 1.155437e-02, -1.176712e-02, -1.307282e-02, 6.086744e-03, 1.269893e-02, -1.439735e-03, -1.102610e-02, -1.961567e-03, 8.621744e-03, 4.095682e-03, -5.978548e-03, -5.089591e-03, 3.480177e-03, 5.168595e-03, -1.384765e-03, -4.605147e-03, -1.737946e-04, 3.673090e-03, 1.169717e-03, -2.612204e-03, -1.659122e-03, 1.605770e-03, 1.749326e-03, -7.715215e-04, -1.568912e-03, 1.642698e-04, 1.242726e-03, 2.129371e-04, -8.743719e-04, -3.929370e-04, 5.370248e-04, 4.275765e-04, -2.718314e-04, -3.728498e-04, 9.210241e-05, 2.779881e-04, 9.065278e-06, -1.792568e-04, -5.008376e-05, 9.817273e-05, 5.300379e-05, -4.311539e-05, -3.770850e-05, 1.294666e-05, 1.864885e-05} \
+   CONFIG.Coefficient_Fractional_Bits {16} \
+   CONFIG.Coefficient_Reload {false} \
+   CONFIG.Coefficient_Sets {1} \
+   CONFIG.Coefficient_Sign {Signed} \
+   CONFIG.Coefficient_Structure {Inferred} \
+   CONFIG.Coefficient_Width {16} \
+   CONFIG.ColumnConfig {8} \
+   CONFIG.Data_Width {16} \
+   CONFIG.Decimation_Rate {2} \
+   CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
+   CONFIG.Filter_Type {Decimation} \
+   CONFIG.Interpolation_Rate {1} \
+   CONFIG.Number_Channels {1} \
+   CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
+   CONFIG.Output_Width {16} \
+   CONFIG.Quantization {Quantize_Only} \
+   CONFIG.RateSpecification {Frequency_Specification} \
+   CONFIG.Sample_Frequency {31.25} \
+   CONFIG.Zero_Pack_Factor {1} \
  ] $fir_compiler_A
 
   # Create instance: fir_compiler_B, and set properties
   set fir_compiler_B [ create_bd_cell -type ip -vlnv xilinx.com:ip:fir_compiler:7.2 fir_compiler_B ]
   set_property -dict [ list \
-CONFIG.BestPrecision {true} \
-CONFIG.Clock_Frequency {125.0} \
-CONFIG.CoefficientVector {1.864885e-05, 1.294666e-05, -3.770850e-05, -4.311539e-05, 5.300379e-05, 9.817273e-05, -5.008376e-05, -1.792568e-04, 9.065278e-06, 2.779881e-04, 9.210241e-05, -3.728498e-04, -2.718314e-04, 4.275765e-04, 5.370248e-04, -3.929370e-04, -8.743719e-04, 2.129371e-04, 1.242726e-03, 1.642698e-04, -1.568912e-03, -7.715215e-04, 1.749326e-03, 1.605770e-03, -1.659122e-03, -2.612204e-03, 1.169717e-03, 3.673090e-03, -1.737946e-04, -4.605147e-03, -1.384765e-03, 5.168595e-03, 3.480177e-03, -5.089591e-03, -5.978548e-03, 4.095682e-03, 8.621744e-03, -1.961567e-03, -1.102610e-02, -1.439735e-03, 1.269893e-02, 6.086744e-03, -1.307282e-02, -1.176712e-02, 1.155437e-02, 1.804827e-02, -7.579900e-03, -2.426236e-02, 6.667354e-04, 2.949956e-02, 9.555878e-03, -3.258853e-02, -2.335979e-02, 3.200919e-02, 4.101456e-02, -2.558662e-02, -6.305221e-02, 9.473435e-03, 9.090422e-02, 2.565442e-02, -1.282244e-01, -1.138063e-01, 1.755209e-01, 4.883955e-01, 4.883955e-01, 1.755209e-01, -1.138063e-01, -1.282244e-01, 2.565442e-02, 9.090422e-02, 9.473435e-03, -6.305221e-02, -2.558662e-02, 4.101456e-02, 3.200919e-02, -2.335979e-02, -3.258853e-02, 9.555878e-03, 2.949956e-02, 6.667354e-04, -2.426236e-02, -7.579900e-03, 1.804827e-02, 1.155437e-02, -1.176712e-02, -1.307282e-02, 6.086744e-03, 1.269893e-02, -1.439735e-03, -1.102610e-02, -1.961567e-03, 8.621744e-03, 4.095682e-03, -5.978548e-03, -5.089591e-03, 3.480177e-03, 5.168595e-03, -1.384765e-03, -4.605147e-03, -1.737946e-04, 3.673090e-03, 1.169717e-03, -2.612204e-03, -1.659122e-03, 1.605770e-03, 1.749326e-03, -7.715215e-04, -1.568912e-03, 1.642698e-04, 1.242726e-03, 2.129371e-04, -8.743719e-04, -3.929370e-04, 5.370248e-04, 4.275765e-04, -2.718314e-04, -3.728498e-04, 9.210241e-05, 2.779881e-04, 9.065278e-06, -1.792568e-04, -5.008376e-05, 9.817273e-05, 5.300379e-05, -4.311539e-05, -3.770850e-05, 1.294666e-05, 1.864885e-05} \
-CONFIG.Coefficient_Fractional_Bits {16} \
-CONFIG.Coefficient_Reload {false} \
-CONFIG.Coefficient_Sets {1} \
-CONFIG.Coefficient_Sign {Signed} \
-CONFIG.Coefficient_Structure {Inferred} \
-CONFIG.Coefficient_Width {16} \
-CONFIG.ColumnConfig {8} \
-CONFIG.Data_Width {16} \
-CONFIG.Decimation_Rate {2} \
-CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
-CONFIG.Filter_Type {Decimation} \
-CONFIG.Interpolation_Rate {1} \
-CONFIG.Number_Channels {1} \
-CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
-CONFIG.Output_Width {16} \
-CONFIG.Quantization {Quantize_Only} \
-CONFIG.RateSpecification {Frequency_Specification} \
-CONFIG.Sample_Frequency {31.25} \
-CONFIG.Zero_Pack_Factor {1} \
+   CONFIG.BestPrecision {true} \
+   CONFIG.Clock_Frequency {125.0} \
+   CONFIG.CoefficientVector {1.864885e-05, 1.294666e-05, -3.770850e-05, -4.311539e-05, 5.300379e-05, 9.817273e-05, -5.008376e-05, -1.792568e-04, 9.065278e-06, 2.779881e-04, 9.210241e-05, -3.728498e-04, -2.718314e-04, 4.275765e-04, 5.370248e-04, -3.929370e-04, -8.743719e-04, 2.129371e-04, 1.242726e-03, 1.642698e-04, -1.568912e-03, -7.715215e-04, 1.749326e-03, 1.605770e-03, -1.659122e-03, -2.612204e-03, 1.169717e-03, 3.673090e-03, -1.737946e-04, -4.605147e-03, -1.384765e-03, 5.168595e-03, 3.480177e-03, -5.089591e-03, -5.978548e-03, 4.095682e-03, 8.621744e-03, -1.961567e-03, -1.102610e-02, -1.439735e-03, 1.269893e-02, 6.086744e-03, -1.307282e-02, -1.176712e-02, 1.155437e-02, 1.804827e-02, -7.579900e-03, -2.426236e-02, 6.667354e-04, 2.949956e-02, 9.555878e-03, -3.258853e-02, -2.335979e-02, 3.200919e-02, 4.101456e-02, -2.558662e-02, -6.305221e-02, 9.473435e-03, 9.090422e-02, 2.565442e-02, -1.282244e-01, -1.138063e-01, 1.755209e-01, 4.883955e-01, 4.883955e-01, 1.755209e-01, -1.138063e-01, -1.282244e-01, 2.565442e-02, 9.090422e-02, 9.473435e-03, -6.305221e-02, -2.558662e-02, 4.101456e-02, 3.200919e-02, -2.335979e-02, -3.258853e-02, 9.555878e-03, 2.949956e-02, 6.667354e-04, -2.426236e-02, -7.579900e-03, 1.804827e-02, 1.155437e-02, -1.176712e-02, -1.307282e-02, 6.086744e-03, 1.269893e-02, -1.439735e-03, -1.102610e-02, -1.961567e-03, 8.621744e-03, 4.095682e-03, -5.978548e-03, -5.089591e-03, 3.480177e-03, 5.168595e-03, -1.384765e-03, -4.605147e-03, -1.737946e-04, 3.673090e-03, 1.169717e-03, -2.612204e-03, -1.659122e-03, 1.605770e-03, 1.749326e-03, -7.715215e-04, -1.568912e-03, 1.642698e-04, 1.242726e-03, 2.129371e-04, -8.743719e-04, -3.929370e-04, 5.370248e-04, 4.275765e-04, -2.718314e-04, -3.728498e-04, 9.210241e-05, 2.779881e-04, 9.065278e-06, -1.792568e-04, -5.008376e-05, 9.817273e-05, 5.300379e-05, -4.311539e-05, -3.770850e-05, 1.294666e-05, 1.864885e-05} \
+   CONFIG.Coefficient_Fractional_Bits {16} \
+   CONFIG.Coefficient_Reload {false} \
+   CONFIG.Coefficient_Sets {1} \
+   CONFIG.Coefficient_Sign {Signed} \
+   CONFIG.Coefficient_Structure {Inferred} \
+   CONFIG.Coefficient_Width {16} \
+   CONFIG.ColumnConfig {8} \
+   CONFIG.Data_Width {16} \
+   CONFIG.Decimation_Rate {2} \
+   CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
+   CONFIG.Filter_Type {Decimation} \
+   CONFIG.Interpolation_Rate {1} \
+   CONFIG.Number_Channels {1} \
+   CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
+   CONFIG.Output_Width {16} \
+   CONFIG.Quantization {Quantize_Only} \
+   CONFIG.RateSpecification {Frequency_Specification} \
+   CONFIG.Sample_Frequency {31.25} \
+   CONFIG.Zero_Pack_Factor {1} \
  ] $fir_compiler_B
 
   # Create instance: sign_extend_A
@@ -1836,9 +1933,9 @@ CONFIG.Zero_Pack_Factor {1} \
   # Create instance: util_vector_logic_0, and set properties
   set util_vector_logic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_0 ]
   set_property -dict [ list \
-CONFIG.C_OPERATION {or} \
-CONFIG.C_SIZE {1} \
-CONFIG.LOGO_FILE {data/sym_orgate.png} \
+   CONFIG.C_OPERATION {or} \
+   CONFIG.C_SIZE {1} \
+   CONFIG.LOGO_FILE {data/sym_orgate.png} \
  ] $util_vector_logic_0
 
   # Create instance: xlconcat_0, and set properties
@@ -1850,44 +1947,44 @@ CONFIG.LOGO_FILE {data/sym_orgate.png} \
   # Create instance: xlconstant_1, and set properties
   set xlconstant_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_1 ]
   set_property -dict [ list \
-CONFIG.CONST_VAL {0} \
-CONFIG.CONST_WIDTH {12} \
+   CONFIG.CONST_VAL {0} \
+   CONFIG.CONST_WIDTH {12} \
  ] $xlconstant_1
 
   # Create instance: xlconstant_2, and set properties
   set xlconstant_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_2 ]
   set_property -dict [ list \
-CONFIG.CONST_VAL {503316480} \
-CONFIG.CONST_WIDTH {32} \
+   CONFIG.CONST_VAL {503316480} \
+   CONFIG.CONST_WIDTH {32} \
  ] $xlconstant_2
 
   # Create instance: xlconstant_AA_HV, and set properties
   set xlconstant_AA_HV [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_AA_HV ]
   set_property -dict [ list \
-CONFIG.CONST_VAL {0x4c5f} \
-CONFIG.CONST_WIDTH {18} \
+   CONFIG.CONST_VAL {0x4c5f} \
+   CONFIG.CONST_WIDTH {18} \
  ] $xlconstant_AA_HV
 
   # Create instance: xlconstant_BB_HV, and set properties
   set xlconstant_BB_HV [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_BB_HV ]
   set_property -dict [ list \
-CONFIG.CONST_VAL {0x2f38b} \
-CONFIG.CONST_WIDTH {25} \
+   CONFIG.CONST_VAL {0x2f38b} \
+   CONFIG.CONST_WIDTH {25} \
  ] $xlconstant_BB_HV
 
   # Create instance: xlslice_A, and set properties
   set xlslice_A [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_A ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {13} \
-CONFIG.DOUT_WIDTH {14} \
+   CONFIG.DIN_FROM {13} \
+   CONFIG.DOUT_WIDTH {14} \
  ] $xlslice_A
 
   # Create instance: xlslice_B, and set properties
   set xlslice_B [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_B ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {29} \
-CONFIG.DIN_TO {16} \
-CONFIG.DOUT_WIDTH {14} \
+   CONFIG.DIN_FROM {29} \
+   CONFIG.DIN_TO {16} \
+   CONFIG.DOUT_WIDTH {14} \
  ] $xlslice_B
 
   # Create interface connections
@@ -1957,9 +2054,13 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
 
   # Create interface pins
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:ddrx_rtl:1.0 DDR
+
   create_bd_intf_pin -mode Master -vlnv xilinx.com:display_processing_system7:fixedio_rtl:1.0 FIXED_IO
+
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:aximm_rtl:1.0 M02_AXI
+
   create_bd_intf_pin -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI_HP0
+
 
   # Create pins
   create_bd_pin -dir O -type rst FCLK_RESET0_N
@@ -1976,60 +2077,467 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   # Create instance: axi_cfg_register_cfg, and set properties
   set axi_cfg_register_cfg [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 axi_cfg_register_cfg ]
   set_property -dict [ list \
-CONFIG.AXI_ADDR_WIDTH {32} \
-CONFIG.CFG_DATA_WIDTH {64} \
+   CONFIG.AXI_ADDR_WIDTH {32} \
+   CONFIG.CFG_DATA_WIDTH {64} \
  ] $axi_cfg_register_cfg
 
   # Create instance: axi_cfg_register_dac, and set properties
   set axi_cfg_register_dac [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 axi_cfg_register_dac ]
   set_property -dict [ list \
-CONFIG.AXI_ADDR_WIDTH {32} \
-CONFIG.CFG_DATA_WIDTH {640} \
+   CONFIG.AXI_ADDR_WIDTH {32} \
+   CONFIG.CFG_DATA_WIDTH {640} \
  ] $axi_cfg_register_dac
 
   # Create instance: axi_cfg_register_pdm, and set properties
   set axi_cfg_register_pdm [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 axi_cfg_register_pdm ]
   set_property -dict [ list \
-CONFIG.AXI_ADDR_WIDTH {32} \
-CONFIG.CFG_DATA_WIDTH {64} \
+   CONFIG.AXI_ADDR_WIDTH {32} \
+   CONFIG.CFG_DATA_WIDTH {64} \
  ] $axi_cfg_register_pdm
 
   # Create instance: axi_interconnect_0, and set properties
   set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
   set_property -dict [ list \
-CONFIG.NUM_MI {7} \
+   CONFIG.NUM_MI {7} \
  ] $axi_interconnect_0
 
   # Create instance: axi_sts_register_adc, and set properties
   set axi_sts_register_adc [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_sts_register:1.0 axi_sts_register_adc ]
   set_property -dict [ list \
-CONFIG.AXI_ADDR_WIDTH {32} \
-CONFIG.STS_DATA_WIDTH {32} \
+   CONFIG.AXI_ADDR_WIDTH {32} \
+   CONFIG.STS_DATA_WIDTH {32} \
  ] $axi_sts_register_adc
 
   # Create instance: axi_sts_register_pdm, and set properties
   set axi_sts_register_pdm [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_sts_register:1.0 axi_sts_register_pdm ]
   set_property -dict [ list \
-CONFIG.AXI_ADDR_WIDTH {32} \
-CONFIG.STS_DATA_WIDTH {64} \
+   CONFIG.AXI_ADDR_WIDTH {32} \
+   CONFIG.STS_DATA_WIDTH {64} \
  ] $axi_sts_register_pdm
 
   # Create instance: axi_sts_register_reset, and set properties
   set axi_sts_register_reset [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_sts_register:1.0 axi_sts_register_reset ]
   set_property -dict [ list \
-CONFIG.AXI_ADDR_WIDTH {32} \
-CONFIG.STS_DATA_WIDTH {32} \
+   CONFIG.AXI_ADDR_WIDTH {32} \
+   CONFIG.STS_DATA_WIDTH {32} \
  ] $axi_sts_register_reset
 
   # Create instance: processing_system7_0, and set properties
   set processing_system7_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:processing_system7:5.5 processing_system7_0 ]
   set_property -dict [ list \
-CONFIG.PCW_IMPORT_BOARD_PRESET {cfg/red_pitaya.xml} \
-CONFIG.PCW_IRQ_F2P_INTR {1} \
-CONFIG.PCW_QSPI_GRP_SINGLE_SS_ENABLE {1} \
-CONFIG.PCW_USE_FABRIC_INTERRUPT {0} \
-CONFIG.PCW_USE_S_AXI_HP0 {1} \
-CONFIG.PCW_USE_S_AXI_HP1 {0} \
+   CONFIG.PCW_ACT_APU_PERIPHERAL_FREQMHZ {666.666687} \
+   CONFIG.PCW_ACT_CAN_PERIPHERAL_FREQMHZ {10.000000} \
+   CONFIG.PCW_ACT_DCI_PERIPHERAL_FREQMHZ {10.158730} \
+   CONFIG.PCW_ACT_ENET0_PERIPHERAL_FREQMHZ {10.000000} \
+   CONFIG.PCW_ACT_ENET1_PERIPHERAL_FREQMHZ {10.000000} \
+   CONFIG.PCW_ACT_FPGA0_PERIPHERAL_FREQMHZ {50.000000} \
+   CONFIG.PCW_ACT_FPGA1_PERIPHERAL_FREQMHZ {10.000000} \
+   CONFIG.PCW_ACT_FPGA2_PERIPHERAL_FREQMHZ {10.000000} \
+   CONFIG.PCW_ACT_FPGA3_PERIPHERAL_FREQMHZ {10.000000} \
+   CONFIG.PCW_ACT_PCAP_PERIPHERAL_FREQMHZ {200.000000} \
+   CONFIG.PCW_ACT_QSPI_PERIPHERAL_FREQMHZ {10.000000} \
+   CONFIG.PCW_ACT_SDIO_PERIPHERAL_FREQMHZ {10.000000} \
+   CONFIG.PCW_ACT_SMC_PERIPHERAL_FREQMHZ {10.000000} \
+   CONFIG.PCW_ACT_SPI_PERIPHERAL_FREQMHZ {10.000000} \
+   CONFIG.PCW_ACT_TPIU_PERIPHERAL_FREQMHZ {200.000000} \
+   CONFIG.PCW_ACT_TTC0_CLK0_PERIPHERAL_FREQMHZ {111.111115} \
+   CONFIG.PCW_ACT_TTC0_CLK1_PERIPHERAL_FREQMHZ {111.111115} \
+   CONFIG.PCW_ACT_TTC0_CLK2_PERIPHERAL_FREQMHZ {111.111115} \
+   CONFIG.PCW_ACT_TTC1_CLK0_PERIPHERAL_FREQMHZ {111.111115} \
+   CONFIG.PCW_ACT_TTC1_CLK1_PERIPHERAL_FREQMHZ {111.111115} \
+   CONFIG.PCW_ACT_TTC1_CLK2_PERIPHERAL_FREQMHZ {111.111115} \
+   CONFIG.PCW_ACT_TTC_PERIPHERAL_FREQMHZ {50} \
+   CONFIG.PCW_ACT_UART_PERIPHERAL_FREQMHZ {10.000000} \
+   CONFIG.PCW_ACT_USB0_PERIPHERAL_FREQMHZ {60} \
+   CONFIG.PCW_ACT_USB1_PERIPHERAL_FREQMHZ {60} \
+   CONFIG.PCW_ACT_WDT_PERIPHERAL_FREQMHZ {111.111115} \
+   CONFIG.PCW_APU_CLK_RATIO_ENABLE {6:2:1} \
+   CONFIG.PCW_APU_PERIPHERAL_FREQMHZ {666.666666} \
+   CONFIG.PCW_ARMPLL_CTRL_FBDIV {40} \
+   CONFIG.PCW_CAN0_GRP_CLK_ENABLE {0} \
+   CONFIG.PCW_CAN0_PERIPHERAL_CLKSRC {External} \
+   CONFIG.PCW_CAN0_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_CAN1_GRP_CLK_ENABLE {0} \
+   CONFIG.PCW_CAN1_PERIPHERAL_CLKSRC {External} \
+   CONFIG.PCW_CAN1_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_CAN_PERIPHERAL_CLKSRC {IO PLL} \
+   CONFIG.PCW_CAN_PERIPHERAL_DIVISOR0 {1} \
+   CONFIG.PCW_CAN_PERIPHERAL_DIVISOR1 {1} \
+   CONFIG.PCW_CAN_PERIPHERAL_FREQMHZ {100} \
+   CONFIG.PCW_CAN_PERIPHERAL_VALID {0} \
+   CONFIG.PCW_CLK0_FREQ {50000000} \
+   CONFIG.PCW_CLK1_FREQ {10000000} \
+   CONFIG.PCW_CLK2_FREQ {10000000} \
+   CONFIG.PCW_CLK3_FREQ {10000000} \
+   CONFIG.PCW_CPU_CPU_6X4X_MAX_RANGE {667} \
+   CONFIG.PCW_CPU_CPU_PLL_FREQMHZ {1333.333} \
+   CONFIG.PCW_CPU_PERIPHERAL_CLKSRC {ARM PLL} \
+   CONFIG.PCW_CPU_PERIPHERAL_DIVISOR0 {2} \
+   CONFIG.PCW_CRYSTAL_PERIPHERAL_FREQMHZ {33.333333} \
+   CONFIG.PCW_DCI_PERIPHERAL_CLKSRC {DDR PLL} \
+   CONFIG.PCW_DCI_PERIPHERAL_DIVISOR0 {15} \
+   CONFIG.PCW_DCI_PERIPHERAL_DIVISOR1 {7} \
+   CONFIG.PCW_DCI_PERIPHERAL_FREQMHZ {10.159} \
+   CONFIG.PCW_DDRPLL_CTRL_FBDIV {32} \
+   CONFIG.PCW_DDR_DDR_PLL_FREQMHZ {1066.667} \
+   CONFIG.PCW_DDR_HPRLPR_QUEUE_PARTITION {HPR(0)/LPR(32)} \
+   CONFIG.PCW_DDR_HPR_TO_CRITICAL_PRIORITY_LEVEL {15} \
+   CONFIG.PCW_DDR_LPR_TO_CRITICAL_PRIORITY_LEVEL {2} \
+   CONFIG.PCW_DDR_PERIPHERAL_CLKSRC {DDR PLL} \
+   CONFIG.PCW_DDR_PERIPHERAL_DIVISOR0 {2} \
+   CONFIG.PCW_DDR_PORT0_HPR_ENABLE {0} \
+   CONFIG.PCW_DDR_PORT1_HPR_ENABLE {0} \
+   CONFIG.PCW_DDR_PORT2_HPR_ENABLE {0} \
+   CONFIG.PCW_DDR_PORT3_HPR_ENABLE {0} \
+   CONFIG.PCW_DDR_RAM_HIGHADDR {0x1FFFFFFF} \
+   CONFIG.PCW_DDR_WRITE_TO_CRITICAL_PRIORITY_LEVEL {2} \
+   CONFIG.PCW_ENET0_GRP_MDIO_ENABLE {0} \
+   CONFIG.PCW_ENET0_PERIPHERAL_CLKSRC {IO PLL} \
+   CONFIG.PCW_ENET0_PERIPHERAL_DIVISOR0 {1} \
+   CONFIG.PCW_ENET0_PERIPHERAL_DIVISOR1 {1} \
+   CONFIG.PCW_ENET0_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_ENET0_PERIPHERAL_FREQMHZ {1000 Mbps} \
+   CONFIG.PCW_ENET0_RESET_ENABLE {0} \
+   CONFIG.PCW_ENET1_GRP_MDIO_ENABLE {0} \
+   CONFIG.PCW_ENET1_PERIPHERAL_CLKSRC {IO PLL} \
+   CONFIG.PCW_ENET1_PERIPHERAL_DIVISOR0 {1} \
+   CONFIG.PCW_ENET1_PERIPHERAL_DIVISOR1 {1} \
+   CONFIG.PCW_ENET1_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_ENET1_PERIPHERAL_FREQMHZ {1000 Mbps} \
+   CONFIG.PCW_ENET1_RESET_ENABLE {0} \
+   CONFIG.PCW_ENET_RESET_ENABLE {0} \
+   CONFIG.PCW_ENET_RESET_POLARITY {Active Low} \
+   CONFIG.PCW_EN_4K_TIMER {0} \
+   CONFIG.PCW_EN_CAN0 {0} \
+   CONFIG.PCW_EN_CAN1 {0} \
+   CONFIG.PCW_EN_CLK0_PORT {1} \
+   CONFIG.PCW_EN_CLK1_PORT {0} \
+   CONFIG.PCW_EN_CLK2_PORT {0} \
+   CONFIG.PCW_EN_CLK3_PORT {0} \
+   CONFIG.PCW_EN_DDR {1} \
+   CONFIG.PCW_EN_EMIO_CAN0 {0} \
+   CONFIG.PCW_EN_EMIO_CAN1 {0} \
+   CONFIG.PCW_EN_EMIO_CD_SDIO0 {0} \
+   CONFIG.PCW_EN_EMIO_CD_SDIO1 {0} \
+   CONFIG.PCW_EN_EMIO_ENET0 {0} \
+   CONFIG.PCW_EN_EMIO_ENET1 {0} \
+   CONFIG.PCW_EN_EMIO_GPIO {0} \
+   CONFIG.PCW_EN_EMIO_I2C0 {0} \
+   CONFIG.PCW_EN_EMIO_I2C1 {0} \
+   CONFIG.PCW_EN_EMIO_MODEM_UART0 {0} \
+   CONFIG.PCW_EN_EMIO_MODEM_UART1 {0} \
+   CONFIG.PCW_EN_EMIO_PJTAG {0} \
+   CONFIG.PCW_EN_EMIO_SDIO0 {0} \
+   CONFIG.PCW_EN_EMIO_SDIO1 {0} \
+   CONFIG.PCW_EN_EMIO_SPI0 {0} \
+   CONFIG.PCW_EN_EMIO_SPI1 {0} \
+   CONFIG.PCW_EN_EMIO_SRAM_INT {0} \
+   CONFIG.PCW_EN_EMIO_TRACE {0} \
+   CONFIG.PCW_EN_EMIO_TTC0 {0} \
+   CONFIG.PCW_EN_EMIO_TTC1 {0} \
+   CONFIG.PCW_EN_EMIO_UART0 {0} \
+   CONFIG.PCW_EN_EMIO_UART1 {0} \
+   CONFIG.PCW_EN_EMIO_WDT {0} \
+   CONFIG.PCW_EN_EMIO_WP_SDIO0 {0} \
+   CONFIG.PCW_EN_EMIO_WP_SDIO1 {0} \
+   CONFIG.PCW_EN_ENET0 {0} \
+   CONFIG.PCW_EN_ENET1 {0} \
+   CONFIG.PCW_EN_GPIO {0} \
+   CONFIG.PCW_EN_I2C0 {0} \
+   CONFIG.PCW_EN_I2C1 {0} \
+   CONFIG.PCW_EN_MODEM_UART0 {0} \
+   CONFIG.PCW_EN_MODEM_UART1 {0} \
+   CONFIG.PCW_EN_PJTAG {0} \
+   CONFIG.PCW_EN_QSPI {0} \
+   CONFIG.PCW_EN_SDIO0 {0} \
+   CONFIG.PCW_EN_SDIO1 {0} \
+   CONFIG.PCW_EN_SMC {0} \
+   CONFIG.PCW_EN_SPI0 {0} \
+   CONFIG.PCW_EN_SPI1 {0} \
+   CONFIG.PCW_EN_TRACE {0} \
+   CONFIG.PCW_EN_TTC0 {0} \
+   CONFIG.PCW_EN_TTC1 {0} \
+   CONFIG.PCW_EN_UART0 {0} \
+   CONFIG.PCW_EN_UART1 {0} \
+   CONFIG.PCW_EN_USB0 {0} \
+   CONFIG.PCW_EN_USB1 {0} \
+   CONFIG.PCW_EN_WDT {0} \
+   CONFIG.PCW_FCLK0_PERIPHERAL_CLKSRC {IO PLL} \
+   CONFIG.PCW_FCLK0_PERIPHERAL_DIVISOR0 {8} \
+   CONFIG.PCW_FCLK0_PERIPHERAL_DIVISOR1 {4} \
+   CONFIG.PCW_FCLK1_PERIPHERAL_CLKSRC {IO PLL} \
+   CONFIG.PCW_FCLK1_PERIPHERAL_DIVISOR0 {1} \
+   CONFIG.PCW_FCLK1_PERIPHERAL_DIVISOR1 {1} \
+   CONFIG.PCW_FCLK2_PERIPHERAL_CLKSRC {IO PLL} \
+   CONFIG.PCW_FCLK2_PERIPHERAL_DIVISOR0 {1} \
+   CONFIG.PCW_FCLK2_PERIPHERAL_DIVISOR1 {1} \
+   CONFIG.PCW_FCLK3_PERIPHERAL_CLKSRC {IO PLL} \
+   CONFIG.PCW_FCLK3_PERIPHERAL_DIVISOR0 {1} \
+   CONFIG.PCW_FCLK3_PERIPHERAL_DIVISOR1 {1} \
+   CONFIG.PCW_FCLK_CLK0_BUF {TRUE} \
+   CONFIG.PCW_FCLK_CLK1_BUF {FALSE} \
+   CONFIG.PCW_FCLK_CLK2_BUF {FALSE} \
+   CONFIG.PCW_FCLK_CLK3_BUF {FALSE} \
+   CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ {50} \
+   CONFIG.PCW_FPGA1_PERIPHERAL_FREQMHZ {50} \
+   CONFIG.PCW_FPGA2_PERIPHERAL_FREQMHZ {50} \
+   CONFIG.PCW_FPGA3_PERIPHERAL_FREQMHZ {50} \
+   CONFIG.PCW_FPGA_FCLK0_ENABLE {1} \
+   CONFIG.PCW_FPGA_FCLK1_ENABLE {0} \
+   CONFIG.PCW_FPGA_FCLK2_ENABLE {0} \
+   CONFIG.PCW_FPGA_FCLK3_ENABLE {0} \
+   CONFIG.PCW_GPIO_EMIO_GPIO_ENABLE {0} \
+   CONFIG.PCW_GPIO_EMIO_GPIO_WIDTH {64} \
+   CONFIG.PCW_GPIO_MIO_GPIO_ENABLE {0} \
+   CONFIG.PCW_GPIO_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_I2C0_GRP_INT_ENABLE {0} \
+   CONFIG.PCW_I2C0_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_I2C0_RESET_ENABLE {0} \
+   CONFIG.PCW_I2C1_GRP_INT_ENABLE {0} \
+   CONFIG.PCW_I2C1_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_I2C1_RESET_ENABLE {0} \
+   CONFIG.PCW_I2C_PERIPHERAL_FREQMHZ {25} \
+   CONFIG.PCW_I2C_RESET_ENABLE {0} \
+   CONFIG.PCW_I2C_RESET_POLARITY {Active Low} \
+   CONFIG.PCW_IMPORT_BOARD_PRESET {cfg/red_pitaya.xml} \
+   CONFIG.PCW_IOPLL_CTRL_FBDIV {48} \
+   CONFIG.PCW_IO_IO_PLL_FREQMHZ {1600.000} \
+   CONFIG.PCW_IRQ_F2P_INTR {1} \
+   CONFIG.PCW_IRQ_F2P_MODE {DIRECT} \
+   CONFIG.PCW_MIO_TREE_PERIPHERALS {unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned} \
+   CONFIG.PCW_MIO_TREE_SIGNALS {unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned} \
+   CONFIG.PCW_NAND_CYCLES_T_AR {1} \
+   CONFIG.PCW_NAND_CYCLES_T_CLR {1} \
+   CONFIG.PCW_NAND_CYCLES_T_RC {11} \
+   CONFIG.PCW_NAND_CYCLES_T_REA {1} \
+   CONFIG.PCW_NAND_CYCLES_T_RR {1} \
+   CONFIG.PCW_NAND_CYCLES_T_WC {11} \
+   CONFIG.PCW_NAND_CYCLES_T_WP {1} \
+   CONFIG.PCW_NAND_GRP_D8_ENABLE {0} \
+   CONFIG.PCW_NAND_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_NOR_CS0_T_CEOE {1} \
+   CONFIG.PCW_NOR_CS0_T_PC {1} \
+   CONFIG.PCW_NOR_CS0_T_RC {11} \
+   CONFIG.PCW_NOR_CS0_T_TR {1} \
+   CONFIG.PCW_NOR_CS0_T_WC {11} \
+   CONFIG.PCW_NOR_CS0_T_WP {1} \
+   CONFIG.PCW_NOR_CS0_WE_TIME {0} \
+   CONFIG.PCW_NOR_CS1_T_CEOE {1} \
+   CONFIG.PCW_NOR_CS1_T_PC {1} \
+   CONFIG.PCW_NOR_CS1_T_RC {11} \
+   CONFIG.PCW_NOR_CS1_T_TR {1} \
+   CONFIG.PCW_NOR_CS1_T_WC {11} \
+   CONFIG.PCW_NOR_CS1_T_WP {1} \
+   CONFIG.PCW_NOR_CS1_WE_TIME {0} \
+   CONFIG.PCW_NOR_GRP_A25_ENABLE {0} \
+   CONFIG.PCW_NOR_GRP_CS0_ENABLE {0} \
+   CONFIG.PCW_NOR_GRP_CS1_ENABLE {0} \
+   CONFIG.PCW_NOR_GRP_SRAM_CS0_ENABLE {0} \
+   CONFIG.PCW_NOR_GRP_SRAM_CS1_ENABLE {0} \
+   CONFIG.PCW_NOR_GRP_SRAM_INT_ENABLE {0} \
+   CONFIG.PCW_NOR_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_NOR_SRAM_CS0_T_CEOE {1} \
+   CONFIG.PCW_NOR_SRAM_CS0_T_PC {1} \
+   CONFIG.PCW_NOR_SRAM_CS0_T_RC {11} \
+   CONFIG.PCW_NOR_SRAM_CS0_T_TR {1} \
+   CONFIG.PCW_NOR_SRAM_CS0_T_WC {11} \
+   CONFIG.PCW_NOR_SRAM_CS0_T_WP {1} \
+   CONFIG.PCW_NOR_SRAM_CS0_WE_TIME {0} \
+   CONFIG.PCW_NOR_SRAM_CS1_T_CEOE {1} \
+   CONFIG.PCW_NOR_SRAM_CS1_T_PC {1} \
+   CONFIG.PCW_NOR_SRAM_CS1_T_RC {11} \
+   CONFIG.PCW_NOR_SRAM_CS1_T_TR {1} \
+   CONFIG.PCW_NOR_SRAM_CS1_T_WC {11} \
+   CONFIG.PCW_NOR_SRAM_CS1_T_WP {1} \
+   CONFIG.PCW_NOR_SRAM_CS1_WE_TIME {0} \
+   CONFIG.PCW_OVERRIDE_BASIC_CLOCK {0} \
+   CONFIG.PCW_PACKAGE_DDR_BOARD_DELAY0 {0.080} \
+   CONFIG.PCW_PACKAGE_DDR_BOARD_DELAY1 {0.063} \
+   CONFIG.PCW_PACKAGE_DDR_BOARD_DELAY2 {0.057} \
+   CONFIG.PCW_PACKAGE_DDR_BOARD_DELAY3 {0.068} \
+   CONFIG.PCW_PACKAGE_DDR_DQS_TO_CLK_DELAY_0 {-0.047} \
+   CONFIG.PCW_PACKAGE_DDR_DQS_TO_CLK_DELAY_1 {-0.025} \
+   CONFIG.PCW_PACKAGE_DDR_DQS_TO_CLK_DELAY_2 {-0.006} \
+   CONFIG.PCW_PACKAGE_DDR_DQS_TO_CLK_DELAY_3 {-0.017} \
+   CONFIG.PCW_PCAP_PERIPHERAL_CLKSRC {IO PLL} \
+   CONFIG.PCW_PCAP_PERIPHERAL_DIVISOR0 {8} \
+   CONFIG.PCW_PCAP_PERIPHERAL_FREQMHZ {200} \
+   CONFIG.PCW_PJTAG_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_PLL_BYPASSMODE_ENABLE {0} \
+   CONFIG.PCW_PRESET_BANK0_VOLTAGE {LVCMOS 3.3V} \
+   CONFIG.PCW_PRESET_BANK1_VOLTAGE {LVCMOS 3.3V} \
+   CONFIG.PCW_QSPI_GRP_FBCLK_ENABLE {0} \
+   CONFIG.PCW_QSPI_GRP_IO1_ENABLE {0} \
+   CONFIG.PCW_QSPI_GRP_SINGLE_SS_ENABLE {1} \
+   CONFIG.PCW_QSPI_GRP_SS1_ENABLE {0} \
+   CONFIG.PCW_QSPI_INTERNAL_HIGHADDRESS {0xFCFFFFFF} \
+   CONFIG.PCW_QSPI_PERIPHERAL_CLKSRC {IO PLL} \
+   CONFIG.PCW_QSPI_PERIPHERAL_DIVISOR0 {1} \
+   CONFIG.PCW_QSPI_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_QSPI_PERIPHERAL_FREQMHZ {200} \
+   CONFIG.PCW_SD0_GRP_CD_ENABLE {0} \
+   CONFIG.PCW_SD0_GRP_POW_ENABLE {0} \
+   CONFIG.PCW_SD0_GRP_WP_ENABLE {0} \
+   CONFIG.PCW_SD0_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_SD1_GRP_CD_ENABLE {0} \
+   CONFIG.PCW_SD1_GRP_POW_ENABLE {0} \
+   CONFIG.PCW_SD1_GRP_WP_ENABLE {0} \
+   CONFIG.PCW_SD1_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_SDIO_PERIPHERAL_CLKSRC {IO PLL} \
+   CONFIG.PCW_SDIO_PERIPHERAL_DIVISOR0 {1} \
+   CONFIG.PCW_SDIO_PERIPHERAL_FREQMHZ {100} \
+   CONFIG.PCW_SDIO_PERIPHERAL_VALID {0} \
+   CONFIG.PCW_SMC_PERIPHERAL_CLKSRC {IO PLL} \
+   CONFIG.PCW_SMC_PERIPHERAL_DIVISOR0 {1} \
+   CONFIG.PCW_SMC_PERIPHERAL_FREQMHZ {100} \
+   CONFIG.PCW_SMC_PERIPHERAL_VALID {0} \
+   CONFIG.PCW_SPI0_GRP_SS0_ENABLE {0} \
+   CONFIG.PCW_SPI0_GRP_SS1_ENABLE {0} \
+   CONFIG.PCW_SPI0_GRP_SS2_ENABLE {0} \
+   CONFIG.PCW_SPI0_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_SPI1_GRP_SS0_ENABLE {0} \
+   CONFIG.PCW_SPI1_GRP_SS1_ENABLE {0} \
+   CONFIG.PCW_SPI1_GRP_SS2_ENABLE {0} \
+   CONFIG.PCW_SPI1_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_SPI_PERIPHERAL_CLKSRC {IO PLL} \
+   CONFIG.PCW_SPI_PERIPHERAL_DIVISOR0 {1} \
+   CONFIG.PCW_SPI_PERIPHERAL_FREQMHZ {166.666666} \
+   CONFIG.PCW_SPI_PERIPHERAL_VALID {0} \
+   CONFIG.PCW_S_AXI_HP0_DATA_WIDTH {64} \
+   CONFIG.PCW_S_AXI_HP1_DATA_WIDTH {64} \
+   CONFIG.PCW_S_AXI_HP2_DATA_WIDTH {64} \
+   CONFIG.PCW_S_AXI_HP3_DATA_WIDTH {64} \
+   CONFIG.PCW_TPIU_PERIPHERAL_CLKSRC {External} \
+   CONFIG.PCW_TPIU_PERIPHERAL_DIVISOR0 {1} \
+   CONFIG.PCW_TPIU_PERIPHERAL_FREQMHZ {200} \
+   CONFIG.PCW_TRACE_GRP_16BIT_ENABLE {0} \
+   CONFIG.PCW_TRACE_GRP_2BIT_ENABLE {0} \
+   CONFIG.PCW_TRACE_GRP_32BIT_ENABLE {0} \
+   CONFIG.PCW_TRACE_GRP_4BIT_ENABLE {0} \
+   CONFIG.PCW_TRACE_GRP_8BIT_ENABLE {0} \
+   CONFIG.PCW_TRACE_INTERNAL_WIDTH {2} \
+   CONFIG.PCW_TRACE_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_TTC0_CLK0_PERIPHERAL_CLKSRC {CPU_1X} \
+   CONFIG.PCW_TTC0_CLK0_PERIPHERAL_DIVISOR0 {1} \
+   CONFIG.PCW_TTC0_CLK0_PERIPHERAL_FREQMHZ {133.333333} \
+   CONFIG.PCW_TTC0_CLK1_PERIPHERAL_CLKSRC {CPU_1X} \
+   CONFIG.PCW_TTC0_CLK1_PERIPHERAL_DIVISOR0 {1} \
+   CONFIG.PCW_TTC0_CLK1_PERIPHERAL_FREQMHZ {133.333333} \
+   CONFIG.PCW_TTC0_CLK2_PERIPHERAL_CLKSRC {CPU_1X} \
+   CONFIG.PCW_TTC0_CLK2_PERIPHERAL_DIVISOR0 {1} \
+   CONFIG.PCW_TTC0_CLK2_PERIPHERAL_FREQMHZ {133.333333} \
+   CONFIG.PCW_TTC0_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_TTC1_CLK0_PERIPHERAL_CLKSRC {CPU_1X} \
+   CONFIG.PCW_TTC1_CLK0_PERIPHERAL_DIVISOR0 {1} \
+   CONFIG.PCW_TTC1_CLK0_PERIPHERAL_FREQMHZ {133.333333} \
+   CONFIG.PCW_TTC1_CLK1_PERIPHERAL_CLKSRC {CPU_1X} \
+   CONFIG.PCW_TTC1_CLK1_PERIPHERAL_DIVISOR0 {1} \
+   CONFIG.PCW_TTC1_CLK1_PERIPHERAL_FREQMHZ {133.333333} \
+   CONFIG.PCW_TTC1_CLK2_PERIPHERAL_CLKSRC {CPU_1X} \
+   CONFIG.PCW_TTC1_CLK2_PERIPHERAL_DIVISOR0 {1} \
+   CONFIG.PCW_TTC1_CLK2_PERIPHERAL_FREQMHZ {133.333333} \
+   CONFIG.PCW_TTC1_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_TTC_PERIPHERAL_FREQMHZ {50} \
+   CONFIG.PCW_UART0_BAUD_RATE {115200} \
+   CONFIG.PCW_UART0_GRP_FULL_ENABLE {0} \
+   CONFIG.PCW_UART0_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_UART1_BAUD_RATE {115200} \
+   CONFIG.PCW_UART1_GRP_FULL_ENABLE {0} \
+   CONFIG.PCW_UART1_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_UART_PERIPHERAL_CLKSRC {IO PLL} \
+   CONFIG.PCW_UART_PERIPHERAL_DIVISOR0 {1} \
+   CONFIG.PCW_UART_PERIPHERAL_FREQMHZ {100} \
+   CONFIG.PCW_UART_PERIPHERAL_VALID {0} \
+   CONFIG.PCW_UIPARAM_ACT_DDR_FREQ_MHZ {533.333374} \
+   CONFIG.PCW_UIPARAM_DDR_ADV_ENABLE {0} \
+   CONFIG.PCW_UIPARAM_DDR_AL {0} \
+   CONFIG.PCW_UIPARAM_DDR_BANK_ADDR_COUNT {3} \
+   CONFIG.PCW_UIPARAM_DDR_BL {8} \
+   CONFIG.PCW_UIPARAM_DDR_BOARD_DELAY0 {0.25} \
+   CONFIG.PCW_UIPARAM_DDR_BOARD_DELAY1 {0.25} \
+   CONFIG.PCW_UIPARAM_DDR_BOARD_DELAY2 {0.25} \
+   CONFIG.PCW_UIPARAM_DDR_BOARD_DELAY3 {0.25} \
+   CONFIG.PCW_UIPARAM_DDR_BUS_WIDTH {32 Bit} \
+   CONFIG.PCW_UIPARAM_DDR_CL {7} \
+   CONFIG.PCW_UIPARAM_DDR_CLOCK_0_LENGTH_MM {0} \
+   CONFIG.PCW_UIPARAM_DDR_CLOCK_0_PACKAGE_LENGTH {54.563} \
+   CONFIG.PCW_UIPARAM_DDR_CLOCK_0_PROPOGATION_DELAY {160} \
+   CONFIG.PCW_UIPARAM_DDR_CLOCK_1_LENGTH_MM {0} \
+   CONFIG.PCW_UIPARAM_DDR_CLOCK_1_PACKAGE_LENGTH {54.563} \
+   CONFIG.PCW_UIPARAM_DDR_CLOCK_1_PROPOGATION_DELAY {160} \
+   CONFIG.PCW_UIPARAM_DDR_CLOCK_2_LENGTH_MM {0} \
+   CONFIG.PCW_UIPARAM_DDR_CLOCK_2_PACKAGE_LENGTH {54.563} \
+   CONFIG.PCW_UIPARAM_DDR_CLOCK_2_PROPOGATION_DELAY {160} \
+   CONFIG.PCW_UIPARAM_DDR_CLOCK_3_LENGTH_MM {0} \
+   CONFIG.PCW_UIPARAM_DDR_CLOCK_3_PACKAGE_LENGTH {54.563} \
+   CONFIG.PCW_UIPARAM_DDR_CLOCK_3_PROPOGATION_DELAY {160} \
+   CONFIG.PCW_UIPARAM_DDR_CLOCK_STOP_EN {0} \
+   CONFIG.PCW_UIPARAM_DDR_COL_ADDR_COUNT {10} \
+   CONFIG.PCW_UIPARAM_DDR_CWL {6} \
+   CONFIG.PCW_UIPARAM_DDR_DEVICE_CAPACITY {1024 MBits} \
+   CONFIG.PCW_UIPARAM_DDR_DQS_0_LENGTH_MM {0} \
+   CONFIG.PCW_UIPARAM_DDR_DQS_0_PACKAGE_LENGTH {101.239} \
+   CONFIG.PCW_UIPARAM_DDR_DQS_0_PROPOGATION_DELAY {160} \
+   CONFIG.PCW_UIPARAM_DDR_DQS_1_LENGTH_MM {0} \
+   CONFIG.PCW_UIPARAM_DDR_DQS_1_PACKAGE_LENGTH {79.5025} \
+   CONFIG.PCW_UIPARAM_DDR_DQS_1_PROPOGATION_DELAY {160} \
+   CONFIG.PCW_UIPARAM_DDR_DQS_2_LENGTH_MM {0} \
+   CONFIG.PCW_UIPARAM_DDR_DQS_2_PACKAGE_LENGTH {60.536} \
+   CONFIG.PCW_UIPARAM_DDR_DQS_2_PROPOGATION_DELAY {160} \
+   CONFIG.PCW_UIPARAM_DDR_DQS_3_LENGTH_MM {0} \
+   CONFIG.PCW_UIPARAM_DDR_DQS_3_PACKAGE_LENGTH {71.7715} \
+   CONFIG.PCW_UIPARAM_DDR_DQS_3_PROPOGATION_DELAY {160} \
+   CONFIG.PCW_UIPARAM_DDR_DQS_TO_CLK_DELAY_0 {0.0} \
+   CONFIG.PCW_UIPARAM_DDR_DQS_TO_CLK_DELAY_1 {0.0} \
+   CONFIG.PCW_UIPARAM_DDR_DQS_TO_CLK_DELAY_2 {0.0} \
+   CONFIG.PCW_UIPARAM_DDR_DQS_TO_CLK_DELAY_3 {0.0} \
+   CONFIG.PCW_UIPARAM_DDR_DQ_0_LENGTH_MM {0} \
+   CONFIG.PCW_UIPARAM_DDR_DQ_0_PACKAGE_LENGTH {104.5365} \
+   CONFIG.PCW_UIPARAM_DDR_DQ_0_PROPOGATION_DELAY {160} \
+   CONFIG.PCW_UIPARAM_DDR_DQ_1_LENGTH_MM {0} \
+   CONFIG.PCW_UIPARAM_DDR_DQ_1_PACKAGE_LENGTH {70.676} \
+   CONFIG.PCW_UIPARAM_DDR_DQ_1_PROPOGATION_DELAY {160} \
+   CONFIG.PCW_UIPARAM_DDR_DQ_2_LENGTH_MM {0} \
+   CONFIG.PCW_UIPARAM_DDR_DQ_2_PACKAGE_LENGTH {59.1615} \
+   CONFIG.PCW_UIPARAM_DDR_DQ_2_PROPOGATION_DELAY {160} \
+   CONFIG.PCW_UIPARAM_DDR_DQ_3_LENGTH_MM {0} \
+   CONFIG.PCW_UIPARAM_DDR_DQ_3_PACKAGE_LENGTH {81.319} \
+   CONFIG.PCW_UIPARAM_DDR_DQ_3_PROPOGATION_DELAY {160} \
+   CONFIG.PCW_UIPARAM_DDR_DRAM_WIDTH {8 Bits} \
+   CONFIG.PCW_UIPARAM_DDR_ECC {Disabled} \
+   CONFIG.PCW_UIPARAM_DDR_ENABLE {1} \
+   CONFIG.PCW_UIPARAM_DDR_FREQ_MHZ {533.333333} \
+   CONFIG.PCW_UIPARAM_DDR_HIGH_TEMP {Normal (0-85)} \
+   CONFIG.PCW_UIPARAM_DDR_MEMORY_TYPE {DDR 3} \
+   CONFIG.PCW_UIPARAM_DDR_PARTNO {MT41J128M8 JP-125} \
+   CONFIG.PCW_UIPARAM_DDR_ROW_ADDR_COUNT {14} \
+   CONFIG.PCW_UIPARAM_DDR_SPEED_BIN {DDR3_1066F} \
+   CONFIG.PCW_UIPARAM_DDR_TRAIN_DATA_EYE {1} \
+   CONFIG.PCW_UIPARAM_DDR_TRAIN_READ_GATE {1} \
+   CONFIG.PCW_UIPARAM_DDR_TRAIN_WRITE_LEVEL {1} \
+   CONFIG.PCW_UIPARAM_DDR_T_FAW {30.0} \
+   CONFIG.PCW_UIPARAM_DDR_T_RAS_MIN {35.0} \
+   CONFIG.PCW_UIPARAM_DDR_T_RC {48.75} \
+   CONFIG.PCW_UIPARAM_DDR_T_RCD {7} \
+   CONFIG.PCW_UIPARAM_DDR_T_RP {7} \
+   CONFIG.PCW_UIPARAM_DDR_USE_INTERNAL_VREF {0} \
+   CONFIG.PCW_USB0_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_USB0_PERIPHERAL_FREQMHZ {60} \
+   CONFIG.PCW_USB0_RESET_ENABLE {0} \
+   CONFIG.PCW_USB1_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_USB1_PERIPHERAL_FREQMHZ {60} \
+   CONFIG.PCW_USB1_RESET_ENABLE {0} \
+   CONFIG.PCW_USB_RESET_ENABLE {0} \
+   CONFIG.PCW_USB_RESET_POLARITY {Active Low} \
+   CONFIG.PCW_USE_AXI_NONSECURE {0} \
+   CONFIG.PCW_USE_CROSS_TRIGGER {0} \
+   CONFIG.PCW_USE_FABRIC_INTERRUPT {0} \
+   CONFIG.PCW_USE_S_AXI_HP0 {1} \
+   CONFIG.PCW_USE_S_AXI_HP1 {0} \
+   CONFIG.PCW_WDT_PERIPHERAL_CLKSRC {CPU_1X} \
+   CONFIG.PCW_WDT_PERIPHERAL_DIVISOR0 {1} \
+   CONFIG.PCW_WDT_PERIPHERAL_ENABLE {0} \
+   CONFIG.PCW_WDT_PERIPHERAL_FREQMHZ {133.333333} \
  ] $processing_system7_0
 
   # Create instance: rst_ps7_0_125M, and set properties
@@ -2129,37 +2637,37 @@ proc create_hier_cell_pdm { parentCell nameHier } {
   # Create instance: pdm_channel_1_slice, and set properties
   set pdm_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 pdm_channel_1_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DIN_TO {0} \
-CONFIG.DIN_WIDTH {64} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DIN_TO {0} \
+   CONFIG.DIN_WIDTH {64} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $pdm_channel_1_slice
 
   # Create instance: pdm_channel_2_slice, and set properties
   set pdm_channel_2_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 pdm_channel_2_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {31} \
-CONFIG.DIN_TO {16} \
-CONFIG.DIN_WIDTH {64} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {31} \
+   CONFIG.DIN_TO {16} \
+   CONFIG.DIN_WIDTH {64} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $pdm_channel_2_slice
 
   # Create instance: pdm_channel_3_slice, and set properties
   set pdm_channel_3_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 pdm_channel_3_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {47} \
-CONFIG.DIN_TO {32} \
-CONFIG.DIN_WIDTH {64} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {47} \
+   CONFIG.DIN_TO {32} \
+   CONFIG.DIN_WIDTH {64} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $pdm_channel_3_slice
 
   # Create instance: pdm_channel_4_slice, and set properties
   set pdm_channel_4_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 pdm_channel_4_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {63} \
-CONFIG.DIN_TO {48} \
-CONFIG.DIN_WIDTH {64} \
-CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_FROM {63} \
+   CONFIG.DIN_TO {48} \
+   CONFIG.DIN_WIDTH {64} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $pdm_channel_4_slice
 
   # Create instance: pdm_value_supply_0, and set properties
@@ -2168,7 +2676,7 @@ CONFIG.DOUT_WIDTH {1} \
   # Create instance: xlconcat_0, and set properties
   set xlconcat_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_0 ]
   set_property -dict [ list \
-CONFIG.NUM_PORTS {4} \
+   CONFIG.NUM_PORTS {4} \
  ] $xlconcat_0
 
   # Create port connections
@@ -2233,6 +2741,7 @@ proc create_hier_cell_DDS { parentCell nameHier } {
   # Create interface pins
   create_bd_intf_pin -mode Master -vlnv xilinx.com:interface:axis_rtl:1.0 m_axis
 
+
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type rst aresetn
@@ -2277,6 +2786,7 @@ proc create_hier_cell_DDS { parentCell nameHier } {
 proc create_root_design { parentCell } {
 
   variable script_folder
+  variable design_name
 
   if { $parentCell eq "" } {
      set parentCell [get_bd_cells /]
@@ -2305,17 +2815,26 @@ proc create_root_design { parentCell } {
 
   # Create interface ports
   set DDR [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:ddrx_rtl:1.0 DDR ]
+
   set FIXED_IO [ create_bd_intf_port -mode Master -vlnv xilinx.com:display_processing_system7:fixedio_rtl:1.0 FIXED_IO ]
+
   set Vaux0 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_analog_io_rtl:1.0 Vaux0 ]
+
   set Vaux1 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_analog_io_rtl:1.0 Vaux1 ]
+
   set Vaux8 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_analog_io_rtl:1.0 Vaux8 ]
+
   set Vaux9 [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_analog_io_rtl:1.0 Vaux9 ]
+
   set Vp_Vn [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_analog_io_rtl:1.0 Vp_Vn ]
+
   set daisy_clk_i [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:diff_clock_rtl:1.0 daisy_clk_i ]
   set_property -dict [ list \
-CONFIG.FREQ_HZ {125000000} \
- ] $daisy_clk_i
+   CONFIG.FREQ_HZ {125000000} \
+   ] $daisy_clk_i
+
   set daisy_clk_o [ create_bd_intf_port -mode Master -vlnv xilinx.com:interface:diff_clock_rtl:1.0 daisy_clk_o ]
+
 
   # Create ports
   set adc_clk_n_i [ create_bd_port -dir I adc_clk_n_i ]
@@ -2366,56 +2885,56 @@ CONFIG.FREQ_HZ {125000000} \
   set clk_div_0 [ create_bd_cell -type ip -vlnv referencedesigner.com:user:clk_div:1.0 clk_div_0 ]
 
   # Create instance: clk_wiz_1, and set properties
-  set clk_wiz_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:5.4 clk_wiz_1 ]
+  set clk_wiz_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:6.0 clk_wiz_1 ]
   set_property -dict [ list \
-CONFIG.CLKIN1_JITTER_PS {80.0} \
-CONFIG.CLKOUT1_JITTER {119.348} \
-CONFIG.CLKOUT1_PHASE_ERROR {96.948} \
-CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {125.000} \
-CONFIG.MMCM_CLKFBOUT_MULT_F {8.000} \
-CONFIG.MMCM_CLKIN1_PERIOD {8.000} \
-CONFIG.MMCM_CLKOUT0_DIVIDE_F {8.000} \
-CONFIG.MMCM_DIVCLK_DIVIDE {1} \
-CONFIG.PRIM_IN_FREQ {125.000} \
+   CONFIG.CLKIN1_JITTER_PS {80.0} \
+   CONFIG.CLKOUT1_JITTER {119.348} \
+   CONFIG.CLKOUT1_PHASE_ERROR {96.948} \
+   CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {125.000} \
+   CONFIG.MMCM_CLKFBOUT_MULT_F {8.000} \
+   CONFIG.MMCM_CLKIN1_PERIOD {8.000} \
+   CONFIG.MMCM_CLKOUT0_DIVIDE_F {8.000} \
+   CONFIG.MMCM_DIVCLK_DIVIDE {1} \
+   CONFIG.PRIM_IN_FREQ {125.000} \
  ] $clk_wiz_1
 
   # Create instance: clk_wiz_2, and set properties
-  set clk_wiz_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:5.4 clk_wiz_2 ]
+  set clk_wiz_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:clk_wiz:6.0 clk_wiz_2 ]
   set_property -dict [ list \
-CONFIG.CLKIN1_JITTER_PS {80.0} \
-CONFIG.CLKIN2_JITTER_PS {80.0} \
-CONFIG.CLKOUT1_JITTER {112.962} \
-CONFIG.CLKOUT1_PHASE_ERROR {112.379} \
-CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {250.000} \
-CONFIG.CLKOUT2_JITTER {128.871} \
-CONFIG.CLKOUT2_PHASE_ERROR {112.379} \
-CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {125.000} \
-CONFIG.CLKOUT2_USED {true} \
-CONFIG.CLKOUT3_JITTER {104.620} \
-CONFIG.CLKOUT3_PHASE_ERROR {112.379} \
-CONFIG.CLKOUT3_REQUESTED_OUT_FREQ {375.000} \
-CONFIG.CLKOUT3_USED {true} \
-CONFIG.CLKOUT4_JITTER {224.358} \
-CONFIG.CLKOUT4_PHASE_ERROR {112.379} \
-CONFIG.CLKOUT4_REQUESTED_OUT_FREQ {7.812} \
-CONFIG.CLKOUT4_USED {true} \
-CONFIG.CLK_OUT1_PORT {clk_ddr} \
-CONFIG.CLK_OUT2_PORT {clk_internal} \
-CONFIG.CLK_OUT3_PORT {clk_375MHz} \
-CONFIG.CLK_OUT4_PORT {clk_pdm} \
-CONFIG.MMCM_CLKFBOUT_MULT_F {6.000} \
-CONFIG.MMCM_CLKIN1_PERIOD {8.000} \
-CONFIG.MMCM_CLKIN2_PERIOD {8.000} \
-CONFIG.MMCM_CLKOUT0_DIVIDE_F {3.000} \
-CONFIG.MMCM_CLKOUT1_DIVIDE {6} \
-CONFIG.MMCM_CLKOUT2_DIVIDE {2} \
-CONFIG.MMCM_CLKOUT3_DIVIDE {96} \
-CONFIG.MMCM_DIVCLK_DIVIDE {1} \
-CONFIG.NUM_OUT_CLKS {4} \
-CONFIG.PRIM_IN_FREQ {125.000} \
-CONFIG.SECONDARY_IN_FREQ {125.000} \
-CONFIG.SECONDARY_SOURCE {Single_ended_clock_capable_pin} \
-CONFIG.USE_INCLK_SWITCHOVER {true} \
+   CONFIG.CLKIN1_JITTER_PS {80.0} \
+   CONFIG.CLKIN2_JITTER_PS {80.0} \
+   CONFIG.CLKOUT1_JITTER {112.962} \
+   CONFIG.CLKOUT1_PHASE_ERROR {112.379} \
+   CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {250.000} \
+   CONFIG.CLKOUT2_JITTER {128.871} \
+   CONFIG.CLKOUT2_PHASE_ERROR {112.379} \
+   CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {125.000} \
+   CONFIG.CLKOUT2_USED {true} \
+   CONFIG.CLKOUT3_JITTER {104.620} \
+   CONFIG.CLKOUT3_PHASE_ERROR {112.379} \
+   CONFIG.CLKOUT3_REQUESTED_OUT_FREQ {375.000} \
+   CONFIG.CLKOUT3_USED {true} \
+   CONFIG.CLKOUT4_JITTER {224.358} \
+   CONFIG.CLKOUT4_PHASE_ERROR {112.379} \
+   CONFIG.CLKOUT4_REQUESTED_OUT_FREQ {7.812} \
+   CONFIG.CLKOUT4_USED {true} \
+   CONFIG.CLK_OUT1_PORT {clk_ddr} \
+   CONFIG.CLK_OUT2_PORT {clk_internal} \
+   CONFIG.CLK_OUT3_PORT {clk_375MHz} \
+   CONFIG.CLK_OUT4_PORT {clk_pdm} \
+   CONFIG.MMCM_CLKFBOUT_MULT_F {6.000} \
+   CONFIG.MMCM_CLKIN1_PERIOD {8.000} \
+   CONFIG.MMCM_CLKIN2_PERIOD {8.000} \
+   CONFIG.MMCM_CLKOUT0_DIVIDE_F {3.000} \
+   CONFIG.MMCM_CLKOUT1_DIVIDE {6} \
+   CONFIG.MMCM_CLKOUT2_DIVIDE {2} \
+   CONFIG.MMCM_CLKOUT3_DIVIDE {96} \
+   CONFIG.MMCM_DIVCLK_DIVIDE {1} \
+   CONFIG.NUM_OUT_CLKS {4} \
+   CONFIG.PRIM_IN_FREQ {125.000} \
+   CONFIG.SECONDARY_IN_FREQ {125.000} \
+   CONFIG.SECONDARY_SOURCE {Single_ended_clock_capable_pin} \
+   CONFIG.USE_INCLK_SWITCHOVER {true} \
  ] $clk_wiz_2
 
   # Create instance: dio_0, and set properties
@@ -2450,41 +2969,41 @@ CONFIG.USE_INCLK_SWITCHOVER {true} \
   # Create instance: selectio_wiz_1, and set properties
   set selectio_wiz_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:selectio_wiz:5.1 selectio_wiz_1 ]
   set_property -dict [ list \
-CONFIG.BUS_DIR {OUTPUTS} \
-CONFIG.BUS_IO_STD {DIFF_HSTL_I_18} \
-CONFIG.BUS_SIG_TYPE {DIFF} \
-CONFIG.CLK_EN {true} \
-CONFIG.CLK_FWD {true} \
-CONFIG.CLK_FWD_IO_STD {DIFF_HSTL_I_18} \
-CONFIG.CLK_FWD_SIG_TYPE {DIFF} \
-CONFIG.CONFIG_CLK_FWD {false} \
-CONFIG.SELIO_BUS_IN_DELAY {NONE} \
-CONFIG.SELIO_CLK_BUF {MMCM} \
-CONFIG.SELIO_CLK_IO_STD {DIFF_HSTL_I_18} \
-CONFIG.SELIO_CLK_SIG_TYPE {DIFF} \
-CONFIG.SELIO_INTERFACE_TYPE {NETWORKING} \
-CONFIG.SERIALIZATION_FACTOR {4} \
-CONFIG.SYSTEM_DATA_WIDTH {1} \
+   CONFIG.BUS_DIR {OUTPUTS} \
+   CONFIG.BUS_IO_STD {DIFF_HSTL_I_18} \
+   CONFIG.BUS_SIG_TYPE {DIFF} \
+   CONFIG.CLK_EN {true} \
+   CONFIG.CLK_FWD {true} \
+   CONFIG.CLK_FWD_IO_STD {DIFF_HSTL_I_18} \
+   CONFIG.CLK_FWD_SIG_TYPE {DIFF} \
+   CONFIG.CONFIG_CLK_FWD {false} \
+   CONFIG.SELIO_BUS_IN_DELAY {NONE} \
+   CONFIG.SELIO_CLK_BUF {MMCM} \
+   CONFIG.SELIO_CLK_IO_STD {DIFF_HSTL_I_18} \
+   CONFIG.SELIO_CLK_SIG_TYPE {DIFF} \
+   CONFIG.SELIO_INTERFACE_TYPE {NETWORKING} \
+   CONFIG.SERIALIZATION_FACTOR {4} \
+   CONFIG.SYSTEM_DATA_WIDTH {1} \
  ] $selectio_wiz_1
 
   # Create instance: selectio_wiz_2, and set properties
   set selectio_wiz_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:selectio_wiz:5.1 selectio_wiz_2 ]
   set_property -dict [ list \
-CONFIG.BUS_DIR {INPUTS} \
-CONFIG.BUS_IO_STD {DIFF_HSTL_I_18} \
-CONFIG.BUS_SIG_TYPE {DIFF} \
-CONFIG.CLK_EN {false} \
-CONFIG.CLK_FWD {false} \
-CONFIG.CLK_FWD_IO_STD {DIFF_HSTL_I_18} \
-CONFIG.CLK_FWD_SIG_TYPE {DIFF} \
-CONFIG.CONFIG_CLK_FWD {false} \
-CONFIG.SELIO_BUS_IN_DELAY {NONE} \
-CONFIG.SELIO_CLK_BUF {BUFIO} \
-CONFIG.SELIO_CLK_IO_STD {DIFF_HSTL_I_18} \
-CONFIG.SELIO_CLK_SIG_TYPE {DIFF} \
-CONFIG.SELIO_INTERFACE_TYPE {NETWORKING} \
-CONFIG.SERIALIZATION_FACTOR {4} \
-CONFIG.SYSTEM_DATA_WIDTH {1} \
+   CONFIG.BUS_DIR {INPUTS} \
+   CONFIG.BUS_IO_STD {DIFF_HSTL_I_18} \
+   CONFIG.BUS_SIG_TYPE {DIFF} \
+   CONFIG.CLK_EN {false} \
+   CONFIG.CLK_FWD {false} \
+   CONFIG.CLK_FWD_IO_STD {DIFF_HSTL_I_18} \
+   CONFIG.CLK_FWD_SIG_TYPE {DIFF} \
+   CONFIG.CONFIG_CLK_FWD {false} \
+   CONFIG.SELIO_BUS_IN_DELAY {NONE} \
+   CONFIG.SELIO_CLK_BUF {BUFIO} \
+   CONFIG.SELIO_CLK_IO_STD {DIFF_HSTL_I_18} \
+   CONFIG.SELIO_CLK_SIG_TYPE {DIFF} \
+   CONFIG.SELIO_INTERFACE_TYPE {NETWORKING} \
+   CONFIG.SERIALIZATION_FACTOR {4} \
+   CONFIG.SYSTEM_DATA_WIDTH {1} \
  ] $selectio_wiz_2
 
   # Create instance: system
@@ -2493,23 +3012,23 @@ CONFIG.SYSTEM_DATA_WIDTH {1} \
   # Create instance: util_ds_buf_0, and set properties
   set util_ds_buf_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_ds_buf:2.1 util_ds_buf_0 ]
   set_property -dict [ list \
-CONFIG.C_BUF_TYPE {OBUFDS} \
+   CONFIG.C_BUF_TYPE {OBUFDS} \
  ] $util_ds_buf_0
 
   # Create instance: util_vector_logic_0, and set properties
   set util_vector_logic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_0 ]
   set_property -dict [ list \
-CONFIG.C_OPERATION {not} \
-CONFIG.C_SIZE {1} \
-CONFIG.LOGO_FILE {data/sym_notgate.png} \
+   CONFIG.C_OPERATION {not} \
+   CONFIG.C_SIZE {1} \
+   CONFIG.LOGO_FILE {data/sym_notgate.png} \
  ] $util_vector_logic_0
 
   # Create instance: util_vector_logic_1, and set properties
   set util_vector_logic_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_1 ]
   set_property -dict [ list \
-CONFIG.C_OPERATION {not} \
-CONFIG.C_SIZE {1} \
-CONFIG.LOGO_FILE {data/sym_notgate.png} \
+   CONFIG.C_OPERATION {not} \
+   CONFIG.C_SIZE {1} \
+   CONFIG.LOGO_FILE {data/sym_notgate.png} \
  ] $util_vector_logic_1
 
   # Create instance: write_to_ram
@@ -2518,19 +3037,19 @@ CONFIG.LOGO_FILE {data/sym_notgate.png} \
   # Create instance: xadc_wiz_0, and set properties
   set xadc_wiz_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xadc_wiz:3.3 xadc_wiz_0 ]
   set_property -dict [ list \
-CONFIG.ADC_CONVERSION_RATE {1000} \
-CONFIG.CHANNEL_ENABLE_VAUXP0_VAUXN0 {true} \
-CONFIG.CHANNEL_ENABLE_VAUXP1_VAUXN1 {true} \
-CONFIG.CHANNEL_ENABLE_VAUXP8_VAUXN8 {true} \
-CONFIG.CHANNEL_ENABLE_VAUXP9_VAUXN9 {true} \
-CONFIG.CHANNEL_ENABLE_VP_VN {true} \
-CONFIG.DCLK_FREQUENCY {125} \
-CONFIG.ENABLE_RESET {false} \
-CONFIG.EXTERNAL_MUX_CHANNEL {VP_VN} \
-CONFIG.INTERFACE_SELECTION {Enable_AXI} \
-CONFIG.SEQUENCER_MODE {Off} \
-CONFIG.SINGLE_CHANNEL_SELECTION {TEMPERATURE} \
-CONFIG.XADC_STARUP_SELECTION {independent_adc} \
+   CONFIG.ADC_CONVERSION_RATE {1000} \
+   CONFIG.CHANNEL_ENABLE_VAUXP0_VAUXN0 {true} \
+   CONFIG.CHANNEL_ENABLE_VAUXP1_VAUXN1 {true} \
+   CONFIG.CHANNEL_ENABLE_VAUXP8_VAUXN8 {true} \
+   CONFIG.CHANNEL_ENABLE_VAUXP9_VAUXN9 {true} \
+   CONFIG.CHANNEL_ENABLE_VP_VN {true} \
+   CONFIG.DCLK_FREQUENCY {125} \
+   CONFIG.ENABLE_RESET {false} \
+   CONFIG.EXTERNAL_MUX_CHANNEL {VP_VN} \
+   CONFIG.INTERFACE_SELECTION {Enable_AXI} \
+   CONFIG.SEQUENCER_MODE {Off} \
+   CONFIG.SINGLE_CHANNEL_SELECTION {TEMPERATURE} \
+   CONFIG.XADC_STARUP_SELECTION {independent_adc} \
  ] $xadc_wiz_0
 
   # Create instance: xlconcat_0, and set properties
@@ -2539,54 +3058,54 @@ CONFIG.XADC_STARUP_SELECTION {independent_adc} \
   # Create instance: xlconstant_0, and set properties
   set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
   set_property -dict [ list \
-CONFIG.CONST_VAL {0} \
-CONFIG.CONST_WIDTH {4} \
+   CONFIG.CONST_VAL {0} \
+   CONFIG.CONST_WIDTH {4} \
  ] $xlconstant_0
 
   # Create instance: xlconstant_1, and set properties
   set xlconstant_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_1 ]
   set_property -dict [ list \
-CONFIG.CONST_VAL {0} \
-CONFIG.CONST_WIDTH {8} \
+   CONFIG.CONST_VAL {0} \
+   CONFIG.CONST_WIDTH {8} \
  ] $xlconstant_1
 
   # Create instance: xlconstant_2, and set properties
   set xlconstant_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_2 ]
   set_property -dict [ list \
-CONFIG.CONST_VAL {0} \
+   CONFIG.CONST_VAL {0} \
  ] $xlconstant_2
 
   # Create instance: xlconstant_masterslave, and set properties
   set xlconstant_masterslave [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_masterslave ]
   set_property -dict [ list \
-CONFIG.CONST_VAL {1} \
+   CONFIG.CONST_VAL {1} \
  ] $xlconstant_masterslave
 
   # Create instance: xlslice_0, and set properties
   set xlslice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_0 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
-CONFIG.DIN_TO {12} \
-CONFIG.DIN_WIDTH {64} \
-CONFIG.DOUT_WIDTH {4} \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DIN_TO {12} \
+   CONFIG.DIN_WIDTH {64} \
+   CONFIG.DOUT_WIDTH {4} \
  ] $xlslice_0
 
   # Create instance: xlslice_2, and set properties
   set xlslice_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_2 ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {31} \
-CONFIG.DIN_TO {16} \
-CONFIG.DIN_WIDTH {64} \
-CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DIN_FROM {31} \
+   CONFIG.DIN_TO {16} \
+   CONFIG.DIN_WIDTH {64} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $xlslice_2
 
   # Create instance: xlslice_reset_cfg, and set properties
   set xlslice_reset_cfg [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_reset_cfg ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {11} \
-CONFIG.DIN_TO {8} \
-CONFIG.DIN_WIDTH {64} \
-CONFIG.DOUT_WIDTH {4} \
+   CONFIG.DIN_FROM {11} \
+   CONFIG.DIN_TO {8} \
+   CONFIG.DIN_WIDTH {64} \
+   CONFIG.DOUT_WIDTH {4} \
  ] $xlslice_reset_cfg
 
   # Create interface connections
@@ -2670,23 +3189,20 @@ CONFIG.DOUT_WIDTH {4} \
   connect_bd_net -net xlslice_3_Dout [get_bd_pins reset_manager_0/reset_cfg] [get_bd_pins xlslice_reset_cfg/Dout]
 
   # Create address segments
-  create_bd_addr_seg -range 0x00001000 -offset 0x40004000 [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_cfg_register_cfg/s_axi/reg0] SEG_axi_cfg_register_cfg_reg0
-  create_bd_addr_seg -range 0x00001000 -offset 0x40000000 [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_cfg_register_dac/s_axi/reg0] SEG_axi_cfg_register_dac_reg0
-  create_bd_addr_seg -range 0x00001000 -offset 0x40002000 [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_cfg_register_pdm/s_axi/reg0] SEG_axi_cfg_register_pdm_reg0
-  create_bd_addr_seg -range 0x00001000 -offset 0x40001000 [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_sts_register_adc/s_axi/reg0] SEG_axi_sts_register_adc_reg0
-  create_bd_addr_seg -range 0x00001000 -offset 0x40003000 [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_sts_register_pdm/s_axi/reg0] SEG_axi_sts_register_pdm_reg0
-  create_bd_addr_seg -range 0x00001000 -offset 0x40005000 [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_sts_register_reset/s_axi/reg0] SEG_axi_sts_register_reset_reg0
-  create_bd_addr_seg -range 0x00010000 -offset 0x40010000 [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs xadc_wiz_0/s_axi_lite/Reg] SEG_xadc_wiz_0_Reg
-  create_bd_addr_seg -range 0x20000000 -offset 0x00000000 [get_bd_addr_spaces write_to_ram/axis_ram_writer_1/M_AXI] [get_bd_addr_segs system/processing_system7_0/S_AXI_HP0/HP0_DDR_LOWOCM] SEG_processing_system7_0_HP0_DDR_LOWOCM
+  assign_bd_address -offset 0x40004000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_cfg_register_cfg/s_axi/reg0] -force
+  assign_bd_address -offset 0x40000000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_cfg_register_dac/s_axi/reg0] -force
+  assign_bd_address -offset 0x40002000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_cfg_register_pdm/s_axi/reg0] -force
+  assign_bd_address -offset 0x40001000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_sts_register_adc/s_axi/reg0] -force
+  assign_bd_address -offset 0x40003000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_sts_register_pdm/s_axi/reg0] -force
+  assign_bd_address -offset 0x40005000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_sts_register_reset/s_axi/reg0] -force
+  assign_bd_address -offset 0x40010000 -range 0x00010000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs xadc_wiz_0/s_axi_lite/Reg] -force
+  assign_bd_address -offset 0x00000000 -range 0x20000000 -target_address_space [get_bd_addr_spaces write_to_ram/axis_ram_writer_1/M_AXI] [get_bd_addr_segs system/processing_system7_0/S_AXI_HP0/HP0_DDR_LOWOCM] -force
 
 
   # Restore current instance
   current_bd_instance $oldCurInst
 
-  # Add USER_COMMENTS on $design_name
-  variable design_name
-  set_property USER_COMMENTS.comment_0 "1: primary clock
-0: secondary clock" [get_bd_designs $design_name]
+  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -2698,6 +3214,4 @@ CONFIG.DOUT_WIDTH {4} \
 
 create_root_design ""
 
-
-common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 

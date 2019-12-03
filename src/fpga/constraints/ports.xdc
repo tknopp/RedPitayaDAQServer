@@ -251,15 +251,17 @@ set_property PACKAGE_PIN M15 [get_ports {ext_DIO7_N}];
 
 ### SATA connector
 
-set_property IOSTANDARD DIFF_HSTL_I_18 [get_ports daisy_p_o];
-set_property IOSTANDARD DIFF_HSTL_I_18 [get_ports daisy_n_o];
+set_property IOSTANDARD DIFF_HSTL_I_18 [get_ports {daisy_p_o}];
+set_property IOSTANDARD DIFF_HSTL_I_18 [get_ports {daisy_n_o}];
 
-set_property IOSTANDARD DIFF_HSTL_I_18 [daisy_clk_o[*]];
+set_property IOSTANDARD DIFF_HSTL_I_18 [get_ports {daisy_clk_o_clk_n}];
+set_property IOSTANDARD DIFF_HSTL_I_18 [get_ports {daisy_clk_o_clk_p}];
 
-set_property IOSTANDARD DIFF_HSTL_I_18 [get_ports daisy_p_i];
-set_property IOSTANDARD DIFF_HSTL_I_18 [get_ports daisy_n_i];
+set_property IOSTANDARD DIFF_HSTL_I_18 [get_ports {daisy_p_i}];
+set_property IOSTANDARD DIFF_HSTL_I_18 [get_ports {daisy_n_i}];
 
-set_property IOSTANDARD DIFF_HSTL_I_18 [daisy_clk_i[*]];
+set_property IOSTANDARD DIFF_HSTL_I_18 [get_ports {daisy_clk_i_clk_n}];
+set_property IOSTANDARD DIFF_HSTL_I_18 [get_ports {daisy_clk_i_clk_p}];
 
 set_property PACKAGE_PIN T12 [get_ports {daisy_p_o}];
 set_property PACKAGE_PIN U12 [get_ports {daisy_n_o}];
