@@ -1,8 +1,8 @@
 using RedPitayaDAQServer
 using GR
 
-rp = RedPitayaCluster(["rp-f04972.local"])
-connectADC(rp)
+rp = RedPitayaCluster(["rp-f07083.local"])
+#connectADC(rp)
 
 dec = 16
 modulus = 4800
@@ -17,6 +17,8 @@ periods_per_frame = 1
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
 periodsPerFrame(rp, periods_per_frame)
+signalTypeDAC(rp, 1, "TRIANGLE")
+@show signalTypeDAC(rp, 1)
 
 modeDAC(rp, "RASTERIZED")
 for (i,val) in enumerate([4800,4864,4800,4800])

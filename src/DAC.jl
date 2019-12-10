@@ -1,4 +1,5 @@
-export amplitudeDAC, frequencyDAC, modulusFactorDAC, phaseDAC, modeDAC, modulusDAC
+export amplitudeDAC, frequencyDAC, modulusFactorDAC, phaseDAC, modeDAC, modulusDAC,
+       DCSignDAC, signalTypeDAC
 
 # TODO: make this Float64
 function amplitudeDAC(rp::RedPitaya, channel, component)
@@ -72,4 +73,30 @@ function modeDAC_(rp::RedPitaya, mode::String, channel=1)
   #send(rp, string("RP:DAC:CH", 0,":MODe ", mode))
   #send(rp, string("RP:DAC:CH", 1,":MODe ", mode))
   send(rp, string("RP:DAC:CH", Int(channel)-1, ":MODe ", mode))
+end
+
+function signalTypeDAC(rp::RedPitaya, channel)
+  command = string("RP:DAC:CH", Int(channel)-1, ":SIGnaltype?")
+  return query(rp, command)
+end
+
+function signalTypeDAC(rp::RedPitaya, channel, sigType::String)
+
+  if !(sigType in ["SINE","DC","SQUARE","TRIANGLE","SAWTOOTH"] )
+    error("Signal type $sigType not supported!")
+  end
+
+  command = string("RP:DAC:CH", Int(channel)-1, ":SIGnaltype ", sigType)
+  return send(rp, command)
+end
+
+function DCSignDAC(rp::RedPitaya, channel)
+  command = string("RP:DAC:CH", Int(channel)-1, ":SIGn?")
+  return query(rp, command, Int64) == "POSITIVE" ? 1 : -1
+end
+
+function DCSignDAC(rp::RedPitaya, channel, sign::Integer)
+  command = string("RP:DAC:CH", Int(channel)-1, ":SIGn ",
+             sign > 0 ? "POSITIVE" : "NEGATIVE")
+  return send(rp, command)
 end
