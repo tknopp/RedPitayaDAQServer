@@ -504,6 +504,9 @@ void* slowDACThread(void* ch)
   int rampUpTotalPeriods=-1;
   int rampUpPeriods=-1;
   int rampUpTotalFrames=-1;
+  int rampDownTotalPeriods=-1;
+  int rampDownPeriods=-1;
+  int rampDownTotalFrames=-1;
 
   printf("Starting slowDAC thread\n");
   getprio(pthread_self());
@@ -558,7 +561,7 @@ void* slowDACThread(void* ch)
             if(enableSlowDACLocal && numSlowDACFramesEnabled>0 && frameSlowDACEnabled >0)
 	    {
  	      //printf("currentFrameTotal %lld  numSlowDACFramesEnabled = %d  frameSlowDACEnabled %lld \n", currentFrameTotal, numSlowDACFramesEnabled, frameSlowDACEnabled);
-	      if(currentFrameTotal >= numSlowDACFramesEnabled + frameSlowDACEnabled)
+	      if(currentFrameTotal >= numSlowDACFramesEnabled + frameSlowDACEnabled + rampDownTotalFrames)
 	      { // We now have measured enough frames and switch of the slow DAC
                 enableSlowDAC = false;
                 for(int i=0; i<4; i++)
@@ -576,9 +579,12 @@ void* slowDACThread(void* ch)
               double bandwidth = 125e6 / getDecimation();
               double period = numSamplesPerFrame / bandwidth;
               rampUpTotalFrames = ceil(slowDACRampUpTime / period);
+              rampDownTotalFrames = rampUpTotalFrames;
               rampUpTotalPeriods = ceil(slowDACRampUpTime / (numSamplesPerPeriod / bandwidth) );
+              rampDownTotalPeriods = rampUpTotalPeriods;
               rampUpPeriods = ceil(slowDACRampUpTime*slowDACFractionRampUp 
 			           / (numSamplesPerPeriod / bandwidth) );
+              rampDownPeriods = rampUpPeriods;
 
               //printf("rampUpFrames = %d, rampUpPeriods = %d \n", rampUpTotalFrames,rampUpPeriods);
 
@@ -616,6 +622,7 @@ void* slowDACThread(void* ch)
                 val = slowDACLUT[currFFStep*numSlowDACChan+i];
               }
 
+              // Ramp up phase
 	      if(frameRampUpStarted <= currentFrameTotal < frameSlowDACEnabled) 
 	      {
 		int64_t currRampUpPeriod = currentPeriodTotal - periodRampUpStarted;
@@ -624,7 +631,7 @@ void* slowDACThread(void* ch)
 		int64_t stepAfterRampUp = totalPeriodsInRampUpFrames -  
 				                     (rampUpTotalPeriods - rampUpPeriods);
                 if( currRampUpPeriod < totalPeriodsInRampUpFrames - rampUpTotalPeriods )
-                {
+                { // before ramp up
 		  val = 0.0;
 		} else if ( currRampUpPeriod < stepAfterRampUp )
 	        {
@@ -636,6 +643,30 @@ void* slowDACThread(void* ch)
 			(0.9640+tanh(-2.0 + (currRampUpStep / ((float)rampUpPeriods-1))*4.0))/1.92806;
 		}
 	      }
+
+              // Ramp down phase
+              if(currentFrameTotal >= frameSlowDACEnabled + numSlowDACFramesEnabled) 
+	      {
+		int64_t totalPeriodsFromRampUp = numPeriodsPerFrame*(rampUpTotalFrames+numSlowDACFramesEnabled);
+		int64_t currRampDownPeriod = currentPeriodTotal - totalPeriodsFromRampUp;
+		
+		//int64_t stepAfterRampUp = totalPeriodsInRampUpFrames -  
+		//		                     (rampUpTotalPeriods - rampUpPeriods);
+                if( currRampDownPeriod > rampDownTotalPeriods )
+                {
+		  val = 0.0;
+		} else if ( currRampDownPeriod > (rampDownTotalPeriods - rampDownPeriods) )
+	        {
+                  //val *= currFFStep / ((float) rampUpPeriods);
+		  int64_t currRampDownStep = currRampDownPeriod - 
+			                   (rampDownTotalPeriods - rampDownPeriods);
+                  
+		  val = slowDACLUT[ (stepAfterRampUp % numPeriodsPerFrame) *numSlowDACChan+i] *
+			(0.9640+tanh(-2.0 + ((rampDownPeriods-currRampDownStep-1) / ((float)rampDownPeriods-1))*4.0))/1.92806;
+		}
+	      }
+
+
 
               //printf("Set ff channel %d in cycle %d to value %f totalper %ld.\n", 
               //            i, currFFStep,val, currentPeriodTotal);
