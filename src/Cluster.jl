@@ -83,6 +83,19 @@ for op in [:amplitudeDAC,  :frequencyDAC, :phaseDAC, :modulusFactorDAC, :modulus
   end
 end
 
+for op in [:signalTypeDAC,  :DCSignDAC]
+  @eval function $op(rpc::RedPitayaCluster, chan::Integer)
+    idxRP = div(chan-1, 2) + 1
+    chanRP = mod1(chan, 2)
+    return $op(rpc.rp[idxRP], chanRP)
+  end
+  @eval function $op(rpc::RedPitayaCluster, chan::Integer, value)
+    idxRP = div(chan-1, 2) + 1
+    chanRP = mod1(chan, 2)
+    return $op(rpc.rp[idxRP], chanRP, value)
+  end
+end
+
 function setSlowDAC(rpc::RedPitayaCluster, chan, value)
   idxRP = div(chan-1, 2) + 1
   chanRP = mod(chan-1, 2)
