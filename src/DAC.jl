@@ -66,13 +66,12 @@ function modeDAC(rp::RedPitaya, mode::String)
 end
 
 function modeDAC_(rp::RedPitaya, channel=1)
-  #return query(rp, "RP:DAC:CH:", Int(channel)-1,"MODe?")[2:end-1]
-  return query(rp, "RP:DAC:CH", Int(channel)-1,":MODe?")[2:end-1]
+  #return query(rp, "RP:DAC:CH", Int(channel)-1,":MODe?")[2:end-1]
+  return query(rp, "RP:DAC:MODe?")[2:end-1]
 end
 function modeDAC_(rp::RedPitaya, mode::String, channel=1)
-  #send(rp, string("RP:DAC:CH", 0,":MODe ", mode))
-  #send(rp, string("RP:DAC:CH", 1,":MODe ", mode))
-  send(rp, string("RP:DAC:CH", Int(channel)-1, ":MODe ", mode))
+  #send(rp, string("RP:DAC:CH", Int(channel)-1, ":MODe ", mode))
+  send(rp, string("RP:DAC:MODe ", mode))
 end
 
 function signalTypeDAC(rp::RedPitaya, channel)
