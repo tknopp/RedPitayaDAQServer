@@ -70,7 +70,7 @@ function ramWriterMode(rp::RedPitaya, mode::String)
 end
 
 connectADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQCONNect")
-startADC(rp::RedPitaya, wp::Integer) = send(rp, "RP:ADC:ACQSTATUS ON,$wp")
+startADC(rp::RedPitaya, wp::Integer = currentWP(rp)) = send(rp, "RP:ADC:ACQSTATUS ON,$wp")
 stopADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQSTATUS OFF,0")
 
 # Low level read. One has to take care that the numFrames are available

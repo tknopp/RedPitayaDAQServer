@@ -1,11 +1,10 @@
 using RedPitayaDAQServer
-using GR
+using PyPlot
 
 rp = RedPitaya("rp-f04972.local")
 
 dec = 16
 modulus = 4800
-frequency = 25000
 base_frequency = 125000000
 samples_per_period = div(modulus, dec)
 periods_per_frame = 1
@@ -21,19 +20,21 @@ for (i,val) in enumerate([4800,4864,4800,4800])
 end
 
 println(" frequency = $(frequencyDAC(rp,1,1))")
-#send(rp, "RP:DAC:CH0:COMP0:FREQ $(frequency)")
 amplitudeDAC(rp, 1, 1, 4000)
-phaseDAC(rp, 1, 1, 0 ) # Phase has to be given in between 0 and 1
+phaseDAC(rp, 1, 1, 0.0 ) # Phase has to be given in between 0 and 1
 masterTrigger(rp, false)
 ramWriterMode(rp, "TRIGGERED")
 
+startADC(rp)
+masterTrigger(rp, true)
+
 sleep(1.0)
-# Low Level
-#u = RedPitayaDAQServer.readData_(rp, currentFrame(rp), 1)
-# High Level
-#u = readData(rp, currentFrame(rp), 1)
-u = readData(rp, 0, 1)
 
-plot(vec(u[:,1,:,:]))
+uFirstPeriod = readData(rp, 0, 1)
+uCurrentPeriod = readData(rp, currentFrame(rp), 1)
 
-disconnect(rp)
+plot(vec(uFirstPeriod[:,1,:,:]))
+plot(vec(uCurrentPeriod[:,1,:,:]))
+legend(("first period", "current period"))
+
+RedPitayaDAQServer.disconnect(rp)
