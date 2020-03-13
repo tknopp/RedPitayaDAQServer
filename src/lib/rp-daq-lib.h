@@ -15,7 +15,7 @@
 
 
 #define BASE_FREQUENCY 125000000
-#define ADC_BUFF_SIZE (2*1024*1024) // 2MSamples = 8 MB
+#define ADC_BUFF_SIZE (8*1024*1024) // 2MSamples = 8 MB
 
 #define DAC_MODE_RASTERIZED 1
 #define	DAC_MODE_STANDARD   0
