@@ -304,7 +304,7 @@ proc create_hier_cell_write_to_ram { parentCell nameHier } {
   create_bd_pin -dir I -type rst aresetn
   create_bd_pin -dir I -from 15 -to 0 decimation
   create_bd_pin -dir I s_axis_data_tvalid
-  create_bd_pin -dir O -from 31 -to 0 sts_data
+  create_bd_pin -dir O -from 63 -to 0 sts_data
 
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
@@ -330,6 +330,13 @@ CONFIG.AXIS_TDATA_WIDTH {16} \
   set_property -dict [ list \
 CONFIG.AXIS_TDATA_WIDTH {16} \
  ] $axis_variable_decimation_B
+
+  # Create instance: c_counter_binary_0, and set properties
+  set c_counter_binary_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:c_counter_binary:12.0 c_counter_binary_0 ]
+  set_property -dict [ list \
+CONFIG.Output_Width {42} \
+CONFIG.SCLR {true} \
+ ] $c_counter_binary_0
 
   # Create instance: cic_compiler_A, and set properties
   set cic_compiler_A [ create_bd_cell -type ip -vlnv xilinx.com:ip:cic_compiler:4.0 cic_compiler_A ]
@@ -441,18 +448,18 @@ CONFIG.LOGO_FILE {data/sym_orgate.png} \
   # Create instance: xlconcat_0, and set properties
   set xlconcat_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_0 ]
   set_property -dict [ list \
-CONFIG.IN1_WIDTH {10} \
+CONFIG.IN1_WIDTH {42} \
  ] $xlconcat_0
 
   # Create instance: xlconcat_1, and set properties
   set xlconcat_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_1 ]
 
-  # Create instance: xlconstant_1, and set properties
-  set xlconstant_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_1 ]
+  # Create instance: xlconstant_0, and set properties
+  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
   set_property -dict [ list \
 CONFIG.CONST_VAL {0} \
-CONFIG.CONST_WIDTH {10} \
- ] $xlconstant_1
+CONFIG.CONST_WIDTH {42} \
+ ] $xlconstant_0
 
   # Create instance: xlconstant_2, and set properties
   set xlconstant_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_2 ]
@@ -474,6 +481,15 @@ CONFIG.CONST_WIDTH {18} \
 CONFIG.CONST_VAL {0x2f38b} \
 CONFIG.CONST_WIDTH {25} \
  ] $xlconstant_BB_HV
+
+  # Create instance: xlslice_0, and set properties
+  set xlslice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_0 ]
+  set_property -dict [ list \
+CONFIG.DIN_FROM {21} \
+CONFIG.DIN_TO {21} \
+CONFIG.DIN_WIDTH {22} \
+CONFIG.DOUT_WIDTH {1} \
+ ] $xlslice_0
 
   # Create instance: xlslice_A, and set properties
   set xlslice_A [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_A ]
@@ -497,9 +513,10 @@ CONFIG.DOUT_WIDTH {14} \
   connect_bd_intf_net -intf_net axis_variable_decimation_B_M_AXIS [get_bd_intf_pins axis_variable_decimation_B/M_AXIS] [get_bd_intf_pins cic_compiler_B/S_AXIS_CONFIG]
 
   # Create port connections
-  connect_bd_net -net axis_ram_writer_1_sts_data [get_bd_pins axis_ram_writer_1/sts_data] [get_bd_pins xlconcat_0/In0]
+  connect_bd_net -net axis_ram_writer_1_sts_data [get_bd_pins axis_ram_writer_1/sts_data] [get_bd_pins xlconcat_0/In0] [get_bd_pins xlslice_0/Din]
   connect_bd_net -net axis_red_pitaya_adc_1_m_axis_tdata [get_bd_pins Din] [get_bd_pins xlslice_A/Din] [get_bd_pins xlslice_B/Din]
   connect_bd_net -net axis_red_pitaya_adc_1_m_axis_tvalid [get_bd_pins s_axis_data_tvalid] [get_bd_pins cic_compiler_A/s_axis_data_tvalid] [get_bd_pins cic_compiler_B/s_axis_data_tvalid]
+  connect_bd_net -net c_counter_binary_0_Q [get_bd_pins c_counter_binary_0/Q] [get_bd_pins xlconcat_0/In1]
   connect_bd_net -net cic_compiler_A_m_axis_data_tdata [get_bd_pins cic_compiler_A/m_axis_data_tdata] [get_bd_pins xlconcat_1/In0]
   connect_bd_net -net cic_compiler_A_m_axis_data_tvalid [get_bd_pins cic_compiler_A/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net cic_compiler_B_m_axis_data_tdata [get_bd_pins cic_compiler_B/m_axis_data_tdata] [get_bd_pins xlconcat_1/In1]
@@ -512,8 +529,8 @@ CONFIG.DOUT_WIDTH {14} \
   connect_bd_net -net xlconcat_0_dout [get_bd_pins sts_data] [get_bd_pins xlconcat_0/dout]
   connect_bd_net -net xlconcat_1_dout [get_bd_pins axis_dwidth_converter_0/s_axis_tdata] [get_bd_pins xlconcat_1/dout]
   connect_bd_net -net xlconcat_2_dout [get_bd_pins cic_compiler_A/s_axis_data_tdata] [get_bd_pins sign_extend_A/dout]
-  connect_bd_net -net xlconstant_1_dout [get_bd_pins xlconcat_0/In1] [get_bd_pins xlconstant_1/dout]
   connect_bd_net -net xlconstant_2_dout [get_bd_pins axis_ram_writer_1/cfg_data] [get_bd_pins xlconstant_2/dout]
+  connect_bd_net -net xlslice_0_Dout [get_bd_pins c_counter_binary_0/CLK] [get_bd_pins xlslice_0/Dout]
   connect_bd_net -net xlslice_A_Dout [get_bd_pins sign_extend_A/In0] [get_bd_pins xlslice_A/Dout]
   connect_bd_net -net xlslice_B_Dout [get_bd_pins sign_extend_B/In0] [get_bd_pins xlslice_B/Dout]
 
@@ -564,7 +581,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir O -type rst FCLK_RESET0_N
   create_bd_pin -dir I -type clk S_AXI_HP0_ACLK
-  create_bd_pin -dir I -from 31 -to 0 adc_sts
+  create_bd_pin -dir I -from 63 -to 0 adc_sts
   create_bd_pin -dir O -from 31 -to 0 cfg_data
   create_bd_pin -dir I -from 63 -to 0 curr_pdm_values
   create_bd_pin -dir O -from 639 -to 0 dac_cfg
@@ -604,7 +621,7 @@ CONFIG.NUM_MI {7} \
   set axi_sts_register_adc [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_sts_register:1.0 axi_sts_register_adc ]
   set_property -dict [ list \
 CONFIG.AXI_ADDR_WIDTH {32} \
-CONFIG.STS_DATA_WIDTH {32} \
+CONFIG.STS_DATA_WIDTH {64} \
  ] $axi_sts_register_adc
 
   # Create instance: axi_sts_register_pdm, and set properties
@@ -2632,6 +2649,4 @@ CONFIG.DOUT_WIDTH {8} \
 
 create_root_design ""
 
-
-common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
