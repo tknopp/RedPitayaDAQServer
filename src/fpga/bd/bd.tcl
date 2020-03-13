@@ -2276,9 +2276,9 @@ CONFIG.FREQ_HZ {125000000} \
   set daisy_n_o [ create_bd_port -dir O -from 0 -to 0 daisy_n_o ]
   set daisy_p_i [ create_bd_port -dir I daisy_p_i ]
   set daisy_p_o [ create_bd_port -dir O -from 0 -to 0 daisy_p_o ]
-  set ext_DIO0_N [ create_bd_port -dir IO ext_DIO0_N ]
+  set ext_DIO0_N [ create_bd_port -dir I ext_DIO0_N ]
   set ext_DIO0_P [ create_bd_port -dir IO ext_DIO0_P ]
-  set ext_DIO1_N [ create_bd_port -dir IO ext_DIO1_N ]
+  set ext_DIO1_N [ create_bd_port -dir O -from 0 -to 0 ext_DIO1_N ]
   set ext_DIO1_P [ create_bd_port -dir IO ext_DIO1_P ]
   set ext_DIO2_N [ create_bd_port -dir IO ext_DIO2_N ]
   set ext_DIO2_P [ create_bd_port -dir IO ext_DIO2_P ]
@@ -2451,7 +2451,6 @@ CONFIG.C_BUF_TYPE {OBUFDS} \
   set util_vector_logic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_0 ]
   set_property -dict [ list \
 CONFIG.C_OPERATION {not} \
-CONFIG.C_SIZE {1} \
 CONFIG.LOGO_FILE {data/sym_notgate.png} \
  ] $util_vector_logic_0
 
@@ -2560,9 +2559,9 @@ CONFIG.DOUT_WIDTH {8} \
   connect_bd_net -net clk_wiz_0_clk_pdm [get_bd_pins clk_div_0/clk] [get_bd_pins clk_wiz_0/clk_pdm]
   connect_bd_net -net clk_wiz_0_locked [get_bd_pins axis_red_pitaya_dac_0/locked] [get_bd_pins clk_wiz_0/locked] [get_bd_pins selectio_wiz_1/clock_enable] [get_bd_pins system/dcm_locked]
   connect_bd_net -net clk_wiz_1_clk_out1 [get_bd_pins clk_wiz_0/clk_in2] [get_bd_pins clk_wiz_1/clk_out1]
-  connect_bd_net -net clk_wiz_1_locked [get_bd_pins clk_wiz_1/locked] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net daisy_n_i_1 [get_bd_ports daisy_n_i] [get_bd_pins selectio_wiz_2/data_in_from_pins_n]
   connect_bd_net -net daisy_p_i_1 [get_bd_ports daisy_p_i] [get_bd_pins selectio_wiz_2/data_in_from_pins_p]
+  connect_bd_net -net ext_DIO0_N_1 [get_bd_ports ext_DIO0_N] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net forurier_synth_rasterized_synth_tdata [get_bd_pins axis_select_0/s_axis_tdata_channel_2] [get_bd_pins fourier_synth_rasterized/synth_tdata]
   connect_bd_net -net forurier_synth_rasterized_synth_tvalid [get_bd_pins axis_select_0/s_axis_tvalid_channel_2] [get_bd_pins fourier_synth_rasterized/synth_tvalid]
   connect_bd_net -net forurier_synth_standard_synth_tdata [get_bd_pins axis_select_0/s_axis_tdata_channel_1] [get_bd_pins fourier_synth_standard/synth_tdata]
@@ -2587,9 +2586,10 @@ CONFIG.DOUT_WIDTH {8} \
   connect_bd_net -net system_peripheral_aresetn [get_bd_pins reset_manager_0/peripheral_aresetn] [get_bd_pins system/peripheral_aresetn]
   connect_bd_net -net util_ds_buf_0_OBUF_DS_N [get_bd_ports adc_enc_n_o] [get_bd_pins util_ds_buf_0/OBUF_DS_N]
   connect_bd_net -net util_ds_buf_0_OBUF_DS_P [get_bd_ports adc_enc_p_o] [get_bd_pins util_ds_buf_0/OBUF_DS_P]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins clk_wiz_0/clk_in_sel] [get_bd_pins util_vector_logic_0/Res]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins system/adc_sts] [get_bd_pins write_to_ram/sts_data]
   connect_bd_net -net xlconcat_0_dout1 [get_bd_ports dac_pwm_o] [get_bd_pins pdm/dout]
-  connect_bd_net -net xlconstant_0_dout [get_bd_pins clk_wiz_0/clk_in_sel] [get_bd_pins xlconstant_0/dout]
+  connect_bd_net -net xlconstant_0_dout [get_bd_ports ext_DIO1_N] [get_bd_pins xlconstant_0/dout]
   connect_bd_net -net xlconstant_2_dout [get_bd_pins clk_div_0/reset] [get_bd_pins xlconstant_2/dout]
   connect_bd_net -net xlconstant_5_dout [get_bd_pins clk_wiz_0/reset] [get_bd_pins clk_wiz_1/reset] [get_bd_pins util_vector_logic_1/Res]
   connect_bd_net -net xlslice_0_Dout [get_bd_pins pdm/Din] [get_bd_pins system/pdm_data]
@@ -2626,4 +2626,6 @@ CONFIG.DOUT_WIDTH {8} \
 
 create_root_design ""
 
+
+common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
