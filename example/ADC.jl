@@ -30,11 +30,14 @@ masterTrigger(rp, true)
 
 sleep(1.0)
 
+
 uFirstPeriod = readData(rp, 0, 1)
 uCurrentPeriod = readData(rp, currentFrame(rp), 1)
+#stopADC(rp)
+#RedPitayaDAQServer.disconnect(rp)
 
+figure(1)
+clf()
 plot(vec(uFirstPeriod[:,1,:,:]))
 plot(vec(uCurrentPeriod[:,1,:,:]))
 legend(("first period", "current period"))
-
-RedPitayaDAQServer.disconnect(rp)

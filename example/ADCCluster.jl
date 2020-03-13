@@ -1,7 +1,7 @@
 using RedPitayaDAQServer
 using PyPlot
 
-rp = RedPitayaCluster(["rp-f04972.local"])
+rp = RedPitayaCluster(["rp-f04972.local","rp-f044d6.local"])
 
 dec = 16
 modulus = 4800
@@ -32,9 +32,14 @@ sleep(1.0)
 
 uFirstPeriod = readData(rp, 0, 1)
 uCurrentPeriod = readData(rp, currentFrame(rp), 1)
+#RedPitayaDAQServer.disconnect(rp)
 
+figure(1)
+clf()
+subplot(1,2,1)
 plot(vec(uFirstPeriod[:,1,:,:]))
 plot(vec(uCurrentPeriod[:,1,:,:]))
+subplot(1,2,2)
+plot(vec(uFirstPeriod[:,2,:,:]))
+plot(vec(uCurrentPeriod[:,2,:,:]))
 legend(("first period", "current period"))
-
-RedPitayaDAQServer.disconnect(rp)
