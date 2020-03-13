@@ -315,6 +315,9 @@ CONFIG.S_TDATA_NUM_BYTES {4} \
 
   # Create instance: axis_ram_writer_1, and set properties
   set axis_ram_writer_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_ram_writer:1.0 axis_ram_writer_1 ]
+  set_property -dict [ list \
+CONFIG.ADDR_WIDTH {22} \
+ ] $axis_ram_writer_1
 
   # Create instance: axis_variable_decimation_A, and set properties
   set axis_variable_decimation_A [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_decimation_A ]
@@ -437,6 +440,9 @@ CONFIG.LOGO_FILE {data/sym_orgate.png} \
 
   # Create instance: xlconcat_0, and set properties
   set xlconcat_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_0 ]
+  set_property -dict [ list \
+CONFIG.IN1_WIDTH {10} \
+ ] $xlconcat_0
 
   # Create instance: xlconcat_1, and set properties
   set xlconcat_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_1 ]
@@ -445,7 +451,7 @@ CONFIG.LOGO_FILE {data/sym_orgate.png} \
   set xlconstant_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_1 ]
   set_property -dict [ list \
 CONFIG.CONST_VAL {0} \
-CONFIG.CONST_WIDTH {12} \
+CONFIG.CONST_WIDTH {10} \
  ] $xlconstant_1
 
   # Create instance: xlconstant_2, and set properties
