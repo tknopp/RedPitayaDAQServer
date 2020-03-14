@@ -21,7 +21,8 @@
 #include "../lib/rp-daq-lib.h"
 
 int main () {
-  uint32_t wp, wp_old;
+  uint32_t wp, wp_old, over, over_old;
+  uint64_t wpTotal;
 
   setMaster();
   init();
@@ -29,34 +30,39 @@ int main () {
   setWatchdogMode(WATCHDOG_OFF);  
 
   setMasterTrigger(MASTER_TRIGGER_OFF);
+
+  wp = getWritePointer();
+  wpTotal = getTotalWritePointer();
+  over = getWritePointerOverflows();
+  printf("Write pointer = %u %u %llu\n", wp, over, wpTotal);
+
+
   setRAMWriterMode(ADC_MODE_TRIGGERED);
+  usleep(100000);
+  setMasterTrigger(MASTER_TRIGGER_ON);
+  
+  while(getTriggerStatus() == 0)
+  {
+    printf("Waiting for external trigger!"); 
+    usleep(40);
+  }
 
   while(true)
   {
-    setMasterTrigger(MASTER_TRIGGER_OFF);
-    usleep(400);
-    setMasterTrigger(MASTER_TRIGGER_ON);
-    usleep(40);
-
-    while(getTriggerStatus() == 0)
-    {
-      printf("Waiting for external trigger!"); 
-      usleep(40);
-    }
-
-    wp_old = getWritePointer();
-    usleep(10000);
+    wp_old = wp;
     wp = getWritePointer();
+    over = getWritePointerOverflows();
+    wpTotal = getTotalWritePointer();
 
     uint32_t size = getWritePointerDistance(wp_old, wp)-1;
 
-    printf("____ %d %d %d \n", size, wp_old, wp);
+    printf("wp %u over %u wpDiff %u wpTotal %llu \n", wp, over, size, wpTotal);
     if(size == 0) {
       printf("Write Pointer remains the same!");
       return 1;
     }
 
-    usleep(40);    
+    usleep(10000);
   } 
   return 0;
 }

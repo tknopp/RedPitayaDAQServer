@@ -13,6 +13,7 @@
 #include <sys/socket.h> /* for socket(), connect(), send(), and recv() */
 #include <arpa/inet.h>  /* for sockaddr_in and inet_addr() */
 #include <time.h> 
+#include <limits.h>
 #include "rp-daq-lib.h"
 #include "rp-config.h"
 
@@ -468,8 +469,23 @@ uint16_t getDecimation() {
     return value;
 }
 
+
+#define BIT_MASK(__TYPE__, __ONE_COUNT__) \
+    ((__TYPE__) (-((__ONE_COUNT__) != 0))) \
+    & (((__TYPE__) -1) >> ((sizeof(__TYPE__) * CHAR_BIT) - (__ONE_COUNT__)))
+
 uint32_t getWritePointer() {
-	return (*((uint32_t *)(adc_sts + 0)))*2;
+    uint32_t val = (*((uint32_t *)(adc_sts + 0)));
+    uint32_t mask = BIT_MASK(uint64_t, 22); // Extract lower 22 bits
+    return 2*(val&mask);
+}
+
+uint32_t getWritePointerOverflows() {
+    return (*(((uint64_t *)(adc_sts + 0)))) >> 22; // Extract upper 42 bits
+}
+
+uint64_t getTotalWritePointer() {
+    return getWritePointer() + (getWritePointerOverflows() << 23);
 }
 
 uint32_t getWritePointerDistance(uint32_t start_pos, uint32_t end_pos) {
