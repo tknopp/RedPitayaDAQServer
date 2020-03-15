@@ -3,15 +3,17 @@ using PyPlot
 
 rp = RedPitaya("rp-f04972.local")
 
-dec = 16
+dec = 32
 modulus = 4800
 base_frequency = 125000000
-samples_per_period = div(modulus, dec)
-periods_per_frame = 3
+samples_per_period = div(modulus, dec)*5 # 10 fold averaging
+periods_per_frame = 100
 
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
 periodsPerFrame(rp, periods_per_frame)
+numSlowDACChan(rp, 1)
+setSlowDACLUT(rp, collect(range(0,1,length=periods_per_frame)))
 
 modeDAC(rp, "RASTERIZED")
 for (i,val) in enumerate([4800,4864,4800,4800])
@@ -29,15 +31,13 @@ startADC(rp)
 masterTrigger(rp, true)
 
 sleep(1.0)
+currFr = enableSlowDAC(rp, true, 100, 0.0, 1.0)
 
-
-uFirstPeriod = readData(rp, 0, 1)
-uCurrentPeriod = readData(rp, currentFrame(rp), 1)
-#stopADC(rp)
-#RedPitayaDAQServer.disconnect(rp)
+uCurrentPeriod = readData(rp, currFr, 10)
 
 figure(1)
 clf()
-plot(vec(uFirstPeriod[:,1,:,:]))
+subplot(1,2,1)
 plot(vec(uCurrentPeriod[:,1,:,:]))
-legend(("first period", "current period"))
+subplot(1,2,2)
+plot(vec(uCurrentPeriod[:,2,:,:]))
