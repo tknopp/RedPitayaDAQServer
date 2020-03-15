@@ -35,23 +35,17 @@
 #define SCPI_IDN3 NULL
 #define SCPI_IDN4 "0.1"
 
-extern volatile int numSamplesPerPeriod;
-extern volatile int numPeriodsPerFrame;
+extern int numSamplesPerPeriod;
+extern int numPeriodsPerFrame;
 extern int numSlowDACChan;
 extern int numSlowADCChan;
 extern int enableSlowDAC;
 extern int enableSlowDACAck;
 extern int numSlowDACFramesEnabled;
 extern int64_t frameSlowDACEnabled;
-extern volatile int64_t numSamplesPerFrame;
-extern volatile int64_t numFramesInMemoryBuffer;
-extern volatile int64_t buff_size;
 
-extern volatile int64_t currentFrameTotal;
 extern int64_t startWP;
-extern volatile int64_t currentPeriodTotal;
-extern volatile int64_t data_read, data_read_total;
-extern volatile int64_t channel;
+extern int64_t channel;
 
 extern uint32_t *buffer;
 extern bool initialized;
@@ -82,6 +76,9 @@ extern char scpi_input_buffer[SCPI_INPUT_BUFFER_LENGTH];
 extern scpi_error_t scpi_error_queue_data[SCPI_ERROR_QUEUE_SIZE];
 extern scpi_t scpi_context;
 
+extern uint64_t getCurrentFrameTotal();
+extern uint64_t getCurrentPeriodTotal();
+extern uint64_t getNumSamplesPerFrame();
 extern int createServer(int);
 extern int waitServer(int);
 extern void* acquisitionThread(void*);

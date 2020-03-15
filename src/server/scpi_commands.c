@@ -397,36 +397,18 @@ static scpi_result_t RP_ADC_GetNumSlowADCChan(scpi_t * context) {
 }
 
 static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t * context) {
-        // Reading is only possible while an acquisition is running
-        if(!rxEnabled) {
-                return SCPI_RES_ERR;
-        }
-
-	SCPI_ResultInt64(context, currentFrameTotal);
-
+    SCPI_ResultUInt64(context, getCurrentFrameTotal());
     return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_ADC_GetCurrentWP(scpi_t * context) {
-        printf("RP_ADC_GetCurrentWP\n");
-	// Reading is only possible while an acquisition is running
-        //if(!rxEnabled) {
-        //        return SCPI_RES_ERR;
-        //}
-
-	SCPI_ResultInt64(context, getWritePointer());
-
+    printf("RP_ADC_GetCurrentWP\n");
+    SCPI_ResultUInt64(context, getTotalWritePointer());
     return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_ADC_GetCurrentPeriod(scpi_t * context) {
-        // Reading is only possible while an acquisition is running
-        if(!rxEnabled) {
-                return SCPI_RES_ERR;
-        }
-
-	SCPI_ResultInt64(context, currentPeriodTotal);
-
+    SCPI_ResultUInt64(context, getCurrentPeriodTotal());
     return SCPI_RES_OK;
 }
 
@@ -727,7 +709,7 @@ scpi_choice_def_t instant_reset_modes[] = {
 static scpi_result_t RP_GetInstantResetMode(scpi_t * context) {
 	const char * name;
 
-    SCPI_ChoiceToName(instant_reset_modes, getInstantResetMode, &name);
+    SCPI_ChoiceToName(instant_reset_modes, getInstantResetMode(), &name);
 	SCPI_ResultText(context, name);
 
     return SCPI_RES_OK;
