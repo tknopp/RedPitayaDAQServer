@@ -30,18 +30,9 @@ struct sockaddr_in newdatasockaddr;
 socklen_t newdatasocklen;
 
 static scpi_result_t RP_Init(scpi_t * context) {
-    int64_t isMast;
-    if (!SCPI_ParamInt64(context, &isMast, TRUE)) {
-	return SCPI_RES_ERR;
-    }
 
     if(!initialized)
     {
-	if(isMast) {
-	    setMaster();
-	} else {
-	    setSlave();
-	}
         init();
         initialized = true;
     }

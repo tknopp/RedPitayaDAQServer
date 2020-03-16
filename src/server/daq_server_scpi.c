@@ -245,8 +245,6 @@ uint64_t getNumSamplesPerFrame() {
 uint64_t getCurrentFrameTotal() {
   uint64_t currWP = getTotalWritePointer();
   uint64_t currFrame = (currWP - startWP) / getNumSamplesPerFrame();
-
-  printf("%llu  %llu %lld  \n", currWP, currFrame, getNumSamplesPerFrame());
   return currFrame;
 }
 
@@ -583,7 +581,7 @@ void createThreads()
   struct sched_param scheduleSlowDAC;
   pthread_attr_t attrSlowDAC;
 
-  scheduleSlowDAC.sched_priority = 60; //SCHED_RR goes from 1 -99
+  scheduleSlowDAC.sched_priority = 99; //SCHED_RR goes from 1 -99
   pthread_attr_init(&attrSlowDAC);
   pthread_attr_setinheritsched(&attrSlowDAC, PTHREAD_EXPLICIT_SCHED);
   pthread_attr_setschedpolicy(&attrSlowDAC, SCHED_RR);
@@ -622,14 +620,14 @@ int main(int argc, char** argv) {
   buffInitialized = false;
 
   // Set priority of this thread
-  /*struct sched_param p;
-    p.sched_priority = 99; 
+  struct sched_param p;
+    p.sched_priority = 1; 
     pthread_t this_thread = pthread_self();
     int ret = pthread_setschedparam(this_thread, SCHED_RR, &p);
     if (ret != 0) {
-    printf("Unsuccessful in setting thread realtime prio.\n");
-    return NULL;     
-    }*/
+      printf("Unsuccessful in setting thread realtime prio.\n");
+      return 1;     
+    }
 
   getprio(pthread_self());
 

@@ -47,14 +47,8 @@ void loadBitstream() {
     } else {
       printf("Load Bitfile\n");
       int catResult = 0;
-      if(isMaster()) {		
-        printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/master.bit\n"); 
-        catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");		
-      } else {		
-        printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/slave.bit\n"); 
-        catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/slave.bit > /dev/xdevcfg");		
-      }
-
+      printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/master.bit\n"); 
+      catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");		
       if(catResult <= -1) {
         printf("Error while writing the image to the FPGA.\n");
       }
@@ -138,26 +132,6 @@ int init() {
 	setAmplitude(0, 1, 3);
 
 	return 0;
-}
-
-
-bool master = IS_MASTER;
-
-// TODO: Implement getting the status directly from the FPGA
-bool isMaster() {
-  return master;
-}
-
-bool isSlave() {
-  return !isMaster();
-}
-
-void setMaster() {
-  master = true;		
-}		
-		
-void setSlave() {		
-  master = false;		
 }
 
 // fast DAC
