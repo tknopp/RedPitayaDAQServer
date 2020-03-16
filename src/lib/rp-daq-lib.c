@@ -13,6 +13,7 @@
 #include <sys/socket.h> /* for socket(), connect(), send(), and recv() */
 #include <arpa/inet.h>  /* for sockaddr_in and inet_addr() */
 #include <time.h> 
+#include <limits.h>
 #include "rp-daq-lib.h"
 #include "rp-config.h"
 
@@ -46,14 +47,8 @@ void loadBitstream() {
     } else {
       printf("Load Bitfile\n");
       int catResult = 0;
-      if(isMaster()) {		
-        printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/master.bit\n"); 
-        catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");		
-      } else {		
-        printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/slave.bit\n"); 
-        catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/slave.bit > /dev/xdevcfg");		
-      }
-
+      printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/master.bit\n"); 
+      catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");		
       if(catResult <= -1) {
         printf("Error while writing the image to the FPGA.\n");
       }
@@ -88,7 +83,7 @@ int init() {
 	pdm_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40003000);
 	reset_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40005000);
 	cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40004000);
-	ram = mmap(NULL, 4*2048*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x1E000000);
+	ram = mmap(NULL, sizeof(int32_t)*ADC_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x1E000000);
         xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
 
 	// Set HP0 bus width to 64 bits
@@ -137,26 +132,6 @@ int init() {
 	setAmplitude(0, 1, 3);
 
 	return 0;
-}
-
-
-bool master = IS_MASTER;
-
-// TODO: Implement getting the status directly from the FPGA
-bool isMaster() {
-  return master;
-}
-
-bool isSlave() {
-  return !isMaster();
-}
-
-void setMaster() {
-  master = true;		
-}		
-		
-void setSlave() {		
-  master = false;		
 }
 
 // fast DAC
@@ -468,8 +443,28 @@ uint16_t getDecimation() {
     return value;
 }
 
+
+#define BIT_MASK(__TYPE__, __ONE_COUNT__) \
+    ((__TYPE__) (-((__ONE_COUNT__) != 0))) \
+    & (((__TYPE__) -1) >> ((sizeof(__TYPE__) * CHAR_BIT) - (__ONE_COUNT__)))
+
 uint32_t getWritePointer() {
-	return (*((uint32_t *)(adc_sts + 0)))*2;
+    uint32_t val = (*((uint32_t *)(adc_sts + 0)));
+    uint32_t mask = BIT_MASK(uint64_t, 22); // Extract lower 22 bits
+    return 2*(val&mask);
+}
+
+uint32_t getInternalWritePointer(uint64_t wp) {
+    uint32_t mask = BIT_MASK(uint64_t, 23); // Extract lower 23 bits
+    return wp&mask;
+}
+
+uint32_t getWritePointerOverflows() {
+    return (*(((uint64_t *)(adc_sts + 0)))) >> 22; // Extract upper 42 bits
+}
+
+uint64_t getTotalWritePointer() {
+    return getWritePointer() + (getWritePointerOverflows() << 23);
 }
 
 uint32_t getWritePointerDistance(uint32_t start_pos, uint32_t end_pos) {

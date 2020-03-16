@@ -58,26 +58,18 @@
 #include "../lib/rp-daq-lib.h"
 #include "../server/scpi_commands.h"
 
-volatile int numSamplesPerPeriod = 5000;
-volatile int numPeriodsPerFrame = 20;
+int numSamplesPerPeriod = 5000;
+int numPeriodsPerFrame = 20;
 int numSlowDACChan = 0;
 int numSlowADCChan = 0;
 int numSlowDACFramesEnabled = 0;
 int enableSlowDAC = 0;
 int enableSlowDACAck = true;
 int64_t frameSlowDACEnabled = -1;
-volatile int64_t numSamplesPerFrame = -1;
-volatile int64_t numFramesInMemoryBuffer = -1;
-volatile int64_t numPeriodsInMemoryBuffer = -1;
-volatile int64_t buff_size = 0;
 int64_t startWP = -1;
 
-volatile int64_t currentFrameTotal;
-volatile int64_t currentPeriodTotal;
-volatile int64_t data_read, data_read_total;
-volatile int64_t channel;
+int64_t channel;
 
-uint32_t *buffer = NULL;
 bool initialized = false;
 bool rxEnabled = false;
 bool buffInitialized = false;
@@ -90,8 +82,6 @@ double slowDACRampUpTime = 0.4;
 double slowDACFractionRampUp = 0.8;
 float *slowADCBuffer = NULL;
 
-
-pthread_t pAcq;
 pthread_t pSlowDAC;
 pthread_t pComm;
 
@@ -103,7 +93,7 @@ socklen_t clilen;
 static void getprio( pthread_t id ) {
   int policy;
   struct sched_param param;
-  printf("\t->Thread %ld: ", id);
+  //printf("\t->Thread %ld: ", id);
   if((pthread_getschedparam(id, &policy, &param)) == 0  ) {
     printf("Scheduler: ");
     switch( policy ) {
@@ -248,241 +238,70 @@ int waitServer(int fd) {
   return rc;
 }
 
-void* acquisitionThread(void* ch) { 
-  uint32_t wp, wp_old;
-  bool firstCycle;
-
-  printf("Starting acquisition thread\n");
-  getprio(pthread_self());
-
-  // Loop until the acquisition is started
-  while(acquisitionThreadRunning) {
-    // Reset everything in order to provide a fresh start
-    // everytime the acquisition is started
-    if(rxEnabled) {
-      printf("Starting acquisition...\n");
-      currentFrameTotal = 0;
-      currentPeriodTotal = 0;
-      data_read_total = 0; 
-      data_read = 0; 
-
-      numSamplesPerFrame = numSamplesPerPeriod * numPeriodsPerFrame; 
-      printf("numPeriodsPerFrame = %d \n", numPeriodsPerFrame);
-      printf("numSamplesPerPeriod = %d \n", numSamplesPerPeriod);
-      printf("numSamplesPerFrame = %ld \n", numSamplesPerFrame);
-      
-      numFramesInMemoryBuffer = 32*1024*1024 / numSamplesPerFrame;
-      numPeriodsInMemoryBuffer = numFramesInMemoryBuffer*numPeriodsPerFrame;
-      
-      printf("numFramesInMemoryBuffer = %ld \n", numFramesInMemoryBuffer);
-      //printf("Release old buffer\n");
-      releaseBuffer();
-      printf("Initializing new buffer...\n");
-      initBuffer();
-      printf("New buffer initialized\n");
-
-      wp_old = startWP;
-      firstCycle = true;
-
-      //while(getTriggerStatus() == 0 && rxEnabled)
-      //{
-      //  printf("Waiting for external trigger! \n");
-      //  fflush(stdout);
-      //  usleep(100);
-      //}
-
-      printf("Trigger received, start reading\n");		
-
-      while(rxEnabled) {
-        //printf("Get write pointer\n");
-        wp = getWritePointer();
-
-        //printf("Get write pointer distance\n");
-        uint32_t size = getWritePointerDistance(wp_old, wp)-1;
-        if(size > 512*1024) {
-          printf("I think we lost a step %d %d %d \n", size, wp_old, wp);
-        }
-
-        if(firstCycle) {
-          firstCycle = false;
-        } else {
-          // Limit size to be read to period length
-          size = MIN(size, numSamplesPerPeriod);
-        }
-
-        if (size > 0) {
-          if(data_read + size <= buff_size) { 
-            //printf("Read ADC data\n");
-            readADCData(wp_old, size, buffer + data_read);
-
-            //printf("Update position information\n");
-            data_read += size;
-            data_read_total += size;
-            wp_old = (wp_old + size) % ADC_BUFF_SIZE;
-          } else {
-            printf("OVERFLOW %ld %d  %ld\n", data_read, size, buff_size);
-            printf("____ %d %d %d \n", size, wp_old, wp);
-            printf("data_read_total = %lld \n", data_read_total);
-            printf("currentFrameTotal = %lld \n", currentFrameTotal);
-            printf("currentPeriodTotal = %lld \n", currentPeriodTotal);
-
-
-            uint32_t size1 = buff_size - data_read; 
-            uint32_t size2 = size - size1; 
-
-            readADCData(wp_old, size1, buffer + data_read);
-            data_read = 0;
-            data_read_total += size1;
-
-            wp_old = (wp_old + size1) % ADC_BUFF_SIZE;
-
-            readADCData(wp_old, size2, buffer + data_read);
-            data_read += size2;
-            data_read_total += size2;
-            wp_old = (wp_old + size2) % ADC_BUFF_SIZE;
-          }
-
-          currentFrameTotal = data_read_total / numSamplesPerFrame;
-          currentPeriodTotal = data_read_total / (numSamplesPerPeriod);
-
-          //				printf("++++ data_read: %lld data_read_total: %lld total_frame %lld\n", 
-          //				                    data_read, data_read_total, currentFrameTotal);
-          //                                fflush(stdout);
-
-        } else {
-          //printf("Counter not increased %d %d \n", wp_old, wp);
-          usleep(10);
-        }
-      }
-    }
-    // Wait for the acquisition to start
-    usleep(10);
-  }
-
-  printf("Acquisition thread finished\n");
+uint64_t getNumSamplesPerFrame() {
+  return numSamplesPerPeriod * numPeriodsPerFrame;
 }
 
-void sendFramesToHost(int64_t frame, int64_t numFrames) {
-  int n;
-  int64_t frameInBuff = frame % numFramesInMemoryBuffer;
-
-  if(numFrames+frameInBuff < numFramesInMemoryBuffer) {
-    n = write(newdatasockfd, buffer+frameInBuff*numSamplesPerFrame, 
-        numSamplesPerFrame * numFrames * sizeof(uint32_t));
-
-    if (n < 0) {
-      printf("Error in sendToHost()\n");
-      perror("ERROR writing to socket"); 
-    }
-  } else {
-    int64_t frames1 = numFramesInMemoryBuffer - frameInBuff;
-    int64_t frames2 = numFrames - frames1;
-    n = write(newdatasockfd, buffer+frameInBuff*numSamplesPerFrame,
-        numSamplesPerFrame * frames1 *sizeof(uint32_t));
-
-    if (n < 0) {
-      printf("Error in sendToHost() (else part 1)\n");
-      perror("ERROR writing to socket");
-    }
-
-    n = write(newdatasockfd, buffer,
-        numSamplesPerFrame * frames2 * sizeof(uint32_t));
-
-    if (n < 0) {
-      printf("Error in sendToHost() (else part 2)\n");
-      perror("ERROR writing to socket");
-    }
-  }
+uint64_t getCurrentFrameTotal() {
+  uint64_t currWP = getTotalWritePointer();
+  uint64_t currFrame = (currWP - startWP) / getNumSamplesPerFrame();
+  return currFrame;
 }
 
-void sendPeriodsToHost(int64_t period, int64_t numPeriods) {
-  int n;
-  int64_t periodInBuff = period % numPeriodsInMemoryBuffer;
+uint64_t getCurrentPeriodTotal() {
+  return (getTotalWritePointer()-startWP) / numSamplesPerPeriod; 
+}
 
-  if(numPeriods+periodInBuff < numPeriodsInMemoryBuffer) {
-    n = write(newdatasockfd, buffer+periodInBuff*numSamplesPerPeriod, 
-        numSamplesPerPeriod * numPeriods * sizeof(uint32_t));
 
-    if (n < 0) {
-      printf("Error in sendToHost()\n");
-      perror("ERROR writing to socket"); 
-    }
-  } else {
-    int64_t period1 = numPeriodsInMemoryBuffer - periodInBuff;
-    int64_t period2 = numPeriods - period1;
-    n = write(newdatasockfd, buffer+periodInBuff*numSamplesPerPeriod,
-        numSamplesPerPeriod * period1 *sizeof(uint32_t));
+void sendDataToHost(uint64_t wpTotal, uint64_t size) {
+    int n;
+    uint32_t wp = getInternalWritePointer(wpTotal);
+    if(wp+size <= ADC_BUFF_SIZE) {                                                                                        n = write(newdatasockfd, ram + sizeof(uint32_t)*wp, size*sizeof(uint32_t));
+        if (n < 0) {
+          printf("Error in sendToHost()\n");
+          perror("ERROR writing to socket"); 
+        }                   
+     } else {                                                                                                  
+        uint32_t size1 = ADC_BUFF_SIZE - wp;                                                              
+        uint32_t size2 = size - size1;                                                                    
+         
+        n = write(newdatasockfd, ram + sizeof(uint32_t)*wp, size1*sizeof(uint32_t));
+        if (n < 0) {
+          printf("Error in sendToHost()\n");
+          perror("ERROR writing to socket"); 
+        }                   
+        n = write(newdatasockfd, ram, size2*sizeof(uint32_t));
+        if (n < 0) {
+          printf("Error in sendToHost()\n");
+          perror("ERROR writing to socket"); 
+        }                   
+    }                                                                                                         
+}  
 
-    if (n < 0) {
-      printf("Error in sendToHost() (else part 1)\n");
-      perror("ERROR writing to socket");
-    }
+void sendFramesToHost(int64_t frame, int64_t numFrames) 
+{
+  int64_t wpTotal = startWP + frame*getNumSamplesPerFrame();
+  int64_t size = numFrames*getNumSamplesPerFrame();
+  sendDataToHost(wpTotal, size);
+}
 
-    n = write(newdatasockfd, buffer,
-        numSamplesPerPeriod * period2 * sizeof(uint32_t));
-
-    if (n < 0) {
-      printf("Error in sendToHost() (else part 2)\n");
-      perror("ERROR writing to socket");
-    }
-  }
+void sendPeriodsToHost(int64_t frame, int64_t numPeriods) 
+{
+  int64_t wpTotal = startWP + frame*numSamplesPerPeriod;
+  int64_t size = numPeriods*numSamplesPerPeriod;
+  sendDataToHost(wpTotal, size);
 }
 
 void sendSlowFramesToHost(int64_t frame, int64_t numFrames) {
-  int n;
-  int64_t frameInBuff = frame % numFramesInMemoryBuffer;
-
-  if(numFrames+frameInBuff < numFramesInMemoryBuffer) {
-    n = write(newdatasockfd, slowADCBuffer+frameInBuff*numPeriodsPerFrame*numSlowADCChan, 
-        numPeriodsPerFrame * numFrames * numSlowADCChan * sizeof(float));
-
-    if (n < 0) {
-      printf("Error in sendToHost()\n");
-      perror("ERROR writing to socket"); 
-    }
-  } else {
-    int64_t frames1 = numFramesInMemoryBuffer - frameInBuff;
-    int64_t frames2 = numFrames - frames1;
-    n = write(newdatasockfd, slowADCBuffer+frameInBuff*numPeriodsPerFrame*numSlowADCChan,
-        numPeriodsPerFrame * numSlowADCChan * frames1 *sizeof(float));
-
-    if (n < 0) {
-      printf("Error in sendToHost() (else part 1)\n");
-      perror("ERROR writing to socket");
-    }
-
-    n = write(newdatasockfd, slowADCBuffer,
-        numPeriodsPerFrame * numSlowADCChan * frames2 * sizeof(float));
-
-    if (n < 0) {
-      printf("Error in sendToHost() (else part 2)\n");
-      perror("ERROR writing to socket");
-    }
-  }
 }
 
-void initBuffer() {
-  buff_size = numSamplesPerFrame*numFramesInMemoryBuffer;
-  printf("numFramesInMemoryBuffer = %ld \n", numFramesInMemoryBuffer);
-  printf("buff_size = %ld \n", buff_size);
-  printf("numSamplesPerFrame = %ld \n", numSamplesPerFrame);
-
-
-  printf("numFramesInMemoryBuffer = %ld \n", numFramesInMemoryBuffer);
-  printf("Allocating buffer of size %ld \n", buff_size*sizeof(uint32_t));
-  buffer = (uint32_t*)malloc(buff_size * sizeof(uint32_t));
-  memset(buffer, 0, buff_size * sizeof(uint32_t));
-  slowADCBuffer = (float*)malloc(numFramesInMemoryBuffer * 
-		                 numPeriodsPerFrame * numSlowADCChan * sizeof(float));
-  memset(slowADCBuffer, 0, numFramesInMemoryBuffer * numSlowADCChan *
-		           numPeriodsPerFrame * sizeof(float));
-
+void initBuffer() 
+{
   buffInitialized = true;
 }
 
-void releaseBuffer() {
-  free(buffer);
-  free(slowADCBuffer);
+void releaseBuffer() 
+{
   buffInitialized = false;
 }
 
@@ -515,7 +334,7 @@ void* slowDACThread(void* ch)
   while(acquisitionThreadRunning) {
     // Reset everything in order to provide a fresh start
     // everytime the acquisition is started
-    if(rxEnabled && buffInitialized && numSlowDACChan > 0) {
+    if(rxEnabled && numSlowDACChan > 0) {
       printf("Start sending...\n");
       data_read_total = 0; 
       oldPeriodTotal = -1;
@@ -600,16 +419,6 @@ void* slowDACThread(void* ch)
               enableSlowDACLocal = false;
 	    }
             
-	    if (numSlowADCChan > 0) 
-	    {
-              int currPeriodADC = currentPeriodTotal % ( numFramesInMemoryBuffer * numPeriodsPerFrame);
-            
-              for( int i=0; i< numSlowADCChan; i++)
-	      { 
-	        slowADCBuffer[i + currPeriodADC*numSlowADCChan] = getXADCValueVolt(i);
-	      }
-	    }
-
             for (int i=0; i< numSlowDACChan; i++) 
             {
               float val;
@@ -706,7 +515,6 @@ void joinThreads()
   acquisitionThreadRunning = false;
   rxEnabled = false;
   buffInitialized = false;
-  pthread_join(pAcq, NULL);
   pthread_join(pSlowDAC, NULL);
 }
 
@@ -751,7 +559,7 @@ void* communicationThread(void* p)
         SCPI_Input(&scpi_context, smbuffer, rc);
       }
     }
-    usleep(200);
+    usleep(1000);
   }
   printf("Comm almost done\n");
 
@@ -770,21 +578,10 @@ void createThreads()
   acquisitionThreadRunning = true;
   commThreadRunning = true;
 
-  struct sched_param scheduleAcq;
-  pthread_attr_t attrAcq;
-
-  scheduleAcq.sched_priority = 60; //SCHED_RR goes from 1 -99
-  pthread_attr_init(&attrAcq);
-  pthread_attr_setinheritsched(&attrAcq, PTHREAD_EXPLICIT_SCHED);
-  pthread_attr_setschedpolicy(&attrAcq, SCHED_RR);
-  if( pthread_attr_setschedparam(&attrAcq, &scheduleAcq) != 0) printf("Failed to set sched param on acq thread");
-  pthread_create(&pAcq, &attrAcq, acquisitionThread, NULL);
-
-
   struct sched_param scheduleSlowDAC;
   pthread_attr_t attrSlowDAC;
 
-  scheduleSlowDAC.sched_priority = 60; //SCHED_RR goes from 1 -99
+  scheduleSlowDAC.sched_priority = 99; //SCHED_RR goes from 1 -99
   pthread_attr_init(&attrSlowDAC);
   pthread_attr_setinheritsched(&attrSlowDAC, PTHREAD_EXPLICIT_SCHED);
   pthread_attr_setschedpolicy(&attrSlowDAC, SCHED_RR);
@@ -823,14 +620,14 @@ int main(int argc, char** argv) {
   buffInitialized = false;
 
   // Set priority of this thread
-  /*struct sched_param p;
-    p.sched_priority = 99; 
+  struct sched_param p;
+    p.sched_priority = 1; 
     pthread_t this_thread = pthread_self();
     int ret = pthread_setschedparam(this_thread, SCHED_RR, &p);
     if (ret != 0) {
-    printf("Unsuccessful in setting thread realtime prio.\n");
-    return NULL;     
-    }*/
+      printf("Unsuccessful in setting thread realtime prio.\n");
+      return 1;     
+    }
 
   getprio(pthread_self());
 
@@ -876,7 +673,6 @@ int main(int argc, char** argv) {
   acquisitionThreadRunning = false;
   stopTx();
   //setMasterTrigger(MASTER_TRIGGER_OFF);
-  pthread_join(pAcq, NULL);
   pthread_join(pSlowDAC, NULL);
   releaseBuffer();
 

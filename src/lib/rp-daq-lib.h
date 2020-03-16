@@ -15,7 +15,7 @@
 
 
 #define BASE_FREQUENCY 125000000
-#define ADC_BUFF_SIZE (8*1024*1024) // 2MSamples = 8 MB
+#define ADC_BUFF_SIZE (8*1024*1024) // 16MSamples = 32 MB
 
 #define DAC_MODE_RASTERIZED 1
 #define	DAC_MODE_STANDARD   0
@@ -45,10 +45,6 @@ extern uint16_t dac_channel_B_modulus[4];
 // init routines
 extern int init();
 extern void loadBitstream();
-extern bool isMaster();
-extern bool isSlave();
-extern void setMaster();
-extern void setSlave();
 
 // fast DAC
 extern uint16_t getAmplitude(int, int);
@@ -68,6 +64,9 @@ extern int getDACModulus(int, int);
 extern int setDecimation(uint16_t decimation);
 extern uint16_t getDecimation();
 extern uint32_t getWritePointer();
+extern uint64_t getTotalWritePointer();
+extern uint32_t getInternalWritePointer(uint64_t wp);
+extern uint32_t getWritePointerOverflows();
 extern uint32_t getWritePointerDistance(uint32_t start_pos, uint32_t end_pos);
 extern void readADCData(uint32_t wp, uint32_t size, uint32_t* buffer);
 
