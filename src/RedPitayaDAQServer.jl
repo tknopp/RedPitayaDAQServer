@@ -60,7 +60,7 @@ function connect(rp::RedPitaya)
   if !rp.isConnected
     begin
     rp.socket = connect(rp.host, 5025)
-    send(rp, string("RP:Init ", Int(rp.isMaster)))
+    send(rp, string("RP:Init"))
     connectADC(rp)
     rp.dataSocket = connect(rp.host, 5026)
     rp.isConnected = true

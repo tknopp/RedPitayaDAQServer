@@ -6,7 +6,7 @@ rp = RedPitaya("rp-f04972.local")
 dec = 32
 modulus = 4800
 base_frequency = 125000000
-samples_per_period = div(modulus, dec)*5 # 10 fold averaging
+samples_per_period = div(modulus, dec)*10 # 10 fold averaging
 periods_per_frame = 100
 
 decimation(rp, dec)
