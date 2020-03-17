@@ -42,6 +42,7 @@ extern int numSlowADCChan;
 extern int enableSlowDAC;
 extern int enableSlowDACAck;
 extern int numSlowDACFramesEnabled;
+extern int numSlowDACLostSteps;
 extern int64_t frameSlowDACEnabled;
 
 extern int64_t startWP;

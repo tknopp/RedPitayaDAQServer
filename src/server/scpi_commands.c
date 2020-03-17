@@ -318,6 +318,12 @@ static scpi_result_t RP_ADC_GetNumSlowDACChan(scpi_t * context) {
         return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_ADC_GetSlowDACLostSteps(scpi_t * context) {
+        SCPI_ResultInt32(context, numSlowDACLostSteps);
+
+        return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
     int result;
        if (!SCPI_ParamInt32(context, &result, TRUE)) {
@@ -338,6 +344,7 @@ static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
        if(enableSlowDAC && rxEnabled && numSlowDACChan>0)
        {
 	 enableSlowDACAck = false;
+	 numSlowDACLostSteps = 0;
 	 while(!enableSlowDACAck)
 	 {
            usleep(1.0);
@@ -508,16 +515,12 @@ static scpi_result_t RP_ADC_GetAcquisitionStatus(scpi_t * context) {
 
 static scpi_result_t RP_ADC_SetAcquisitionStatus(scpi_t * context) {
 	int32_t acquisition_status_selection;
-printf("Test 0\n");
-
-    if (!SCPI_ParamChoice(context, acquisition_status_modes, &acquisition_status_selection, TRUE)) {
+        if (!SCPI_ParamChoice(context, acquisition_status_modes, &acquisition_status_selection, TRUE)) {
 		return SCPI_RES_ERR;
 	}
-printf("Test 1\n");
 	if (!SCPI_ParamInt64(context, &startWP, TRUE)) {
 		return SCPI_RES_ERR;
 	}
-printf("Test 2\n");
 
 	if(acquisition_status_selection == ACQUISITION_ON) {
 		rxEnabled = true;
@@ -851,6 +854,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:SlowDACLUT", .callback = RP_ADC_SetSlowDACLUT,},
 	{.pattern = "RP:ADC:SlowDACEnable", .callback = RP_ADC_EnableSlowDAC,},
 	{.pattern = "RP:ADC:SlowDACInterpolation", .callback = RP_ADC_SlowDACInterpolation,},
+	{.pattern = "RP:ADC:SlowDACLostSteps?", .callback = RP_ADC_GetSlowDACLostSteps,},
 	{.pattern = "RP:ADC:FRAme", .callback = RP_ADC_SetPeriodsPerFrame,},
 	{.pattern = "RP:ADC:FRAme?", .callback = RP_ADC_GetPeriodsPerFrame,},
 	{.pattern = "RP:ADC:FRAmes:CURRent?", .callback = RP_ADC_GetCurrentFrame,},

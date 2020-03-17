@@ -63,6 +63,7 @@ int numPeriodsPerFrame = 20;
 int numSlowDACChan = 0;
 int numSlowADCChan = 0;
 int numSlowDACFramesEnabled = 0;
+int numSlowDACLostSteps = 0;
 int enableSlowDAC = 0;
 int enableSlowDACAck = true;
 int64_t frameSlowDACEnabled = -1;
@@ -253,28 +254,40 @@ uint64_t getCurrentPeriodTotal() {
 }
 
 
-void sendDataToHost(uint64_t wpTotal, uint64_t size) {
+
+static void writeDataChunked(int fd, const void *buf, size_t count);
+static void writeDataChunked(int fd, const void *buf, size_t count) 
+{
     int n;
+    size_t chunkSize = 100;
+    size_t ptr = 0;
+    size_t size;
+    while(ptr < count)
+    {
+      size = MIN(count-ptr, chunkSize);
+
+      n = write(fd, buf + ptr, size);
+    
+      if (n < 0) 
+      {
+        printf("Error in sendToHost()\n");
+        perror("ERROR writing to socket"); 
+      }
+      ptr += size;
+    }
+}
+
+void sendDataToHost(uint64_t wpTotal, uint64_t size) {
     uint32_t wp = getInternalWritePointer(wpTotal);
-    if(wp+size <= ADC_BUFF_SIZE) {                                                                                        n = write(newdatasockfd, ram + sizeof(uint32_t)*wp, size*sizeof(uint32_t));
-        if (n < 0) {
-          printf("Error in sendToHost()\n");
-          perror("ERROR writing to socket"); 
-        }                   
-     } else {                                                                                                  
-        uint32_t size1 = ADC_BUFF_SIZE - wp;                                                              
-        uint32_t size2 = size - size1;                                                                    
+    if(wp+size <= ADC_BUFF_SIZE) 
+    {
+       writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, size*sizeof(uint32_t)); 
+    } else {                                                                                                  
+       uint32_t size1 = ADC_BUFF_SIZE - wp;                                                              
+       uint32_t size2 = size - size1;                                                                    
          
-        n = write(newdatasockfd, ram + sizeof(uint32_t)*wp, size1*sizeof(uint32_t));
-        if (n < 0) {
-          printf("Error in sendToHost()\n");
-          perror("ERROR writing to socket"); 
-        }                   
-        n = write(newdatasockfd, ram, size2*sizeof(uint32_t));
-        if (n < 0) {
-          printf("Error in sendToHost()\n");
-          perror("ERROR writing to socket"); 
-        }                   
+       writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, size1*sizeof(uint32_t));
+       writeDataChunked(newdatasockfd, ram, size2*sizeof(uint32_t));
     }                                                                                                         
 }  
 
@@ -367,8 +380,11 @@ void* slowDACThread(void* ch)
 
           if(currentPeriodTotal > oldPeriodTotal + 1 && numPeriodsPerFrame > 1) 
           {
+            printf("\033[1;31m");
             printf("WARNING: We lost an ff step! oldFr %lld newFr %lld size=%d\n", 
                 oldPeriodTotal, currentPeriodTotal, size);
+            printf("\033[0m");
+	    numSlowDACLostSteps += 1;
           }
           if(currentPeriodTotal > oldPeriodTotal || slowDACInterpolation) 
           {
@@ -646,6 +662,7 @@ int main(int argc, char** argv) {
 
   while (true) 
   {
+    printf("\033[0m");
     printf("Waiting for new connection\n");
     clilen = sizeof (cliaddr);
     int clifdTmp = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
