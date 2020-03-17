@@ -304,7 +304,7 @@ proc create_hier_cell_write_to_ram { parentCell nameHier } {
   create_bd_pin -dir I -type rst aresetn
   create_bd_pin -dir I -from 15 -to 0 decimation
   create_bd_pin -dir I s_axis_data_tvalid
-  create_bd_pin -dir O -from 63 -to 0 sts_data
+  create_bd_pin -dir O -from 22 -to 0 sts_data
 
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
@@ -491,7 +491,7 @@ CONFIG.DOUT_WIDTH {14} \
   connect_bd_intf_net -intf_net axis_variable_decimation_B_M_AXIS [get_bd_intf_pins axis_variable_decimation_B/M_AXIS] [get_bd_intf_pins cic_compiler_B/S_AXIS_CONFIG]
 
   # Create port connections
-  connect_bd_net -net axis_ram_writer_1_sts_data [get_bd_pins sts_data] [get_bd_pins axis_ram_writer_1/sts_data]
+  connect_bd_net -net axis_ram_writer_1_sts_total_data [get_bd_pins sts_data] [get_bd_pins axis_ram_writer_1/sts_total_data]
   connect_bd_net -net axis_red_pitaya_adc_1_m_axis_tdata [get_bd_pins Din] [get_bd_pins xlslice_A/Din] [get_bd_pins xlslice_B/Din]
   connect_bd_net -net axis_red_pitaya_adc_1_m_axis_tvalid [get_bd_pins s_axis_data_tvalid] [get_bd_pins cic_compiler_A/s_axis_data_tvalid] [get_bd_pins cic_compiler_B/s_axis_data_tvalid]
   connect_bd_net -net cic_compiler_A_m_axis_data_tdata [get_bd_pins cic_compiler_A/m_axis_data_tdata] [get_bd_pins xlconcat_1/In0]
@@ -556,7 +556,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir O -type rst FCLK_RESET0_N
   create_bd_pin -dir I -type clk S_AXI_HP0_ACLK
-  create_bd_pin -dir I -from 63 -to 0 adc_sts
+  create_bd_pin -dir I -from 22 -to 0 adc_sts
   create_bd_pin -dir O -from 31 -to 0 cfg_data
   create_bd_pin -dir I -from 63 -to 0 curr_pdm_values
   create_bd_pin -dir O -from 639 -to 0 dac_cfg
@@ -2624,4 +2624,6 @@ CONFIG.DOUT_WIDTH {8} \
 
 create_root_design ""
 
+
+common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 

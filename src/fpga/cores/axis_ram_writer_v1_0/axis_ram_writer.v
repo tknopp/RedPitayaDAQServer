@@ -4,6 +4,7 @@
 module axis_ram_writer #
 (
   parameter integer ADDR_WIDTH = 20,
+  parameter integer ADDR_WIDTH_COUNTER = 64,
   parameter integer AXI_ID_WIDTH = 6,
   parameter integer AXI_ADDR_WIDTH = 32,
   parameter integer AXI_DATA_WIDTH = 64,
@@ -15,7 +16,8 @@ module axis_ram_writer #
   input  wire                        aresetn,
 
   input  wire [AXI_ADDR_WIDTH-1:0]   cfg_data,
-  output wire [63:0]       sts_data,
+  output wire [ADDR_WIDTH-1:0]       sts_data,
+  output wire [ADDR_WIDTH_COUNTER-1:0] sts_total_data,
 
   // Master side
   output wire [AXI_ID_WIDTH-1:0]     m_axi_awid,    // AXI master: Write address ID
@@ -50,7 +52,7 @@ module axis_ram_writer #
   reg int_awvalid_reg, int_awvalid_next;
   reg int_wvalid_reg, int_wvalid_next;
   reg [ADDR_WIDTH-1:0] int_addr_reg, int_addr_next;
-  reg [63:0] int_addr_reg_total, int_addr_next_total;
+  reg [ADDR_WIDTH_COUNTER-1:0] int_addr_reg_total, int_addr_next_total;
   reg [AXI_ID_WIDTH-1:0] int_wid_reg, int_wid_next;
 
   wire int_full_wire, int_empty_wire, int_rden_wire;
@@ -80,13 +82,12 @@ module axis_ram_writer #
 
   always @(posedge aclk)
   begin
-    // Prevent locking of the AXI bus due to reset while bursting data
     if(~aresetn)
     begin
       int_awvalid_reg <= 1'b0;
       int_wvalid_reg <= 1'b0;
       int_addr_reg <= {(ADDR_WIDTH){1'b0}};
-      int_addr_reg_total <= {(64){1'b0}};
+      int_addr_reg_total <= {(ADDR_WIDTH_COUNTER){1'b0}};
       int_wid_reg <= {(AXI_ID_WIDTH){1'b0}};
     end
     else
@@ -138,7 +139,8 @@ module axis_ram_writer #
     end
   end
 
-  assign sts_data = int_addr_reg_total;
+  assign sts_data = int_addr_reg;
+  assign sts_total_data = int_addr_reg_total;
 
   assign m_axi_awid = int_wid_reg;
   assign m_axi_awaddr = cfg_data + {int_addr_reg, {(ADDR_SIZE){1'b0}}};
