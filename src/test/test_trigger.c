@@ -23,7 +23,6 @@
 int main () {
   uint32_t wp, wp_old;
 
-  setMaster();
   init();
   setDACMode(DAC_MODE_RASTERIZED);
   setWatchdogMode(WATCHDOG_OFF);  
