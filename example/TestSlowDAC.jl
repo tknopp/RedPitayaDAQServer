@@ -1,13 +1,14 @@
 using RedPitayaDAQServer
 using PyPlot
+using ProgressMeter
 
 rp = RedPitaya("rp-f04972.local")
 
 dec = 64
 modulus = 4800
 base_frequency = 125000000
-samples_per_period = div(modulus, dec)*10 # 10 fold averaging
-periods_per_frame = 100
+samples_per_period = div(modulus, dec) # 10 fold averaging
+periods_per_frame = 1300*10
 
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
@@ -21,7 +22,6 @@ for (i,val) in enumerate([4800,4864,4800,4800])
   modulusFactorDAC(rp, 1, i, 1)
 end
 
-println(" frequency = $(frequencyDAC(rp,1,1))")
 amplitudeDAC(rp, 1, 1, 4000)
 phaseDAC(rp, 1, 1, 0.0 ) # Phase has to be given in between 0 and 1
 masterTrigger(rp, false)
@@ -31,18 +31,15 @@ startADC(rp)
 masterTrigger(rp, true)
 
 sleep(1.0)
-currFr = enableSlowDAC(rp, true, 10, 0.0, 1.0)
+# About 4 minutes
+numFrames = 200
+currFr = enableSlowDAC(rp, true, numFrames, 0.0, 1.0)
 
-uCurrentPeriod = readData(rp, currFr, 10)
+@showprogress 1 "Acquisition..." for l=1:numFrames
+  uCurrentPeriod = readData(rp, currFr+l-1, 1)
 
-lostSteps = numLostStepsSlowADC(rp)
-if lostSteps > 0
-  @warn "WE LOST" lostSteps "SLOW DAC STEPS!"
+  lostSteps = numLostStepsSlowADC(rp)
+  if lostSteps > 0
+    error("WE LOST $lostSteps SLOW DAC STEPS!")
+  end
 end
-
-figure(1)
-clf()
-subplot(1,2,1)
-plot(vec(uCurrentPeriod[:,1,:,:]))
-subplot(1,2,2)
-plot(vec(uCurrentPeriod[:,2,:,:]))

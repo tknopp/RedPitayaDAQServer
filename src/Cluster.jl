@@ -20,14 +20,14 @@ master(rpc::RedPitayaCluster) = rpc.rp[1]
 
 function currentFrame(rpc::RedPitayaCluster)
   currentFrames = currentFrame(rpc.rp[1]) #[ currentFrame(rp) for rp in rpc.rp ]
-  println("Current frame: $currentFrames")
+  @debug "Current frame: $currentFrames"
   #return minimum(currentFrames)
   return currentFrames
 end
 
 function currentPeriod(rpc::RedPitayaCluster)
   currentPeriods = currentPeriod(rpc.rp[1])  #[ currentPeriod(rp) for rp in rpc.rp ]
-  println("Current period: $currentPeriods")
+  @debug "Current period: $currentPeriods"
   #return minimum(currentPeriods)
   return currentPeriods
 end
@@ -161,28 +161,28 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
   l=1
 
   numFramesInMemoryBuffer = 32*1024*1024 / numSamp
-  println("numFramesInMemoryBuffer = $numFramesInMemoryBuffer")
+  @debug "numFramesInMemoryBuffer = $numFramesInMemoryBuffer"
 
   # This is a wild guess for a good chunk size
   chunkSize = max(1,  round(Int, 1000000 / numSampPerFrame)  )
-  println("chunkSize = $chunkSize")
+  @debug "chunkSize = $chunkSize"
   while l<=numFrames
     wpWrite = currentFrame(rpc)
     while wpRead >= wpWrite # Wait that startFrame is reached
       wpWrite = currentFrame(rpc)
-      println(wpWrite)
+      @debug wpWrite
     end
     chunk = min(wpWrite-wpRead,chunkSize) # Determine how many frames to read
-    println(chunk)
+    @debug chunk
     if l+chunk > numFrames
       chunk = numFrames - l + 1
     end
 
     if wpWrite - numFramesInMemoryBuffer > wpRead
-      @warn "WARNING: We have lost data !!!!!!!!!!"
+      @error "WARNING: We have lost data !!!!!!!!!!"
     end
 
-    println("Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)")
+    @debug "Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)"
 
     for (d,rp) in enumerate(rpc.rp)
      # @sync  @async begin
@@ -224,15 +224,15 @@ function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBloc
     wpWrite = currentPeriod(rpc)
     while wpRead >= wpWrite # Wait that startPeriod is reached
       wpWrite = currentPeriod(rpc)
-      println(wpWrite)
+      @debug wpWrite
     end
     chunk = min(wpWrite-wpRead,chunkSize) # Determine how many periods to read
-    println(chunk)
+    @debug chunk
     if l+chunk > numPeriods
       chunk = numPeriods - l + 1
     end
 
-    println("Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)")
+    @debug "Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)"
 
     for (d,rp) in enumerate(rpc.rp)
     # @sync   @async begin
@@ -266,20 +266,20 @@ function readDataSlow(rpc::RedPitayaCluster, startFrame, numFrames)
 
   # This is a wild guess for a good chunk size
   chunkSize = max(1,  round(Int, 1000000 / numSampPerFrame)  )
-  println("chunkSize = $chunkSize")
+  @debug "chunkSize = $chunkSize"
   while l<=numFrames
     wpWrite = currentFrame(rpc)
     while wpRead >= wpWrite # Wait that startFrame is reached
       wpWrite = currentFrame(rpc)
-      println(wpWrite)
+      @debug wpWrite
     end
     chunk = min(wpWrite-wpRead,chunkSize) # Determine how many frames to read
-    println(chunk)
+    @debug chunk
     if l+chunk > numFrames
       chunk = numFrames - l + 1
     end
 
-    println("Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)")
+    @debug "Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)"
 
     p = 1
     for (d,rp) in enumerate(rpc.rp)

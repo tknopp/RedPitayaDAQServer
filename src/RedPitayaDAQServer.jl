@@ -29,7 +29,7 @@ end
 Send a command to the RedPitaya
 """
 function send(rp::RedPitaya,cmd::String)
-  println("send command: ", cmd)
+  @debug "send command: " cmd
   write(rp.socket,cmd*rp.delim)
 end
 

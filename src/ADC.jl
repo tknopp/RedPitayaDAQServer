@@ -1,7 +1,7 @@
 export decimation, samplesPerPeriod, periodsPerFrame, masterTrigger, currentFrame,
      currentPeriod, ramWriterMode, connectADC, startADC, stopADC, readData,
      numSlowDACChan, setSlowDACLUT, enableSlowDAC, currentWP, slowDACInterpolation,
-     numSlowADCChan
+     numSlowADCChan, numLostStepsSlowADC
 
 
 decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
@@ -26,7 +26,7 @@ function setSlowDACLUT(rp::RedPitaya, lut::Array)
   #send(rp, string("RP:ADC:SlowDACLUT ", lut[1], lutStr))
   lutFloat32 = map(Float32, lut)
   send(rp, string("RP:ADC:SlowDACLUT"))
-  println("Writing slow DAC LUT")
+  @debug "Writing slow DAC LUT"
   write(rp.dataSocket, lutFloat32)
 end
 
@@ -47,6 +47,7 @@ function numSlowADCChan(rp::RedPitaya, value)
   send(rp, string("RP:ADC:SlowADC ", Int64(value)))
 end
 
+numLostStepsSlowADC(rp::RedPitaya) = query(rp,"RP:ADC:SlowDACLostSteps?", Int64)
 
 periodsPerFrame(rp::RedPitaya) = query(rp,"RP:ADC:FRAme?", Int64)
 function periodsPerFrame(rp::RedPitaya, value)
@@ -82,9 +83,9 @@ function readData_(rp::RedPitaya, startFrame, numFrames)
   command = string("RP:ADC:FRAMES:DATA ",Int64(startFrame),",",Int64(numFrames))
   send(rp, command)
 
-  println("read data ...")
+  @debug "read data ..."
   u = read!(rp.dataSocket, Array{Int16}(undef, 2 * numFrames * numSampPerFrame))
-  println("read data!")
+  @debug "read data!"
   return reshape(u, 2, rp.samplesPerPeriod, numPeriods, numFrames)
 end
 
@@ -93,9 +94,9 @@ function readDataPeriods_(rp::RedPitaya, startPeriod, numPeriods)
   command = string("RP:ADC:PERiods:DATa ",Int64(startPeriod),",",Int64(numPeriods))
   send(rp, command)
 
-  println("read data ...")
+  @debug "read data ..."
   u = read!(rp.dataSocket, Array{Int16}(undef, 2 * numPeriods * rp.samplesPerPeriod))
-  println("read data!")
+  @debug "read data!"
   return reshape(u, 2, rp.samplesPerPeriod, numPeriods)
 end
 
@@ -119,28 +120,28 @@ function readData(rp::RedPitaya, startFrame, numFrames, numBlockAverages=1)
   l=1
 
   numFramesInMemoryBuffer = 32*1024*1024 / numSamp
-  println("numFramesInMemoryBuffer = $numFramesInMemoryBuffer")
+  @debug "numFramesInMemoryBuffer = $numFramesInMemoryBuffer"
 
   # This is a wild guess for a good chunk size
   chunkSize = max(1,  round(Int, 1000000 / numSampPerFrame)  )
-  println("chunkSize = $chunkSize")
+  @debug "chunkSize = $chunkSize"
   while l<=numFrames
     wpWrite = currentFrame(rp)
     while wpRead >= wpWrite # Wait that startFrame is reached
       wpWrite = currentFrame(rp)
-      println(wpWrite)
+      @debug wpWrite
     end
     chunk = min(wpWrite-wpRead,chunkSize) # Determine how many frames to read
-    println(chunk)
+    @debug chunk
     if l+chunk > numFrames
       chunk = numFrames - l + 1
     end
 
     if wpWrite - numFramesInMemoryBuffer > wpRead
-      println("WARNING: We have lost data !!!!!!!!!!")
+      @error "WARNING: We have lost data !!!!!!!!!!"
     end
 
-    println("Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)")
+    @debug "Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)"
 
 
     u = readData_(rp, Int64(wpRead), Int64(chunk))
@@ -166,8 +167,8 @@ function readDataSlow_(rp::RedPitaya, startFrame, numFrames)
   command = string("RP:ADC:SLOW:FRAMES:DATA ",Int64(startFrame),",",Int64(numFrames))
   send(rp, command)
 
-  println("read data ...")
+  @debug "read data ..."
   u = read!(rp.dataSocket, Array{Float32}(undef, numChan * numFrames * numPeriods))
-  println("read data!")
+  @debug "read data!"
   return reshape(u, numChan, numPeriods, numFrames)
 end
