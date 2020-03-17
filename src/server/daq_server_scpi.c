@@ -232,7 +232,7 @@ int waitServer(int fd) {
   FD_SET(fd, &fds);
 
   timeout.tv_sec = 0;
-  timeout.tv_usec = 400;
+  timeout.tv_usec = 100;
 
   rc = select(max_fd + 1, &fds, NULL, NULL, &timeout);
 
@@ -259,7 +259,7 @@ static void writeDataChunked(int fd, const void *buf, size_t count);
 static void writeDataChunked(int fd, const void *buf, size_t count) 
 {
     int n;
-    size_t chunkSize = 100;
+    size_t chunkSize = 10000;
     size_t ptr = 0;
     size_t size;
     while(ptr < count)
@@ -274,6 +274,7 @@ static void writeDataChunked(int fd, const void *buf, size_t count)
         perror("ERROR writing to socket"); 
       }
       ptr += size;
+      //usleep(100);
     }
 }
 
@@ -600,7 +601,7 @@ void createThreads()
   scheduleSlowDAC.sched_priority = 99; //SCHED_RR goes from 1 -99
   pthread_attr_init(&attrSlowDAC);
   pthread_attr_setinheritsched(&attrSlowDAC, PTHREAD_EXPLICIT_SCHED);
-  pthread_attr_setschedpolicy(&attrSlowDAC, SCHED_RR);
+  pthread_attr_setschedpolicy(&attrSlowDAC, SCHED_FIFO);
   if( pthread_attr_setschedparam(&attrSlowDAC, &scheduleSlowDAC) != 0) printf("Failed to set sched param on slow dac thread");
   pthread_create(&pSlowDAC, &attrSlowDAC, slowDACThread, NULL);
 
@@ -610,7 +611,7 @@ void createThreads()
   scheduleComm.sched_priority = 60; //SCHED_RR goes from 1 -99
   pthread_attr_init(&attrComm);
   pthread_attr_setinheritsched(&attrComm, PTHREAD_EXPLICIT_SCHED);
-  pthread_attr_setschedpolicy(&attrComm, SCHED_RR);
+  pthread_attr_setschedpolicy(&attrComm, SCHED_FIFO);
   if( pthread_attr_setschedparam(&attrComm, &scheduleComm) != 0) printf("Failed to set sched param on communication thread");
   pthread_create(&pComm, &attrComm, communicationThread, (void*)clifd);
   //pthread_detach(pComm);
@@ -639,7 +640,7 @@ int main(int argc, char** argv) {
   struct sched_param p;
     p.sched_priority = 1; 
     pthread_t this_thread = pthread_self();
-    int ret = pthread_setschedparam(this_thread, SCHED_RR, &p);
+    int ret = pthread_setschedparam(this_thread, SCHED_FIFO, &p);
     if (ret != 0) {
       printf("Unsuccessful in setting thread realtime prio.\n");
       return 1;     

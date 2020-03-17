@@ -405,6 +405,11 @@ static scpi_result_t RP_ADC_GetCurrentWP(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_ADC_GetBufferSize(scpi_t * context) {
+    SCPI_ResultUInt64(context, ADC_BUFF_SIZE);
+    return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_ADC_GetCurrentPeriod(scpi_t * context) {
     SCPI_ResultUInt64(context, getCurrentPeriodTotal());
     return SCPI_RES_OK;
@@ -860,6 +865,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:FRAmes:CURRent?", .callback = RP_ADC_GetCurrentFrame,},
 	{.pattern = "RP:ADC:WP:CURRent?", .callback = RP_ADC_GetCurrentWP,},
 	{.pattern = "RP:ADC:FRAmes:DATa", .callback = RP_ADC_GetFrames,},
+	{.pattern = "RP:ADC:BUFfer:Size?", .callback = RP_ADC_GetBufferSize,},
 	{.pattern = "RP:ADC:Slow:FRAmes:DATa", .callback = RP_ADC_Slow_GetFrames,},
 	{.pattern = "RP:ADC:ACQCONNect", .callback = RP_ADC_StartAcquisitionConnection,},
 	{.pattern = "RP:ADC:ACQSTATus", .callback = RP_ADC_SetAcquisitionStatus,},
