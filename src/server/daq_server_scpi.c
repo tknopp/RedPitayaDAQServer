@@ -259,7 +259,7 @@ static void writeDataChunked(int fd, const void *buf, size_t count);
 static void writeDataChunked(int fd, const void *buf, size_t count) 
 {
     int n;
-    size_t chunkSize = 10000;
+    size_t chunkSize = 100000;
     size_t ptr = 0;
     size_t size;
     while(ptr < count)
@@ -274,7 +274,7 @@ static void writeDataChunked(int fd, const void *buf, size_t count)
         perror("ERROR writing to socket"); 
       }
       ptr += size;
-      //usleep(100);
+      usleep(100);
     }
 }
 
@@ -608,7 +608,7 @@ void createThreads()
   struct sched_param scheduleComm;
   pthread_attr_t attrComm;
 
-  scheduleComm.sched_priority = 60; //SCHED_RR goes from 1 -99
+  scheduleComm.sched_priority = 99; //SCHED_RR goes from 1 -99
   pthread_attr_init(&attrComm);
   pthread_attr_setinheritsched(&attrComm, PTHREAD_EXPLICIT_SCHED);
   pthread_attr_setschedpolicy(&attrComm, SCHED_FIFO);
