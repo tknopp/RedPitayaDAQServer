@@ -2,19 +2,26 @@ using RedPitayaDAQServer
 using PyPlot
 using ProgressMeter
 
-rp = RedPitaya("rp-f04972.local")
+#rp = RedPitayaCluster(["rp-f04972.local","rp-f044d6.local"])
+rp = RedPitayaCluster(["rp-f04972.local"])
 
-dec = 64
+@info bufferSize(rp)
+
+dec = 32
 modulus = 4800
 base_frequency = 125000000
-samples_per_period = div(modulus, dec) # 10 fold averaging
-periods_per_frame = 1300*10
+periods_per_step = 50
+samples_per_period = div(modulus, dec)*periods_per_step
+periods_per_frame = div(13000, periods_per_step) # about 0.5 s frame length
+
+@show periods_per_step
 
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
 periodsPerFrame(rp, periods_per_frame)
-numSlowDACChan(rp, 1)
-setSlowDACLUT(rp, collect(range(0,1,length=periods_per_frame)))
+numSlowDACChan(master(rp), 2)
+lut = collect(range(0,1,length=periods_per_frame))
+setSlowDACLUT(master(rp), collect(repeat(lut,1,2)'))
 
 modeDAC(rp, "RASTERIZED")
 for (i,val) in enumerate([4800,4864,4800,4800])
@@ -36,10 +43,16 @@ numFrames = 200
 currFr = enableSlowDAC(rp, true, numFrames, 0.0, 1.0)
 
 @showprogress 1 "Acquisition..." for l=1:numFrames
-  uCurrentPeriod = readData(rp, currFr+l-1, 1)
+  nextFr = currFr+l-1
+  currFrame = currentFrame(rp)
+  uCurrentPeriod = readData(rp, nextFr, 1)
 
-  lostSteps = numLostStepsSlowADC(rp)
+  lostSteps = numLostStepsSlowADC(master(rp))
   if lostSteps > 0
     error("WE LOST $lostSteps SLOW DAC STEPS!")
   end
+
+  #if currFrame > nextFr+2
+  #    error("WE LOST STEPS WHILE READING currFrame=$(currFrame)  nextFr=$(nextFr)!")
+  #end
 end

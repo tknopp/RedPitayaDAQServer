@@ -3,7 +3,7 @@ using PyPlot
 
 rp = RedPitaya("rp-f04972.local")
 
-dec = 16
+dec = 64
 modulus = 4800
 base_frequency = 125000000
 samples_per_period = div(modulus, dec)
@@ -28,13 +28,12 @@ ramWriterMode(rp, "TRIGGERED")
 startADC(rp)
 masterTrigger(rp, true)
 
-sleep(1.0)
+sleep(0.1)
 
-
+fr = currentFrame(rp)
+@show fr
 uFirstPeriod = readData(rp, 0, 1)
-uCurrentPeriod = readData(rp, currentFrame(rp), 1)
-#stopADC(rp)
-#RedPitayaDAQServer.disconnect(rp)
+uCurrentPeriod = readData(rp, fr, 1)
 
 figure(1)
 clf()

@@ -62,6 +62,7 @@ end
 
 masterTrigger(rpc::RedPitayaCluster, val::Bool) = masterTrigger(master(rpc), val)
 masterTrigger(rpc::RedPitayaCluster) = masterTrigger(master(rpc))
+bufferSize(rpc::RedPitayaCluster) = bufferSize(master(rpc))
 
 # "TRIGGERED" or "CONTINUOUS"
 function ramWriterMode(rpc::RedPitayaCluster, mode::String)
@@ -160,7 +161,7 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
   wpRead = startFrame
   l=1
 
-  numFramesInMemoryBuffer = 32*1024*1024 / numSamp
+  numFramesInMemoryBuffer = bufferSize(master(rpc)) / numSampPerFrame #numSamp
   @debug "numFramesInMemoryBuffer = $numFramesInMemoryBuffer"
 
   # This is a wild guess for a good chunk size
@@ -178,8 +179,8 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
       chunk = numFrames - l + 1
     end
 
-    if wpWrite - numFramesInMemoryBuffer > wpRead
-      @error "WARNING: We have lost data !!!!!!!!!!"
+    if wpWrite - numFramesInMemoryBuffer >= wpRead
+      error("WARNING: We have lost data !!!!!!!!!!")
     end
 
     @debug "Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)"

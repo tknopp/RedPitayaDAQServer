@@ -1,7 +1,7 @@
 export decimation, samplesPerPeriod, periodsPerFrame, masterTrigger, currentFrame,
      currentPeriod, ramWriterMode, connectADC, startADC, stopADC, readData,
      numSlowDACChan, setSlowDACLUT, enableSlowDAC, currentWP, slowDACInterpolation,
-     numSlowADCChan, numLostStepsSlowADC
+     numSlowADCChan, numLostStepsSlowADC, bufferSize
 
 
 decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
@@ -58,6 +58,7 @@ end
 currentFrame(rp::RedPitaya) = query(rp,"RP:ADC:FRAMES:CURRENT?", Int64)
 currentPeriod(rp::RedPitaya) = query(rp,"RP:ADC:PERIODS:CURRENT?", Int64)
 currentWP(rp::RedPitaya) = query(rp,"RP:ADC:WP:CURRENT?", Int64)
+bufferSize(rp::RedPitaya) = query(rp,"RP:ADC:BUFFER:SIZE?", Int64)
 
 function masterTrigger(rp::RedPitaya, val::Bool)
   valStr = val ? "ON" : "OFF"
@@ -119,8 +120,8 @@ function readData(rp::RedPitaya, startFrame, numFrames, numBlockAverages=1)
   wpRead = startFrame
   l=1
 
-  numFramesInMemoryBuffer = 32*1024*1024 / numSamp
-  @debug "numFramesInMemoryBuffer = $numFramesInMemoryBuffer"
+  numFramesInMemoryBuffer = bufferSize(rp) / numSamp
+  @info "numFramesInMemoryBuffer = $numFramesInMemoryBuffer"
 
   # This is a wild guess for a good chunk size
   chunkSize = max(1,  round(Int, 1000000 / numSampPerFrame)  )

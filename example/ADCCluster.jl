@@ -3,11 +3,11 @@ using PyPlot
 
 rp = RedPitayaCluster(["rp-f04972.local","rp-f044d6.local"])
 
-dec = 16
+dec = 64
 modulus = 4800
 base_frequency = 125000000
 samples_per_period = div(modulus, dec)
-periods_per_frame = 1
+periods_per_frame = 3
 
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)

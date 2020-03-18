@@ -6,8 +6,9 @@ rp = RedPitaya("rp-f04972.local")
 dec = 64
 modulus = 4800
 base_frequency = 125000000
-samples_per_period = div(modulus, dec)*10 # 10 fold averaging
-periods_per_frame = 100
+periods_per_step = 10
+samples_per_period = div(modulus, dec)*periods_per_step
+periods_per_frame = div(1000, periods_per_step) # about 0.5 s frame length
 
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
@@ -30,7 +31,7 @@ ramWriterMode(rp, "TRIGGERED")
 startADC(rp)
 masterTrigger(rp, true)
 
-sleep(1.0)
+sleep(0.1)
 currFr = enableSlowDAC(rp, true, 10, 0.0, 1.0)
 
 uCurrentPeriod = readData(rp, currFr, 10)
@@ -45,4 +46,4 @@ clf()
 subplot(1,2,1)
 plot(vec(uCurrentPeriod[:,1,:,:]))
 subplot(1,2,2)
-plot(vec(uCurrentPeriod[:,2,:,:]))
+plot(vec(uCurrentPeriod[:,3,:,:]))
