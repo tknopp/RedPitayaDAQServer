@@ -83,7 +83,7 @@ int init() {
 	pdm_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40003000);
 	reset_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40005000);
 	cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40004000);
-	ram = mmap(NULL, sizeof(int32_t)*ADC_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x1E000000);
+	ram = mmap(NULL, sizeof(int32_t)*ADC_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, ADC_BUFF_MEM_ADDRESS); 
         xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
 
 	// Set HP0 bus width to 64 bits
@@ -450,21 +450,21 @@ uint16_t getDecimation() {
 
 uint32_t getWritePointer() {
     uint32_t val = (*((uint32_t *)(adc_sts + 0)));
-    uint32_t mask = BIT_MASK(uint64_t, 22); // Extract lower 22 bits
+    uint32_t mask = BIT_MASK(uint64_t, ADC_BUFF_NUM_BITS); // Extract lower bits
     return 2*(val&mask);
 }
 
 uint32_t getInternalWritePointer(uint64_t wp) {
-    uint32_t mask = BIT_MASK(uint64_t, 23); // Extract lower 23 bits
+    uint32_t mask = BIT_MASK(uint64_t, ADC_BUFF_NUM_BITS+1); // Extract lower bits
     return wp&mask;
 }
 
 uint32_t getWritePointerOverflows() {
-    return (*(((uint64_t *)(adc_sts + 0)))) >> 22; // Extract upper 42 bits
+    return (*(((uint64_t *)(adc_sts + 0)))) >> ADC_BUFF_NUM_BITS; // Extract upper bits
 }
 
 uint64_t getTotalWritePointer() {
-    return getWritePointer() + (getWritePointerOverflows() << 23);
+    return getWritePointer() + (getWritePointerOverflows() << (ADC_BUFF_NUM_BITS+1));
 }
 
 uint32_t getWritePointerDistance(uint32_t start_pos, uint32_t end_pos) {
