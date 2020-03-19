@@ -304,7 +304,7 @@ proc create_hier_cell_write_to_ram { parentCell nameHier } {
   create_bd_pin -dir I -type rst aresetn
   create_bd_pin -dir I -from 15 -to 0 decimation
   create_bd_pin -dir I s_axis_data_tvalid
-  create_bd_pin -dir O -from 22 -to 0 sts_data
+  create_bd_pin -dir O -from 63 -to 0 sts_data
 
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
@@ -316,7 +316,7 @@ CONFIG.S_TDATA_NUM_BYTES {4} \
   # Create instance: axis_ram_writer_1, and set properties
   set axis_ram_writer_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_ram_writer:1.0 axis_ram_writer_1 ]
   set_property -dict [ list \
-CONFIG.ADDR_WIDTH {22} \
+CONFIG.ADDR_WIDTH {24} \
  ] $axis_ram_writer_1
 
   # Create instance: axis_variable_decimation_A, and set properties
@@ -451,7 +451,7 @@ CONFIG.CONST_WIDTH {42} \
   # Create instance: xlconstant_2, and set properties
   set xlconstant_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_2 ]
   set_property -dict [ list \
-CONFIG.CONST_VAL {503316480} \
+CONFIG.CONST_VAL {402653184} \
 CONFIG.CONST_WIDTH {32} \
  ] $xlconstant_2
 
@@ -556,7 +556,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir O -type rst FCLK_RESET0_N
   create_bd_pin -dir I -type clk S_AXI_HP0_ACLK
-  create_bd_pin -dir I -from 22 -to 0 adc_sts
+  create_bd_pin -dir I -from 63 -to 0 adc_sts
   create_bd_pin -dir O -from 31 -to 0 cfg_data
   create_bd_pin -dir I -from 63 -to 0 curr_pdm_values
   create_bd_pin -dir O -from 639 -to 0 dac_cfg
