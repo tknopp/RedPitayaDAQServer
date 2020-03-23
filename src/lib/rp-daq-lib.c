@@ -589,17 +589,7 @@ int getPDMNextValue(int channel) {
     return value;
 }
 
-int getPDMCurrentValue(int channel) {
-    if(channel < 0 || channel >= 4) {
-        return -2;
-    }
-    
-    int value = (int)(*((uint16_t *)(pdm_sts + 2*channel)));
-    
-    return value;
-}
-
-int* getPDMCurrentValues() {
+/*int* getPDMCurrentValues() {
     uint64_t register_value = getPDMStatusValue();
     static int channel_values[4];
     channel_values[0] = (register_value & 0x000000000000FFFF);
@@ -608,7 +598,7 @@ int* getPDMCurrentValues() {
     channel_values[3] = (register_value & 0xFFFF000000000000) >> 48;
     
     return channel_values;
-}
+}*/
 
 
 // Slow Analog Inputs

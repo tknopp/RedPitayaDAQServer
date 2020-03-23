@@ -22,6 +22,7 @@
 
 int main () {
   uint32_t wp, wp_old, over, over_old;
+  uint64_t wpPDM;
   uint64_t wpTotal;
 
   init();
@@ -52,10 +53,11 @@ int main () {
     wp = getWritePointer();
     over = getWritePointerOverflows();
     wpTotal = getTotalWritePointer();
+    wpPDM = getPDMStatusValue();
 
     uint32_t size = getWritePointerDistance(wp_old, wp)-1;
 
-    printf("wp %u over %u wpDiff %u wpTotal %llu \n", wp, over, size, wpTotal);
+    printf("wp %u over %u wpDiff %u wpTotal %llu pdm %llu \n", wp, over, size, wpTotal, wpPDM);
     if(size == 0) {
       printf("Write Pointer remains the same!");
       return 1;

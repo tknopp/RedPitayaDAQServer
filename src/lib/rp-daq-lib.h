@@ -81,8 +81,6 @@ extern int* getPDMNextValues();
 extern int setPDMNextValue(uint16_t, int);
 extern int setPDMNextValueVolt(float, int);
 extern int getPDMNextValue();
-extern int getPDMCurrentValue(int);
-extern int* getPDMCurrentValues();
 extern uint32_t getXADCValue(int);
 extern float getXADCValueVolt(int);
 
