@@ -29,9 +29,9 @@ module pdm_multiplexer_v1_0 #
 (
 
 input wire [(PDM_BUFFER_WIDTH*PDM_DATA_WIDTH)-1:0] pdm_data_in,
-input wire [PDM_BUFFER_ADRESS_WIDTH-1:0] sample_selectcd ,
+input wire [PDM_BUFFER_ADRESS_WIDTH-1:0] sample_select ,
 output wire [PDM_DATA_WIDTH-1:0] pdm_data_out
 );
-assign pdm_data_out = pdm_data_in[(selectsample*64) +: 64];
+assign pdm_data_out = pdm_data_in[(sample_select*64) +: 64];
 
 endmodule

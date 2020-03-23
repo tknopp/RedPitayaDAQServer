@@ -11,5 +11,5 @@ set_property COMPANY_URL {http://github.com/tknopp/RedPitayaDAQServer} $core
 
 core_parameter PDM_BUFFER_WIDTH {PDM BUFFER WIDTH} {WORD WIDTH OF THE PDM BUFFER}
 core_parameter PDM_DATA_WIDTH {PDM DATA WIDTH} {WORD WIDTH OF ONE PDM DATA PACKAGE}
-core_parameter PDM_ADRESS_WIDTH {PDM ADRESS WIDTH} {width of the adress. Should be ln2(pdm_buffer_with)}
+core_parameter PDM_BUFFER_ADRESS_WIDTH {PDM ADRESS WIDTH} {width of the adress. Should be ln2(pdm_buffer_with)}
 

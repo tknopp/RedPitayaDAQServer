@@ -767,8 +767,8 @@ CONFIG.DIN_WIDTH {64} \
 CONFIG.DOUT_WIDTH {1} \
  ] $pdm_channel_4_slice
 
-  # Create instance: pdm_multiplexer_v1_0_0, and set properties
-  set pdm_multiplexer_v1_0_0 [ create_bd_cell -type ip -vlnv localdomain:user:pdm_multiplexer_v1_0:1.0 pdm_multiplexer_v1_0_0 ]
+  # Create instance: pdm_multiplexer_0, and set properties
+  set pdm_multiplexer_0 [ create_bd_cell -type ip -vlnv matthiasgraeser:user:pdm_multiplexer:1.0 pdm_multiplexer_0 ]
 
   # Create instance: pdm_value_supply_0, and set properties
   set pdm_value_supply_0 [ create_bd_cell -type ip -vlnv jbeuke:user:pdm_value_supply:1.0 pdm_value_supply_0 ]
@@ -788,9 +788,9 @@ CONFIG.NUM_PORTS {4} \
  ] $xlconcat_0
 
   # Create port connections
-  connect_bd_net -net Din_1 [get_bd_pins Din] [get_bd_pins pdm_multiplexer_v1_0_0/pdm_data_in]
+  connect_bd_net -net Din_1 [get_bd_pins Din] [get_bd_pins pdm_multiplexer_0/pdm_data_in]
   connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins clk_div_0/clk] [get_bd_pins pdm_value_supply_0/aclk]
-  connect_bd_net -net c_counter_binary_0_Q [get_bd_pins pdm_sts] [get_bd_pins c_counter_binary_0/Q] [get_bd_pins pdm_multiplexer_v1_0_0/sample_selectcd]
+  connect_bd_net -net c_counter_binary_0_Q [get_bd_pins pdm_sts] [get_bd_pins c_counter_binary_0/Q] [get_bd_pins pdm_multiplexer_0/sample_select]
   connect_bd_net -net clk_div_0_clk_out [get_bd_pins c_counter_binary_0/CLK] [get_bd_pins clk_div_0/clk_out]
   connect_bd_net -net ddr_clk_1 [get_bd_pins ddr_clk] [get_bd_pins pdm_1/clk] [get_bd_pins pdm_2/clk] [get_bd_pins pdm_3/clk] [get_bd_pins pdm_4/clk]
   connect_bd_net -net pdm_1_dout [get_bd_pins pdm_1/dout] [get_bd_pins xlconcat_0/In0]
@@ -801,7 +801,7 @@ CONFIG.NUM_PORTS {4} \
   connect_bd_net -net pdm_channel_2_slice_Dout [get_bd_pins pdm_channel_2_slice/Dout] [get_bd_pins pdm_value_supply_0/pdm_channel_2_nxt]
   connect_bd_net -net pdm_channel_3_slice_Dout [get_bd_pins pdm_channel_3_slice/Dout] [get_bd_pins pdm_value_supply_0/pdm_channel_3_nxt]
   connect_bd_net -net pdm_channel_4_slice_Dout [get_bd_pins pdm_channel_4_slice/Dout] [get_bd_pins pdm_value_supply_0/pdm_channel_4_nxt]
-  connect_bd_net -net pdm_multiplexer_v1_0_0_pdm_data_out [get_bd_pins pdm_channel_1_slice/Din] [get_bd_pins pdm_channel_2_slice/Din] [get_bd_pins pdm_channel_3_slice/Din] [get_bd_pins pdm_channel_4_slice/Din] [get_bd_pins pdm_multiplexer_v1_0_0/pdm_data_out]
+  connect_bd_net -net pdm_multiplexer_v1_0_0_pdm_data_out [get_bd_pins pdm_channel_1_slice/Din] [get_bd_pins pdm_channel_2_slice/Din] [get_bd_pins pdm_channel_3_slice/Din] [get_bd_pins pdm_channel_4_slice/Din] [get_bd_pins pdm_multiplexer_0/pdm_data_out]
   connect_bd_net -net pdm_value_supply_0_pdm_channel_1 [get_bd_pins pdm_1/din] [get_bd_pins pdm_value_supply_0/pdm_channel_1]
   connect_bd_net -net pdm_value_supply_0_pdm_channel_2 [get_bd_pins pdm_2/din] [get_bd_pins pdm_value_supply_0/pdm_channel_2]
   connect_bd_net -net pdm_value_supply_0_pdm_channel_3 [get_bd_pins pdm_3/din] [get_bd_pins pdm_value_supply_0/pdm_channel_3]
@@ -1613,7 +1613,7 @@ CONFIG.DATA_Has_TLAST {Not_Required} \
 CONFIG.DDS_Clock_Rate {125} \
 CONFIG.Frequency_Resolution {26041} \
 CONFIG.Has_ARESETn {true} \
-CONFIG.Has_Phase_Out {true} \
+CONFIG.Has_Phase_Out {false} \
 CONFIG.Has_TREADY {false} \
 CONFIG.Latency {10} \
 CONFIG.Latency_Configuration {Auto} \
@@ -2011,17 +2011,6 @@ CONFIG.DIN_WIDTH {640} \
 CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_4_slice
 
-  # Create instance: signal_generator_0, and set properties
-  set signal_generator_0 [ create_bd_cell -type ip -vlnv user.org:user:signal_generator:1.0 signal_generator_0 ]
-  set_property -dict [ list \
-CONFIG.AXIS_TDATA_OUT_WIDTH {16} \
-CONFIG.AXIS_TDATA_PHASE_WIDTH {16} \
- ] $signal_generator_0
-
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {2} \
- ] [get_bd_intf_pins /fourier_synth_rasterized/signal_generator_0/m_axis]
-
   # Create instance: util_vector_logic_1, and set properties
   set util_vector_logic_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_1 ]
   set_property -dict [ list \
@@ -2054,13 +2043,6 @@ CONFIG.C_SIZE {1} \
 
   # Create instance: xlconcat_B_channel_4, and set properties
   set xlconcat_B_channel_4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_B_channel_4 ]
-
-  # Create instance: xlconstant_0, and set properties
-  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
-  set_property -dict [ list \
-CONFIG.CONST_VAL {1} \
-CONFIG.CONST_WIDTH {64} \
- ] $xlconstant_0
 
   # Create instance: xlslice_lower_0, and set properties
   set xlslice_lower_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_lower_0 ]
@@ -2183,8 +2165,7 @@ CONFIG.DOUT_WIDTH {16} \
   connect_bd_intf_net -intf_net axis_variable_B_channel_2_M_AXIS [get_bd_intf_pins axis_variable_B_channel_2/M_AXIS] [get_bd_intf_pins dds_compiler_B_channel_2/S_AXIS_CONFIG]
   connect_bd_intf_net -intf_net axis_variable_B_channel_3_M_AXIS [get_bd_intf_pins axis_variable_B_channel_3/M_AXIS] [get_bd_intf_pins dds_compiler_B_channel_3/S_AXIS_CONFIG]
   connect_bd_intf_net -intf_net axis_variable_B_channel_4_M_AXIS [get_bd_intf_pins axis_variable_B_channel_4/M_AXIS] [get_bd_intf_pins dds_compiler_B_channel_4/S_AXIS_CONFIG]
-  connect_bd_intf_net -intf_net dds_compiler_A_channel_1_M_AXIS_DATA [get_bd_intf_pins dds_compiler_A_channel_1/M_AXIS_DATA] [get_bd_intf_pins signal_generator_0/s_axis]
-  connect_bd_intf_net -intf_net dds_compiler_A_channel_1_M_AXIS_PHASE [get_bd_intf_pins dds_compiler_A_channel_1/M_AXIS_PHASE] [get_bd_intf_pins signal_generator_0/s_axis_phase]
+  connect_bd_intf_net -intf_net dds_compiler_A_channel_1_M_AXIS_DATA [get_bd_intf_pins dds_compiler_A_channel_1/M_AXIS_DATA] [get_bd_intf_pins fourier_synthesizer_A/s_axis_channel_1]
   connect_bd_intf_net -intf_net dds_compiler_A_channel_2_M_AXIS_DATA [get_bd_intf_pins dds_compiler_A_channel_2/M_AXIS_DATA] [get_bd_intf_pins fourier_synthesizer_A/s_axis_channel_2]
   connect_bd_intf_net -intf_net dds_compiler_A_channel_3_M_AXIS_DATA [get_bd_intf_pins dds_compiler_A_channel_3/M_AXIS_DATA] [get_bd_intf_pins fourier_synthesizer_A/s_axis_channel_3]
   connect_bd_intf_net -intf_net dds_compiler_A_channel_4_M_AXIS_DATA [get_bd_intf_pins dds_compiler_A_channel_4/M_AXIS_DATA] [get_bd_intf_pins fourier_synthesizer_A/s_axis_channel_4]
@@ -2192,7 +2173,6 @@ CONFIG.DOUT_WIDTH {16} \
   connect_bd_intf_net -intf_net dds_compiler_B_channel_2_M_AXIS_DATA [get_bd_intf_pins dds_compiler_B_channel_2/M_AXIS_DATA] [get_bd_intf_pins fourier_synthesizer_B/s_axis_channel_2]
   connect_bd_intf_net -intf_net dds_compiler_B_channel_3_M_AXIS_DATA [get_bd_intf_pins dds_compiler_B_channel_3/M_AXIS_DATA] [get_bd_intf_pins fourier_synthesizer_B/s_axis_channel_3]
   connect_bd_intf_net -intf_net dds_compiler_B_channel_4_M_AXIS_DATA [get_bd_intf_pins dds_compiler_B_channel_4/M_AXIS_DATA] [get_bd_intf_pins fourier_synthesizer_B/s_axis_channel_4]
-  connect_bd_intf_net -intf_net signal_generator_0_m_axis [get_bd_intf_pins fourier_synthesizer_A/s_axis_channel_1] [get_bd_intf_pins signal_generator_0/m_axis]
 
   # Create port connections
   connect_bd_net -net Din_2 [get_bd_pins cfg_data] [get_bd_pins amplitude_A_channel_1_slice/Din] [get_bd_pins amplitude_A_channel_2_slice/Din] [get_bd_pins amplitude_A_channel_3_slice/Din] [get_bd_pins amplitude_A_channel_4_slice/Din] [get_bd_pins amplitude_B_channel_1_slice/Din] [get_bd_pins amplitude_B_channel_2_slice/Din] [get_bd_pins amplitude_B_channel_3_slice/Din] [get_bd_pins amplitude_B_channel_4_slice/Din] [get_bd_pins freq_A_channel_1_slice/Din] [get_bd_pins freq_A_channel_2_slice/Din] [get_bd_pins freq_A_channel_3_slice/Din] [get_bd_pins freq_A_channel_4_slice/Din] [get_bd_pins freq_B_channel_1_slice/Din] [get_bd_pins freq_B_channel_2_slice/Din] [get_bd_pins freq_B_channel_3_slice/Din] [get_bd_pins freq_B_channel_4_slice/Din] [get_bd_pins phase_A_channel_1_slice/Din] [get_bd_pins phase_A_channel_2_slice/Din] [get_bd_pins phase_A_channel_3_slice/Din] [get_bd_pins phase_A_channel_4_slice/Din] [get_bd_pins phase_B_channel_1_slice/Din] [get_bd_pins phase_B_channel_2_slice/Din] [get_bd_pins phase_B_channel_3_slice/Din] [get_bd_pins phase_B_channel_4_slice/Din]
@@ -2204,7 +2184,7 @@ CONFIG.DOUT_WIDTH {16} \
   connect_bd_net -net amplitude_B_channel_2_slice_Dout [get_bd_pins amplitude_B_channel_2_slice/Dout] [get_bd_pins fourier_synthesizer_B/amplitude_channel_2]
   connect_bd_net -net amplitude_B_channel_3_slice_Dout [get_bd_pins amplitude_B_channel_3_slice/Dout] [get_bd_pins fourier_synthesizer_B/amplitude_channel_3]
   connect_bd_net -net amplitude_B_channel_4_slice_Dout [get_bd_pins amplitude_B_channel_4_slice/Dout] [get_bd_pins fourier_synthesizer_B/amplitude_channel_4]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_variable_A_channel_1/aclk] [get_bd_pins axis_variable_A_channel_2/aclk] [get_bd_pins axis_variable_A_channel_3/aclk] [get_bd_pins axis_variable_A_channel_4/aclk] [get_bd_pins axis_variable_B_channel_1/aclk] [get_bd_pins axis_variable_B_channel_2/aclk] [get_bd_pins axis_variable_B_channel_3/aclk] [get_bd_pins axis_variable_B_channel_4/aclk] [get_bd_pins dds_compiler_A_channel_1/aclk] [get_bd_pins dds_compiler_A_channel_2/aclk] [get_bd_pins dds_compiler_A_channel_3/aclk] [get_bd_pins dds_compiler_A_channel_4/aclk] [get_bd_pins dds_compiler_B_channel_1/aclk] [get_bd_pins dds_compiler_B_channel_2/aclk] [get_bd_pins dds_compiler_B_channel_3/aclk] [get_bd_pins dds_compiler_B_channel_4/aclk] [get_bd_pins fourier_synthesizer_A/clk] [get_bd_pins fourier_synthesizer_B/clk] [get_bd_pins signal_generator_0/clk]
+  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_variable_A_channel_1/aclk] [get_bd_pins axis_variable_A_channel_2/aclk] [get_bd_pins axis_variable_A_channel_3/aclk] [get_bd_pins axis_variable_A_channel_4/aclk] [get_bd_pins axis_variable_B_channel_1/aclk] [get_bd_pins axis_variable_B_channel_2/aclk] [get_bd_pins axis_variable_B_channel_3/aclk] [get_bd_pins axis_variable_B_channel_4/aclk] [get_bd_pins dds_compiler_A_channel_1/aclk] [get_bd_pins dds_compiler_A_channel_2/aclk] [get_bd_pins dds_compiler_A_channel_3/aclk] [get_bd_pins dds_compiler_A_channel_4/aclk] [get_bd_pins dds_compiler_B_channel_1/aclk] [get_bd_pins dds_compiler_B_channel_2/aclk] [get_bd_pins dds_compiler_B_channel_3/aclk] [get_bd_pins dds_compiler_B_channel_4/aclk] [get_bd_pins fourier_synthesizer_A/clk] [get_bd_pins fourier_synthesizer_B/clk]
   connect_bd_net -net fourier_synthesizer_0_m_axis_tdata [get_bd_pins fourier_synthesizer_B/m_axis_tdata] [get_bd_pins xlconcat_2/In1]
   connect_bd_net -net fourier_synthesizer_0_m_axis_tvalid [get_bd_pins fourier_synthesizer_B/m_axis_tvalid] [get_bd_pins util_vector_logic_1/Op2]
   connect_bd_net -net fourier_synthesizer_A_m_axis_tdata [get_bd_pins fourier_synthesizer_A/m_axis_tdata] [get_bd_pins xlconcat_2/In0]
@@ -2225,7 +2205,7 @@ CONFIG.DOUT_WIDTH {16} \
   connect_bd_net -net phase_B_channel_2_slice_Dout [get_bd_pins phase_B_channel_2_slice/Dout] [get_bd_pins xlslice_lower_11/Din]
   connect_bd_net -net phase_B_channel_3_slice_Dout [get_bd_pins phase_B_channel_3_slice/Dout] [get_bd_pins xlslice_lower_13/Din]
   connect_bd_net -net phase_B_channel_4_slice_Dout [get_bd_pins phase_B_channel_4_slice/Dout] [get_bd_pins xlslice_lower_15/Din]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_variable_A_channel_1/aresetn] [get_bd_pins axis_variable_A_channel_2/aresetn] [get_bd_pins axis_variable_A_channel_3/aresetn] [get_bd_pins axis_variable_A_channel_4/aresetn] [get_bd_pins axis_variable_B_channel_1/aresetn] [get_bd_pins axis_variable_B_channel_2/aresetn] [get_bd_pins axis_variable_B_channel_3/aresetn] [get_bd_pins axis_variable_B_channel_4/aresetn] [get_bd_pins dds_compiler_A_channel_1/aresetn] [get_bd_pins dds_compiler_A_channel_2/aresetn] [get_bd_pins dds_compiler_A_channel_3/aresetn] [get_bd_pins dds_compiler_A_channel_4/aresetn] [get_bd_pins dds_compiler_B_channel_1/aresetn] [get_bd_pins dds_compiler_B_channel_2/aresetn] [get_bd_pins dds_compiler_B_channel_3/aresetn] [get_bd_pins dds_compiler_B_channel_4/aresetn] [get_bd_pins fourier_synthesizer_A/aresetn] [get_bd_pins fourier_synthesizer_B/aresetn] [get_bd_pins signal_generator_0/aresetn]
+  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_variable_A_channel_1/aresetn] [get_bd_pins axis_variable_A_channel_2/aresetn] [get_bd_pins axis_variable_A_channel_3/aresetn] [get_bd_pins axis_variable_A_channel_4/aresetn] [get_bd_pins axis_variable_B_channel_1/aresetn] [get_bd_pins axis_variable_B_channel_2/aresetn] [get_bd_pins axis_variable_B_channel_3/aresetn] [get_bd_pins axis_variable_B_channel_4/aresetn] [get_bd_pins dds_compiler_A_channel_1/aresetn] [get_bd_pins dds_compiler_A_channel_2/aresetn] [get_bd_pins dds_compiler_A_channel_3/aresetn] [get_bd_pins dds_compiler_A_channel_4/aresetn] [get_bd_pins dds_compiler_B_channel_1/aresetn] [get_bd_pins dds_compiler_B_channel_2/aresetn] [get_bd_pins dds_compiler_B_channel_3/aresetn] [get_bd_pins dds_compiler_B_channel_4/aresetn] [get_bd_pins fourier_synthesizer_A/aresetn] [get_bd_pins fourier_synthesizer_B/aresetn]
   connect_bd_net -net util_vector_logic_1_Res [get_bd_pins synth_tvalid] [get_bd_pins util_vector_logic_1/Res]
   connect_bd_net -net xlconcat_2_dout [get_bd_pins synth_tdata] [get_bd_pins xlconcat_2/dout]
   connect_bd_net -net xlconcat_A_channel_1_dout [get_bd_pins axis_variable_A_channel_1/cfg_data] [get_bd_pins xlconcat_A_channel_1/dout]
@@ -2236,7 +2216,6 @@ CONFIG.DOUT_WIDTH {16} \
   connect_bd_net -net xlconcat_B_channel_2_dout [get_bd_pins axis_variable_B_channel_2/cfg_data] [get_bd_pins xlconcat_B_channel_2/dout]
   connect_bd_net -net xlconcat_B_channel_3_dout [get_bd_pins axis_variable_B_channel_3/cfg_data] [get_bd_pins xlconcat_B_channel_3/dout]
   connect_bd_net -net xlconcat_B_channel_4_dout [get_bd_pins axis_variable_B_channel_4/cfg_data] [get_bd_pins xlconcat_B_channel_4/dout]
-  connect_bd_net -net xlconstant_0_dout [get_bd_pins signal_generator_0/cfg_data] [get_bd_pins xlconstant_0/dout]
   connect_bd_net -net xlslice_lower_0_Dout [get_bd_pins xlconcat_A_channel_2/In0] [get_bd_pins xlslice_lower_0/Dout]
   connect_bd_net -net xlslice_lower_10_Dout [get_bd_pins xlconcat_B_channel_2/In0] [get_bd_pins xlslice_lower_10/Dout]
   connect_bd_net -net xlslice_lower_11_Dout [get_bd_pins xlconcat_B_channel_2/In1] [get_bd_pins xlslice_lower_11/Dout]
