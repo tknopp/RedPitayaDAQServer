@@ -304,7 +304,7 @@ proc create_hier_cell_write_to_ram { parentCell nameHier } {
   create_bd_pin -dir I -type rst aresetn
   create_bd_pin -dir I -from 15 -to 0 decimation
   create_bd_pin -dir I s_axis_data_tvalid
-  create_bd_pin -dir O -from 22 -to 0 sts_data
+  create_bd_pin -dir O -from 63 -to 0 sts_data
 
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
@@ -316,7 +316,7 @@ CONFIG.S_TDATA_NUM_BYTES {4} \
   # Create instance: axis_ram_writer_1, and set properties
   set axis_ram_writer_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_ram_writer:1.0 axis_ram_writer_1 ]
   set_property -dict [ list \
-CONFIG.ADDR_WIDTH {22} \
+CONFIG.ADDR_WIDTH {24} \
  ] $axis_ram_writer_1
 
   # Create instance: axis_variable_decimation_A, and set properties
@@ -451,7 +451,7 @@ CONFIG.CONST_WIDTH {42} \
   # Create instance: xlconstant_2, and set properties
   set xlconstant_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_2 ]
   set_property -dict [ list \
-CONFIG.CONST_VAL {503316480} \
+CONFIG.CONST_VAL {402653184} \
 CONFIG.CONST_WIDTH {32} \
  ] $xlconstant_2
 
@@ -556,12 +556,12 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir O -type rst FCLK_RESET0_N
   create_bd_pin -dir I -type clk S_AXI_HP0_ACLK
-  create_bd_pin -dir I -from 22 -to 0 adc_sts
+  create_bd_pin -dir I -from 63 -to 0 adc_sts
   create_bd_pin -dir O -from 31 -to 0 cfg_data
-  create_bd_pin -dir I -from 63 -to 0 curr_pdm_values
+  create_bd_pin -dir I -from 6 -to 0 curr_pdm_values
   create_bd_pin -dir O -from 639 -to 0 dac_cfg
   create_bd_pin -dir I dcm_locked
-  create_bd_pin -dir O -from 63 -to 0 pdm_data
+  create_bd_pin -dir O -from 639 -to 0 pdm_data
   create_bd_pin -dir O -from 0 -to 0 -type rst peripheral_aresetn
   create_bd_pin -dir I -from 31 -to 0 reset_sts
 
@@ -583,7 +583,7 @@ CONFIG.CFG_DATA_WIDTH {640} \
   set axi_cfg_register_pdm [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 axi_cfg_register_pdm ]
   set_property -dict [ list \
 CONFIG.AXI_ADDR_WIDTH {32} \
-CONFIG.CFG_DATA_WIDTH {64} \
+CONFIG.CFG_DATA_WIDTH {640} \
  ] $axi_cfg_register_pdm
 
   # Create instance: axi_interconnect_0, and set properties
@@ -603,7 +603,7 @@ CONFIG.STS_DATA_WIDTH {64} \
   set axi_sts_register_pdm [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_sts_register:1.0 axi_sts_register_pdm ]
   set_property -dict [ list \
 CONFIG.AXI_ADDR_WIDTH {32} \
-CONFIG.STS_DATA_WIDTH {64} \
+CONFIG.STS_DATA_WIDTH {7} \
  ] $axi_sts_register_pdm
 
   # Create instance: axi_sts_register_reset, and set properties
@@ -698,13 +698,26 @@ proc create_hier_cell_pdm { parentCell nameHier } {
   # Create interface pins
 
   # Create pins
-  create_bd_pin -dir I -from 63 -to 0 Din
+  create_bd_pin -dir I -from 639 -to 0 Din
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type rst aresetn
   create_bd_pin -dir I -type clk ddr_clk
   create_bd_pin -dir O -from 3 -to 0 dout
   create_bd_pin -dir I -type clk pdm_clk
-  create_bd_pin -dir O -from 63 -to 0 pdm_sts
+  create_bd_pin -dir O -from 6 -to 0 pdm_sts
+
+  # Create instance: c_counter_binary_0, and set properties
+  set c_counter_binary_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:c_counter_binary:12.0 c_counter_binary_0 ]
+  set_property -dict [ list \
+CONFIG.Output_Width {7} \
+CONFIG.SCLR {true} \
+ ] $c_counter_binary_0
+
+  # Create instance: clk_div_0, and set properties
+  set clk_div_0 [ create_bd_cell -type ip -vlnv referencedesigner.com:user:clk_div:1.0 clk_div_0 ]
+  set_property -dict [ list \
+CONFIG.N {48000} \
+ ] $clk_div_0
 
   # Create instance: pdm_1, and set properties
   set pdm_1 [ create_bd_cell -type ip -vlnv koheron:user:pdm:1.0 pdm_1 ]
@@ -754,8 +767,19 @@ CONFIG.DIN_WIDTH {64} \
 CONFIG.DOUT_WIDTH {1} \
  ] $pdm_channel_4_slice
 
+  # Create instance: pdm_multiplexer_0, and set properties
+  set pdm_multiplexer_0 [ create_bd_cell -type ip -vlnv matthiasgraeser:user:pdm_multiplexer:1.0 pdm_multiplexer_0 ]
+
   # Create instance: pdm_value_supply_0, and set properties
   set pdm_value_supply_0 [ create_bd_cell -type ip -vlnv jbeuke:user:pdm_value_supply:1.0 pdm_value_supply_0 ]
+
+  # Create instance: util_vector_logic_0, and set properties
+  set util_vector_logic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_0 ]
+  set_property -dict [ list \
+CONFIG.C_OPERATION {not} \
+CONFIG.C_SIZE {1} \
+CONFIG.LOGO_FILE {data/sym_notgate.png} \
+ ] $util_vector_logic_0
 
   # Create instance: xlconcat_0, and set properties
   set xlconcat_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_0 ]
@@ -764,7 +788,10 @@ CONFIG.NUM_PORTS {4} \
  ] $xlconcat_0
 
   # Create port connections
-  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins pdm_value_supply_0/aclk]
+  connect_bd_net -net Din_1 [get_bd_pins Din] [get_bd_pins pdm_multiplexer_0/pdm_data_in]
+  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins clk_div_0/clk] [get_bd_pins pdm_value_supply_0/aclk]
+  connect_bd_net -net c_counter_binary_0_Q [get_bd_pins pdm_sts] [get_bd_pins c_counter_binary_0/Q] [get_bd_pins pdm_multiplexer_0/sample_select]
+  connect_bd_net -net clk_div_0_clk_out [get_bd_pins c_counter_binary_0/CLK] [get_bd_pins clk_div_0/clk_out]
   connect_bd_net -net ddr_clk_1 [get_bd_pins ddr_clk] [get_bd_pins pdm_1/clk] [get_bd_pins pdm_2/clk] [get_bd_pins pdm_3/clk] [get_bd_pins pdm_4/clk]
   connect_bd_net -net pdm_1_dout [get_bd_pins pdm_1/dout] [get_bd_pins xlconcat_0/In0]
   connect_bd_net -net pdm_2_dout [get_bd_pins pdm_2/dout] [get_bd_pins xlconcat_0/In1]
@@ -774,15 +801,15 @@ CONFIG.NUM_PORTS {4} \
   connect_bd_net -net pdm_channel_2_slice_Dout [get_bd_pins pdm_channel_2_slice/Dout] [get_bd_pins pdm_value_supply_0/pdm_channel_2_nxt]
   connect_bd_net -net pdm_channel_3_slice_Dout [get_bd_pins pdm_channel_3_slice/Dout] [get_bd_pins pdm_value_supply_0/pdm_channel_3_nxt]
   connect_bd_net -net pdm_channel_4_slice_Dout [get_bd_pins pdm_channel_4_slice/Dout] [get_bd_pins pdm_value_supply_0/pdm_channel_4_nxt]
+  connect_bd_net -net pdm_multiplexer_v1_0_0_pdm_data_out [get_bd_pins pdm_channel_1_slice/Din] [get_bd_pins pdm_channel_2_slice/Din] [get_bd_pins pdm_channel_3_slice/Din] [get_bd_pins pdm_channel_4_slice/Din] [get_bd_pins pdm_multiplexer_0/pdm_data_out]
   connect_bd_net -net pdm_value_supply_0_pdm_channel_1 [get_bd_pins pdm_1/din] [get_bd_pins pdm_value_supply_0/pdm_channel_1]
   connect_bd_net -net pdm_value_supply_0_pdm_channel_2 [get_bd_pins pdm_2/din] [get_bd_pins pdm_value_supply_0/pdm_channel_2]
   connect_bd_net -net pdm_value_supply_0_pdm_channel_3 [get_bd_pins pdm_3/din] [get_bd_pins pdm_value_supply_0/pdm_channel_3]
   connect_bd_net -net pdm_value_supply_0_pdm_channel_4 [get_bd_pins pdm_4/din] [get_bd_pins pdm_value_supply_0/pdm_channel_4]
-  connect_bd_net -net pdm_value_supply_1_pdm_sts [get_bd_pins pdm_sts] [get_bd_pins pdm_value_supply_0/pdm_sts]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins pdm_1/aresetn] [get_bd_pins pdm_2/aresetn] [get_bd_pins pdm_3/aresetn] [get_bd_pins pdm_4/aresetn] [get_bd_pins pdm_value_supply_0/aresetn]
+  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins clk_div_0/reset] [get_bd_pins pdm_1/aresetn] [get_bd_pins pdm_2/aresetn] [get_bd_pins pdm_3/aresetn] [get_bd_pins pdm_4/aresetn] [get_bd_pins pdm_value_supply_0/aresetn] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net util_ds_buf_1_BUFG_O [get_bd_pins pdm_clk] [get_bd_pins pdm_value_supply_0/pdm_clk]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins c_counter_binary_0/SCLR] [get_bd_pins util_vector_logic_0/Res]
   connect_bd_net -net xlconcat_0_dout1 [get_bd_pins dout] [get_bd_pins xlconcat_0/dout]
-  connect_bd_net -net xlslice_0_Dout [get_bd_pins Din] [get_bd_pins pdm_channel_1_slice/Din] [get_bd_pins pdm_channel_2_slice/Din] [get_bd_pins pdm_channel_3_slice/Din] [get_bd_pins pdm_channel_4_slice/Din]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -2624,6 +2651,4 @@ CONFIG.DOUT_WIDTH {8} \
 
 create_root_design ""
 
-
-common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
