@@ -33,7 +33,7 @@ int main () {
   while(true)
   {
     setMasterTrigger(MASTER_TRIGGER_OFF);
-    usleep(400);
+    usleep(400000);
     setMasterTrigger(MASTER_TRIGGER_ON);
     usleep(40);
 

@@ -22,7 +22,7 @@
 
 int main () {
   uint32_t wp, wp_old, over, over_old;
-  uint64_t wpPDM;
+  uint8_t wpPDM;
   uint64_t wpTotal;
 
   init();
@@ -35,10 +35,11 @@ int main () {
   wpTotal = getTotalWritePointer();
   over = getWritePointerOverflows();
   printf("Write pointer = %u %u %llu\n", wp, over, wpTotal);
-
+  usleep(1000000);
 
   setRAMWriterMode(ADC_MODE_TRIGGERED);
-  usleep(100000);
+ setMasterTrigger(MASTER_TRIGGER_OFF);  
+ usleep(1000000);
   setMasterTrigger(MASTER_TRIGGER_ON);
   
   while(getTriggerStatus() == 0)
@@ -57,14 +58,14 @@ int main () {
 
     uint32_t size = getWritePointerDistance(wp_old, wp)-1;
 
-    printf("wp %u over %u wpDiff %u wpTotal %llu pdm %llu \n", wp, over, size, wpTotal, wpPDM);
+    printf("wp %u over %u wpDiff %u wpTotal %llu pdm %u \n", wp, over, size, wpTotal, wpPDM);
     if(size == 0) {
       printf("Write Pointer remains the same!");
       return 1;
     }
 
-    usleep(10000);
-  } 
+    usleep(10000);   
+} 
   return 0;
 }
 
