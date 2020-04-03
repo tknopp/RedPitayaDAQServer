@@ -585,16 +585,6 @@ static scpi_result_t RP_PDM_GetPDMNextValue(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_PDM_GetPDMCurrentValue(scpi_t * context) {
-    int32_t numbers[1];
-	SCPI_CommandNumbers(context, numbers, 1, 1);
-	int channel = numbers[0];
-	
-	SCPI_ResultUInt16(context, getPDMCurrentValue(channel));
-
-    return SCPI_RES_OK;
-}
-
 static scpi_result_t RP_XADC_GetXADCValueVolt(scpi_t * context) {
     int32_t numbers[1];
 	SCPI_CommandNumbers(context, numbers, 1, 1);
@@ -873,7 +863,6 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:PDM:CHannel#:NextValue", .callback = RP_PDM_SetPDMNextValue,},
 	{.pattern = "RP:PDM:CHannel#:NextValueVolt", .callback = RP_PDM_SetPDMNextValueVolt,},
 	{.pattern = "RP:PDM:CHannel#:NextValue?", .callback = RP_PDM_GetPDMNextValue,},
-	{.pattern = "RP:PDM:CHannel#:CurrentValue?", .callback = RP_PDM_GetPDMCurrentValue,},
 	{.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},
 	{.pattern = "RP:WatchDogMode", .callback = RP_SetWatchdogMode,},
 	{.pattern = "RP:WatchDogMode?", .callback = RP_GetWatchdogMode,},
