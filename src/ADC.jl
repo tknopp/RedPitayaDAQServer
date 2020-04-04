@@ -1,7 +1,7 @@
 export decimation, samplesPerPeriod, periodsPerFrame, masterTrigger, currentFrame,
      currentPeriod, ramWriterMode, connectADC, startADC, stopADC, readData,
      numSlowDACChan, setSlowDACLUT, enableSlowDAC, currentWP, slowDACInterpolation,
-     numSlowADCChan, numLostStepsSlowADC, bufferSize
+     numSlowADCChan, numLostStepsSlowADC, bufferSize, ramWriterEnabled
 
 
 decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
@@ -65,6 +65,13 @@ function masterTrigger(rp::RedPitaya, val::Bool)
   send(rp, string("RP:MasterTrigger ", valStr))
 end
 masterTrigger(rp::RedPitaya) = occursin("ON", query(rp,"RP:MasterTrigger?"))
+
+function ramWriterEnabled(rp::RedPitaya, val::Bool)
+  valStr = val ? "ON" : "OFF"
+  send(rp, string("RP:RamWriterEnabled ", valStr))
+end
+ramWriterEnabled(rp::RedPitaya) = occursin("ON", query(rp,"RP:RamWriterEnabled?"))
+
 
 # "TRIGGERED" or "CONTINUOUS"
 function ramWriterMode(rp::RedPitaya, mode::String)
