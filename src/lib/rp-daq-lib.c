@@ -439,6 +439,14 @@ int setDecimation(uint16_t decimation) {
     return 0;
 }
 
+int resetRamWriter() {
+	*((uint32_t *)(cfg + 0)) &= ~1;
+return 1;
+}
+int enableRamWriter () {
+	*((uint32_t *)(cfg + 0)) |= 1;
+return 1;
+}
 uint16_t getDecimation() {
     uint16_t value = *((uint16_t *)(cfg + 2));
     return value;

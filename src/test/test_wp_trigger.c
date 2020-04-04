@@ -50,9 +50,10 @@ int main () {
 
   while(true)
   {
+enableRamWriter();
   setMasterTrigger(MASTER_TRIGGER_ON);		
 printf("Master Trigger On \n\n");
-   for (i = 1; i < 10; ++i)
+   for (i = 1; i < 50; ++i)
   {
     
   
@@ -70,11 +71,11 @@ printf("Master Trigger On \n\n");
     //  return 1;
     }
 
-    usleep(10000);   
+    usleep(20000);   
 }
 setMasterTrigger(MASTER_TRIGGER_OFF);
 printf("Master Trigger OFF \n\n");
-   for (i = 1; i < 10; ++i)                                                                                                                                                                                                              
+   for (i = 1; i < 50; ++i)                                                                                                                                                                                                              
 	{                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
 	wp_old = wp;                                                                                                                                                                                                                           
 	wp = getWritePointer();                                                                                                                                                                                                                
@@ -85,12 +86,13 @@ printf("Master Trigger OFF \n\n");
 	uint32_t size = getWritePointerDistance(wp_old, wp)-1;                                                                                                                                                                                                                                                                                                                                                                                                                        
 	
 	printf("wp %u over %u wpDiff %u wpTotal %llu pdm %u \n", wp, over, size, wpTotal, wpPDM);                                                                                                                                              
-	//if(size == 0) {                                                                                                                                                                                                                          
-	//	printf("Write Pointer remains the same!");                                                                                                                                                                                             
+	if(size == 0) {                                                                                                                                                                                                                          
+	resetRamWriter();
+//	printf("Write Pointer remains the same!");                                                                                                                                                                                             
 	//return 1;                                                                                                                                                                                                                            
-	//}                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
-	usleep(10000);                                                                                                                                                                                                                     
-	}    
+	}                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
+	usleep(20000);                                                                                                                                                                                                                     
+	}  
 } 
   return 0;
 }

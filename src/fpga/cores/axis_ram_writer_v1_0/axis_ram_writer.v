@@ -55,7 +55,7 @@ module axis_ram_writer #
   reg [ADDR_WIDTH_COUNTER-1:0] int_addr_reg_total, int_addr_next_total;
   reg [AXI_ID_WIDTH-1:0] int_wid_reg, int_wid_next;
 
-  wire int_full_wire, int_empty_wire, int_rden_wire;
+  wire int_full_wire, int_almost_empty_wire, int_empty_wire, int_rden_wire;
   wire int_wlast_wire, int_tready_wire;
   wire [71:0] int_wdata_wire;
 
@@ -70,8 +70,9 @@ module axis_ram_writer #
     .FIFO_MODE("FIFO36_72")
   ) fifo_0 (
     .FULL(int_full_wire),
-    .ALMOSTEMPTY(int_empty_wire),
-    .RST(~aresetn),
+    .ALMOSTEMPTY(int_almost_empty_wire),
+    .EMPTY(int_empty_wire),
+    .RST(~aresetn && int_empty_wire),
     .WRCLK(aclk),
     .WREN(int_tready_wire & s_axis_tvalid),
     .DI({{(72-AXIS_TDATA_WIDTH){1'b0}}, s_axis_tdata}),
@@ -82,7 +83,7 @@ module axis_ram_writer #
 
   always @(posedge aclk)
   begin
-    if(~aresetn)
+    if(~aresetn && int_almost_empty_wire)
     begin
       int_awvalid_reg <= 1'b0;
       int_wvalid_reg <= 1'b0;
@@ -108,7 +109,7 @@ module axis_ram_writer #
     int_addr_next_total = int_addr_reg_total;
     int_wid_next = int_wid_reg;
 
-    if(~int_empty_wire & ~int_awvalid_reg & ~int_wvalid_reg)
+     if(~int_almost_empty_wire & ~int_awvalid_reg & ~int_wvalid_reg)
     begin
       int_awvalid_next = 1'b1;
       int_wvalid_next = 1'b1;
@@ -128,7 +129,7 @@ module axis_ram_writer #
     if(m_axi_wready & int_wlast_wire)
     begin
       int_wid_next = int_wid_reg + 1'b1;
-      if(int_empty_wire)
+      if(int_almost_empty_wire)
       begin
         int_wvalid_next = 1'b0;
       end

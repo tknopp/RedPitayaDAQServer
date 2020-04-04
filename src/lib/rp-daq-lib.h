@@ -74,6 +74,8 @@ extern uint32_t getInternalWritePointer(uint64_t wp);
 extern uint32_t getWritePointerOverflows();
 extern uint32_t getWritePointerDistance(uint32_t start_pos, uint32_t end_pos);
 extern void readADCData(uint32_t wp, uint32_t size, uint32_t* buffer);
+extern int resetRamWriter();
+extern int enableRamWriter();
 
 // slow IO
 extern int setPDMRegisterValue(uint64_t, int);
