@@ -27,9 +27,9 @@ int main () {
 
   init();
   setDACMode(DAC_MODE_RASTERIZED);
-  setWatchdogMode(WATCHDOG_OFF);  
+  setWatchdogMode(OFF);  
 
-  setMasterTrigger(MASTER_TRIGGER_OFF);
+  setMasterTrigger(OFF);
 
   wp = getWritePointer();
   wpTotal = getTotalWritePointer();
@@ -38,9 +38,9 @@ int main () {
   usleep(1000000);
 
   setRAMWriterMode(ADC_MODE_TRIGGERED);
- setMasterTrigger(MASTER_TRIGGER_OFF);  
+ setMasterTrigger(OFF);  
  usleep(1000000);
-  setMasterTrigger(MASTER_TRIGGER_ON);
+  setMasterTrigger(ON);
   
   while(getTriggerStatus() == 0)
   {

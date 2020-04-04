@@ -27,9 +27,9 @@ int main () {
   uint64_t i;
   init();
   setDACMode(DAC_MODE_RASTERIZED);
-  setWatchdogMode(WATCHDOG_OFF);  
+  setWatchdogMode(OFF);  
 
-  setMasterTrigger(MASTER_TRIGGER_OFF);
+  setMasterTrigger(OFF);
 
   wp = getWritePointer();
   wpTotal = getTotalWritePointer();
@@ -38,9 +38,9 @@ int main () {
   usleep(1000000);
 
   setRAMWriterMode(ADC_MODE_TRIGGERED);
- setMasterTrigger(MASTER_TRIGGER_OFF);  
+ setMasterTrigger(OFF);  
  usleep(1000000);
-  setMasterTrigger(MASTER_TRIGGER_ON);
+  setMasterTrigger(ON);
   
   while(getTriggerStatus() == 0)
   {
@@ -50,9 +50,9 @@ int main () {
 
   while(true)
   {
-enableRamWriter();
-  setMasterTrigger(MASTER_TRIGGER_ON);		
-printf("Master Trigger On \n\n");
+    setRamWriterEnabled(ON);		
+    setMasterTrigger(ON);		
+    printf("Master Trigger On \n\n");
    for (i = 1; i < 50; ++i)
   {
     
@@ -73,7 +73,7 @@ printf("Master Trigger On \n\n");
 
     usleep(20000);   
 }
-setMasterTrigger(MASTER_TRIGGER_OFF);
+setMasterTrigger(OFF);
 printf("Master Trigger OFF \n\n");
    for (i = 1; i < 50; ++i)                                                                                                                                                                                                              
 	{                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
@@ -87,7 +87,7 @@ printf("Master Trigger OFF \n\n");
 	
 	printf("wp %u over %u wpDiff %u wpTotal %llu pdm %u \n", wp, over, size, wpTotal, wpPDM);                                                                                                                                              
 	if(size == 0) {                                                                                                                                                                                                                          
-	resetRamWriter();
+          setMasterTrigger(OFF);		
 //	printf("Write Pointer remains the same!");                                                                                                                                                                                             
 	//return 1;                                                                                                                                                                                                                            
 	}                                                                                                                                                                                                                                                                                                                                                                                                                                                                             

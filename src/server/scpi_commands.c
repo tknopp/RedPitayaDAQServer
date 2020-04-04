@@ -599,16 +599,16 @@ static scpi_result_t RP_XADC_GetXADCValueVolt(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
-scpi_choice_def_t watchdog_modes[] = {
-    {"OFF", WATCHDOG_OFF},
-    {"ON", WATCHDOG_ON},
+scpi_choice_def_t onoff_modes[] = {
+    {"OFF", OFF},
+    {"ON", ON},
     SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
 static scpi_result_t RP_GetWatchdogMode(scpi_t * context) {
 	const char * name;
 
-    SCPI_ChoiceToName(watchdog_modes, getWatchdogMode(), &name);
+    SCPI_ChoiceToName(onoff_modes, getWatchdogMode(), &name);
 	SCPI_ResultText(context, name);
 
     return SCPI_RES_OK;
@@ -617,7 +617,7 @@ static scpi_result_t RP_GetWatchdogMode(scpi_t * context) {
 static scpi_result_t RP_SetWatchdogMode(scpi_t * context) {
     int32_t watchdog_mode_selection;
 
-    if (!SCPI_ParamChoice(context, watchdog_modes, &watchdog_mode_selection, TRUE)) {
+    if (!SCPI_ParamChoice(context, onoff_modes, &watchdog_mode_selection, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 	
@@ -659,16 +659,10 @@ static scpi_result_t RP_SetRAMWriterMode(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
-scpi_choice_def_t master_trigger_modes[] = {
-    {"OFF", MASTER_TRIGGER_OFF},
-    {"ON", MASTER_TRIGGER_ON},
-    SCPI_CHOICE_LIST_END /* termination of option list */
-};
-
 static scpi_result_t RP_GetMasterTrigger(scpi_t * context) {
 	const char * name;
 
-    SCPI_ChoiceToName(master_trigger_modes, getMasterTrigger(), &name);
+    SCPI_ChoiceToName(onoff_modes, getMasterTrigger(), &name);
 	SCPI_ResultText(context, name);
 
     return SCPI_RES_OK;
@@ -677,7 +671,7 @@ static scpi_result_t RP_GetMasterTrigger(scpi_t * context) {
 static scpi_result_t RP_SetMasterTrigger(scpi_t * context) {
     int32_t master_trigger_selection;
 
-    if (!SCPI_ParamChoice(context, master_trigger_modes, &master_trigger_selection, TRUE)) {
+    if (!SCPI_ParamChoice(context, onoff_modes, &master_trigger_selection, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 	
@@ -689,16 +683,36 @@ static scpi_result_t RP_SetMasterTrigger(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
-scpi_choice_def_t instant_reset_modes[] = {
-    {"OFF", INSTANT_RESET_OFF},
-    {"ON", INSTANT_RESET_ON},
-    SCPI_CHOICE_LIST_END /* termination of option list */
-};
+static scpi_result_t RP_GetRamWriterEnabled(scpi_t * context) {
+	const char * name;
+
+    SCPI_ChoiceToName(onoff_modes, getRamWriterEnabled(), &name);
+	SCPI_ResultText(context, name);
+
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_SetRamWriterEnabled(scpi_t * context) {
+    int32_t param;
+
+    if (!SCPI_ParamChoice(context, onoff_modes, &param, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+	
+	int result = setRamWriterEnabled(param);
+	if (result < 0) {
+		return SCPI_RES_ERR;
+	}
+
+    return SCPI_RES_OK;
+}
+
+
 
 static scpi_result_t RP_GetInstantResetMode(scpi_t * context) {
 	const char * name;
 
-    SCPI_ChoiceToName(instant_reset_modes, getInstantResetMode(), &name);
+    SCPI_ChoiceToName(onoff_modes, getInstantResetMode(), &name);
 	SCPI_ResultText(context, name);
 
     return SCPI_RES_OK;
@@ -707,7 +721,7 @@ static scpi_result_t RP_GetInstantResetMode(scpi_t * context) {
 static scpi_result_t RP_SetInstantResetMode(scpi_t * context) {
     int32_t instant_reset_mode_selection;
 
-    if (!SCPI_ParamChoice(context, instant_reset_modes, &instant_reset_mode_selection, TRUE)) {
+    if (!SCPI_ParamChoice(context, onoff_modes, &instant_reset_mode_selection, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 	
@@ -868,6 +882,8 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:WatchDogMode?", .callback = RP_GetWatchdogMode,},
 	{.pattern = "RP:RamWriterMode", .callback = RP_SetRAMWriterMode,},
 	{.pattern = "RP:RamWriterMode?", .callback = RP_GetRAMWriterMode,},
+	{.pattern = "RP:RamWriterEnabled", .callback = RP_SetRamWriterEnabled,},
+	{.pattern = "RP:RamWriterEnabled?", .callback = RP_GetRamWriterEnabled,},
 	{.pattern = "RP:MasterTrigger", .callback = RP_SetMasterTrigger,},
 	{.pattern = "RP:MasterTrigger?", .callback = RP_GetMasterTrigger,},
 	{.pattern = "RP:InstantResetMode", .callback = RP_SetInstantResetMode,},

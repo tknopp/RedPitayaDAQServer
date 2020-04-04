@@ -560,7 +560,7 @@ void* communicationThread(void* p)
     if(!commThreadRunning)
     {
       stopTx();
-      //setMasterTrigger(MASTER_TRIGGER_OFF);
+      //setMasterTrigger(OFF);
       joinThreads();
       break;
     }
@@ -582,7 +582,7 @@ void* communicationThread(void* p)
       } else if (rc == 0) {
         printf("Connection closed\r\n");
         stopTx();
-        //setMasterTrigger(MASTER_TRIGGER_OFF);
+        //setMasterTrigger(OFF);
         joinThreads();
         commThreadRunning = false;
         break;
@@ -704,7 +704,7 @@ int main(int argc, char** argv) {
   // Exit gracefully
   acquisitionThreadRunning = false;
   stopTx();
-  //setMasterTrigger(MASTER_TRIGGER_OFF);
+  //setMasterTrigger(OFF);
   pthread_join(pSlowDAC, NULL);
   releaseBuffer();
 
