@@ -36,6 +36,7 @@
 #define SCPI_IDN4 "0.1"
 
 extern int numSamplesPerPeriod;
+extern int numSamplesPerSubPeriod;
 extern int numPeriodsPerFrame;
 extern int numSlowDACChan;
 extern int numSlowADCChan;

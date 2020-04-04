@@ -19,6 +19,8 @@
 #define ADC_BUFF_SIZE (1 << (ADC_BUFF_NUM_BITS+1)) 
 #define ADC_BUFF_MEM_ADDRESS 0x18000000 // 0x1E000000  
 
+#define PDM_BUFF_SIZE 128  
+
 #define DAC_MODE_RASTERIZED 1
 #define	DAC_MODE_STANDARD   0
 
@@ -39,7 +41,8 @@ extern bool verbose;
 extern int mmapfd;
 extern volatile uint32_t *slcr, *axi_hp0;
 // FPGA registers that are memory mapped
-extern void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *reset_sts, *cfg, *ram, *buf;
+extern void *dac_cfg, *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *buf;
+extern char *pdm_cfg;
 
 extern uint16_t dac_channel_A_modulus[4];
 extern uint16_t dac_channel_B_modulus[4];
@@ -73,13 +76,15 @@ extern uint32_t getWritePointerDistance(uint32_t start_pos, uint32_t end_pos);
 extern void readADCData(uint32_t wp, uint32_t size, uint32_t* buffer);
 
 // slow IO
-extern int setPDMRegisterValue(uint64_t);
+extern int setPDMRegisterValue(uint64_t, int);
+extern int setPDMRegisterAllValues(uint64_t);
+extern int setPDMValue(uint16_t, int, int);
+extern int setPDMAllValues(uint16_t, int);
+extern int setPDMValueVolt(float, int, int);
+extern int setPDMAllValuesVolt(float, int);
 extern uint64_t getPDMRegisterValue();
 extern uint64_t getPDMStatusValue();
-extern int setPDMNextValues(uint16_t, uint16_t, uint16_t, uint16_t);
 extern int* getPDMNextValues();
-extern int setPDMNextValue(uint16_t, int);
-extern int setPDMNextValueVolt(float, int);
 extern int getPDMNextValue();
 extern uint32_t getXADCValue(int);
 extern float getXADCValueVolt(int);

@@ -358,7 +358,7 @@ static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
         {
           for (int i=0; i<4; i++)                        
           {
-             setPDMNextValueVolt(0.0, i);
+             setPDMAllValuesVolt(0.0, i);
           }  
         }
 
@@ -547,7 +547,7 @@ static scpi_result_t RP_PDM_SetPDMNextValue(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 	
-	int result = setPDMNextValue((uint16_t)next_PDM_value, channel);
+	int result = setPDMAllValues((uint16_t)next_PDM_value, channel);
 	if (result < 0) {
 		return SCPI_RES_ERR;
 	}
@@ -567,7 +567,7 @@ static scpi_result_t RP_PDM_SetPDMNextValueVolt(scpi_t * context) {
 
         printf("Set PDM channel %d to %f Volt\n", channel, next_PDM_value);
 	
-	int result = setPDMNextValueVolt(next_PDM_value, channel);
+	int result = setPDMAllValuesVolt(next_PDM_value, channel);
 	if (result < 0) {
 		return SCPI_RES_ERR;
 	}

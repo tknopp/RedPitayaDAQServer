@@ -21,7 +21,8 @@ bool verbose = false;
 
 int mmapfd;
 volatile uint32_t *slcr, *axi_hp0;
-void *dac_cfg, *adc_sts, *pdm_cfg, *pdm_sts, *reset_sts, *cfg, *ram;
+void *dac_cfg, *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram;
+char *pdm_cfg;
 volatile int32_t *xadc;
 
 
@@ -476,21 +477,10 @@ uint32_t getWritePointerDistance(uint32_t start_pos, uint32_t end_pos) {
 }
 
 void readADCData(uint32_t wp, uint32_t size, uint32_t* buffer) {
-	//int i;
-    //printf("Reading and copying ADC data");
 	if(wp+size <= ADC_BUFF_SIZE) {
-        //struct timespec start_time;
-        //clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start_time);
 
     	memcpy(buffer, ram + sizeof(uint32_t)*wp, size*sizeof(uint32_t));
-		/*for(i=0; i<2*size; i++) {
-            ((uint16_t*)buffer)[i] = ((uint16_t*)ram)[wp+i];
-        }*/
 
-    	//struct timespec end_time;
-    	//clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end_time);
-    	//long nsec = end_time.tv_nsec - start_time.tv_nsec;        
-        //printf("Time taken %ld nanoseconds, size %ld, data rate %e GB/sec \n", nsec, size, (size*4)/((float)nsec) );
 	} else {
 		uint32_t size1 = ADC_BUFF_SIZE - wp;
 		uint32_t size2 = size - size1;
@@ -502,10 +492,67 @@ void readADCData(uint32_t wp, uint32_t size, uint32_t* buffer) {
 
 // Slow IO
 
-int setPDMRegisterValue(uint64_t value) {
-    *((uint64_t *)(pdm_cfg)) = value;
+int setPDMRegisterValue(uint64_t value, int index) {
+    //printf("setPDMRegisterValue: value=%llu index=%d \n", value, index);
+    *(((uint64_t *)(pdm_cfg))+index) = value;
     return 0;
 }
+
+int setPDMRegisterAllValues(uint64_t value) {
+    for(int i=0; i<PDM_BUFF_SIZE; i++)
+    {
+      setPDMRegisterValue(value,i);
+    }
+    return 0;
+}
+
+int setPDMValue(uint16_t value, int channel, int index) {
+    if(value < 0 || value >= 2048) {
+        return -1;
+    }
+    
+    if(channel < 0 || channel >= 4) {
+        return -2;
+    }
+    
+    //printf("setPDMValue: value=%u channel=%d index=%d \n", value, channel, index);
+    //printf("%p   %p   %d \n", (void*)pdm_cfg, (void*)((uint16_t *)(pdm_cfg+2*(channel+4*index))), 2*(channel+4*index) );
+    *((uint16_t *)(pdm_cfg + 2*(channel+4*index))) = value;
+    
+    return 0;
+}
+
+int setPDMAllValues(uint16_t value, int channel) {
+    for(int i=0; i<PDM_BUFF_SIZE; i++)
+    {
+      setPDMValue(value, channel, i);
+    }
+    return 0;
+}
+
+int setPDMValueVolt(float voltage, int channel, int index) {
+//    uint16_t val = (uint16_t) (((value - ANALOG_OUT_MIN_VAL) / (ANALOG_OUT_MAX_VAL - ANALOG_OUT_MIN_VAL)) * ANALOG_OUT_MAX_VAL_INTEGER);
+  //int n;
+  /// Not sure what is correct here: might be helpful https://forum.redpitaya.com/viewtopic.php?f=9&t=614
+  if (voltage > 1.8) voltage = 1.8;
+  if (voltage < 0) voltage = 0;
+  //n = (voltage / 1.8) * 2496.;
+  //uint16_t val = ((n / 16) << 16) + (0xffff >> (16 - (n % 16)));
+  uint16_t val = (voltage / 1.8) * 2038.;
+
+  //printf("set val %04x.\n", val);
+  return setPDMValue(val, channel, index);
+}
+
+int setPDMAllValuesVolt(float voltage, int channel) {
+    for(int i=0; i<PDM_BUFF_SIZE; i++)
+    {
+      setPDMValueVolt(voltage, channel, i);
+    }
+    return 0;
+}
+
+
 
 uint64_t getPDMRegisterValue() {
     uint64_t value = *((uint64_t *)(pdm_cfg));
@@ -515,29 +562,6 @@ uint64_t getPDMRegisterValue() {
 uint64_t getPDMStatusValue() {
     uint64_t value = *((uint64_t *)(pdm_sts));
     return value;
-}
-
-int setPDMNextValues(uint16_t channel_1_value, uint16_t channel_2_value, uint16_t channel_3_value, uint16_t channel_4_value) {
-    if(channel_1_value < 0 || channel_1_value >= 2048) {
-        return -1;
-    }
-    
-    if(channel_2_value < 0 || channel_2_value >= 2048) {
-        return -2;
-    }
-    
-    if(channel_3_value < 0 || channel_3_value >= 2048) {
-        return -3;
-    }
-    
-    if(channel_4_value < 0 || channel_4_value >= 2048) {
-        return -4;
-    }
-
-    uint64_t combined_value = (uint64_t)channel_1_value + ((uint64_t)channel_2_value << 16) + ((uint64_t)channel_3_value << 32) + ((uint64_t)channel_4_value << 48);
-    setPDMRegisterValue(combined_value);
-    
-    return 0;
 }
 
 int* getPDMNextValues() {
@@ -551,34 +575,6 @@ int* getPDMNextValues() {
     return channel_values;
 }
 
-int setPDMNextValue(uint16_t value, int channel) {
-    if(value < 0 || value >= 2048) {
-        return -1;
-    }
-    
-    if(channel < 0 || channel >= 4) {
-        return -2;
-    }
-    
-    *((uint16_t *)(pdm_cfg + 2*channel)) = value;
-    
-    return 0;
-}
-
-int setPDMNextValueVolt(float voltage, int channel) {
-//    uint16_t val = (uint16_t) (((value - ANALOG_OUT_MIN_VAL) / (ANALOG_OUT_MAX_VAL - ANALOG_OUT_MIN_VAL)) * ANALOG_OUT_MAX_VAL_INTEGER);
-  //int n;
-  /// Not sure what is correct here: might be helpful https://forum.redpitaya.com/viewtopic.php?f=9&t=614
-  if (voltage > 1.8) voltage = 1.8;
-  if (voltage < 0) voltage = 0;
-  //n = (voltage / 1.8) * 2496.;
-  //uint16_t val = ((n / 16) << 16) + (0xffff >> (16 - (n % 16)));
-  uint16_t val = (voltage / 1.8) * 2038.;
-
-  //printf("set val %04x.\n", val);
-  return setPDMNextValue(val, channel);
-}
-
 int getPDMNextValue(int channel) {
     if(channel < 0 || channel >= 4) {
         return -2;
@@ -588,17 +584,6 @@ int getPDMNextValue(int channel) {
     
     return value;
 }
-
-/*int* getPDMCurrentValues() {
-    uint64_t register_value = getPDMStatusValue();
-    static int channel_values[4];
-    channel_values[0] = (register_value & 0x000000000000FFFF);
-    channel_values[1] = (register_value & 0x00000000FFFF0000) >> 16;
-    channel_values[2] = (register_value & 0x0000FFFF00000000) >> 32;
-    channel_values[3] = (register_value & 0xFFFF000000000000) >> 48;
-    
-    return channel_values;
-}*/
 
 
 // Slow Analog Inputs
@@ -776,8 +761,8 @@ void stopTx() {
 	setAmplitude(0, 1, 2);
 	setAmplitude(0, 1, 3);
 
-	setPDMNextValue(0, 0);
-	setPDMNextValue(0, 1);
-	setPDMNextValue(0, 2);
-	setPDMNextValue(0, 3);
+	setPDMAllValuesVolt(0.0, 0);
+	setPDMAllValuesVolt(0.0, 1);
+	setPDMAllValuesVolt(0.0, 2);
+	setPDMAllValuesVolt(0.0, 3);
 }
