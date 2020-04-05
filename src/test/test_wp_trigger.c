@@ -87,7 +87,7 @@ printf("Master Trigger OFF \n\n");
 	
 	printf("wp %u over %u wpDiff %u wpTotal %llu pdm %u \n", wp, over, size, wpTotal, wpPDM);                                                                                                                                              
 	if(size == 0) {                                                                                                                                                                                                                          
-          setMasterTrigger(OFF);		
+          setRamWriterEnabled(OFF);		
 //	printf("Write Pointer remains the same!");                                                                                                                                                                                             
 	//return 1;                                                                                                                                                                                                                            
 	}                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
