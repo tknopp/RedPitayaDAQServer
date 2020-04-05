@@ -27,7 +27,7 @@ int main () {
 
   init();
   setDACMode(DAC_MODE_RASTERIZED);
-  setWatchdogMode(WATCHDOG_OFF);  
+  setWatchdogMode(OFF);  
 
   //setMasterTrigger(MASTER_TRIGGER_OFF);
 
@@ -50,7 +50,7 @@ int main () {
 
   setRAMWriterMode(ADC_MODE_TRIGGERED);
   usleep(100000);
-  setMasterTrigger(MASTER_TRIGGER_ON);
+  setMasterTrigger(ON);
   
   while(getTriggerStatus() == 0)
   {
