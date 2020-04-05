@@ -75,24 +75,7 @@ int main () {
 }
 setMasterTrigger(OFF);
 printf("Master Trigger OFF \n\n");
-   for (i = 1; i < 50; ++i)                                                                                                                                                                                                              
-	{                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
-	wp_old = wp;                                                                                                                                                                                                                           
-	wp = getWritePointer();                                                                                                                                                                                                                
-	over = getWritePointerOverflows();                                                                                                                                                                                                     
-	wpTotal = getTotalWritePointer();                                                                                                                                                                                                      
-	wpPDM = getPDMStatusValue();                                                                                                                                                                                                                                                                                                                                                                                                                                                  
-	
-	uint32_t size = getWritePointerDistance(wp_old, wp)-1;                                                                                                                                                                                                                                                                                                                                                                                                                        
-	
-	printf("wp %u over %u wpDiff %u wpTotal %llu pdm %u \n", wp, over, size, wpTotal, wpPDM);                                                                                                                                              
-	if(size == 0) {                                                                                                                                                                                                                          
-          setRamWriterEnabled(OFF);		
-//	printf("Write Pointer remains the same!");                                                                                                                                                                                             
-	//return 1;                                                                                                                                                                                                                            
-	}                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
-	usleep(20000);                                                                                                                                                                                                                     
-	}  
+setRamWriterEnabled(OFF);		
 } 
   return 0;
 }

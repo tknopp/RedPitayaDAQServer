@@ -719,7 +719,18 @@ int getRamWriterEnabled() {
 
 int setRamWriterEnabled(int mode) {
     if(mode == OFF) {
-        *((uint8_t *)(cfg + 0)) &= ~1;
+      if(getMasterTrigger() == OFF) { // we only disable the Ram Writer if the trigger is off
+        uint32_t wp, wp_old, size;
+	wp_old = getWritePointer();
+	do {
+	  usleep(100);
+	  wp = getWritePointer();
+	  size = getWritePointerDistance(wp_old, wp) - 1;
+	  wp_old = wp;
+	  printf("setRamWriterEnabled: wp %d  wp_old %d  size  %d \n", wp, wp_old, size);
+	} while(size > 0);
+	*((uint8_t *)(cfg + 0)) &= ~1;
+      }
     } else if(mode == ON) {
         *((uint8_t *)(cfg + 0)) |= 1;
     } else {
