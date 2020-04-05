@@ -309,16 +309,6 @@ proc create_hier_cell_write_to_ram { parentCell nameHier } {
   create_bd_pin -dir I s_axis_data_tvalid
   create_bd_pin -dir O -from 63 -to 0 sts_data
 
-  # Create instance: axis_breaker_0, and set properties
-  set axis_breaker_0 [ create_bd_cell -type ip -vlnv localdomain:user:axis_breaker:1.0 axis_breaker_0 ]
-  set_property -dict [ list \
-CONFIG.AXIS_TDATA_WIDTH {32} \
- ] $axis_breaker_0
-
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {4} \
- ] [get_bd_intf_pins /write_to_ram/axis_breaker_0/M_AXIS]
-
   # Create instance: axis_dwidth_converter_0, and set properties
   set axis_dwidth_converter_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axis_dwidth_converter:1.1 axis_dwidth_converter_0 ]
   set_property -dict [ list \
@@ -331,13 +321,6 @@ CONFIG.S_TDATA_NUM_BYTES {4} \
   set_property -dict [ list \
 CONFIG.ADDR_WIDTH {24} \
  ] $axis_ram_writer_1
-
-  set_property -dict [ list \
-CONFIG.SUPPORTS_NARROW_BURST {1} \
-CONFIG.NUM_READ_OUTSTANDING {2} \
-CONFIG.NUM_WRITE_OUTSTANDING {2} \
-CONFIG.MAX_BURST_LENGTH {16} \
- ] [get_bd_intf_pins /write_to_ram/axis_ram_writer_1/M_AXI]
 
   # Create instance: axis_variable_decimation_A, and set properties
   set axis_variable_decimation_A [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_decimation_A ]
@@ -505,7 +488,6 @@ CONFIG.DOUT_WIDTH {14} \
  ] $xlslice_B
 
   # Create interface connections
-  connect_bd_intf_net -intf_net axis_breaker_0_M_AXIS [get_bd_intf_pins axis_breaker_0/M_AXIS] [get_bd_intf_pins axis_dwidth_converter_0/S_AXIS]
   connect_bd_intf_net -intf_net axis_dwidth_converter_0_M_AXIS [get_bd_intf_pins axis_dwidth_converter_0/M_AXIS] [get_bd_intf_pins axis_ram_writer_1/S_AXIS]
   connect_bd_intf_net -intf_net axis_ram_writer_1_M_AXI [get_bd_intf_pins m_axi] [get_bd_intf_pins axis_ram_writer_1/M_AXI]
   connect_bd_intf_net -intf_net axis_variable_2_M_AXIS [get_bd_intf_pins axis_variable_decimation_A/M_AXIS] [get_bd_intf_pins cic_compiler_A/S_AXIS_CONFIG]
@@ -520,12 +502,11 @@ CONFIG.DOUT_WIDTH {14} \
   connect_bd_net -net cic_compiler_A_m_axis_data_tvalid [get_bd_pins cic_compiler_A/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net cic_compiler_B_m_axis_data_tdata [get_bd_pins cic_compiler_B/m_axis_data_tdata] [get_bd_pins xlconcat_1/In1]
   connect_bd_net -net cic_compiler_B_m_axis_data_tvalid [get_bd_pins cic_compiler_B/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op2]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_breaker_0/aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_ram_writer_1/aclk] [get_bd_pins axis_variable_decimation_A/aclk] [get_bd_pins axis_variable_decimation_B/aclk] [get_bd_pins cic_compiler_A/aclk] [get_bd_pins cic_compiler_B/aclk] [get_bd_pins fir_compiler_A/aclk] [get_bd_pins fir_compiler_B/aclk]
+  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_ram_writer_1/aclk] [get_bd_pins axis_variable_decimation_A/aclk] [get_bd_pins axis_variable_decimation_B/aclk] [get_bd_pins cic_compiler_A/aclk] [get_bd_pins cic_compiler_B/aclk] [get_bd_pins fir_compiler_A/aclk] [get_bd_pins fir_compiler_B/aclk]
   connect_bd_net -net decimation_1 [get_bd_pins decimation] [get_bd_pins axis_variable_decimation_A/cfg_data] [get_bd_pins axis_variable_decimation_B/cfg_data] [get_bd_pins divide_by_two_0/input_vector]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_breaker_0/aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_variable_decimation_A/aresetn] [get_bd_pins axis_variable_decimation_B/aresetn] [get_bd_pins cic_compiler_A/aresetn] [get_bd_pins cic_compiler_B/aresetn]
+  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_variable_decimation_A/aresetn] [get_bd_pins axis_variable_decimation_B/aresetn] [get_bd_pins cic_compiler_A/aresetn] [get_bd_pins cic_compiler_B/aresetn]
   connect_bd_net -net sign_extend_B_dout [get_bd_pins cic_compiler_B/s_axis_data_tdata] [get_bd_pins sign_extend_B/dout]
-  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins axis_breaker_0/s_axis_tvalid] [get_bd_pins util_vector_logic_0/Res]
-  connect_bd_net -net xlconcat_1_dout [get_bd_pins axis_breaker_0/s_axis_tdata] [get_bd_pins xlconcat_1/dout]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins axis_dwidth_converter_0/s_axis_tvalid] [get_bd_pins util_vector_logic_0/Res]
   connect_bd_net -net xlconcat_2_dout [get_bd_pins cic_compiler_A/s_axis_data_tdata] [get_bd_pins sign_extend_A/dout]
   connect_bd_net -net xlconstant_2_dout [get_bd_pins axis_ram_writer_1/cfg_data] [get_bd_pins xlconstant_2/dout]
   connect_bd_net -net xlslice_A_Dout [get_bd_pins sign_extend_A/In0] [get_bd_pins xlslice_A/Dout]
@@ -2705,4 +2686,6 @@ CONFIG.DOUT_WIDTH {8} \
 
 create_root_design ""
 
+
+common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 

@@ -264,7 +264,7 @@ begin
 end
 
 assign write_to_ram_aresetn = write_to_ram_aresetn_int;
-assign #(RAMWRITER_DELAY_TIME,RAMWRITER_DELAY_TIME) write_to_ramwriter_aresetn = write_to_ram_aresetn_int;
+assign write_to_ramwriter_aresetn = write_to_ram_aresetn_int;
 assign xadc_aresetn = xadc_aresetn_int;
 assign fourier_synth_aresetn = fourier_synth_aresetn_int;
 assign pdm_aresetn = pdm_aresetn_int;
