@@ -5,6 +5,10 @@ set core [ipx::current_core]
 set_property DISPLAY_NAME $display_name $core
 set_property DESCRIPTION $display_name $core
 
+set_property VENDOR {matthiasgraeser} $core
+set_property VENDOR_DISPLAY_NAME {Matthias Graeser} $core
+set_property COMPANY_URL {https://github.com/tnopp/RedPitayaDAQServer} $core
+
 core_parameter AXIS_TDATA_WIDTH {AXIS TDATA WIDTH} {Width of the M_AXIS and S_AXIS data buses.}
 
 set bus [ipx::get_bus_interfaces -of_objects $core m_axis]

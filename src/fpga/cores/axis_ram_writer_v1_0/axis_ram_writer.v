@@ -55,7 +55,6 @@ module axis_ram_writer #
   reg [ADDR_WIDTH_COUNTER-1:0] int_addr_reg_total, int_addr_next_total;
   reg [AXI_ID_WIDTH-1:0] int_wid_reg, int_wid_next;
 
-  wire no_burst;
   wire int_full_wire, int_almost_empty_wire, int_empty_wire, int_rden_wire;
   wire int_wlast_wire, int_tready_wire;
   wire [71:0] int_wdata_wire;
@@ -63,7 +62,6 @@ module axis_ram_writer #
   assign int_tready_wire = ~int_full_wire;
   assign int_wlast_wire = &int_addr_reg[3:0];
   assign int_rden_wire = m_axi_wready & int_wvalid_reg;
-  assign no_burst = int_addr_next == int_addr_reg;
 
   FIFO36E1 #(
     .FIRST_WORD_FALL_THROUGH("TRUE"),
@@ -74,7 +72,7 @@ module axis_ram_writer #
     .FULL(int_full_wire),
     .ALMOSTEMPTY(int_almost_empty_wire),
     .EMPTY(int_empty_wire),
-    .RST(~aresetn && no_burst),
+    .RST(~aresetn),
     .WRCLK(aclk),
     .WREN(int_tready_wire & s_axis_tvalid),
     .DI({{(72-AXIS_TDATA_WIDTH){1'b0}}, s_axis_tdata}),
