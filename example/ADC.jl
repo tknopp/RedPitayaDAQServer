@@ -26,9 +26,10 @@ masterTrigger(rp, false)
 ramWriterMode(rp, "TRIGGERED")
 ramWriterEnabled(rp, false)
 
-sleep(0.5)
-
-startADC(rp)
+#sleep(0.5)
+wp = currentWP(rp)
+@show wp
+startADC(rp, wp)
 ramWriterEnabled(rp, true)
 sleep(0.1)
 masterTrigger(rp, true)

@@ -6,9 +6,9 @@ rp = RedPitaya("rp-f04972.local")
 dec = 64
 modulus = 4800
 base_frequency = 125000000
-periods_per_step = 20
+periods_per_step = 1
 samples_per_period = div(modulus, dec)*periods_per_step
-periods_per_frame = div(100, periods_per_step) # about 0.5 s frame length
+periods_per_frame = div(1000, periods_per_step) # about 0.5 s frame length
 
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
@@ -29,7 +29,10 @@ masterTrigger(rp, false)
 ramWriterMode(rp, "TRIGGERED")
 ramWriterEnabled(rp, false)
 
-startADC(rp)
+#sleep(0.5)
+wp = currentWP(rp)
+@show wp
+startADC(rp, wp)
 ramWriterEnabled(rp, true)
 masterTrigger(rp, true)
 
@@ -50,9 +53,15 @@ uCurrentPeriod2 = readData(rp, currFr, 2)
 
 figure(1)
 clf()
-#subplot(1,2,1)
+subplot(1,2,1)
 plot(vec(uCurrentPeriod[:,1,:,:]))
-#subplot(1,2,2)
 plot(vec(uCurrentPeriod[:,2,:,:]))
-
 plot(vec(uCurrentPeriod2[:,2,:,:]))
+legend(("DF", "FF1", "FF2"))
+subplot(1,2,2)
+plot(vec(uCurrentPeriod[:,1,:,:])[1:1:1500])
+plot(vec(uCurrentPeriod[:,2,:,:])[1:1:1500])
+plot(vec(uCurrentPeriod2[:,2,:,:])[1:1:1500])
+legend(("DF", "FF1", "FF2"))
+
+stopADC(rp)
