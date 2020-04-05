@@ -507,6 +507,7 @@ CONFIG.DOUT_WIDTH {14} \
   connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_variable_decimation_A/aresetn] [get_bd_pins axis_variable_decimation_B/aresetn] [get_bd_pins cic_compiler_A/aresetn] [get_bd_pins cic_compiler_B/aresetn]
   connect_bd_net -net sign_extend_B_dout [get_bd_pins cic_compiler_B/s_axis_data_tdata] [get_bd_pins sign_extend_B/dout]
   connect_bd_net -net util_vector_logic_0_Res [get_bd_pins axis_dwidth_converter_0/s_axis_tvalid] [get_bd_pins util_vector_logic_0/Res]
+  connect_bd_net -net xlconcat_1_dout [get_bd_pins axis_dwidth_converter_0/s_axis_tdata] [get_bd_pins xlconcat_1/dout]
   connect_bd_net -net xlconcat_2_dout [get_bd_pins cic_compiler_A/s_axis_data_tdata] [get_bd_pins sign_extend_A/dout]
   connect_bd_net -net xlconstant_2_dout [get_bd_pins axis_ram_writer_1/cfg_data] [get_bd_pins xlconstant_2/dout]
   connect_bd_net -net xlslice_A_Dout [get_bd_pins sign_extend_A/In0] [get_bd_pins xlslice_A/Dout]
@@ -790,12 +791,6 @@ CONFIG.LOGO_FILE {data/sym_notgate.png} \
 CONFIG.NUM_PORTS {4} \
  ] $xlconcat_0
 
-  # Create instance: xlconstant_0, and set properties
-  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
-  set_property -dict [ list \
-CONFIG.CONST_VAL {0} \
- ] $xlconstant_0
-
   # Create port connections
   connect_bd_net -net Din_1 [get_bd_pins Din] [get_bd_pins pdm_multiplexer_0/pdm_data_in]
   connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins clk_div_0/clk] [get_bd_pins pdm_value_supply_0/aclk]
@@ -817,9 +812,8 @@ CONFIG.CONST_VAL {0} \
   connect_bd_net -net pdm_value_supply_0_pdm_channel_4 [get_bd_pins pdm_4/din] [get_bd_pins pdm_value_supply_0/pdm_channel_4]
   connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins pdm_1/aresetn] [get_bd_pins pdm_2/aresetn] [get_bd_pins pdm_3/aresetn] [get_bd_pins pdm_4/aresetn] [get_bd_pins pdm_value_supply_0/aresetn] [get_bd_pins util_vector_logic_1/Op1]
   connect_bd_net -net util_ds_buf_1_BUFG_O [get_bd_pins pdm_clk] [get_bd_pins pdm_value_supply_0/pdm_clk]
-  connect_bd_net -net util_vector_logic_1_Res [get_bd_pins c_counter_binary_0/SCLR] [get_bd_pins util_vector_logic_1/Res]
+  connect_bd_net -net util_vector_logic_1_Res [get_bd_pins c_counter_binary_0/SCLR] [get_bd_pins clk_div_0/reset] [get_bd_pins util_vector_logic_1/Res]
   connect_bd_net -net xlconcat_0_dout1 [get_bd_pins dout] [get_bd_pins xlconcat_0/dout]
-  connect_bd_net -net xlconstant_0_dout [get_bd_pins clk_div_0/reset] [get_bd_pins xlconstant_0/dout]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -2686,6 +2680,4 @@ CONFIG.DOUT_WIDTH {8} \
 
 create_root_design ""
 
-
-common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
