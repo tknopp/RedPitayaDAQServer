@@ -98,10 +98,10 @@ int init() {
 	printf("Decimation = %d \n", getDecimation());
 	//setDACMode(DAC_MODE_STANDARD);
 	setDACMode(DAC_MODE_RASTERIZED);
-	setWatchdogMode(WATCHDOG_OFF);
+	setWatchdogMode(OFF);
 	setRAMWriterMode(ADC_MODE_CONTINUOUS);
-	setMasterTrigger(MASTER_TRIGGER_OFF);
-	setInstantResetMode(INSTANT_RESET_OFF);
+	setMasterTrigger(OFF);
+	setInstantResetMode(OFF);
 
 	stopTx();
 
@@ -439,14 +439,7 @@ int setDecimation(uint16_t decimation) {
     return 0;
 }
 
-int resetRamWriter() {
-	*((uint32_t *)(cfg + 0)) &= ~1;
-return 1;
-}
-int enableRamWriter () {
-	*((uint32_t *)(cfg + 0)) |= 1;
-return 1;
-}
+
 uint16_t getDecimation() {
     uint16_t value = *((uint16_t *)(cfg + 2));
     return value;
@@ -619,18 +612,18 @@ int getWatchdogMode() {
 	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x02) >> 1);
 	
 	if(value == 0) {
-		return WATCHDOG_OFF;
+		return OFF;
 	} else if(value == 1) {
-		return WATCHDOG_ON;
+		return ON;
 	}
 	
 	return -1;
 }
 
 int setWatchdogMode(int mode) {
-    if(mode == WATCHDOG_OFF) {
+    if(mode == OFF) {
         *((uint8_t *)(cfg + 1)) &= ~2;
-    } else if(mode == WATCHDOG_ON) {
+    } else if(mode == ON) {
         *((uint8_t *)(cfg + 1)) |= 2;
     } else {
         return -1;
@@ -667,18 +660,18 @@ int getMasterTrigger() {
 	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x04) >> 2);
 	
 	if(value == 0) {
-		return MASTER_TRIGGER_OFF;
+		return OFF;
 	} else if(value == 1) {
-		return MASTER_TRIGGER_ON;
+		return ON;
 	}
 	
 	return -1;
 }
 
 int setMasterTrigger(int mode) {
-    if(mode == MASTER_TRIGGER_OFF) {
+    if(mode == OFF) {
         *((uint8_t *)(cfg + 1)) &= ~4;
-    } else if(mode == MASTER_TRIGGER_ON) {
+    } else if(mode == ON) {
         *((uint8_t *)(cfg + 1)) |= 4;
     } else {
         return -1;
@@ -691,19 +684,55 @@ int getInstantResetMode() {
     int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x08) >> 3);
 	
 	if(value == 0) {
-		return INSTANT_RESET_OFF;
+		return OFF;
 	} else if(value == 1) {
-		return INSTANT_RESET_ON;
+		return ON;
 	}
 	
 	return -1;
 }
 
 int setInstantResetMode(int mode) {
-    if(mode == INSTANT_RESET_OFF) {
+    if(mode == OFF) {
         *((uint8_t *)(cfg + 1)) &= ~8;
-    } else if(mode == INSTANT_RESET_ON) {
+    } else if(mode == ON) {
         *((uint8_t *)(cfg + 1)) |= 8;
+    } else {
+        return -1;
+    }
+    
+    return 0;
+}
+
+
+int getRamWriterEnabled() {
+    int value = (((int)(*((uint8_t *)(cfg + 0))) & 0x01) );
+	
+	if(value == 0) {
+		return OFF;
+	} else if(value == 1) {
+		return ON;
+	}
+	
+	return -1;
+}
+
+int setRamWriterEnabled(int mode) {
+    if(mode == OFF) {
+      if(getMasterTrigger() == OFF) { // we only disable the Ram Writer if the trigger is off
+        uint32_t wp, wp_old, size;
+	wp_old = getWritePointer();
+	do {
+	  usleep(100);
+	  wp = getWritePointer();
+	  size = getWritePointerDistance(wp_old, wp) - 1;
+	  wp_old = wp;
+	  printf("setRamWriterEnabled: wp %d  wp_old %d  size  %d \n", wp, wp_old, size);
+	} while(size > 0);
+	*((uint8_t *)(cfg + 0)) &= ~1;
+      }
+    } else if(mode == ON) {
+        *((uint8_t *)(cfg + 0)) |= 1;
     } else {
         return -1;
     }

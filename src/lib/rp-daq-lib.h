@@ -27,14 +27,8 @@
 #define ADC_MODE_CONTINUOUS 0
 #define ADC_MODE_TRIGGERED 1
 
-#define WATCHDOG_OFF 0
-#define WATCHDOG_ON 1
-
-#define MASTER_TRIGGER_OFF 0
-#define MASTER_TRIGGER_ON 1
-
-#define INSTANT_RESET_OFF 0
-#define INSTANT_RESET_ON 1
+#define OFF 0
+#define ON 1
 
 extern bool verbose;
 
@@ -96,6 +90,8 @@ extern int getWatchdogMode();
 extern int setWatchdogMode(int);
 extern int getRAMWriterMode();
 extern int setRAMWriterMode(int);
+extern int getRamWriterEnabled();
+extern int setRamWriterEnabled(int);
 extern int getMasterTrigger();
 extern int setMasterTrigger(int);
 extern int getInstantResetMode();

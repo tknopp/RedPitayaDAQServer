@@ -25,16 +25,16 @@ int main () {
 
   init();
   setDACMode(DAC_MODE_RASTERIZED);
-  setWatchdogMode(WATCHDOG_OFF);  
+  setWatchdogMode(OFF);  
 
-  setMasterTrigger(MASTER_TRIGGER_OFF);
+  setMasterTrigger(OFF);
   setRAMWriterMode(ADC_MODE_TRIGGERED);
 
   while(true)
   {
-    setMasterTrigger(MASTER_TRIGGER_OFF);
+    setMasterTrigger(OFF);
     usleep(400000);
-    setMasterTrigger(MASTER_TRIGGER_ON);
+    setMasterTrigger(ON);
     usleep(40);
 
     while(getTriggerStatus() == 0)
