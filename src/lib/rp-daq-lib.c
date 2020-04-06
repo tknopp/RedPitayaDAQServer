@@ -560,9 +560,15 @@ uint64_t getPDMRegisterValue() {
     return value;
 }
 
-uint64_t getPDMStatusValue() {
+uint64_t getPDMTotalWritePointer() {
     uint64_t value = *((uint64_t *)(pdm_sts));
     return value;
+}
+
+
+uint64_t getPDMWritePointer() {
+    uint64_t value = *((uint64_t *)(pdm_sts));
+    return value % PDM_BUFF_SIZE;
 }
 
 int* getPDMNextValues() {
