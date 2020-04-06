@@ -61,7 +61,7 @@ int main () {
     wp = getWritePointer();
     over = getWritePointerOverflows();
     wpTotal = getTotalWritePointer();
-    wpPDM = getPDMStatusValue();
+    wpPDM = getPDMWritePointer();
 
     uint32_t size = getWritePointerDistance(wp_old, wp)-1;
 

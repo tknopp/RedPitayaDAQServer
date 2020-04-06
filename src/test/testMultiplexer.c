@@ -73,7 +73,7 @@ int main () {
 
    
     //setPDMAllValuesVolt(0.4, 0);
-    wpPDM = getPDMStatusValue();
+    wpPDM = getPDMWritePointer();
 
     uint32_t size = getWritePointerDistance(wp_old, wp)-1;
 
