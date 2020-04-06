@@ -8,7 +8,7 @@ modulus = 4800
 base_frequency = 125000000
 periods_per_step = 1
 samples_per_period = div(modulus, dec)*periods_per_step
-periods_per_frame = div(1000, periods_per_step) # about 0.5 s frame length
+periods_per_frame = div(10, periods_per_step) # about 0.5 s frame length
 
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
