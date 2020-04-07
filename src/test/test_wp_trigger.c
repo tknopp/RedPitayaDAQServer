@@ -38,8 +38,8 @@ int main () {
   usleep(1000000);
 
   setRAMWriterMode(ADC_MODE_TRIGGERED);
- setMasterTrigger(OFF);  
- usleep(1000000);
+  setMasterTrigger(OFF);  
+  usleep(1000000);
   setMasterTrigger(ON);
   
   while(getTriggerStatus() == 0)
@@ -50,7 +50,6 @@ int main () {
 
   while(true)
   {
-    setRamWriterEnabled(ON);		
     setMasterTrigger(ON);		
     printf("Master Trigger On \n\n");
    for (i = 1; i < 50; ++i)
@@ -72,11 +71,10 @@ int main () {
     }
 
     usleep(20000);   
-}
-setMasterTrigger(OFF);
-printf("Master Trigger OFF \n\n");
-setRamWriterEnabled(OFF);		
-} 
+   }
+   setMasterTrigger(OFF);
+   printf("Master Trigger OFF \n\n");
+  } 
   return 0;
 }
 

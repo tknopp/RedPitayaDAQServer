@@ -29,9 +29,8 @@ int main () {
   setDACMode(DAC_MODE_RASTERIZED);
   setWatchdogMode(OFF);  
 
-  setMasterTrigger(OFF);
   setRAMWriterMode(ADC_MODE_TRIGGERED);
-  setRamWriterEnabled(OFF);
+  setMasterTrigger(OFF);
 
   wp = getWritePointer();
   wpTotal = getTotalWritePointer();
@@ -39,7 +38,6 @@ int main () {
   printf("Write pointer = %u %u %llu\n", wp, over, wpTotal);
   usleep(1000000);
 
-  setRamWriterEnabled(ON);
   setMasterTrigger(ON);
   
   while(getTriggerStatus() == 0)
@@ -47,6 +45,8 @@ int main () {
     printf("Waiting for external trigger!\n"); 
     usleep(40);
   }
+  usleep(1000);
+  wp = 0;
 
   while(true)
   {

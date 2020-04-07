@@ -428,6 +428,50 @@ int getDACModulus(int channel, int component) {
     return -1;
 }
 
+
+int setSignalType(int channel, int signal_type) {
+    if(channel < 0 || channel > 1) {
+        return -3;
+    }
+	
+    if((signal_type != SIGNAL_TYPE_SINE)
+		&& (signal_type != SIGNAL_TYPE_DC)
+		&& (signal_type != SIGNAL_TYPE_SQUARE)
+		&& (signal_type != SIGNAL_TYPE_TRIANGLE)
+		&& (signal_type != SIGNAL_TYPE_SAWTOOTH)) {
+        return -2;
+    }
+
+    uint64_t previousValue = *((uint64_t *)( dac_cfg + 640));
+    if(channel == 0) {
+	uint64_t mask = 0x07;
+        *((uint64_t *)(dac_cfg + 640)) = ((previousValue & (~mask)) | (signal_type << 0));
+    } else if(channel == 1) {
+        //uint32_t mask = 0x38;
+        //*((uint64_t *)(dac_cfg + 640)) = ((previousValue & (~mask)) | (signal_type << 3));
+    }
+    
+    return 0;
+}
+
+int getSignalType(int channel) {
+    if(channel < 0 || channel > 1) {
+        return -3;
+    }
+
+    uint32_t value = *((uint32_t *)( dac_cfg + 640));
+    if(channel == 0) {
+	uint32_t mask = 0x07;
+	return ((value & mask) >> 0);
+    } else if(channel == 1) {
+        //uint32_t mask = 0x38;
+        //return ((value & mask) >> 3);
+    }
+    
+    return 0;
+}
+
+
 // Fast ADC
 
 int setDecimation(uint16_t decimation) {
@@ -676,7 +720,10 @@ int getMasterTrigger() {
 
 int setMasterTrigger(int mode) {
     if(mode == OFF) {
+        setRamWriterEnabled(ON);
         *((uint8_t *)(cfg + 1)) &= ~4;
+        setRAMWriterMode(ADC_MODE_TRIGGERED);
+        setRamWriterEnabled(OFF);
     } else if(mode == ON) {
         *((uint8_t *)(cfg + 1)) |= 4;
     } else {
