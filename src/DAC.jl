@@ -76,12 +76,12 @@ end
 
 function signalTypeDAC(rp::RedPitaya, channel)
   command = string("RP:DAC:CH", Int(channel)-1, ":SIGnaltype?")
+  @show command
   return query(rp, command)
 end
 
 function signalTypeDAC(rp::RedPitaya, channel, sigType::String)
-
-  if !(sigType in ["SINE","DC","SQUARE","TRIANGLE","SAWTOOTH"] )
+  if !(sigType in ["SINE","SQUARE","DC","TRIANGLE","SAWTOOTH"] )
     error("Signal type $sigType not supported!")
   end
 

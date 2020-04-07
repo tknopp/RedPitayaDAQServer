@@ -14,7 +14,9 @@ decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
 periodsPerFrame(rp, periods_per_frame)
 numSlowDACChan(rp, 1)
-setSlowDACLUT(rp, collect(range(0,1,length=periods_per_frame)))
+lut = collect(range(0,1,length=periods_per_frame))
+#lut[1:2:end] .= 0
+setSlowDACLUT(rp, lut)
 
 modeDAC(rp, "RASTERIZED")
 for (i,val) in enumerate([4800,4864,4800,4800])
@@ -46,10 +48,6 @@ currFr = enableSlowDAC(rp, true, 2, 0.5, 1.0)
 
 uCurrentPeriod2 = readData(rp, currFr, 2)
 
-#lostSteps = numLostStepsSlowADC(rp)
-#if lostSteps > 0
-#  @warn "WE LOST" lostSteps "SLOW DAC STEPS!"
-#end
 
 figure(1)
 clf()
@@ -62,5 +60,9 @@ subplot(2,1,2)
 plot(vec(uFirstPeriod[:,1,:,:]))
 plot(vec(uCurrentPeriod[:,1,:,:]))
 legend(("DF1", "DF2"))
+
+
+
+
 
 stopADC(rp)

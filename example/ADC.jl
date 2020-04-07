@@ -22,6 +22,10 @@ for (i,val) in enumerate([4800,4864,4800,4800])
 end
 
 println(" frequency = $(frequencyDAC(rp,1,1))")
+signalTypeDAC(rp, 1 , "SINE")
+#signalTypeDAC(rp, 1 , "SQUARE") # "SINE"
+println(" signal type = $(signalTypeDAC(rp, 1))")
+
 amplitudeDAC(rp, 1, 1, 4000)
 phaseDAC(rp, 1, 1, 0.0 ) # Phase has to be given in between 0 and 1
 
@@ -30,7 +34,7 @@ ramWriterMode(rp, "TRIGGERED")
 
 wp = currentWP(rp)
 @show wp
-startADC(rp, wp)
+startADC(rp, 0)
 masterTrigger(rp, true)
 sleep(0.1)
 

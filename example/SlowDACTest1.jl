@@ -14,8 +14,6 @@ periods_per_step = 50
 samples_per_period = div(modulus, dec)*periods_per_step
 periods_per_frame = div(13000, periods_per_step) # about 0.5 s frame length
 
-@show periods_per_step
-
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
 periodsPerFrame(rp, periods_per_frame)
@@ -31,9 +29,8 @@ end
 
 amplitudeDAC(rp, 1, 1, 4000)
 phaseDAC(rp, 1, 1, 0.0 ) # Phase has to be given in between 0 and 1
-masterTrigger(rp, false)
 ramWriterMode(rp, "TRIGGERED")
-ramWriterEnabled(rp, false)
+masterTrigger(rp, false)
 
 startADC(rp)
 ramWriterEnabled(rp, true)
@@ -53,8 +50,4 @@ currFr = enableSlowDAC(rp, true, numFrames, 0.0, 1.0)
   if lostSteps > 0
     error("WE LOST $lostSteps SLOW DAC STEPS!")
   end
-
-  #if currFrame > nextFr+2
-  #    error("WE LOST STEPS WHILE READING currFrame=$(currFrame)  nextFr=$(nextFr)!")
-  #end
 end

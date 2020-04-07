@@ -64,9 +64,9 @@ function masterTrigger(rpc::RedPitayaCluster, val::Bool)
     if val
         masterTrigger(master(rpc), val)
     else
-        ramWriterEnabled(rp, true)
+        ramWriterEnabled(rpc, true)
         masterTrigger(master(rpc), false)
-        ramWriterEnabled(rp, false)
+        ramWriterEnabled(rpc, false)
     end
 end
 masterTrigger(rpc::RedPitayaCluster) = masterTrigger(master(rpc))
