@@ -448,6 +448,13 @@ CONFIG.C_SIZE {1} \
 CONFIG.LOGO_FILE {data/sym_orgate.png} \
  ] $util_vector_logic_0
 
+  # Create instance: util_vector_logic_1, and set properties
+  set util_vector_logic_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_1 ]
+  set_property -dict [ list \
+CONFIG.C_OPERATION {or} \
+CONFIG.LOGO_FILE {data/sym_orgate.png} \
+ ] $util_vector_logic_1
+
   # Create instance: xlconcat_1, and set properties
   set xlconcat_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_1 ]
 
@@ -501,7 +508,7 @@ CONFIG.DOUT_WIDTH {14} \
   connect_bd_intf_net -intf_net axis_variable_decimation_B_M_AXIS [get_bd_intf_pins axis_variable_decimation_B/M_AXIS] [get_bd_intf_pins cic_compiler_B/S_AXIS_CONFIG]
 
   # Create port connections
-  connect_bd_net -net aresetn3_1 [get_bd_pins aresetn3] [get_bd_pins axis_ram_writer_1/aresetn]
+  connect_bd_net -net aresetn3_1 [get_bd_pins aresetn3] [get_bd_pins util_vector_logic_1/Op2]
   connect_bd_net -net axis_ram_writer_1_sts_total_data [get_bd_pins sts_data] [get_bd_pins axis_ram_writer_1/sts_total_data]
   connect_bd_net -net axis_red_pitaya_adc_1_m_axis_tdata [get_bd_pins Din] [get_bd_pins xlslice_A/Din] [get_bd_pins xlslice_B/Din]
   connect_bd_net -net axis_red_pitaya_adc_1_m_axis_tvalid [get_bd_pins s_axis_data_tvalid] [get_bd_pins cic_compiler_A/s_axis_data_tvalid] [get_bd_pins cic_compiler_B/s_axis_data_tvalid]
@@ -511,9 +518,10 @@ CONFIG.DOUT_WIDTH {14} \
   connect_bd_net -net cic_compiler_B_m_axis_data_tvalid [get_bd_pins cic_compiler_B/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op2]
   connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_ram_writer_1/aclk] [get_bd_pins axis_variable_decimation_A/aclk] [get_bd_pins axis_variable_decimation_B/aclk] [get_bd_pins cic_compiler_A/aclk] [get_bd_pins cic_compiler_B/aclk] [get_bd_pins fir_compiler_A/aclk] [get_bd_pins fir_compiler_B/aclk]
   connect_bd_net -net decimation_1 [get_bd_pins decimation] [get_bd_pins axis_variable_decimation_A/cfg_data] [get_bd_pins axis_variable_decimation_B/cfg_data] [get_bd_pins divide_by_two_0/input_vector]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_variable_decimation_A/aresetn] [get_bd_pins axis_variable_decimation_B/aresetn] [get_bd_pins cic_compiler_A/aresetn] [get_bd_pins cic_compiler_B/aresetn]
+  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_variable_decimation_A/aresetn] [get_bd_pins axis_variable_decimation_B/aresetn] [get_bd_pins cic_compiler_A/aresetn] [get_bd_pins cic_compiler_B/aresetn] [get_bd_pins util_vector_logic_1/Op1]
   connect_bd_net -net sign_extend_B_dout [get_bd_pins cic_compiler_B/s_axis_data_tdata] [get_bd_pins sign_extend_B/dout]
   connect_bd_net -net util_vector_logic_0_Res [get_bd_pins axis_dwidth_converter_0/s_axis_tvalid] [get_bd_pins util_vector_logic_0/Res]
+  connect_bd_net -net util_vector_logic_1_Res [get_bd_pins axis_ram_writer_1/aresetn] [get_bd_pins util_vector_logic_1/Res]
   connect_bd_net -net xlconcat_1_dout [get_bd_pins axis_dwidth_converter_0/s_axis_tdata] [get_bd_pins xlconcat_1/dout]
   connect_bd_net -net xlconcat_2_dout [get_bd_pins cic_compiler_A/s_axis_data_tdata] [get_bd_pins sign_extend_A/dout]
   connect_bd_net -net xlconstant_2_dout [get_bd_pins axis_ram_writer_1/cfg_data] [get_bd_pins xlconstant_2/dout]
@@ -724,8 +732,8 @@ proc create_hier_cell_pdm { parentCell nameHier } {
   set_property -dict [ list \
 CONFIG.CE {false} \
 CONFIG.Fb_Latency_Configuration {Automatic} \
-CONFIG.Latency {4} \
-CONFIG.Latency_Configuration {Automatic} \
+CONFIG.Latency {1} \
+CONFIG.Latency_Configuration {Manual} \
 CONFIG.Load_Sense {Active_High} \
 CONFIG.Output_Width {64} \
 CONFIG.Restrict_Count {false} \
@@ -755,44 +763,49 @@ CONFIG.N {2400} \
   # Create instance: pdm_channel_1_slice, and set properties
   set pdm_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 pdm_channel_1_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {15} \
+CONFIG.DIN_FROM {10} \
 CONFIG.DIN_TO {0} \
 CONFIG.DIN_WIDTH {64} \
-CONFIG.DOUT_WIDTH {16} \
+CONFIG.DOUT_WIDTH {11} \
  ] $pdm_channel_1_slice
 
   # Create instance: pdm_channel_2_slice, and set properties
   set pdm_channel_2_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 pdm_channel_2_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {31} \
+CONFIG.DIN_FROM {26} \
 CONFIG.DIN_TO {16} \
 CONFIG.DIN_WIDTH {64} \
-CONFIG.DOUT_WIDTH {16} \
+CONFIG.DOUT_WIDTH {11} \
  ] $pdm_channel_2_slice
 
   # Create instance: pdm_channel_3_slice, and set properties
   set pdm_channel_3_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 pdm_channel_3_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {47} \
+CONFIG.DIN_FROM {42} \
 CONFIG.DIN_TO {32} \
 CONFIG.DIN_WIDTH {64} \
-CONFIG.DOUT_WIDTH {1} \
+CONFIG.DOUT_WIDTH {11} \
  ] $pdm_channel_3_slice
 
   # Create instance: pdm_channel_4_slice, and set properties
   set pdm_channel_4_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 pdm_channel_4_slice ]
   set_property -dict [ list \
-CONFIG.DIN_FROM {63} \
+CONFIG.DIN_FROM {58} \
 CONFIG.DIN_TO {48} \
 CONFIG.DIN_WIDTH {64} \
-CONFIG.DOUT_WIDTH {1} \
+CONFIG.DOUT_WIDTH {11} \
  ] $pdm_channel_4_slice
 
   # Create instance: pdm_multiplexer_0, and set properties
   set pdm_multiplexer_0 [ create_bd_cell -type ip -vlnv matthiasgraeser:user:pdm_multiplexer:1.0 pdm_multiplexer_0 ]
 
-  # Create instance: pdm_value_supply_0, and set properties
-  set pdm_value_supply_0 [ create_bd_cell -type ip -vlnv jbeuke:user:pdm_value_supply:1.0 pdm_value_supply_0 ]
+  # Create instance: util_vector_logic_0, and set properties
+  set util_vector_logic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_0 ]
+  set_property -dict [ list \
+CONFIG.C_OPERATION {or} \
+CONFIG.C_SIZE {1} \
+CONFIG.LOGO_FILE {data/sym_orgate.png} \
+ ] $util_vector_logic_0
 
   # Create instance: util_vector_logic_1, and set properties
   set util_vector_logic_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_1 ]
@@ -801,6 +814,14 @@ CONFIG.C_OPERATION {not} \
 CONFIG.C_SIZE {1} \
 CONFIG.LOGO_FILE {data/sym_notgate.png} \
  ] $util_vector_logic_1
+
+  # Create instance: util_vector_logic_2, and set properties
+  set util_vector_logic_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_2 ]
+  set_property -dict [ list \
+CONFIG.C_OPERATION {not} \
+CONFIG.C_SIZE {1} \
+CONFIG.LOGO_FILE {data/sym_notgate.png} \
+ ] $util_vector_logic_2
 
   # Create instance: xlconcat_0, and set properties
   set xlconcat_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_0 ]
@@ -819,8 +840,8 @@ CONFIG.DOUT_WIDTH {7} \
 
   # Create port connections
   connect_bd_net -net Din_1 [get_bd_pins Din] [get_bd_pins pdm_multiplexer_0/pdm_data_in]
-  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins clk_div_0/clk] [get_bd_pins pdm_value_supply_0/aclk] [get_bd_pins pdm_value_supply_0/pdm_clk]
-  connect_bd_net -net aresetn3_1 [get_bd_pins aresetn3] [get_bd_pins clk_div_0/reset]
+  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins clk_div_0/clk]
+  connect_bd_net -net aresetn3_1 [get_bd_pins aresetn3] [get_bd_pins util_vector_logic_0/Op2]
   connect_bd_net -net c_counter_binary_0_Q [get_bd_pins pdm_sts] [get_bd_pins c_counter_binary_0/Q] [get_bd_pins xlslice_0/Din]
   connect_bd_net -net clk_div_0_clk_out [get_bd_pins c_counter_binary_0/CLK] [get_bd_pins clk_div_0/clk_out]
   connect_bd_net -net ddr_clk_1 [get_bd_pins ddr_clk] [get_bd_pins pdm_1/clk] [get_bd_pins pdm_2/clk] [get_bd_pins pdm_3/clk] [get_bd_pins pdm_4/clk]
@@ -828,17 +849,15 @@ CONFIG.DOUT_WIDTH {7} \
   connect_bd_net -net pdm_2_dout [get_bd_pins pdm_2/dout] [get_bd_pins xlconcat_0/In1]
   connect_bd_net -net pdm_3_dout [get_bd_pins pdm_3/dout] [get_bd_pins xlconcat_0/In2]
   connect_bd_net -net pdm_4_dout [get_bd_pins pdm_4/dout] [get_bd_pins xlconcat_0/In3]
-  connect_bd_net -net pdm_channel_1_slice_Dout [get_bd_pins pdm_channel_1_slice/Dout] [get_bd_pins pdm_value_supply_0/pdm_channel_1_nxt]
-  connect_bd_net -net pdm_channel_2_slice_Dout [get_bd_pins pdm_channel_2_slice/Dout] [get_bd_pins pdm_value_supply_0/pdm_channel_2_nxt]
-  connect_bd_net -net pdm_channel_3_slice_Dout [get_bd_pins pdm_channel_3_slice/Dout] [get_bd_pins pdm_value_supply_0/pdm_channel_3_nxt]
-  connect_bd_net -net pdm_channel_4_slice_Dout [get_bd_pins pdm_channel_4_slice/Dout] [get_bd_pins pdm_value_supply_0/pdm_channel_4_nxt]
+  connect_bd_net -net pdm_channel_1_slice_Dout [get_bd_pins pdm_1/din] [get_bd_pins pdm_channel_1_slice/Dout]
+  connect_bd_net -net pdm_channel_2_slice_Dout [get_bd_pins pdm_2/din] [get_bd_pins pdm_channel_2_slice/Dout]
+  connect_bd_net -net pdm_channel_3_slice_Dout [get_bd_pins pdm_3/din] [get_bd_pins pdm_channel_3_slice/Dout]
+  connect_bd_net -net pdm_channel_4_slice_Dout [get_bd_pins pdm_4/din] [get_bd_pins pdm_channel_4_slice/Dout]
   connect_bd_net -net pdm_multiplexer_v1_0_0_pdm_data_out [get_bd_pins pdm_channel_1_slice/Din] [get_bd_pins pdm_channel_2_slice/Din] [get_bd_pins pdm_channel_3_slice/Din] [get_bd_pins pdm_channel_4_slice/Din] [get_bd_pins pdm_multiplexer_0/pdm_data_out]
-  connect_bd_net -net pdm_value_supply_0_pdm_channel_1 [get_bd_pins pdm_1/din] [get_bd_pins pdm_value_supply_0/pdm_channel_1]
-  connect_bd_net -net pdm_value_supply_0_pdm_channel_2 [get_bd_pins pdm_2/din] [get_bd_pins pdm_value_supply_0/pdm_channel_2]
-  connect_bd_net -net pdm_value_supply_0_pdm_channel_3 [get_bd_pins pdm_3/din] [get_bd_pins pdm_value_supply_0/pdm_channel_3]
-  connect_bd_net -net pdm_value_supply_0_pdm_channel_4 [get_bd_pins pdm_4/din] [get_bd_pins pdm_value_supply_0/pdm_channel_4]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins pdm_1/aresetn] [get_bd_pins pdm_2/aresetn] [get_bd_pins pdm_3/aresetn] [get_bd_pins pdm_4/aresetn] [get_bd_pins pdm_value_supply_0/aresetn] [get_bd_pins util_vector_logic_1/Op1]
+  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins pdm_1/aresetn] [get_bd_pins pdm_2/aresetn] [get_bd_pins pdm_3/aresetn] [get_bd_pins pdm_4/aresetn] [get_bd_pins util_vector_logic_0/Op1] [get_bd_pins util_vector_logic_1/Op1]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins util_vector_logic_0/Res] [get_bd_pins util_vector_logic_2/Op1]
   connect_bd_net -net util_vector_logic_1_Res [get_bd_pins c_counter_binary_0/SCLR] [get_bd_pins util_vector_logic_1/Res]
+  connect_bd_net -net util_vector_logic_2_Res [get_bd_pins clk_div_0/reset] [get_bd_pins util_vector_logic_2/Res]
   connect_bd_net -net xlconcat_0_dout1 [get_bd_pins dout] [get_bd_pins xlconcat_0/dout]
   connect_bd_net -net xlslice_0_Dout [get_bd_pins pdm_multiplexer_0/sample_select] [get_bd_pins xlslice_0/Dout]
 
@@ -2646,7 +2665,7 @@ CONFIG.DOUT_WIDTH {8} \
   connect_bd_net -net xlconstant_5_dout [get_bd_pins clk_wiz_0/reset] [get_bd_pins clk_wiz_1/reset] [get_bd_pins util_vector_logic_1/Res]
   connect_bd_net -net xlslice_0_Dout [get_bd_pins pdm/Din] [get_bd_pins system/pdm_data]
   connect_bd_net -net xlslice_0_Dout1 [get_bd_pins axis_select_0/selection] [get_bd_pins xlslice_0/Dout]
-  connect_bd_net -net xlslice_1_Dout [get_bd_pins write_to_ram/aresetn3] [get_bd_pins xlslice_1/Dout]
+  connect_bd_net -net xlslice_1_Dout [get_bd_pins pdm/aresetn3] [get_bd_pins write_to_ram/aresetn3] [get_bd_pins xlslice_1/Dout]
   connect_bd_net -net xlslice_2_Dout [get_bd_pins write_to_ram/decimation] [get_bd_pins xlslice_2/Dout]
   connect_bd_net -net xlslice_3_Dout [get_bd_pins reset_manager_0/reset_cfg] [get_bd_pins xlslice_3/Dout]
 
