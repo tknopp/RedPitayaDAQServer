@@ -24,6 +24,12 @@
 #define DAC_MODE_RASTERIZED 1
 #define	DAC_MODE_STANDARD   0
 
+#define SIGNAL_TYPE_SINE 0
+#define SIGNAL_TYPE_SQUARE 1
+#define SIGNAL_TYPE_DC 2
+#define SIGNAL_TYPE_TRIANGLE 3
+#define SIGNAL_TYPE_SAWTOOTH 4
+
 #define ADC_MODE_CONTINUOUS 0
 #define ADC_MODE_TRIGGERED 1
 
@@ -58,6 +64,8 @@ extern int setDACMode(int);
 extern int getDACMode();
 extern int reconfigureDACModulus(int, int, int);
 extern int getDACModulus(int, int);
+extern int getSignalType(int);
+extern int setSignalType(int, int);
 
 // fast ADC
 extern int setDecimation(uint16_t decimation);

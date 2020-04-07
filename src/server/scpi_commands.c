@@ -229,6 +229,47 @@ static scpi_result_t RP_DAC_GetDACModulus(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
+scpi_choice_def_t signal_types[] = {
+    {"SINE", SIGNAL_TYPE_SINE},
+    {"SQUARE", SIGNAL_TYPE_SQUARE},
+    {"DC", SIGNAL_TYPE_DC},
+    {"TRIANGLE", SIGNAL_TYPE_TRIANGLE},
+    {"SAWTOOTH", SIGNAL_TYPE_SAWTOOTH},
+    SCPI_CHOICE_LIST_END /* termination of option list */
+};
+
+static scpi_result_t RP_DAC_SetSignalType(scpi_t * context) {
+    int32_t numbers[1];
+    SCPI_CommandNumbers(context, numbers, 1, 1);
+    int channel = numbers[0];
+	
+    int32_t signal_type_selection;
+
+    if (!SCPI_ParamChoice(context, signal_types, &signal_type_selection, TRUE)) {
+  	return SCPI_RES_ERR;
+    }
+	
+    int result = setSignalType(channel, signal_type_selection);
+    if (result < 0) {
+      return SCPI_RES_ERR;
+    }
+
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_GetSignalType(scpi_t * context) {
+    int32_t numbers[1];
+    SCPI_CommandNumbers(context, numbers, 1, 1);
+    int channel = numbers[0];
+
+    const char * name;
+
+    SCPI_ChoiceToName(signal_types, getSignalType(channel), &name);
+    SCPI_ResultText(context, name);
+
+    return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_ADC_SetDecimation(scpi_t * context) {
 	// Enforce changing the decimation to be only
 	// possible while not acquiring data
@@ -850,6 +891,8 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:MODe?", .callback = RP_DAC_GetDACMode,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:MODulus", .callback = RP_DAC_ReconfigureDACModulus,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:MODulus?", .callback = RP_DAC_GetDACModulus,},
+	{.pattern = "RP:DAC:CHannel#:SIGnaltype", .callback = RP_DAC_SetSignalType,},
+	{.pattern = "RP:DAC:CHannel#:SIGnaltype?", .callback = RP_DAC_GetSignalType,},
 	{.pattern = "RP:ADC:SlowADC", .callback = RP_ADC_SetNumSlowADCChan,},
 	{.pattern = "RP:ADC:SlowADC?", .callback = RP_ADC_GetNumSlowADCChan,},
 	{.pattern = "RP:ADC:DECimation", .callback = RP_ADC_SetDecimation,},
