@@ -4,16 +4,19 @@ module reset_manager #
 (
     parameter integer WATCHDOG_TIMEOUT = 100, // in milliseconds
     parameter integer ALIVE_SIGNAL_LOW_TIME = 100, // in milliseconds
-    parameter integer ALIVE_SIGNAL_HIGH_TIME = 10 // in milliseconds
+    parameter integer ALIVE_SIGNAL_HIGH_TIME = 10, // in milliseconds
+    parameter integer RAMWRITER_DELAY = 1 // in milliseconds
+
 )
 (
     input clk,
     input peripheral_aresetn,
-    input [3:0] reset_cfg,
+    input [7:0] reset_cfg,
     inout trigger,
     inout watchdog,
     inout instant_reset,
     output write_to_ram_aresetn,
+    output write_to_ramwriter_aresetn,
     output xadc_aresetn,
     output fourier_synth_aresetn,
     output pdm_aresetn,
@@ -37,6 +40,7 @@ reset_ack: high if reset active (either watchdog failed or instant reset)
 localparam integer WATCHDOG_TIMEOUT_CYCLES = 12500000;//(125000000/WATCHDOG_TIMEOUT)*1000;
 localparam integer ALIVE_SIGNAL_LOW_TIME_CYCLES = 12500000;//(125000000/ALIVE_SIGNAL_LOW_TIME)*1000;
 localparam integer ALIVE_SIGNAL_HIGH_TIME_CYCLES = 1250000;//(125000000/ALIVE_SIGNAL_HIGH_TIME)*1000;
+localparam integer RAMWRITER_DELAY_TIME= 1000000000; //100ms
 
 reg write_to_ram_aresetn_int = 0;
 reg xadc_aresetn_int = 0;
@@ -260,6 +264,7 @@ begin
 end
 
 assign write_to_ram_aresetn = write_to_ram_aresetn_int;
+assign write_to_ramwriter_aresetn = write_to_ram_aresetn_int;
 assign xadc_aresetn = xadc_aresetn_int;
 assign fourier_synth_aresetn = fourier_synth_aresetn_int;
 assign pdm_aresetn = pdm_aresetn_int;
@@ -267,7 +272,7 @@ assign pdm_aresetn = pdm_aresetn_int;
 assign reset_sts[0] = peripheral_aresetn;
 assign reset_sts[1] = fourier_synth_aresetn_int;
 assign reset_sts[2] = pdm_aresetn_int;
-assign reset_sts[3] = write_to_ram_aresetn_int;
+assign #(0,RAMWRITER_DELAY_TIME) reset_sts[3] = write_to_ram_aresetn_int;
 assign reset_sts[4] = xadc_aresetn_int;
 assign reset_sts[5] = trigger_in_int;
 assign reset_sts[6] = watchdog_in_int;

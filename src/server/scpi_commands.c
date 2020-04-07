@@ -29,6 +29,20 @@ int newdatasockfd;
 struct sockaddr_in newdatasockaddr;
 socklen_t newdatasocklen;
 
+static scpi_result_t RP_Init(scpi_t * context) {
+
+    if(!initialized)
+    {
+        init();
+        initialized = true;
+    }
+	
+    return SCPI_RES_OK;
+}
+
+
+
+
 static scpi_result_t RP_DAC_GetAmplitude(scpi_t * context) {
     int32_t numbers[2];
 	SCPI_CommandNumbers(context, numbers, 2, 1);
@@ -162,17 +176,13 @@ scpi_choice_def_t DAC_modes[] = {
 };
 
 static scpi_result_t RP_DAC_SetDACMode(scpi_t * context) {
-    int32_t numbers[1];
-    SCPI_CommandNumbers(context, numbers, 1, 1);
-    int channel = numbers[0];
-
     int32_t DAC_mode_selection;
 
     if (!SCPI_ParamChoice(context, DAC_modes, &DAC_mode_selection, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 	
-	int result = setDACMode(channel, DAC_mode_selection);
+	int result = setDACMode(DAC_mode_selection);
 	if (result < 0) {
 		return SCPI_RES_ERR;
 	}
@@ -181,13 +191,9 @@ static scpi_result_t RP_DAC_SetDACMode(scpi_t * context) {
 }
 
 static scpi_result_t RP_DAC_GetDACMode(scpi_t * context) {
-    int32_t numbers[1];
-    SCPI_CommandNumbers(context, numbers, 1, 1);
-    int channel = numbers[0];
+	const char * name;
 
-    const char * name;
-
-    SCPI_ChoiceToName(DAC_modes, getDACMode(channel), &name);
+    SCPI_ChoiceToName(DAC_modes, getDACMode(), &name);
 	SCPI_ResultText(context, name);
 
     return SCPI_RES_OK;
@@ -225,79 +231,41 @@ static scpi_result_t RP_DAC_GetDACModulus(scpi_t * context) {
 
 scpi_choice_def_t signal_types[] = {
     {"SINE", SIGNAL_TYPE_SINE},
+    {"SQUARE", SIGNAL_TYPE_SQUARE},
     {"DC", SIGNAL_TYPE_DC},
-	{"SQUARE", SIGNAL_TYPE_SQUARE},
-	{"TRIANGLE", SIGNAL_TYPE_TRIANGLE},
-	{"SAWTOOTH", SIGNAL_TYPE_SAWTOOTH},
+    {"TRIANGLE", SIGNAL_TYPE_TRIANGLE},
+    {"SAWTOOTH", SIGNAL_TYPE_SAWTOOTH},
     SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
 static scpi_result_t RP_DAC_SetSignalType(scpi_t * context) {
     int32_t numbers[1];
-	SCPI_CommandNumbers(context, numbers, 1, 1);
-	int channel = numbers[0];
+    SCPI_CommandNumbers(context, numbers, 1, 1);
+    int channel = numbers[0];
 	
-	int32_t signal_type_selection;
+    int32_t signal_type_selection;
 
     if (!SCPI_ParamChoice(context, signal_types, &signal_type_selection, TRUE)) {
-		return SCPI_RES_ERR;
-	}
+  	return SCPI_RES_ERR;
+    }
 	
-	int result = setSignalType(channel, signal_type_selection);
-	if (result < 0) {
-		return SCPI_RES_ERR;
-	}
+    int result = setSignalType(channel, signal_type_selection);
+    if (result < 0) {
+      return SCPI_RES_ERR;
+    }
 
     return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_DAC_GetSignalType(scpi_t * context) {
-	int32_t numbers[1];
-        SCPI_CommandNumbers(context, numbers, 1, 1);
-        int channel = numbers[0];
-
-	const char * name;
-
-    SCPI_ChoiceToName(signal_types, getSignalType(channel), &name);
-	SCPI_ResultText(context, name);
-
-    return SCPI_RES_OK;
-}
-
-scpi_choice_def_t DC_sign[] = {
-    {"POSITIVE", DC_SIGN_POSITIVE},
-    {"NEGATIVE", DC_SIGN_NEGATIVE},
-    SCPI_CHOICE_LIST_END /* termination of option list */
-};
-
-static scpi_result_t RP_DAC_SetDCSign(scpi_t * context) {
-    int32_t numbers[1];
-    SCPI_CommandNumbers(context, numbers, 1, 1);
-    int channel = numbers[0];
-
-    int32_t DC_sign_selection;
-
-    if (!SCPI_ParamChoice(context, DC_sign, &DC_sign_selection, TRUE)) {
-                return SCPI_RES_ERR;
-        }
-
-        int result = setDCSign(channel, DC_sign_selection);
-        if (result < 0) {
-                return SCPI_RES_ERR;
-        }
-
-    return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_DAC_GetDCSign(scpi_t * context) {
     int32_t numbers[1];
     SCPI_CommandNumbers(context, numbers, 1, 1);
     int channel = numbers[0];
 
     const char * name;
 
-    SCPI_ChoiceToName(DC_sign, getDCSign(channel), &name);
-        SCPI_ResultText(context, name);
+    SCPI_ChoiceToName(signal_types, getSignalType(channel), &name);
+    SCPI_ResultText(context, name);
 
     return SCPI_RES_OK;
 }
@@ -314,7 +282,7 @@ static scpi_result_t RP_ADC_SetDecimation(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 	
-    printf("set dec = %d \n", decimation);
+        printf("set dec = %d \n", decimation);
 	int result = setDecimation((uint16_t)decimation);
 	if (result < 0) {
         printf("Could not set decimation!");
@@ -391,6 +359,12 @@ static scpi_result_t RP_ADC_GetNumSlowDACChan(scpi_t * context) {
         return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_ADC_GetSlowDACLostSteps(scpi_t * context) {
+        SCPI_ResultInt32(context, numSlowDACLostSteps);
+
+        return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
     int result;
        if (!SCPI_ParamInt32(context, &result, TRUE)) {
@@ -411,6 +385,7 @@ static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
        if(enableSlowDAC && rxEnabled && numSlowDACChan>0)
        {
 	 enableSlowDACAck = false;
+	 numSlowDACLostSteps = 0;
 	 while(!enableSlowDACAck)
 	 {
            usleep(1.0);
@@ -424,7 +399,7 @@ static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
         {
           for (int i=0; i<4; i++)                        
           {
-             setPDMNextValueVolt(0.0, i);
+             setPDMAllValuesVolt(0.0, i);
           }  
         }
 
@@ -442,39 +417,46 @@ static scpi_result_t RP_ADC_SlowDACInterpolation(scpi_t * context) {
         return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t * context) {
-        // Reading is only possible while an acquisition is running
-        if(!rxEnabled) {
+static scpi_result_t RP_ADC_SetNumSlowADCChan(scpi_t * context) {
+        if(rxEnabled) {
                 return SCPI_RES_ERR;
         }
 
-	SCPI_ResultInt64(context, currentFrameTotal);
+        if (!SCPI_ParamInt32(context, &numSlowADCChan, TRUE)) {
+                return SCPI_RES_ERR;
+        }
 
+        return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_ADC_GetNumSlowADCChan(scpi_t * context) {
+        SCPI_ResultInt32(context, numSlowADCChan);
+
+        return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t * context) {
+    SCPI_ResultUInt64(context, getCurrentFrameTotal());
     return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_ADC_GetCurrentWP(scpi_t * context) {
-        printf("RP_ADC_GetCurrentWP\n");
-	// Reading is only possible while an acquisition is running
-        //if(!rxEnabled) {
-        //        return SCPI_RES_ERR;
-        //}
+    printf("RP_ADC_GetCurrentWP\n");
+    SCPI_ResultUInt64(context, getTotalWritePointer());
+    return SCPI_RES_OK;
+}
 
-	SCPI_ResultInt64(context, getWritePointer());
-
+static scpi_result_t RP_ADC_GetBufferSize(scpi_t * context) {
+    SCPI_ResultUInt64(context, ADC_BUFF_SIZE);
     return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_ADC_GetCurrentPeriod(scpi_t * context) {
-        // Reading is only possible while an acquisition is running
-        if(!rxEnabled) {
-                return SCPI_RES_ERR;
-        }
-
-	SCPI_ResultInt64(context, currentPeriodTotal);
-
+    SCPI_ResultUInt64(context, getCurrentPeriodTotal());
     return SCPI_RES_OK;
 }
+
+
 
 static scpi_result_t RP_ADC_GetFrames(scpi_t * context) {
 	// Reading is only possible while an acquisition is running
@@ -520,6 +502,28 @@ static scpi_result_t RP_ADC_GetPeriods(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_ADC_Slow_GetFrames(scpi_t * context) {
+	// Reading is only possible while an acquisition is running
+	if(!rxEnabled) {
+		return SCPI_RES_ERR;
+	}
+	
+	int64_t frame;
+    if (!SCPI_ParamInt64(context, &frame, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+	
+	int64_t numFrames;
+	if (!SCPI_ParamInt64(context, &numFrames, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+	
+	//printf("invoke sendDataToHost()");
+	sendSlowFramesToHost(frame, numFrames);
+	
+    return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_ADC_StartAcquisitionConnection(scpi_t * context) {
 	bool connectionEstablished = false;
 	
@@ -535,7 +539,7 @@ printf("RP_ADC_StartAcquisitionConnection\n");
 		}
 	}
 	
-	SCPI_ResultBool(context, connectionEstablished);
+//	SCPI_ResultBool(context, connectionEstablished);
 	
     return SCPI_RES_OK;
 }
@@ -557,11 +561,9 @@ static scpi_result_t RP_ADC_GetAcquisitionStatus(scpi_t * context) {
 
 static scpi_result_t RP_ADC_SetAcquisitionStatus(scpi_t * context) {
 	int32_t acquisition_status_selection;
-
-    if (!SCPI_ParamChoice(context, acquisition_status_modes, &acquisition_status_selection, TRUE)) {
+        if (!SCPI_ParamChoice(context, acquisition_status_modes, &acquisition_status_selection, TRUE)) {
 		return SCPI_RES_ERR;
 	}
-
 	if (!SCPI_ParamInt64(context, &startWP, TRUE)) {
 		return SCPI_RES_ERR;
 	}
@@ -570,6 +572,7 @@ static scpi_result_t RP_ADC_SetAcquisitionStatus(scpi_t * context) {
 		rxEnabled = true;
 	} else {
 		rxEnabled = false;
+		buffInitialized = false;
 	}
 	
     return SCPI_RES_OK;
@@ -585,7 +588,7 @@ static scpi_result_t RP_PDM_SetPDMNextValue(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 	
-	int result = setPDMNextValue((uint16_t)next_PDM_value, channel);
+	int result = setPDMAllValues((uint16_t)next_PDM_value, channel);
 	if (result < 0) {
 		return SCPI_RES_ERR;
 	}
@@ -605,7 +608,7 @@ static scpi_result_t RP_PDM_SetPDMNextValueVolt(scpi_t * context) {
 
         printf("Set PDM channel %d to %f Volt\n", channel, next_PDM_value);
 	
-	int result = setPDMNextValueVolt(next_PDM_value, channel);
+	int result = setPDMAllValuesVolt(next_PDM_value, channel);
 	if (result < 0) {
 		return SCPI_RES_ERR;
 	}
@@ -619,16 +622,6 @@ static scpi_result_t RP_PDM_GetPDMNextValue(scpi_t * context) {
 	int channel = numbers[0];
 	
 	SCPI_ResultUInt16(context, getPDMNextValue(channel));
-
-    return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_PDM_GetPDMCurrentValue(scpi_t * context) {
-    int32_t numbers[1];
-	SCPI_CommandNumbers(context, numbers, 1, 1);
-	int channel = numbers[0];
-	
-	SCPI_ResultUInt16(context, getPDMCurrentValue(channel));
 
     return SCPI_RES_OK;
 }
@@ -647,54 +640,16 @@ static scpi_result_t RP_XADC_GetXADCValueVolt(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
-scpi_choice_def_t DIO_pin_output[] = {
-    {"ON", DIO_PIN_ON},
-    {"OFF", DIO_PIN_OFF},
-    SCPI_CHOICE_LIST_END /* termination of option list */
-};
-
-static scpi_result_t RP_DIO_SetDIOOutput(scpi_t * context) {
-    int32_t numbers[1];
-    SCPI_CommandNumbers(context, numbers, 1, 1);
-    int pin = numbers[0];
-
-    int32_t DIO_pin_output_selection;
-
-    if (!SCPI_ParamChoice(context, DIO_pin_output, &DIO_pin_output_selection, TRUE)) {
-                return SCPI_RES_ERR;
-        }
-
-        int result = setDIOOutput(pin, DIO_pin_output_selection);
-        if (result < 0) {
-                return SCPI_RES_ERR;
-        }
-
-    return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_DIO_GetDIOOutput(scpi_t * context) {
-    int32_t numbers[1];
-    SCPI_CommandNumbers(context, numbers, 1, 1);
-    int pin = numbers[0];
-
-    const char * name;
-
-    SCPI_ChoiceToName(DIO_pin_output, getDIOOutput(pin), &name);
-        SCPI_ResultText(context, name);
-
-    return SCPI_RES_OK;
-}
-
-scpi_choice_def_t watchdog_modes[] = {
-    {"OFF", WATCHDOG_OFF},
-    {"ON", WATCHDOG_ON},
+scpi_choice_def_t onoff_modes[] = {
+    {"OFF", OFF},
+    {"ON", ON},
     SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
 static scpi_result_t RP_GetWatchdogMode(scpi_t * context) {
 	const char * name;
 
-    SCPI_ChoiceToName(watchdog_modes, getWatchdogMode(), &name);
+    SCPI_ChoiceToName(onoff_modes, getWatchdogMode(), &name);
 	SCPI_ResultText(context, name);
 
     return SCPI_RES_OK;
@@ -703,7 +658,7 @@ static scpi_result_t RP_GetWatchdogMode(scpi_t * context) {
 static scpi_result_t RP_SetWatchdogMode(scpi_t * context) {
     int32_t watchdog_mode_selection;
 
-    if (!SCPI_ParamChoice(context, watchdog_modes, &watchdog_mode_selection, TRUE)) {
+    if (!SCPI_ParamChoice(context, onoff_modes, &watchdog_mode_selection, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 	
@@ -745,16 +700,10 @@ static scpi_result_t RP_SetRAMWriterMode(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
-scpi_choice_def_t master_trigger_modes[] = {
-    {"OFF", MASTER_TRIGGER_OFF},
-    {"ON", MASTER_TRIGGER_ON},
-    SCPI_CHOICE_LIST_END /* termination of option list */
-};
-
 static scpi_result_t RP_GetMasterTrigger(scpi_t * context) {
 	const char * name;
 
-    SCPI_ChoiceToName(master_trigger_modes, getMasterTrigger(), &name);
+    SCPI_ChoiceToName(onoff_modes, getMasterTrigger(), &name);
 	SCPI_ResultText(context, name);
 
     return SCPI_RES_OK;
@@ -763,7 +712,7 @@ static scpi_result_t RP_GetMasterTrigger(scpi_t * context) {
 static scpi_result_t RP_SetMasterTrigger(scpi_t * context) {
     int32_t master_trigger_selection;
 
-    if (!SCPI_ParamChoice(context, master_trigger_modes, &master_trigger_selection, TRUE)) {
+    if (!SCPI_ParamChoice(context, onoff_modes, &master_trigger_selection, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 	
@@ -775,16 +724,36 @@ static scpi_result_t RP_SetMasterTrigger(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
-scpi_choice_def_t instant_reset_modes[] = {
-    {"OFF", INSTANT_RESET_OFF},
-    {"ON", INSTANT_RESET_ON},
-    SCPI_CHOICE_LIST_END /* termination of option list */
-};
+static scpi_result_t RP_GetRamWriterEnabled(scpi_t * context) {
+	const char * name;
+
+    SCPI_ChoiceToName(onoff_modes, getRamWriterEnabled(), &name);
+	SCPI_ResultText(context, name);
+
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_SetRamWriterEnabled(scpi_t * context) {
+    int32_t param;
+
+    if (!SCPI_ParamChoice(context, onoff_modes, &param, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+	
+	int result = setRamWriterEnabled(param);
+	if (result < 0) {
+		return SCPI_RES_ERR;
+	}
+
+    return SCPI_RES_OK;
+}
+
+
 
 static scpi_result_t RP_GetInstantResetMode(scpi_t * context) {
 	const char * name;
 
-    SCPI_ChoiceToName(instant_reset_modes, getInstantResetMode, &name);
+    SCPI_ChoiceToName(onoff_modes, getInstantResetMode(), &name);
 	SCPI_ResultText(context, name);
 
     return SCPI_RES_OK;
@@ -793,7 +762,7 @@ static scpi_result_t RP_GetInstantResetMode(scpi_t * context) {
 static scpi_result_t RP_SetInstantResetMode(scpi_t * context) {
     int32_t instant_reset_mode_selection;
 
-    if (!SCPI_ParamChoice(context, instant_reset_modes, &instant_reset_mode_selection, TRUE)) {
+    if (!SCPI_ParamChoice(context, onoff_modes, &instant_reset_mode_selection, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 	
@@ -909,6 +878,7 @@ const scpi_command_t scpi_commands[] = {
     {.pattern = "STATus:PRESet", .callback = SCPI_StatusPreset,},
 
     /* RP-DAQ */
+    {.pattern = "RP:Init", .callback = RP_Init,},
     {.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude?", .callback = RP_DAC_GetAmplitude,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude", .callback = RP_DAC_SetAmplitude,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency?", .callback = RP_DAC_GetFrequency,},
@@ -917,14 +887,14 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FACtor", .callback = RP_DAC_SetModulusFactor,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:PHAse?", .callback = RP_DAC_GetPhase,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:PHAse", .callback = RP_DAC_SetPhase,},
-	{.pattern = "RP:DAC:CHannel#:MODe", .callback = RP_DAC_SetDACMode,},
-	{.pattern = "RP:DAC:CHannel#:MODe?", .callback = RP_DAC_GetDACMode,},
+	{.pattern = "RP:DAC:MODe", .callback = RP_DAC_SetDACMode,},
+	{.pattern = "RP:DAC:MODe?", .callback = RP_DAC_GetDACMode,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:MODulus", .callback = RP_DAC_ReconfigureDACModulus,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:MODulus?", .callback = RP_DAC_GetDACModulus,},
 	{.pattern = "RP:DAC:CHannel#:SIGnaltype", .callback = RP_DAC_SetSignalType,},
 	{.pattern = "RP:DAC:CHannel#:SIGnaltype?", .callback = RP_DAC_GetSignalType,},
-        {.pattern = "RP:DAC:CHannel#:DC:SIGn", .callback = RP_DAC_SetDCSign,},
-        {.pattern = "RP:DAC:CHannel#:DC:SIGn?", .callback = RP_DAC_GetDCSign,},
+	{.pattern = "RP:ADC:SlowADC", .callback = RP_ADC_SetNumSlowADCChan,},
+	{.pattern = "RP:ADC:SlowADC?", .callback = RP_ADC_GetNumSlowADCChan,},
 	{.pattern = "RP:ADC:DECimation", .callback = RP_ADC_SetDecimation,},
 	{.pattern = "RP:ADC:DECimation?", .callback = RP_ADC_GetDecimation,},
 	{.pattern = "RP:ADC:PERiod", .callback = RP_ADC_SetSamplesPerPeriod,},
@@ -936,25 +906,27 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:SlowDACLUT", .callback = RP_ADC_SetSlowDACLUT,},
 	{.pattern = "RP:ADC:SlowDACEnable", .callback = RP_ADC_EnableSlowDAC,},
 	{.pattern = "RP:ADC:SlowDACInterpolation", .callback = RP_ADC_SlowDACInterpolation,},
+	{.pattern = "RP:ADC:SlowDACLostSteps?", .callback = RP_ADC_GetSlowDACLostSteps,},
 	{.pattern = "RP:ADC:FRAme", .callback = RP_ADC_SetPeriodsPerFrame,},
 	{.pattern = "RP:ADC:FRAme?", .callback = RP_ADC_GetPeriodsPerFrame,},
 	{.pattern = "RP:ADC:FRAmes:CURRent?", .callback = RP_ADC_GetCurrentFrame,},
 	{.pattern = "RP:ADC:WP:CURRent?", .callback = RP_ADC_GetCurrentWP,},
 	{.pattern = "RP:ADC:FRAmes:DATa", .callback = RP_ADC_GetFrames,},
+	{.pattern = "RP:ADC:BUFfer:Size?", .callback = RP_ADC_GetBufferSize,},
+	{.pattern = "RP:ADC:Slow:FRAmes:DATa", .callback = RP_ADC_Slow_GetFrames,},
 	{.pattern = "RP:ADC:ACQCONNect", .callback = RP_ADC_StartAcquisitionConnection,},
 	{.pattern = "RP:ADC:ACQSTATus", .callback = RP_ADC_SetAcquisitionStatus,},
 	{.pattern = "RP:ADC:ACQSTATus?", .callback = RP_ADC_GetAcquisitionStatus,},
 	{.pattern = "RP:PDM:CHannel#:NextValue", .callback = RP_PDM_SetPDMNextValue,},
 	{.pattern = "RP:PDM:CHannel#:NextValueVolt", .callback = RP_PDM_SetPDMNextValueVolt,},
 	{.pattern = "RP:PDM:CHannel#:NextValue?", .callback = RP_PDM_GetPDMNextValue,},
-	{.pattern = "RP:PDM:CHannel#:CurrentValue?", .callback = RP_PDM_GetPDMCurrentValue,},
 	{.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},
-	{.pattern = "RP:DIO:PIN#", .callback = RP_DIO_SetDIOOutput,},
-	{.pattern = "RP:DIO:PIN#?", .callback = RP_DIO_GetDIOOutput,},
 	{.pattern = "RP:WatchDogMode", .callback = RP_SetWatchdogMode,},
 	{.pattern = "RP:WatchDogMode?", .callback = RP_GetWatchdogMode,},
 	{.pattern = "RP:RamWriterMode", .callback = RP_SetRAMWriterMode,},
 	{.pattern = "RP:RamWriterMode?", .callback = RP_GetRAMWriterMode,},
+	{.pattern = "RP:RamWriterEnabled", .callback = RP_SetRamWriterEnabled,},
+	{.pattern = "RP:RamWriterEnabled?", .callback = RP_GetRamWriterEnabled,},
 	{.pattern = "RP:MasterTrigger", .callback = RP_SetMasterTrigger,},
 	{.pattern = "RP:MasterTrigger?", .callback = RP_GetMasterTrigger,},
 	{.pattern = "RP:InstantResetMode", .callback = RP_SetInstantResetMode,},

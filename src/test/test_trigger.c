@@ -23,20 +23,18 @@
 int main () {
   uint32_t wp, wp_old;
 
-  setMaster();
   init();
-  setDACMode(0, DAC_MODE_RASTERIZED);
-  setDACMode(1, DAC_MODE_RASTERIZED);
-  setWatchdogMode(WATCHDOG_OFF);  
+  setDACMode(DAC_MODE_RASTERIZED);
+  setWatchdogMode(OFF);  
 
-  setMasterTrigger(MASTER_TRIGGER_OFF);
+  setMasterTrigger(OFF);
   setRAMWriterMode(ADC_MODE_TRIGGERED);
 
   while(true)
   {
-    setMasterTrigger(MASTER_TRIGGER_OFF);
-    usleep(40);
-    setMasterTrigger(MASTER_TRIGGER_ON);
+    setMasterTrigger(OFF);
+    usleep(400000);
+    setMasterTrigger(ON);
     usleep(40);
 
     while(getTriggerStatus() == 0)

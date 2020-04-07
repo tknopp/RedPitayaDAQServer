@@ -4,6 +4,7 @@
 module axis_ram_writer #
 (
   parameter integer ADDR_WIDTH = 20,
+  parameter integer ADDR_WIDTH_COUNTER = 64,
   parameter integer AXI_ID_WIDTH = 6,
   parameter integer AXI_ADDR_WIDTH = 32,
   parameter integer AXI_DATA_WIDTH = 64,
@@ -16,6 +17,7 @@ module axis_ram_writer #
 
   input  wire [AXI_ADDR_WIDTH-1:0]   cfg_data,
   output wire [ADDR_WIDTH-1:0]       sts_data,
+  output wire [ADDR_WIDTH_COUNTER-1:0] sts_total_data,
 
   // Master side
   output wire [AXI_ID_WIDTH-1:0]     m_axi_awid,    // AXI master: Write address ID
@@ -50,6 +52,7 @@ module axis_ram_writer #
   reg int_awvalid_reg, int_awvalid_next;
   reg int_wvalid_reg, int_wvalid_next;
   reg [ADDR_WIDTH-1:0] int_addr_reg, int_addr_next;
+  reg [ADDR_WIDTH_COUNTER-1:0] int_addr_reg_total, int_addr_next_total;
   reg [AXI_ID_WIDTH-1:0] int_wid_reg, int_wid_next;
 
   wire int_full_wire, int_almost_empty_wire, int_empty_wire, int_rden_wire;
@@ -69,7 +72,7 @@ module axis_ram_writer #
     .FULL(int_full_wire),
     .ALMOSTEMPTY(int_almost_empty_wire),
     .EMPTY(int_empty_wire),
-    .RST(~aresetn && int_empty_wire),
+    .RST(~aresetn),
     .WRCLK(aclk),
     .WREN(int_tready_wire & s_axis_tvalid),
     .DI({{(72-AXIS_TDATA_WIDTH){1'b0}}, s_axis_tdata}),
@@ -80,12 +83,12 @@ module axis_ram_writer #
 
   always @(posedge aclk)
   begin
-    // Prevent locking of the AXI bus due to reset while bursting data
-    if(~aresetn && int_empty_wire)
+    if(~aresetn && int_almost_empty_wire)
     begin
       int_awvalid_reg <= 1'b0;
       int_wvalid_reg <= 1'b0;
       int_addr_reg <= {(ADDR_WIDTH){1'b0}};
+      int_addr_reg_total <= {(ADDR_WIDTH_COUNTER){1'b0}};
       int_wid_reg <= {(AXI_ID_WIDTH){1'b0}};
     end
     else
@@ -93,6 +96,7 @@ module axis_ram_writer #
       int_awvalid_reg <= int_awvalid_next;
       int_wvalid_reg <= int_wvalid_next;
       int_addr_reg <= int_addr_next;
+      int_addr_reg_total <= int_addr_next_total;
       int_wid_reg <= int_wid_next;
     end
   end
@@ -102,9 +106,11 @@ module axis_ram_writer #
     int_awvalid_next = int_awvalid_reg;
     int_wvalid_next = int_wvalid_reg;
     int_addr_next = int_addr_reg;
+    int_addr_next_total = int_addr_reg_total;
     int_wid_next = int_wid_reg;
 
-    if(~int_almost_empty_wire & ~int_awvalid_reg & ~int_wvalid_reg)
+
+     if(~int_almost_empty_wire & ~int_awvalid_reg & ~int_wvalid_reg)
     begin
       int_awvalid_next = 1'b1;
       int_wvalid_next = 1'b1;
@@ -118,6 +124,7 @@ module axis_ram_writer #
     if(int_rden_wire)
     begin
       int_addr_next = int_addr_reg + 1'b1;
+      int_addr_next_total = int_addr_reg_total + 1'b1;
     end
 
     if(m_axi_wready & int_wlast_wire)
@@ -135,6 +142,7 @@ module axis_ram_writer #
   end
 
   assign sts_data = int_addr_reg;
+  assign sts_total_data = int_addr_reg_total;
 
   assign m_axi_awid = int_wid_reg;
   assign m_axi_awaddr = cfg_data + {int_addr_reg, {(ADDR_SIZE){1'b0}}};
@@ -153,3 +161,4 @@ module axis_ram_writer #
   assign s_axis_tready = int_tready_wire;
 
 endmodule
+
