@@ -271,7 +271,7 @@ static void writeDataChunked(int fd, const void *buf, size_t count);
 static void writeDataChunked(int fd, const void *buf, size_t count) 
 {
     int n;
-    size_t chunkSize = 100000;
+    size_t chunkSize = 200000;
     size_t ptr = 0;
     size_t size;
     while(ptr < count)
@@ -286,7 +286,7 @@ static void writeDataChunked(int fd, const void *buf, size_t count)
         perror("ERROR writing to socket"); 
       }
       ptr += size;
-      usleep(100);
+      usleep(30);
     }
 }
 
@@ -418,7 +418,7 @@ void* slowDACThread(void* ch)
   int rampingTotalPeriods=-1;
   int rampingPeriods=-1;
   int rampingTotalFrames=-1;
-  int lookahead=32;
+  int lookahead=110;
   int lookprehead=5;
 
   printf("Starting slowDAC thread\n");
