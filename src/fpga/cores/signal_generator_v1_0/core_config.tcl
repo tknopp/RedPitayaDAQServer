@@ -7,7 +7,6 @@ set_property DESCRIPTION $display_name $core
 
 core_parameter AXIS_TDATA_WIDTH {AXIS_TDATA_WIDTH} {Width of the AXI data bus.}
 core_parameter AXIS_TDATA_PHASE_WIDTH {AXIS_TDATA_PHASE_STANDARD_WIDTH} {Width of the phase data from standard DDS Compiler.}
-core_parameter AXIS_TDATA_OUT_WIDTH {AXIS_TDATA_OUT_WIDTH} {Width of the output AXI data bus.}
 core_parameter DAC_WIDTH {DAC_WIDTH} {Width of a single DAC channel.}
 core_parameter CFG_DATA_WIDTH {CFG_DATA_WIDTH} {Width of the configuration data.}
 
