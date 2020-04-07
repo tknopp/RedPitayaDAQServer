@@ -579,7 +579,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   create_bd_pin -dir I -from 63 -to 0 adc_sts
   create_bd_pin -dir O -from 31 -to 0 cfg_data
   create_bd_pin -dir I -from 63 -to 0 curr_pdm_values
-  create_bd_pin -dir O -from 639 -to 0 dac_cfg
+  create_bd_pin -dir O -from 1279 -to 0 dac_cfg
   create_bd_pin -dir I dcm_locked
   create_bd_pin -dir O -from 8191 -to 0 pdm_data
   create_bd_pin -dir O -from 0 -to 0 -type rst peripheral_aresetn
@@ -596,7 +596,7 @@ CONFIG.CFG_DATA_WIDTH {32} \
   set axi_cfg_register_dac [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 axi_cfg_register_dac ]
   set_property -dict [ list \
 CONFIG.AXI_ADDR_WIDTH {32} \
-CONFIG.CFG_DATA_WIDTH {640} \
+CONFIG.CFG_DATA_WIDTH {1280} \
  ] $axi_cfg_register_dac
 
   # Create instance: axi_cfg_register_pdm, and set properties
@@ -904,7 +904,7 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type rst aresetn
-  create_bd_pin -dir I -from 639 -to 0 cfg_data
+  create_bd_pin -dir I -from 1279 -to 0 cfg_data
   create_bd_pin -dir O -from 31 -to 0 synth_tdata
   create_bd_pin -dir O -from 0 -to 0 synth_tvalid
 
@@ -913,7 +913,7 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
   set_property -dict [ list \
 CONFIG.DIN_FROM {15} \
 CONFIG.DIN_TO {0} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {16} \
  ] $amplitude_A_channel_1_slice
 
@@ -922,7 +922,7 @@ CONFIG.DOUT_WIDTH {16} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {31} \
 CONFIG.DIN_TO {16} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {16} \
  ] $amplitude_A_channel_2_slice
 
@@ -931,7 +931,7 @@ CONFIG.DOUT_WIDTH {16} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {47} \
 CONFIG.DIN_TO {32} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_A_channel_3_slice
 
@@ -940,7 +940,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {63} \
 CONFIG.DIN_TO {48} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_A_channel_4_slice
 
@@ -949,7 +949,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {79} \
 CONFIG.DIN_TO {64} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_B_channel_1_slice
 
@@ -958,7 +958,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {95} \
 CONFIG.DIN_TO {80} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_B_channel_2_slice
 
@@ -967,7 +967,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {111} \
 CONFIG.DIN_TO {96} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_B_channel_3_slice
 
@@ -1279,7 +1279,7 @@ CONFIG.Spurious_Free_Dynamic_Range {84} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {159} \
 CONFIG.DIN_TO {128} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_1_slice
 
@@ -1288,7 +1288,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {191} \
 CONFIG.DIN_TO {160} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_2_slice
 
@@ -1297,7 +1297,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {223} \
 CONFIG.DIN_TO {192} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_3_slice
 
@@ -1306,7 +1306,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {255} \
 CONFIG.DIN_TO {224} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_4_slice
 
@@ -1315,7 +1315,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {287} \
 CONFIG.DIN_TO {256} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_1_slice
 
@@ -1324,7 +1324,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {319} \
 CONFIG.DIN_TO {288} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_2_slice
 
@@ -1333,7 +1333,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {351} \
 CONFIG.DIN_TO {320} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_3_slice
 
@@ -1342,7 +1342,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {383} \
 CONFIG.DIN_TO {352} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_4_slice
 
@@ -1351,7 +1351,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {415} \
 CONFIG.DIN_TO {384} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_1_slice
 
@@ -1360,7 +1360,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {447} \
 CONFIG.DIN_TO {416} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_2_slice
 
@@ -1369,7 +1369,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {479} \
 CONFIG.DIN_TO {448} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_3_slice
 
@@ -1378,7 +1378,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {511} \
 CONFIG.DIN_TO {480} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_4_slice
 
@@ -1387,7 +1387,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {543} \
 CONFIG.DIN_TO {512} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_1_slice
 
@@ -1396,7 +1396,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {575} \
 CONFIG.DIN_TO {544} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_2_slice
 
@@ -1405,7 +1405,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {607} \
 CONFIG.DIN_TO {576} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_3_slice
 
@@ -1414,7 +1414,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {639} \
 CONFIG.DIN_TO {608} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_4_slice
 
@@ -1555,7 +1555,7 @@ proc create_hier_cell_fourier_synth_rasterized { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type rst aresetn
-  create_bd_pin -dir I -from 639 -to 0 cfg_data
+  create_bd_pin -dir I -from 1279 -to 0 cfg_data
   create_bd_pin -dir O -from 31 -to 0 synth_tdata
   create_bd_pin -dir O -from 0 -to 0 synth_tvalid
 
@@ -1564,7 +1564,7 @@ proc create_hier_cell_fourier_synth_rasterized { parentCell nameHier } {
   set_property -dict [ list \
 CONFIG.DIN_FROM {15} \
 CONFIG.DIN_TO {0} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {16} \
  ] $amplitude_A_channel_1_slice
 
@@ -1573,7 +1573,7 @@ CONFIG.DOUT_WIDTH {16} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {31} \
 CONFIG.DIN_TO {16} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {16} \
  ] $amplitude_A_channel_2_slice
 
@@ -1582,7 +1582,7 @@ CONFIG.DOUT_WIDTH {16} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {47} \
 CONFIG.DIN_TO {32} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_A_channel_3_slice
 
@@ -1591,7 +1591,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {63} \
 CONFIG.DIN_TO {48} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_A_channel_4_slice
 
@@ -1600,7 +1600,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {79} \
 CONFIG.DIN_TO {64} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_B_channel_1_slice
 
@@ -1609,7 +1609,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {95} \
 CONFIG.DIN_TO {80} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_B_channel_2_slice
 
@@ -1618,7 +1618,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {111} \
 CONFIG.DIN_TO {96} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_B_channel_3_slice
 
@@ -1627,7 +1627,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {127} \
 CONFIG.DIN_TO {112} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_B_channel_4_slice
 
@@ -1663,7 +1663,7 @@ CONFIG.DATA_Has_TLAST {Not_Required} \
 CONFIG.DDS_Clock_Rate {125} \
 CONFIG.Frequency_Resolution {26041} \
 CONFIG.Has_ARESETn {true} \
-CONFIG.Has_Phase_Out {false} \
+CONFIG.Has_Phase_Out {true} \
 CONFIG.Has_TREADY {false} \
 CONFIG.Latency {10} \
 CONFIG.Latency_Configuration {Auto} \
@@ -1922,7 +1922,7 @@ CONFIG.Spurious_Free_Dynamic_Range {84} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {159} \
 CONFIG.DIN_TO {128} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_1_slice
 
@@ -1931,7 +1931,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {191} \
 CONFIG.DIN_TO {160} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_2_slice
 
@@ -1940,7 +1940,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {223} \
 CONFIG.DIN_TO {192} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_3_slice
 
@@ -1949,7 +1949,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {255} \
 CONFIG.DIN_TO {224} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_4_slice
 
@@ -1958,7 +1958,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {287} \
 CONFIG.DIN_TO {256} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_1_slice
 
@@ -1967,7 +1967,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {319} \
 CONFIG.DIN_TO {288} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_2_slice
 
@@ -1976,7 +1976,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {351} \
 CONFIG.DIN_TO {320} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_3_slice
 
@@ -1985,7 +1985,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {383} \
 CONFIG.DIN_TO {352} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $freq_B_channel_4_slice
 
@@ -1994,7 +1994,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {415} \
 CONFIG.DIN_TO {384} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_1_slice
 
@@ -2003,7 +2003,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {447} \
 CONFIG.DIN_TO {416} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_2_slice
 
@@ -2012,7 +2012,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {479} \
 CONFIG.DIN_TO {448} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_3_slice
 
@@ -2021,7 +2021,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {511} \
 CONFIG.DIN_TO {480} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_4_slice
 
@@ -2030,7 +2030,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {543} \
 CONFIG.DIN_TO {512} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_1_slice
 
@@ -2039,7 +2039,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {575} \
 CONFIG.DIN_TO {544} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_2_slice
 
@@ -2048,7 +2048,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {607} \
 CONFIG.DIN_TO {576} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_3_slice
 
@@ -2057,9 +2057,16 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {639} \
 CONFIG.DIN_TO {608} \
-CONFIG.DIN_WIDTH {640} \
+CONFIG.DIN_WIDTH {1280} \
 CONFIG.DOUT_WIDTH {1} \
  ] $phase_B_channel_4_slice
+
+  # Create instance: signal_generator_0, and set properties
+  set signal_generator_0 [ create_bd_cell -type ip -vlnv jbeuke:user:signal_generator:1.0 signal_generator_0 ]
+
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {2} \
+ ] [get_bd_intf_pins /fourier_synth_rasterized/signal_generator_0/m_axis]
 
   # Create instance: util_vector_logic_1, and set properties
   set util_vector_logic_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_1 ]
@@ -2093,6 +2100,15 @@ CONFIG.C_SIZE {1} \
 
   # Create instance: xlconcat_B_channel_4, and set properties
   set xlconcat_B_channel_4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_B_channel_4 ]
+
+  # Create instance: xlslice_0, and set properties
+  set xlslice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_0 ]
+  set_property -dict [ list \
+CONFIG.DIN_FROM {703} \
+CONFIG.DIN_TO {640} \
+CONFIG.DIN_WIDTH {1280} \
+CONFIG.DOUT_WIDTH {1} \
+ ] $xlslice_0
 
   # Create instance: xlslice_lower_0, and set properties
   set xlslice_lower_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_lower_0 ]
@@ -2215,7 +2231,8 @@ CONFIG.DOUT_WIDTH {16} \
   connect_bd_intf_net -intf_net axis_variable_B_channel_2_M_AXIS [get_bd_intf_pins axis_variable_B_channel_2/M_AXIS] [get_bd_intf_pins dds_compiler_B_channel_2/S_AXIS_CONFIG]
   connect_bd_intf_net -intf_net axis_variable_B_channel_3_M_AXIS [get_bd_intf_pins axis_variable_B_channel_3/M_AXIS] [get_bd_intf_pins dds_compiler_B_channel_3/S_AXIS_CONFIG]
   connect_bd_intf_net -intf_net axis_variable_B_channel_4_M_AXIS [get_bd_intf_pins axis_variable_B_channel_4/M_AXIS] [get_bd_intf_pins dds_compiler_B_channel_4/S_AXIS_CONFIG]
-  connect_bd_intf_net -intf_net dds_compiler_A_channel_1_M_AXIS_DATA [get_bd_intf_pins dds_compiler_A_channel_1/M_AXIS_DATA] [get_bd_intf_pins fourier_synthesizer_A/s_axis_channel_1]
+  connect_bd_intf_net -intf_net dds_compiler_A_channel_1_M_AXIS_DATA [get_bd_intf_pins dds_compiler_A_channel_1/M_AXIS_DATA] [get_bd_intf_pins signal_generator_0/s_axis]
+  connect_bd_intf_net -intf_net dds_compiler_A_channel_1_M_AXIS_PHASE [get_bd_intf_pins dds_compiler_A_channel_1/M_AXIS_PHASE] [get_bd_intf_pins signal_generator_0/s_axis_phase]
   connect_bd_intf_net -intf_net dds_compiler_A_channel_2_M_AXIS_DATA [get_bd_intf_pins dds_compiler_A_channel_2/M_AXIS_DATA] [get_bd_intf_pins fourier_synthesizer_A/s_axis_channel_2]
   connect_bd_intf_net -intf_net dds_compiler_A_channel_3_M_AXIS_DATA [get_bd_intf_pins dds_compiler_A_channel_3/M_AXIS_DATA] [get_bd_intf_pins fourier_synthesizer_A/s_axis_channel_3]
   connect_bd_intf_net -intf_net dds_compiler_A_channel_4_M_AXIS_DATA [get_bd_intf_pins dds_compiler_A_channel_4/M_AXIS_DATA] [get_bd_intf_pins fourier_synthesizer_A/s_axis_channel_4]
@@ -2223,9 +2240,10 @@ CONFIG.DOUT_WIDTH {16} \
   connect_bd_intf_net -intf_net dds_compiler_B_channel_2_M_AXIS_DATA [get_bd_intf_pins dds_compiler_B_channel_2/M_AXIS_DATA] [get_bd_intf_pins fourier_synthesizer_B/s_axis_channel_2]
   connect_bd_intf_net -intf_net dds_compiler_B_channel_3_M_AXIS_DATA [get_bd_intf_pins dds_compiler_B_channel_3/M_AXIS_DATA] [get_bd_intf_pins fourier_synthesizer_B/s_axis_channel_3]
   connect_bd_intf_net -intf_net dds_compiler_B_channel_4_M_AXIS_DATA [get_bd_intf_pins dds_compiler_B_channel_4/M_AXIS_DATA] [get_bd_intf_pins fourier_synthesizer_B/s_axis_channel_4]
+  connect_bd_intf_net -intf_net signal_generator_0_m_axis [get_bd_intf_pins fourier_synthesizer_A/s_axis_channel_1] [get_bd_intf_pins signal_generator_0/m_axis]
 
   # Create port connections
-  connect_bd_net -net Din_2 [get_bd_pins cfg_data] [get_bd_pins amplitude_A_channel_1_slice/Din] [get_bd_pins amplitude_A_channel_2_slice/Din] [get_bd_pins amplitude_A_channel_3_slice/Din] [get_bd_pins amplitude_A_channel_4_slice/Din] [get_bd_pins amplitude_B_channel_1_slice/Din] [get_bd_pins amplitude_B_channel_2_slice/Din] [get_bd_pins amplitude_B_channel_3_slice/Din] [get_bd_pins amplitude_B_channel_4_slice/Din] [get_bd_pins freq_A_channel_1_slice/Din] [get_bd_pins freq_A_channel_2_slice/Din] [get_bd_pins freq_A_channel_3_slice/Din] [get_bd_pins freq_A_channel_4_slice/Din] [get_bd_pins freq_B_channel_1_slice/Din] [get_bd_pins freq_B_channel_2_slice/Din] [get_bd_pins freq_B_channel_3_slice/Din] [get_bd_pins freq_B_channel_4_slice/Din] [get_bd_pins phase_A_channel_1_slice/Din] [get_bd_pins phase_A_channel_2_slice/Din] [get_bd_pins phase_A_channel_3_slice/Din] [get_bd_pins phase_A_channel_4_slice/Din] [get_bd_pins phase_B_channel_1_slice/Din] [get_bd_pins phase_B_channel_2_slice/Din] [get_bd_pins phase_B_channel_3_slice/Din] [get_bd_pins phase_B_channel_4_slice/Din]
+  connect_bd_net -net Din_2 [get_bd_pins cfg_data] [get_bd_pins amplitude_A_channel_1_slice/Din] [get_bd_pins amplitude_A_channel_2_slice/Din] [get_bd_pins amplitude_A_channel_3_slice/Din] [get_bd_pins amplitude_A_channel_4_slice/Din] [get_bd_pins amplitude_B_channel_1_slice/Din] [get_bd_pins amplitude_B_channel_2_slice/Din] [get_bd_pins amplitude_B_channel_3_slice/Din] [get_bd_pins amplitude_B_channel_4_slice/Din] [get_bd_pins freq_A_channel_1_slice/Din] [get_bd_pins freq_A_channel_2_slice/Din] [get_bd_pins freq_A_channel_3_slice/Din] [get_bd_pins freq_A_channel_4_slice/Din] [get_bd_pins freq_B_channel_1_slice/Din] [get_bd_pins freq_B_channel_2_slice/Din] [get_bd_pins freq_B_channel_3_slice/Din] [get_bd_pins freq_B_channel_4_slice/Din] [get_bd_pins phase_A_channel_1_slice/Din] [get_bd_pins phase_A_channel_2_slice/Din] [get_bd_pins phase_A_channel_3_slice/Din] [get_bd_pins phase_A_channel_4_slice/Din] [get_bd_pins phase_B_channel_1_slice/Din] [get_bd_pins phase_B_channel_2_slice/Din] [get_bd_pins phase_B_channel_3_slice/Din] [get_bd_pins phase_B_channel_4_slice/Din] [get_bd_pins xlslice_0/Din]
   connect_bd_net -net amplitude_A_channel_1_slice_Dout [get_bd_pins amplitude_A_channel_1_slice/Dout] [get_bd_pins fourier_synthesizer_A/amplitude_channel_1]
   connect_bd_net -net amplitude_A_channel_2_slice_Dout [get_bd_pins amplitude_A_channel_2_slice/Dout] [get_bd_pins fourier_synthesizer_A/amplitude_channel_2]
   connect_bd_net -net amplitude_A_channel_3_slice_Dout [get_bd_pins amplitude_A_channel_3_slice/Dout] [get_bd_pins fourier_synthesizer_A/amplitude_channel_3]
@@ -2234,7 +2252,7 @@ CONFIG.DOUT_WIDTH {16} \
   connect_bd_net -net amplitude_B_channel_2_slice_Dout [get_bd_pins amplitude_B_channel_2_slice/Dout] [get_bd_pins fourier_synthesizer_B/amplitude_channel_2]
   connect_bd_net -net amplitude_B_channel_3_slice_Dout [get_bd_pins amplitude_B_channel_3_slice/Dout] [get_bd_pins fourier_synthesizer_B/amplitude_channel_3]
   connect_bd_net -net amplitude_B_channel_4_slice_Dout [get_bd_pins amplitude_B_channel_4_slice/Dout] [get_bd_pins fourier_synthesizer_B/amplitude_channel_4]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_variable_A_channel_1/aclk] [get_bd_pins axis_variable_A_channel_2/aclk] [get_bd_pins axis_variable_A_channel_3/aclk] [get_bd_pins axis_variable_A_channel_4/aclk] [get_bd_pins axis_variable_B_channel_1/aclk] [get_bd_pins axis_variable_B_channel_2/aclk] [get_bd_pins axis_variable_B_channel_3/aclk] [get_bd_pins axis_variable_B_channel_4/aclk] [get_bd_pins dds_compiler_A_channel_1/aclk] [get_bd_pins dds_compiler_A_channel_2/aclk] [get_bd_pins dds_compiler_A_channel_3/aclk] [get_bd_pins dds_compiler_A_channel_4/aclk] [get_bd_pins dds_compiler_B_channel_1/aclk] [get_bd_pins dds_compiler_B_channel_2/aclk] [get_bd_pins dds_compiler_B_channel_3/aclk] [get_bd_pins dds_compiler_B_channel_4/aclk] [get_bd_pins fourier_synthesizer_A/clk] [get_bd_pins fourier_synthesizer_B/clk]
+  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_variable_A_channel_1/aclk] [get_bd_pins axis_variable_A_channel_2/aclk] [get_bd_pins axis_variable_A_channel_3/aclk] [get_bd_pins axis_variable_A_channel_4/aclk] [get_bd_pins axis_variable_B_channel_1/aclk] [get_bd_pins axis_variable_B_channel_2/aclk] [get_bd_pins axis_variable_B_channel_3/aclk] [get_bd_pins axis_variable_B_channel_4/aclk] [get_bd_pins dds_compiler_A_channel_1/aclk] [get_bd_pins dds_compiler_A_channel_2/aclk] [get_bd_pins dds_compiler_A_channel_3/aclk] [get_bd_pins dds_compiler_A_channel_4/aclk] [get_bd_pins dds_compiler_B_channel_1/aclk] [get_bd_pins dds_compiler_B_channel_2/aclk] [get_bd_pins dds_compiler_B_channel_3/aclk] [get_bd_pins dds_compiler_B_channel_4/aclk] [get_bd_pins fourier_synthesizer_A/clk] [get_bd_pins fourier_synthesizer_B/clk] [get_bd_pins signal_generator_0/clk]
   connect_bd_net -net fourier_synthesizer_0_m_axis_tdata [get_bd_pins fourier_synthesizer_B/m_axis_tdata] [get_bd_pins xlconcat_2/In1]
   connect_bd_net -net fourier_synthesizer_0_m_axis_tvalid [get_bd_pins fourier_synthesizer_B/m_axis_tvalid] [get_bd_pins util_vector_logic_1/Op2]
   connect_bd_net -net fourier_synthesizer_A_m_axis_tdata [get_bd_pins fourier_synthesizer_A/m_axis_tdata] [get_bd_pins xlconcat_2/In0]
@@ -2255,7 +2273,7 @@ CONFIG.DOUT_WIDTH {16} \
   connect_bd_net -net phase_B_channel_2_slice_Dout [get_bd_pins phase_B_channel_2_slice/Dout] [get_bd_pins xlslice_lower_11/Din]
   connect_bd_net -net phase_B_channel_3_slice_Dout [get_bd_pins phase_B_channel_3_slice/Dout] [get_bd_pins xlslice_lower_13/Din]
   connect_bd_net -net phase_B_channel_4_slice_Dout [get_bd_pins phase_B_channel_4_slice/Dout] [get_bd_pins xlslice_lower_15/Din]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_variable_A_channel_1/aresetn] [get_bd_pins axis_variable_A_channel_2/aresetn] [get_bd_pins axis_variable_A_channel_3/aresetn] [get_bd_pins axis_variable_A_channel_4/aresetn] [get_bd_pins axis_variable_B_channel_1/aresetn] [get_bd_pins axis_variable_B_channel_2/aresetn] [get_bd_pins axis_variable_B_channel_3/aresetn] [get_bd_pins axis_variable_B_channel_4/aresetn] [get_bd_pins dds_compiler_A_channel_1/aresetn] [get_bd_pins dds_compiler_A_channel_2/aresetn] [get_bd_pins dds_compiler_A_channel_3/aresetn] [get_bd_pins dds_compiler_A_channel_4/aresetn] [get_bd_pins dds_compiler_B_channel_1/aresetn] [get_bd_pins dds_compiler_B_channel_2/aresetn] [get_bd_pins dds_compiler_B_channel_3/aresetn] [get_bd_pins dds_compiler_B_channel_4/aresetn] [get_bd_pins fourier_synthesizer_A/aresetn] [get_bd_pins fourier_synthesizer_B/aresetn]
+  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_variable_A_channel_1/aresetn] [get_bd_pins axis_variable_A_channel_2/aresetn] [get_bd_pins axis_variable_A_channel_3/aresetn] [get_bd_pins axis_variable_A_channel_4/aresetn] [get_bd_pins axis_variable_B_channel_1/aresetn] [get_bd_pins axis_variable_B_channel_2/aresetn] [get_bd_pins axis_variable_B_channel_3/aresetn] [get_bd_pins axis_variable_B_channel_4/aresetn] [get_bd_pins dds_compiler_A_channel_1/aresetn] [get_bd_pins dds_compiler_A_channel_2/aresetn] [get_bd_pins dds_compiler_A_channel_3/aresetn] [get_bd_pins dds_compiler_A_channel_4/aresetn] [get_bd_pins dds_compiler_B_channel_1/aresetn] [get_bd_pins dds_compiler_B_channel_2/aresetn] [get_bd_pins dds_compiler_B_channel_3/aresetn] [get_bd_pins dds_compiler_B_channel_4/aresetn] [get_bd_pins fourier_synthesizer_A/aresetn] [get_bd_pins fourier_synthesizer_B/aresetn] [get_bd_pins signal_generator_0/aresetn]
   connect_bd_net -net util_vector_logic_1_Res [get_bd_pins synth_tvalid] [get_bd_pins util_vector_logic_1/Res]
   connect_bd_net -net xlconcat_2_dout [get_bd_pins synth_tdata] [get_bd_pins xlconcat_2/dout]
   connect_bd_net -net xlconcat_A_channel_1_dout [get_bd_pins axis_variable_A_channel_1/cfg_data] [get_bd_pins xlconcat_A_channel_1/dout]
@@ -2266,6 +2284,7 @@ CONFIG.DOUT_WIDTH {16} \
   connect_bd_net -net xlconcat_B_channel_2_dout [get_bd_pins axis_variable_B_channel_2/cfg_data] [get_bd_pins xlconcat_B_channel_2/dout]
   connect_bd_net -net xlconcat_B_channel_3_dout [get_bd_pins axis_variable_B_channel_3/cfg_data] [get_bd_pins xlconcat_B_channel_3/dout]
   connect_bd_net -net xlconcat_B_channel_4_dout [get_bd_pins axis_variable_B_channel_4/cfg_data] [get_bd_pins xlconcat_B_channel_4/dout]
+  connect_bd_net -net xlslice_0_Dout [get_bd_pins signal_generator_0/cfg_data] [get_bd_pins xlslice_0/Dout]
   connect_bd_net -net xlslice_lower_0_Dout [get_bd_pins xlconcat_A_channel_2/In0] [get_bd_pins xlslice_lower_0/Dout]
   connect_bd_net -net xlslice_lower_10_Dout [get_bd_pins xlconcat_B_channel_2/In0] [get_bd_pins xlslice_lower_10/Dout]
   connect_bd_net -net xlslice_lower_11_Dout [get_bd_pins xlconcat_B_channel_2/In1] [get_bd_pins xlslice_lower_11/Dout]
