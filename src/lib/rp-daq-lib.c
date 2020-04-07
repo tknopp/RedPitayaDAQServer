@@ -676,7 +676,10 @@ int getMasterTrigger() {
 
 int setMasterTrigger(int mode) {
     if(mode == OFF) {
+        setRamWriterEnabled(ON);
         *((uint8_t *)(cfg + 1)) &= ~4;
+        setRAMWriterMode(ADC_MODE_TRIGGERED);
+        setRamWriterEnabled(OFF);
     } else if(mode == ON) {
         *((uint8_t *)(cfg + 1)) |= 4;
     } else {

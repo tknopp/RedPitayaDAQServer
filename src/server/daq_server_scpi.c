@@ -513,7 +513,7 @@ void* slowDACThread(void* ch)
 	      enableSlowDACAck = true;
 	      //wpPDMStart = (wpPDM + numSubPeriodsUntilEnd) % PDM_BUFF_SIZE;
 	      // 3 in the following line is a magic number
-	      wpPDMStart = ((currentSubPeriodTotal + numSubPeriodsUntilEnd-3) % PDM_BUFF_SIZE) ;
+	      wpPDMStart = ((currentSubPeriodTotal + numSubPeriodsUntilEnd) % PDM_BUFF_SIZE) ;
 	    }
 
             if(!enableSlowDAC) 
