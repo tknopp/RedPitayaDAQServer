@@ -25,18 +25,18 @@ end
 println(" frequency = $(frequencyDAC(rp,1,1))")
 amplitudeDAC(rp, 1, 1, 4000)
 phaseDAC(rp, 1, 1, 0.0 ) # Phase has to be given in between 0 and 1
-masterTrigger(rp, false)
 ramWriterMode(rp, "TRIGGERED")
-ramWriterEnabled(rp, false)
+masterTrigger(rp, false)
 
-#sleep(0.5)
 wp = currentWP(rp)
 @show wp
 startADC(rp, wp)
-ramWriterEnabled(rp, true)
 masterTrigger(rp, true)
 
 sleep(0.1)
+
+uFirstPeriod = readData(rp, 0, 2)
+
 currFr = enableSlowDAC(rp, true, 2, 0.5, 1.0)
 
 uCurrentPeriod = readData(rp, currFr, 2)
@@ -53,15 +53,14 @@ uCurrentPeriod2 = readData(rp, currFr, 2)
 
 figure(1)
 clf()
-subplot(1,2,1)
+subplot(2,1,1)
 plot(vec(uCurrentPeriod[:,1,:,:]))
 plot(vec(uCurrentPeriod[:,2,:,:]))
 plot(vec(uCurrentPeriod2[:,2,:,:]))
 legend(("DF", "FF1", "FF2"))
-subplot(1,2,2)
-plot(vec(uCurrentPeriod[:,1,:,:])[1:1:1500])
-plot(vec(uCurrentPeriod[:,2,:,:])[1:1:1500])
-plot(vec(uCurrentPeriod2[:,2,:,:])[1:1:1500])
-legend(("DF", "FF1", "FF2"))
+subplot(2,1,2)
+plot(vec(uFirstPeriod[:,1,:,:]))
+plot(vec(uCurrentPeriod[:,1,:,:]))
+legend(("DF1", "DF2"))
 
 stopADC(rp)

@@ -60,7 +60,15 @@ function startADC(rpc::RedPitayaCluster)
   end
 end
 
-masterTrigger(rpc::RedPitayaCluster, val::Bool) = masterTrigger(master(rpc), val)
+function masterTrigger(rpc::RedPitayaCluster, val::Bool)
+    if val
+        masterTrigger(master(rpc), val)
+    else
+        ramWriterEnabled(rp, true)
+        masterTrigger(master(rpc), false)
+        ramWriterEnabled(rp, false)
+    end
+end
 masterTrigger(rpc::RedPitayaCluster) = masterTrigger(master(rpc))
 bufferSize(rpc::RedPitayaCluster) = bufferSize(master(rpc))
 

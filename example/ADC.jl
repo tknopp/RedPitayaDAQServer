@@ -2,6 +2,8 @@ using RedPitayaDAQServer
 using PyPlot
 
 rp = RedPitaya("rp-f04972.local")
+#rp = RedPitaya("10.167.6.87")
+#rp = RedPitaya("rp-f07083.local")
 
 dec = 64
 modulus = 4800
@@ -22,16 +24,13 @@ end
 println(" frequency = $(frequencyDAC(rp,1,1))")
 amplitudeDAC(rp, 1, 1, 4000)
 phaseDAC(rp, 1, 1, 0.0 ) # Phase has to be given in between 0 and 1
-masterTrigger(rp, false)
-ramWriterMode(rp, "TRIGGERED")
-ramWriterEnabled(rp, false)
 
-#sleep(0.5)
+ramWriterEnabled(rp, true)
+ramWriterMode(rp, "TRIGGERED")
+
 wp = currentWP(rp)
 @show wp
 startADC(rp, wp)
-ramWriterEnabled(rp, true)
-sleep(0.1)
 masterTrigger(rp, true)
 sleep(0.1)
 
