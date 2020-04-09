@@ -17,6 +17,7 @@ module reset_manager #
     inout instant_reset,
     output write_to_ram_aresetn,
     output write_to_ramwriter_aresetn,
+    output keep_alive_aresetn,
     output xadc_aresetn,
     output fourier_synth_aresetn,
     output pdm_aresetn,
@@ -33,6 +34,10 @@ Bit 0 => 0: continuous mode; 1: trigger mode
 Bit 1 => 0: no watchdog; 1: watchdog mode
 Bit 2 => master trigger
 Bit 3 => instant reset mode: 0: disabled; 1: enabled
+Bit 4 => 0: internal trigger 1: external trigger
+Bit 5 => internal trigger
+Bit 6 => keep alive reset
+
 
 reset_ack: high if reset active (either watchdog failed or instant reset)
 */
@@ -46,6 +51,7 @@ reg write_to_ram_aresetn_int = 0;
 reg xadc_aresetn_int = 0;
 reg fourier_synth_aresetn_int = 0;
 reg pdm_aresetn_int = 0;
+reg keep_alive_aresetn_int = 0;
 
 wire trigger_in;
 wire watchdog_in;
@@ -153,7 +159,7 @@ begin
     begin
         alive_signal_counter <= 0;
     end
-    
+
     if (alive_signal_counter < ALIVE_SIGNAL_LOW_TIME_CYCLES)
     begin
         alive_signal_int <= 0;
@@ -179,7 +185,7 @@ begin
         watchdog_counter <= 0;
         last_status <= 0;
     end
-    else        
+    else
     begin
         if (watchdog_counter < 16777213) // Prevent wrapping
         begin
@@ -210,9 +216,16 @@ begin
         end
         else // trigger mode
         begin
-            write_to_ram_aresetn_int <= trigger_in;
+            if (reset_cfg[4] == 0) // internal trigger
+            begin
+                write_to_ram_aresetn_int <= reset_cfg[5];
+            end
+            else // external trigger
+            begin
+                write_to_ram_aresetn_int <= trigger_in;
+            end
         end
-        
+
         // Watchdog for DACs
         if (instant_reset_in && reset_cfg[3])
         begin
@@ -230,10 +243,17 @@ begin
                 end
                 else // trigger mode
                 begin
-                    fourier_synth_aresetn_int <= trigger_in;
-                    pdm_aresetn_int <= trigger_in;
+                    if (reset_cfg[4] == 0) // internal trigger
+                    begin
+                        fourier_synth_aresetn_int <= reset_cfg[5];
+                        pdm_aresetn_int <= reset_cfg[5];
+                    end
+                    else // external trigger
+                    begin
+                        fourier_synth_aresetn_int <= trigger_in;
+                        pdm_aresetn_int <= trigger_in;
+                    end
                 end
-                
             end
             else // watchdog mode
             begin
@@ -246,8 +266,16 @@ begin
                     end
                     else // trigger mode
                     begin
-                        fourier_synth_aresetn_int <= trigger_in;
-                        pdm_aresetn_int <= trigger_in;
+                        if (reset_cfg[4] == 0) // internal trigger
+                        begin
+                            fourier_synth_aresetn_int <= reset_cfg[5];
+                            pdm_aresetn_int <= reset_cfg[5];
+                        end
+                        else // external trigger
+                        begin
+                            fourier_synth_aresetn_int <= trigger_in;
+                            pdm_aresetn_int <= trigger_in;
+                        end
                     end
                 end
                 else // watchdog failed to signal within the given timeframe
@@ -257,9 +285,10 @@ begin
                 end
             end
         end
-        
+
         // XADC is always running
         xadc_aresetn_int <= peripheral_aresetn;
+        keep_alive_aresetn_int <= reset_cfg[6];
     end
 end
 
@@ -268,6 +297,7 @@ assign write_to_ramwriter_aresetn = write_to_ram_aresetn_int;
 assign xadc_aresetn = xadc_aresetn_int;
 assign fourier_synth_aresetn = fourier_synth_aresetn_int;
 assign pdm_aresetn = pdm_aresetn_int;
+assign keep_alive_aresetn = keep_alive_aresetn_int;
 
 assign reset_sts[0] = peripheral_aresetn;
 assign reset_sts[1] = fourier_synth_aresetn_int;
@@ -289,5 +319,3 @@ assign master_trigger_out = reset_cfg[2];
 
 
 endmodule
-
-
