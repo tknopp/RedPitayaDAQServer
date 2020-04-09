@@ -22,7 +22,9 @@ end
 println(" frequency = $(frequencyDAC(rp,1,1))")
 amplitudeDAC(rp, 1, 1, 4000)
 phaseDAC(rp, 1, 1, 0.0 ) # Phase has to be given in between 0 and 1
+
 ramWriterMode(rp, "TRIGGERED")
+triggerMode(rp, "EXTERNAL")
 masterTrigger(rp, false)
 
 startADC(rp)

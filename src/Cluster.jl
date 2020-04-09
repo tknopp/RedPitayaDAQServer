@@ -9,9 +9,13 @@ end
 #TODO: set first RP to master
 function RedPitayaCluster(hosts::Vector{String}, port=5025)
   # the first RP is the master
-  rp = RedPitaya[ RedPitaya(host, port, i==1) for (i,host) in enumerate(hosts) ]
+  rps = RedPitaya[ RedPitaya(host, port, i==1) for (i,host) in enumerate(hosts) ]
 
-  return RedPitayaCluster(rp)
+  for rp in rps
+    triggerMode(rp, "EXTERNAL")
+  end
+
+  return RedPitayaCluster(rps)
 end
 
 length(rpc::RedPitayaCluster) = length(rpc.rp)
@@ -64,9 +68,9 @@ function masterTrigger(rpc::RedPitayaCluster, val::Bool)
     if val
         masterTrigger(master(rpc), val)
     else
-        ramWriterEnabled(rpc, true)
+        keepAliveReset(rpc, true)
         masterTrigger(master(rpc), false)
-        ramWriterEnabled(rpc, false)
+        keepAliveReset(rpc, false)
     end
 end
 masterTrigger(rpc::RedPitayaCluster) = masterTrigger(master(rpc))
