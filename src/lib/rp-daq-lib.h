@@ -33,6 +33,9 @@
 #define ADC_MODE_CONTINUOUS 0
 #define ADC_MODE_TRIGGERED 1
 
+#define TRIGGER_MODE_INTERNAL 0
+#define	TRIGGER_MODE_EXTERNAL 1
+
 #define OFF 0
 #define ON 1
 
@@ -95,12 +98,14 @@ extern uint32_t getXADCValue(int);
 extern float getXADCValueVolt(int);
 
 // misc
+extern int setTriggerMode(int);
+extern int getTriggerMode();
 extern int getWatchdogMode();
 extern int setWatchdogMode(int);
 extern int getRAMWriterMode();
 extern int setRAMWriterMode(int);
-extern int getRamWriterEnabled();
-extern int setRamWriterEnabled(int);
+extern int getKeepAliveReset();
+extern int setKeepAliveReset(int);
 extern int getMasterTrigger();
 extern int setMasterTrigger(int);
 extern int getInstantResetMode();

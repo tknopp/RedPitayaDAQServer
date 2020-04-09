@@ -706,9 +706,42 @@ int setRAMWriterMode(int mode) {
     return 0;
 }
 
-int getMasterTrigger() {
-	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x04) >> 2);
+int getTriggerMode() {
+	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x10) >> 4);
 	
+	if(value == 0) {
+		return TRIGGER_MODE_INTERNAL;
+	} else if(value == 1) {
+		return TRIGGER_MODE_EXTERNAL;
+	}
+	
+	return -1;
+}
+
+int setTriggerMode(int mode) {
+    if(mode == TRIGGER_MODE_INTERNAL) {
+        *((uint8_t *)(cfg + 1)) &= ~16;
+    } else if(mode == TRIGGER_MODE_EXTERNAL) {
+        *((uint8_t *)(cfg + 1)) |= 16;
+    } else {
+        return -1;
+    }
+    
+    return 0;
+}
+
+
+
+int getMasterTrigger() {
+	int value;
+
+	if(getTriggerMode() == TRIGGER_MODE_INTERNAL)
+	{
+		value = (((int)(*((uint8_t *)(cfg + 1))) & 0x20) >> 5);
+	} else {
+		value = (((int)(*((uint8_t *)(cfg + 1))) & 0x04) >> 2);
+	}
+
 	if(value == 0) {
 		return OFF;
 	} else if(value == 1) {
@@ -720,12 +753,22 @@ int getMasterTrigger() {
 
 int setMasterTrigger(int mode) {
     if(mode == OFF) {
-        setRamWriterEnabled(ON);
-        *((uint8_t *)(cfg + 1)) &= ~4;
+        setKeepAliveReset(ON);
+	if(getTriggerMode() == TRIGGER_MODE_INTERNAL)
+	{
+          *((uint8_t *)(cfg + 1)) &= ~32;
+	} else {
+          *((uint8_t *)(cfg + 1)) &= ~4;
+	}
         setRAMWriterMode(ADC_MODE_TRIGGERED);
-        setRamWriterEnabled(OFF);
+        setKeepAliveReset(OFF);
     } else if(mode == ON) {
-        *((uint8_t *)(cfg + 1)) |= 4;
+	if(getTriggerMode() == TRIGGER_MODE_INTERNAL)
+	{
+          *((uint8_t *)(cfg + 1)) |= 32;
+	} else {
+          *((uint8_t *)(cfg + 1)) |= 4;
+	}
     } else {
         return -1;
     }
@@ -758,8 +801,8 @@ int setInstantResetMode(int mode) {
 }
 
 
-int getRamWriterEnabled() {
-    int value = (((int)(*((uint8_t *)(cfg + 0))) & 0x01) );
+int getKeepAliveReset() {
+    int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x40) );
 	
 	if(value == 0) {
 		return OFF;
@@ -770,7 +813,7 @@ int getRamWriterEnabled() {
 	return -1;
 }
 
-int setRamWriterEnabled(int mode) {
+int setKeepAliveReset(int mode) {
     if(mode == OFF) {
       if(getMasterTrigger() == OFF) { // we only disable the Ram Writer if the trigger is off
         uint32_t wp, wp_old, size;
@@ -782,10 +825,10 @@ int setRamWriterEnabled(int mode) {
 	  wp_old = wp;
 	  printf("setRamWriterEnabled: wp %d  wp_old %d  size  %d \n", wp, wp_old, size);
 	} while(size > 0);
-	*((uint8_t *)(cfg + 0)) &= ~1;
+        *((uint8_t *)(cfg + 1)) &= ~64;
       }
     } else if(mode == ON) {
-        *((uint8_t *)(cfg + 0)) |= 1;
+        *((uint8_t *)(cfg + 1)) |= 64;
     } else {
         return -1;
     }
@@ -824,8 +867,14 @@ int getXADCAResetN() {
 }
 
 int getTriggerStatus() {
-    int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x20) >> 5);
-    
+    int value;
+
+    if(getTriggerMode() == TRIGGER_MODE_INTERNAL)
+    {
+       value = (((int)(*((uint8_t *)(cfg + 1))) & 0x20) >> 5);
+    } else {
+       value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x20) >> 5);
+    }
     return value;
 }
 
