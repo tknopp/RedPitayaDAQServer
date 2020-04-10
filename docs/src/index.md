@@ -4,7 +4,7 @@
 
 ## Introduction
 
-This project contains software to be used with the STEMlab 125-14 device from RedPitaya. It allows for continuous generation and measurement of signals with up to 15.625 MS/s, which is not possible with the standard image of the RedPitaya. This project contains the following parts:
+This project contains software to be used with the STEMlab 125-14 device from RedPitaya. It allows for continuous generation and measurement of signals with up to 15.625 MS/s, which is not possible with the standard image of the RedPitaya. In addition, the software allows to synchronize a cluster of multiple RedPitayas. This project contains the following parts:
 * Alpine Linux image for the RedPitaya
 * FPGA image
 * Client library (implemented in C) that can be used on the RedPitaya
@@ -13,7 +13,7 @@ This project contains software to be used with the STEMlab 125-14 device from Re
 
 The code is distributed into two different repositories:
 * [RedPitayaDAQServer](https://github.com/tknopp/RedPitayaDAQServer) contains the main part of the project including the FPGA code, the client library, the server, and a client implemented in Python.
-* [RedPitayaDAQServer.jl](https://github.com/tknopp/RedPitayaDAQServer.jl) is a client library implemented in the programming language Julia. This is the reference client library that is used by the developers of this project. 
+* [RedPitayaDAQServer.jl](https://github.com/tknopp/RedPitayaDAQServer.jl) is a client library implemented in the programming language Julia. This is the reference client library that is used by the developers of this project.
 
 ## License / Terms of Usage
 
@@ -31,3 +31,10 @@ the [issue tracker](https://github.com/tknopp/RedPitayaDAQServer/issues) to cont
 * [Tobias Knopp](https://www.tuhh.de/ibi/people/tobias-knopp-head-of-institute.html)
 * [Jonas Schumacher](https://www.imt.uni-luebeck.de/institute/staff/jonas-schumacher.html)
 * [Matthias Gräser](https://www.tuhh.de/ibi/people/matthias-graeser.html)
+
+## Credit
+
+This package is partly based on work of Koheron [1] and Pavel Demin [2]
+
+[1] https://www.koheron.com/blog/2016/11/29/red-pitaya-cluster
+[2] https://github.com/pavel-demin/red-pitaya-notes
