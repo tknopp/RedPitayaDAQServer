@@ -7,7 +7,9 @@ makedocs(
     authors = "Tobias Knopp, Jonas Beuke, Matthias Gräser",
     pages = [
         "Home" => "index.md",
-        "Installation" => "installation.md"
+        "Installation" => "installation.md",
+        "Architecture" => "architecture.md",
+        "FPGA Development" => "fpga.md",
         #"Getting Started" => "overview.md",
     ]
 #    html_prettyurls = false, #!("local" in ARGS),
