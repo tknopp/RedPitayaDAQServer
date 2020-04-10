@@ -1,7 +1,26 @@
-# Getting Started
+# Installation
 
-In order to get started we will first gather some MPI data. To this end we enter
-the Pkg mode in Julia (`]`) and execute the unit tests of MPIReco
-```julia
-test MPIReco
+## RedPitaya Image
+
+The RedPitayaDAQServer project uses a custom RedPitaya image that was derived from the [red-pitaya-notes](https://github.com/pavel-demin/red-pitaya-notes) project. It consists of an Alpine Linux with some development tools installed. Additionally the image reserves the upper 128 MB of main memory for the FPGA, which is used as a buffer for recording the data from the fast ADCs.
+
+## Setting Up Server
+
+First, connect the RedPitaya to you local network and connect to the device via ssh:
 ```
+ssh root@rp-f?????.local
+```
+where ????? is the ID that is printed on the RedPitaya. The default password is `root`.
+After logging into the RedPitaya go to the folder
+```
+/root/apps/
+```
+and clone the RedPitayaDAQServer project:
+```
+git clone https://github.com/tknopp/RedPitayaDAQServer
+```
+Then cd into RedPitayaDAQServer
+```
+cd /root/apps/RedPitayaDAQServer
+```
+and enter `make`. This will compile the library, the server, and some example applications. After you restart the RedPitaya the DAQ server will automatically run and you can access it via TCP.

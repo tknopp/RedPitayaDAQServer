@@ -1,21 +1,16 @@
 # RedPitayaDAQServer
 
-*Julia package for the reconstruction of magnetic particle imaging (MPI) data*
+*Advanced DAQ Tools for the RedPitaya (STEMlab 125-14)*
 
 ## Introduction
 
-This project provides functions for the reconstruction of MPI data. The project
-is implemented in the programming language Julia and contains algorithms for
+This project contains software to be used with the STEMlab 125-14 device from RedPitaya. It allows for continuous generation and measurement of signals with up to 15.625 MS/s, which is not possible with the standard image of the RedPitaya. This project contains the following parts:
+* Alpine Linux image for the RedPitaya
+* FPGA image
+* Client library (implemented in C) that can be used on the RedPitaya
+* SCPI Server for accessing the functionality over TCP/IP
+* SCPI Clients to access the server
 
-
-## Installation
-
-Start julia and open the package mode by entering `]`. Then enter
-```julia
-add MPIReco 
-```
-This will install the packages `MPIReco.jl` and all its dependencies. In particular
-this will install the core dependencies [MPIFiles](https://github.com/MagneticParticleImaging/MPIFiles.jl.git) and [RegularizedLeastSquares](https://github.com/tknopp/RegularizedLeastSquares.jl.git).
 
 ## License / Terms of Usage
 
@@ -26,10 +21,10 @@ by citing the project.
 ## Contact
 
 If you have problems using the software, find mistakes, or have general questions please use
-the [issue tracker](https://github.com/MagneticParticleImaging/MPIReco.jl/issues) to contact us.
+the [issue tracker](https://github.com/tknopp/RedPitayaDAQServer/issues) to contact us.
 
 ## Contributors
 
 * [Tobias Knopp](https://www.tuhh.de/ibi/people/tobias-knopp-head-of-institute.html)
-* [Martin Möddel](https://www.tuhh.de/ibi/people/martin-moeddel.html)
-* [Patryk Szwargulski](https://www.tuhh.de/ibi/people/patryk-szwargulski.html)
+* [Jonas Schumacher](https://www.imt.uni-luebeck.de/institute/staff/jonas-schumacher.html)
+* [Matthias Gräser](https://www.tuhh.de/ibi/people/matthias-graeser.html)

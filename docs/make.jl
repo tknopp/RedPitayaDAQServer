@@ -1,7 +1,7 @@
 using RedPitayaDAQServer, Documenter
 
 makedocs(
-    format = :html,
+    format = Documenter.HTML(prettyurls = false),
     modules = [RedPitayaDAQServer],
     sitename = "RP DAQ Server",
     authors = "Tobias Knopp, Jonas Beuke, Matthias Gräser",
@@ -9,8 +9,8 @@ makedocs(
         "Home" => "index.md",
         "Installation" => "installation.md"
         #"Getting Started" => "overview.md",
-    ],
-    html_prettyurls = false, #!("local" in ARGS),
+    ]
+#    html_prettyurls = false, #!("local" in ARGS),
 )
 
 deploydocs(repo   = "github.com/tknopp/RedPitayaDAQServer.jl.git",
