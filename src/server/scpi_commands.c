@@ -199,6 +199,38 @@ static scpi_result_t RP_DAC_GetDACMode(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
+scpi_choice_def_t trigger_modes[] = {
+    {"INTERNAL", TRIGGER_MODE_INTERNAL},
+    {"EXTERNAL", TRIGGER_MODE_EXTERNAL},
+    SCPI_CHOICE_LIST_END /* termination of option list */
+};
+
+
+
+static scpi_result_t RP_DAC_SetTriggerMode(scpi_t * context) {
+    int32_t trigger_mode_selection;
+
+    if (!SCPI_ParamChoice(context, trigger_modes, &trigger_mode_selection, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+	
+	int result = setTriggerMode(trigger_mode_selection);
+	if (result < 0) {
+		return SCPI_RES_ERR;
+	}
+
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_GetTriggerMode(scpi_t * context) {
+	const char * name;
+
+    SCPI_ChoiceToName(trigger_modes, getTriggerMode(), &name);
+	SCPI_ResultText(context, name);
+
+    return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_DAC_ReconfigureDACModulus(scpi_t * context) {
     int32_t numbers[2];
 	SCPI_CommandNumbers(context, numbers, 2, 1);
@@ -724,23 +756,23 @@ static scpi_result_t RP_SetMasterTrigger(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_GetRamWriterEnabled(scpi_t * context) {
+static scpi_result_t RP_GetKeepAliveReset(scpi_t * context) {
 	const char * name;
 
-    SCPI_ChoiceToName(onoff_modes, getRamWriterEnabled(), &name);
+    SCPI_ChoiceToName(onoff_modes, getKeepAliveReset(), &name);
 	SCPI_ResultText(context, name);
 
     return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_SetRamWriterEnabled(scpi_t * context) {
+static scpi_result_t RP_SetKeepAliveReset(scpi_t * context) {
     int32_t param;
 
     if (!SCPI_ParamChoice(context, onoff_modes, &param, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 	
-	int result = setRamWriterEnabled(param);
+	int result = setKeepAliveReset(param);
 	if (result < 0) {
 		return SCPI_RES_ERR;
 	}
@@ -925,8 +957,10 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:WatchDogMode?", .callback = RP_GetWatchdogMode,},
 	{.pattern = "RP:RamWriterMode", .callback = RP_SetRAMWriterMode,},
 	{.pattern = "RP:RamWriterMode?", .callback = RP_GetRAMWriterMode,},
-	{.pattern = "RP:RamWriterEnabled", .callback = RP_SetRamWriterEnabled,},
-	{.pattern = "RP:RamWriterEnabled?", .callback = RP_GetRamWriterEnabled,},
+	{.pattern = "RP:KeepAliveReset", .callback = RP_SetKeepAliveReset,},
+	{.pattern = "RP:KeepAliveReset?", .callback = RP_GetKeepAliveReset,},
+	{.pattern = "RP:Trigger:MODe", .callback = RP_DAC_SetTriggerMode,},
+	{.pattern = "RP:Trigger:MODe?", .callback = RP_DAC_GetTriggerMode,},
 	{.pattern = "RP:MasterTrigger", .callback = RP_SetMasterTrigger,},
 	{.pattern = "RP:MasterTrigger?", .callback = RP_GetMasterTrigger,},
 	{.pattern = "RP:InstantResetMode", .callback = RP_SetInstantResetMode,},
