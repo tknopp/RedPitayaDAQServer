@@ -12,7 +12,7 @@ is implemented in the programming language Julia and contains algorithms for
 
 Start julia and open the package mode by entering `]`. Then enter
 ```julia
-add MPIReco
+add MPIReco 
 ```
 This will install the packages `MPIReco.jl` and all its dependencies. In particular
 this will install the core dependencies [MPIFiles](https://github.com/MagneticParticleImaging/MPIFiles.jl.git) and [RegularizedLeastSquares](https://github.com/tknopp/RegularizedLeastSquares.jl.git).
