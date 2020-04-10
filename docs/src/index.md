@@ -1,4 +1,4 @@
-# MPIReco.jl
+# RedPitayaDAQServer
 
 *Julia package for the reconstruction of magnetic particle imaging (MPI) data*
 
@@ -7,21 +7,6 @@
 This project provides functions for the reconstruction of MPI data. The project
 is implemented in the programming language Julia and contains algorithms for
 
-* [Basic Reconstruction](@ref) using a system matrix based approach
-* [Multi-Patch Reconstruction](@ref) for data that has been acquired
-  using a focus field sequence
-* [Multi-Contrast Reconstruction](@ref)
-* [Matrix-Compression Techniques](@ref)
-
-Key features are
-
-* Frequency filtering for memory efficient reconstruction. Only frequencies used
-  during reconstructions are loaded into memory.
-* Different solvers provided by the package [RegularizedLeastSquares.jl](https://github.com/tknopp/RegularizedLeastSquares.jl)
-* High-level until low-level reconstruction providing maximum flexibility for
-  the user
-* Spectral leakage correction (implemented in
-  [MPIFiles.jl](https://github.com/MagneticParticleImaging/MPIFiles.jl))
 
 ## Installation
 
