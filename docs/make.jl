@@ -9,6 +9,11 @@ makedocs(
         "Home" => "index.md",
         "Installation" => "installation.md",
         "Architecture" => "architecture.md",
+        "Cluster" => "cluster.md",
+        "Client" => "client.md",
+        "Examples" => Any["Simple" => "examples/simple.md",
+                          "SlowADC" => "examples/slowADC.md"],
+        "SCPI Interface" => "scpi.md",
         "FPGA Development" => "fpga.md",
         #"Getting Started" => "overview.md",
     ]
