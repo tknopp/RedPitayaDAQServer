@@ -12,10 +12,6 @@ To run a cluster of RedPitayas one needs to connect the devices using different 
 
 ![Cluster](./assets/cluster.png)
 
-The clock is distributed from the master to the first slave via an SATA cable (green). Additional slaves can be used by connecting the next slave to the previous one. Additionally all slaves have connection from +3.3 Volt
-
-
-
-### Trigger Distribution
+The clock is distributed from the master to the first slave via an SATA cable (green). Additional slaves can be used by connecting the next slave to the previous one. Additionally all slaves have connection from +3.3 Volt to `DIO0_N`.
 
 In order to send a mutual trigger signal for starting the acquisition and the signal generation, you also have to connect the master's `DIO5_P` pin (see [link](http://redpitaya.readthedocs.io/en/latest/developerGuide/125-14/extent.html)) with the `DIO0_P` pin of all devices including the master.
