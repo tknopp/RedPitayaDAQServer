@@ -9,6 +9,7 @@ makedocs(
         "Home" => "index.md",
         "Installation" => "installation.md",
         "Architecture" => "architecture.md",
+        "Connections" => "connections.md",
         "Cluster" => "cluster.md",
         "Client" => "client.md",
         "Examples" => Any["Simple" => "examples/simple.md",

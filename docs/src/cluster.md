@@ -6,9 +6,15 @@ The RedPitayaDAQServer allows to use multiple RedPitayas in a fully synchronized
 
 Unfortunately, the STEMlab 125-4 does not allow cluster synchronization without hardware modifications.   It is therefore necessary to resolder all slaves according to [this](http://redpitaya.readthedocs.io/en/latest/developerGuide/125-14/extADC.html) documentation. The required mode for this project is 'Directly from FPGA'.
 
-### Clock Distribution
+## Connections
 
-The clock is distributed from the master to the first slave via an SATA cable. Additional slaves can be used by connecting the next slave to the previous one.
+To run a cluster of RedPitayas one needs to connect the devices using different cables. An exemplary cluster with 3 devices is shown in the following image.
+
+![Cluster](./assets/cluster.png)
+
+The clock is distributed from the master to the first slave via an SATA cable (green). Additional slaves can be used by connecting the next slave to the previous one. Additionally all slaves have connection from +3.3 Volt
+
+
 
 ### Trigger Distribution
 
