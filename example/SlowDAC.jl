@@ -7,9 +7,9 @@ rp = RedPitaya("192.168.178.46")
 dec = 64
 modulus = 4800
 base_frequency = 125000000
-periods_per_step = 1
+periods_per_step = 10
 samples_per_period = div(modulus, dec)*periods_per_step
-periods_per_frame = div(10, periods_per_step) # about 0.5 s frame length
+periods_per_frame = div(100, periods_per_step) # about 0.5 s frame length
 
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
@@ -18,12 +18,10 @@ numSlowDACChan(rp, 1)
 lut = collect(range(0,1,length=periods_per_frame))
 #lut[1:2:end] .= 0
 setSlowDACLUT(rp, lut)
+slowDACClockDivider(rp, modulus*10)
 
-modeDAC(rp, "RASTERIZED")
-for (i,val) in enumerate([4800,4864,4800,4800])
-  modulusDAC(rp, 1, i, val)
-  modulusFactorDAC(rp, 1, i, 1)
-end
+modeDAC(rp, "STANDARD")
+frequencyDAC(rp,1,1, base_frequency / modulus)
 
 println(" frequency = $(frequencyDAC(rp,1,1))")
 amplitudeDAC(rp, 1, 1, 4000)

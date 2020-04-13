@@ -1,5 +1,5 @@
 export amplitudeDAC, frequencyDAC, modulusFactorDAC, phaseDAC, modeDAC, modulusDAC,
-       DCSignDAC, signalTypeDAC
+       DCSignDAC, signalTypeDAC, offsetDAC
 
 # TODO: make this Float64
 function amplitudeDAC(rp::RedPitaya, channel, component)
@@ -12,6 +12,18 @@ function amplitudeDAC(rp::RedPitaya, channel, component, value)
   end
   command = string("RP:DAC:CH", Int(channel)-1, ":COMP",
                    Int(component)-1, ":AMP ", Int64(value))
+  return send(rp, command)
+end
+
+function offsetDAC(rp::RedPitaya, channel)
+  command = string("RP:DAC:CH", Int(channel)-1, ":OFF?")
+  return query(rp, command, Int64)
+end
+function offsetDAC(rp::RedPitaya, channel, value)
+  if value > 8191
+    error("$value is larger than 8191!")
+  end
+  command = string("RP:DAC:CH", Int(channel)-1, ":OFF ", Int64(value))
   return send(rp, command)
 end
 
@@ -81,7 +93,7 @@ function signalTypeDAC(rp::RedPitaya, channel)
 end
 
 function signalTypeDAC(rp::RedPitaya, channel, sigType::String)
-  if !(sigType in ["SINE","SQUARE","DC","TRIANGLE","SAWTOOTH"] )
+  if !(sigType in ["SINE","SQUARE","TRIANGLE","SAWTOOTH"] )
     error("Signal type $sigType not supported!")
   end
 
