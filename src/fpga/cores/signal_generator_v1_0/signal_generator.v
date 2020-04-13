@@ -25,10 +25,9 @@ module signal_generator #
     input aresetn
 );
 
-    wire [3-1:0] signal_type;
+    //reg [3:0] signal_type;
     //wire dc_sign;
 	
-    assign signal_type = cfg_data[2:0];
     //assign dc_sign_A = cfg_data[3];
     
     reg [AXIS_TDATA_WIDTH-1:0] dac_out;
@@ -46,27 +45,42 @@ module signal_generator #
         else
         begin
 
+            //signal_type <= cfg_data[3:0];
             phase <= (s_axis_tdata_phase >>> (AXIS_TDATA_PHASE_WIDTH-DAC_WIDTH));
 
-            if (signal_type == 0) // Sine
+            if (cfg_data == 0) // Sine
             begin
                 dac_out_temp <= s_axis_tdata;
                 dac_out <= dac_out_temp;
+
             end
-            else if (signal_type == 1) // Square wave
+            else if (cfg_data == 1) // Square wave
             begin
-                //if (phase < 0)
-                if (s_axis_tdata > 4000)
+                if (phase < 0)
+                //if (s_axis_tdata > 4000)
                 begin
-                    dac_out_temp <= ~0;
+                    dac_out_temp <= -4000;//~0;
                 end
                 else
                 begin
-                    dac_out_temp <= 0;
+                    dac_out_temp <= 4000;
                 end
                 
                 dac_out <= dac_out_temp;
-            end
+	      end
+            else if (cfg_data == 2) // Triangle
+            begin
+                if (phase < 0)
+                begin
+                    //dac_out_temp <= (phase >>> (AMPLITUDE_WIDTH-4));
+                    dac_out <= phase; //dac_out_temp_A-$signed({1'b0, amplitude_A});
+                end
+                else
+                begin
+                    //dac_out_temp <= (phase >>> (AMPLITUDE_WIDTH-4));
+                    dac_out <= phase; //dac_out_temp_A-$signed({1'b0, amplitude_A});
+                end
+            endsignal_gen1
         end
     end
     
