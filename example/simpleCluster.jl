@@ -13,11 +13,8 @@ decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
 periodsPerFrame(rp, periods_per_frame)
 
-modeDAC(rp, "RASTERIZED")
-for (i,val) in enumerate([4800,4864,4800,4800])
-  modulusDAC(rp, 1, i, val)
-  modulusFactorDAC(rp, 1, i, 1)
-end
+modeDAC(rp, "STANDARD")
+frequencyDAC(rp, 1, 1, base_frequency / modulus)
 
 println(" frequency = $(frequencyDAC(rp,1,1))")
 amplitudeDAC(rp, 1, 1, 4000)

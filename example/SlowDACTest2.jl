@@ -18,11 +18,8 @@ lut = collect(range(0,1,length=periods_per_frame))
 #lut[1:2:end] .= 0
 setSlowDACLUT(rp, lut)
 
-modeDAC(rp, "RASTERIZED")
-for (i,val) in enumerate([4800,4864,4800,4800])
-  modulusDAC(rp, 1, i, val)
-  modulusFactorDAC(rp, 1, i, 1)
-end
+modeDAC(rp, "STANDARD")
+frequencyDAC(rp, 1, 1, base_frequency / modulus)
 
 println(" frequency = $(frequencyDAC(rp,1,1))")
 amplitudeDAC(rp, 1, 1, 4000)

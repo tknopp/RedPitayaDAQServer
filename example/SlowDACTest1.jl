@@ -21,11 +21,8 @@ numSlowDACChan(master(rp), 2)
 lut = collect(range(0,1,length=periods_per_frame))
 setSlowDACLUT(master(rp), collect(repeat(lut,1,2)'))
 
-modeDAC(rp, "RASTERIZED")
-for (i,val) in enumerate([4800,4864,4800,4800])
-  modulusDAC(rp, 1, i, val)
-  modulusFactorDAC(rp, 1, i, 1)
-end
+modeDAC(rp, "STANDARD")
+frequencyDAC(rp, 1, 1, base_frequency / modulus)
 
 amplitudeDAC(rp, 1, 1, 4000)
 phaseDAC(rp, 1, 1, 0.0 ) # Phase has to be given in between 0 and 1

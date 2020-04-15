@@ -1,5 +1,5 @@
-export amplitudeDAC, frequencyDAC, modulusFactorDAC, phaseDAC, modeDAC, modulusDAC,
-       DCSignDAC, signalTypeDAC, offsetDAC
+export amplitudeDAC, frequencyDAC, phaseDAC, modeDAC,
+       DCSignDAC, signalTypeDAC, offsetDAC, jumpSharpnessDAC
 
 # TODO: make this Float64
 function amplitudeDAC(rp::RedPitaya, channel, component)
@@ -47,27 +47,16 @@ function phaseDAC(rp::RedPitaya, channel, component, value)
   send(rp, command)
 end
 
-function modulusFactorDAC(rp::RedPitaya, channel, component)
-  command = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":FAC?")
-  return query(rp, command, Int64)
+function jumpSharpnessDAC(rp::RedPitaya, channel)
+  command = string("RP:DAC:CH", Int(channel)-1, ":JumpSharpness?")
+  return query(rp, command, Float64)
 end
-function modulusFactorDAC(rp::RedPitaya, channel, component, value)
-  command = string("RP:DAC:CH", Int(channel)-1, ":COMP",
-                   Int(component)-1, ":FAC ", Int64(value))
-  return send(rp, command)
-end
-
-function modulusDAC(rp::RedPitaya, channel, component)
-  command = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":MOD?")
-  return query(rp, command, Int64)
-end
-function modulusDAC(rp::RedPitaya, channel, component, value)
-  command = string("RP:DAC:CH", Int(channel)-1, ":COMP",
-                   Int(component)-1, ":MOD ", Int64(value))
-  return send(rp, command)
+function jumpSharpnessDAC(rp::RedPitaya, channel, value)
+  command = string("RP:DAC:CH", Int(channel)-1, ":JumpSharpness ", Float64(value))
+  send(rp, command)
 end
 
-#"STANDARD" or "RASTERIZED"
+#"STANDARD" or "AWG" (not yet supported)
 function modeDAC(rp::RedPitaya)
   modeDAC_(rp, 1)
   modeDAC_(rp, 2)
