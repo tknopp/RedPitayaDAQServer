@@ -21,8 +21,8 @@ bool verbose = false;
 
 int mmapfd;
 volatile uint32_t *slcr, *axi_hp0;
-void *dac_cfg, *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram;
-char *pdm_cfg;
+void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram;
+char *pdm_cfg, *dac_cfg;
 volatile int32_t *xadc;
 
 
@@ -146,7 +146,7 @@ uint16_t getAmplitude(int channel, int component) {
 		return -4;
 	}
 
-	uint16_t amplitude = *((uint16_t *)(dac_cfg + 2*component + 8*channel));
+	uint16_t amplitude = *((uint16_t *)(dac_cfg + 10 + 14*component + 66*channel));
 
 	return amplitude;
 }
@@ -164,10 +164,37 @@ int setAmplitude(uint16_t amplitude, int channel, int component) {
 		return -4;
 	}
 
-	*((uint16_t *)(dac_cfg + 2*component + 8*channel)) = amplitude;
+	*((uint16_t *)(dac_cfg + 10 + 14*component + 66*channel)) = amplitude;
 
 	return 0;
 }
+
+
+int16_t getOffset(int channel) {
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
+
+	int16_t offset = *((int16_t *)(dac_cfg + 66*channel));
+
+	return offset;
+}
+
+int setOffset(int16_t offset, int channel) {
+	if(offset < -8191 || offset >= 8192) {
+		return -2;
+	}
+
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
+
+	*((int16_t *)(dac_cfg + 66*channel)) = offset;
+
+	return 0;
+}
+
+
 
 double getFrequency(int channel, int component) {
     if(channel < 0 || channel > 1) {
@@ -178,11 +205,12 @@ double getFrequency(int channel, int component) {
         return -4;
     }
 
-    uint32_t register_value = *((uint32_t *)(dac_cfg + 16 + 4*component + 16*channel));
+    uint64_t mask = 0x0000ffffffffffff;
+    uint64_t register_value = *((uint64_t *)(dac_cfg + 12 + 14*component + 66*channel)) & mask;
     double frequency = -1;
     if(getDACMode() == DAC_MODE_STANDARD) {
         // Calculate frequency from phase increment
-        frequency = register_value*((double)BASE_FREQUENCY)/pow(2, 32);
+        frequency = register_value*((double)BASE_FREQUENCY)/pow(2, 48);
     } else if(getDACMode() == DAC_MODE_RASTERIZED) {
         int modulus = -1;
         if(channel == 0) {
@@ -214,13 +242,19 @@ int setFrequency(double frequency, int channel, int component)
 
     if(getDACMode() == DAC_MODE_STANDARD) {
         // Calculate phase increment
-        uint32_t phase_increment = (uint32_t)round(frequency*pow(2, 32)/((double)BASE_FREQUENCY));
+        uint64_t phase_increment = (uint64_t)round(frequency*pow(2, 48)/((double)BASE_FREQUENCY));
 		
-		if(verbose) {
-			printf("Phase_increment for frequency %f Hz is %04x.\n", frequency, phase_increment);
-		}
+	if(verbose) {
+           printf("Phase_increment for frequency %f Hz is %08llx.\n", frequency, phase_increment);
+	}
 
-        *((uint32_t *)(dac_cfg + 16 + 4*component + 16*channel)) = phase_increment;
+
+        uint64_t mask = 0x0000ffffffffffff;
+        uint64_t register_value = *((uint64_t *)(dac_cfg + 12 + 14*component + 66*channel));
+        
+	*((uint64_t *)(dac_cfg + 12 + 14*component + 66*channel)) = 
+		(register_value & ~mask) | (phase_increment & mask);
+
     } else if(getDACMode() == DAC_MODE_RASTERIZED) {
         int modulus = -1;
         if(channel == 0) {
@@ -282,7 +316,7 @@ int setModulusFactor(uint32_t modulus_factor, int channel, int component)
 		printf("Setting modulus factor to %d\n", modulus_factor);
 	}
 
-    *((uint32_t *)(dac_cfg + 16 + 4*component + 16*channel)) = modulus_factor;
+    *((uint32_t *)(dac_cfg + 4 + 20*(component + 4*channel))) = modulus_factor;
 
     return 0;
 }
@@ -298,11 +332,12 @@ double getPhase(int channel, int component)
     }
 
     // Get register value
-    uint32_t register_value = *((uint32_t *)(dac_cfg + 48 + 4*component + 16*channel));
+    uint64_t mask = 0x0000ffffffffffff;
+    uint64_t register_value = *((uint64_t *)(dac_cfg + 18 + 14*component + 66*channel)) & mask;
     double phase_factor = -1;
     if(getDACMode() == DAC_MODE_STANDARD) {
         // Calculate phase factor from phase offset
-        phase_factor = register_value/pow(2, 32);
+        phase_factor = register_value/pow(2, 48);
     } else if(getDACMode() == DAC_MODE_RASTERIZED) {
         int modulus = -1;
         if(channel == 0) {
@@ -334,13 +369,18 @@ int setPhase(double phase, int channel, int component)
 
     if(getDACMode() == DAC_MODE_STANDARD) {
         // Calculate phase offset
-        uint32_t phase_offset = (uint32_t)floor(phase_factor*pow(2, 32));
+        uint64_t phase_offset = (uint64_t)floor(phase_factor*pow(2, 48));
 		
-		if(verbose) {
-			printf("phase_offset for %f*2*pi rad is %04x.\n", phase_factor, phase_offset);
-		}
+	if(verbose) {
+		printf("phase_offset for %f*2*pi rad is %08llx.\n", phase_factor, phase_offset);
+	}
 
-        *((uint32_t *)(dac_cfg + 48 + 4*component + 16*channel)) = phase_offset;
+	uint64_t mask = 0x0000ffffffffffff;
+        uint64_t register_value = *((uint64_t *)(dac_cfg + 18 + 14*component + 66*channel));
+        
+	*((uint64_t *)(dac_cfg + 18 + 14*component + 66*channel)) = 
+		(register_value & ~mask) | (phase_offset & mask);
+
     } else if(getDACMode() == DAC_MODE_RASTERIZED) {
         int modulus = -1;
         if(channel == 0) {
@@ -356,7 +396,7 @@ int setPhase(double phase, int channel, int component)
 			printf("modulus_fraction for %f*2*pi rad is %04x.\n", phase_factor, modulus_fraction);
 		}
         
-        *((uint32_t *)(dac_cfg + 48 + 4*component + 16*channel)) = modulus_fraction;
+        *((uint32_t *)(dac_cfg + 12 + 20*(component + 4*channel))) = modulus_fraction;
     }
 
     return 0;
@@ -435,21 +475,12 @@ int setSignalType(int channel, int signal_type) {
     }
 	
     if((signal_type != SIGNAL_TYPE_SINE)
-		&& (signal_type != SIGNAL_TYPE_DC)
 		&& (signal_type != SIGNAL_TYPE_SQUARE)
 		&& (signal_type != SIGNAL_TYPE_TRIANGLE)
 		&& (signal_type != SIGNAL_TYPE_SAWTOOTH)) {
         return -2;
     }
-
-    uint64_t previousValue = *((uint64_t *)( dac_cfg + 640));
-    if(channel == 0) {
-	uint64_t mask = 0x07;
-        *((uint64_t *)(dac_cfg + 640)) = ((previousValue & (~mask)) | (signal_type << 0));
-    } else if(channel == 1) {
-        //uint32_t mask = 0x38;
-        //*((uint64_t *)(dac_cfg + 640)) = ((previousValue & (~mask)) | (signal_type << 3));
-    }
+   *((int16_t *)(dac_cfg + 2 + 66*channel)) = signal_type; 
     
     return 0;
 }
@@ -459,16 +490,8 @@ int getSignalType(int channel) {
         return -3;
     }
 
-    uint32_t value = *((uint32_t *)( dac_cfg + 640));
-    if(channel == 0) {
-	uint32_t mask = 0x07;
-	return ((value & mask) >> 0);
-    } else if(channel == 1) {
-        //uint32_t mask = 0x38;
-        //return ((value & mask) >> 3);
-    }
-    
-    return 0;
+    int value = (int) (*((int16_t *)( dac_cfg + 2 + 66*channel)));
+    return value;
 }
 
 
@@ -598,6 +621,16 @@ int setPDMAllValuesVolt(float voltage, int channel) {
 }
 
 
+int getPDMClockDivider() {
+    int32_t value = *((int32_t *)(cfg + 4));
+    return value*2;
+}
+
+int setPDMClockDivider(int divider) {
+    *((int32_t *)(cfg + 4)) = divider/2;
+
+    return 0;
+}
 
 uint64_t getPDMRegisterValue() {
     uint64_t value = *((uint64_t *)(pdm_cfg));

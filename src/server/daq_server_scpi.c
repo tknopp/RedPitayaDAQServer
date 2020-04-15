@@ -244,7 +244,7 @@ uint64_t getNumSamplesPerFrame() {
 }
 
 uint64_t getNumSamplesPerSubPeriod() {
-  return 4800 / getDecimation();
+  return getPDMClockDivider() / getDecimation();
 }
 
 uint64_t getNumSubPeriodsPerPeriod() {

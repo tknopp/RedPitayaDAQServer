@@ -75,6 +75,36 @@ static scpi_result_t RP_DAC_SetAmplitude(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_DAC_GetOffset(scpi_t * context) {
+    int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	SCPI_ResultInt16(context, getOffset(channel));
+
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetOffset(scpi_t * context) {
+    int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+	
+	int32_t offset;
+    if (!SCPI_ParamInt32(context, &offset, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+	
+	int result = setOffset((int16_t)offset, channel);
+	if (result < 0) {
+		return SCPI_RES_ERR;
+	}
+	
+    return SCPI_RES_OK;
+}
+
+
+
 static scpi_result_t RP_DAC_GetFrequency(scpi_t * context) {
     int32_t numbers[2];
 	SCPI_CommandNumbers(context, numbers, 2, 1);
@@ -264,7 +294,6 @@ static scpi_result_t RP_DAC_GetDACModulus(scpi_t * context) {
 scpi_choice_def_t signal_types[] = {
     {"SINE", SIGNAL_TYPE_SINE},
     {"SQUARE", SIGNAL_TYPE_SQUARE},
-    {"DC", SIGNAL_TYPE_DC},
     {"TRIANGLE", SIGNAL_TYPE_TRIANGLE},
     {"SAWTOOTH", SIGNAL_TYPE_SAWTOOTH},
     SCPI_CHOICE_LIST_END /* termination of option list */
@@ -372,6 +401,29 @@ static scpi_result_t RP_ADC_GetPeriodsPerFrame(scpi_t * context) {
 
 	return SCPI_RES_OK;
 }
+
+static scpi_result_t RP_ADC_SetPDMClockDivider(scpi_t * context) {
+	if(rxEnabled) {
+		return SCPI_RES_ERR;
+	}
+        int32_t clockDiv = 1;
+
+	if (!SCPI_ParamInt32(context, &clockDiv, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+	setPDMClockDivider(clockDiv);
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_ADC_GetPDMClockDivider(scpi_t * context) {
+	SCPI_ResultInt32(context, getPDMClockDivider());
+
+	return SCPI_RES_OK;
+}
+
+
 
 static scpi_result_t RP_ADC_SetNumSlowDACChan(scpi_t * context) {
         if(rxEnabled) {
@@ -913,6 +965,8 @@ const scpi_command_t scpi_commands[] = {
     {.pattern = "RP:Init", .callback = RP_Init,},
     {.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude?", .callback = RP_DAC_GetAmplitude,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude", .callback = RP_DAC_SetAmplitude,},
+    {.pattern = "RP:DAC:CHannel#:OFFset?", .callback = RP_DAC_GetOffset,},
+	{.pattern = "RP:DAC:CHannel#:OFFset", .callback = RP_DAC_SetOffset,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency?", .callback = RP_DAC_GetFrequency,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency", .callback = RP_DAC_SetFrequency,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FACtor?", .callback = RP_DAC_GetModulusFactor,},
@@ -949,6 +1003,8 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:ACQCONNect", .callback = RP_ADC_StartAcquisitionConnection,},
 	{.pattern = "RP:ADC:ACQSTATus", .callback = RP_ADC_SetAcquisitionStatus,},
 	{.pattern = "RP:ADC:ACQSTATus?", .callback = RP_ADC_GetAcquisitionStatus,},
+	{.pattern = "RP:PDM:ClockDivider", .callback = RP_ADC_SetPDMClockDivider,},
+	{.pattern = "RP:PDM:ClockDivider?", .callback = RP_ADC_GetPDMClockDivider,},
 	{.pattern = "RP:PDM:CHannel#:NextValue", .callback = RP_PDM_SetPDMNextValue,},
 	{.pattern = "RP:PDM:CHannel#:NextValueVolt", .callback = RP_PDM_SetPDMNextValueVolt,},
 	{.pattern = "RP:PDM:CHannel#:NextValue?", .callback = RP_PDM_GetPDMNextValue,},

@@ -26,9 +26,8 @@
 
 #define SIGNAL_TYPE_SINE 0
 #define SIGNAL_TYPE_SQUARE 1
-#define SIGNAL_TYPE_DC 2
-#define SIGNAL_TYPE_TRIANGLE 3
-#define SIGNAL_TYPE_SAWTOOTH 4
+#define SIGNAL_TYPE_TRIANGLE 2
+#define SIGNAL_TYPE_SAWTOOTH 3
 
 #define ADC_MODE_CONTINUOUS 0
 #define ADC_MODE_TRIGGERED 1
@@ -44,8 +43,8 @@ extern bool verbose;
 extern int mmapfd;
 extern volatile uint32_t *slcr, *axi_hp0;
 // FPGA registers that are memory mapped
-extern void *dac_cfg, *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *buf;
-extern char *pdm_cfg;
+extern void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *buf;
+extern char *pdm_cfg, *dac_cfg;
 
 extern uint16_t dac_channel_A_modulus[4];
 extern uint16_t dac_channel_B_modulus[4];
@@ -57,6 +56,8 @@ extern void loadBitstream();
 // fast DAC
 extern uint16_t getAmplitude(int, int);
 extern int setAmplitude(uint16_t, int, int);
+extern int16_t getOffset(int);
+extern int setOffset(int16_t, int);
 extern double getFrequency(int, int);
 extern int setFrequency(double, int, int);
 extern int getModulusFactor(int, int);
@@ -83,6 +84,8 @@ extern int resetRamWriter();
 extern int enableRamWriter();
 
 // slow IO
+extern int getPDMClockDivider();
+extern int setPDMClockDivider(int);
 extern int setPDMRegisterValue(uint64_t, int);
 extern int setPDMRegisterAllValues(uint64_t);
 extern int setPDMValue(uint16_t, int, int);
