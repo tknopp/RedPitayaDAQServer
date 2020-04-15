@@ -26,7 +26,6 @@ int main () {
   uint64_t wpTotal;
 
   init();
-  setDACMode(DAC_MODE_RASTERIZED);
   setWatchdogMode(OFF);  
 
   //setMasterTrigger(MASTER_TRIGGER_OFF);

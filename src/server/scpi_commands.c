@@ -138,36 +138,6 @@ static scpi_result_t RP_DAC_SetFrequency(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_GetModulusFactor(scpi_t * context) {
-    int32_t numbers[2];
-	SCPI_CommandNumbers(context, numbers, 2, 1);
-	int channel = numbers[0];
-	int component = numbers[1];
-
-	SCPI_ResultUInt32(context, getModulusFactor(channel, component));
-
-    return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_DAC_SetModulusFactor(scpi_t * context) {
-    int32_t numbers[2];
-	SCPI_CommandNumbers(context, numbers, 2, 1);
-	int channel = numbers[0];
-	int component = numbers[1];
-	
-	uint32_t modulus_factor;
-    if (!SCPI_ParamInt32(context, &modulus_factor, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-	
-	int result = setModulusFactor(modulus_factor, channel, component);
-	if (result < 0) {
-		return SCPI_RES_ERR;
-	}
-	
-    return SCPI_RES_OK;
-}
-
 static scpi_result_t RP_DAC_GetPhase(scpi_t * context) {
     int32_t numbers[2];
 	SCPI_CommandNumbers(context, numbers, 2, 1);
@@ -201,7 +171,7 @@ static scpi_result_t RP_DAC_SetPhase(scpi_t * context) {
 
 scpi_choice_def_t DAC_modes[] = {
     {"STANDARD", DAC_MODE_STANDARD},
-    {"RASTERIZED", DAC_MODE_RASTERIZED},
+    {"AWG", DAC_MODE_AWG},
     SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
@@ -261,36 +231,6 @@ static scpi_result_t RP_DAC_GetTriggerMode(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_ReconfigureDACModulus(scpi_t * context) {
-    int32_t numbers[2];
-	SCPI_CommandNumbers(context, numbers, 2, 1);
-	int channel = numbers[0];
-	int component = numbers[1];
-	
-	uint32_t modulus;
-    if (!SCPI_ParamInt32(context, &modulus, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-	
-	int result = reconfigureDACModulus(modulus, channel, component);
-	if (result < 0) {
-		return SCPI_RES_ERR;
-	}
-
-    return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_DAC_GetDACModulus(scpi_t * context) {
-    int32_t numbers[2];
-	SCPI_CommandNumbers(context, numbers, 2, 1);
-	int channel = numbers[0];
-	int component = numbers[1];
-	
-	SCPI_ResultUInt32(context, getDACModulus(channel, component));
-
-    return SCPI_RES_OK;
-}
-
 scpi_choice_def_t signal_types[] = {
     {"SINE", SIGNAL_TYPE_SINE},
     {"SQUARE", SIGNAL_TYPE_SQUARE},
@@ -330,6 +270,35 @@ static scpi_result_t RP_DAC_GetSignalType(scpi_t * context) {
 
     return SCPI_RES_OK;
 }
+
+static scpi_result_t RP_DAC_GetJumpSharpness(scpi_t * context) {
+    int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	SCPI_ResultDouble(context, getJumpSharpness(channel));
+
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetJumpSharpness(scpi_t * context) {
+    int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+	
+	double percentage;
+        if (!SCPI_ParamDouble(context, &percentage, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+	
+	int result = setJumpSharpness(channel, percentage);
+	if (result < 0) {
+		return SCPI_RES_ERR;
+	}
+	
+    return SCPI_RES_OK;
+}
+
 
 static scpi_result_t RP_ADC_SetDecimation(scpi_t * context) {
 	// Enforce changing the decimation to be only
@@ -969,16 +938,14 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:CHannel#:OFFset", .callback = RP_DAC_SetOffset,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency?", .callback = RP_DAC_GetFrequency,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency", .callback = RP_DAC_SetFrequency,},
-	{.pattern = "RP:DAC:CHannel#:COMPonent#:FACtor?", .callback = RP_DAC_GetModulusFactor,},
-	{.pattern = "RP:DAC:CHannel#:COMPonent#:FACtor", .callback = RP_DAC_SetModulusFactor,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:PHAse?", .callback = RP_DAC_GetPhase,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:PHAse", .callback = RP_DAC_SetPhase,},
 	{.pattern = "RP:DAC:MODe", .callback = RP_DAC_SetDACMode,},
 	{.pattern = "RP:DAC:MODe?", .callback = RP_DAC_GetDACMode,},
-	{.pattern = "RP:DAC:CHannel#:COMPonent#:MODulus", .callback = RP_DAC_ReconfigureDACModulus,},
-	{.pattern = "RP:DAC:CHannel#:COMPonent#:MODulus?", .callback = RP_DAC_GetDACModulus,},
 	{.pattern = "RP:DAC:CHannel#:SIGnaltype", .callback = RP_DAC_SetSignalType,},
 	{.pattern = "RP:DAC:CHannel#:SIGnaltype?", .callback = RP_DAC_GetSignalType,},
+	{.pattern = "RP:DAC:CHannel#:JumpSharpness", .callback = RP_DAC_SetJumpSharpness,},
+	{.pattern = "RP:DAC:CHannel#:JumpSharpness?", .callback = RP_DAC_GetJumpSharpness,},
 	{.pattern = "RP:ADC:SlowADC", .callback = RP_ADC_SetNumSlowADCChan,},
 	{.pattern = "RP:ADC:SlowADC?", .callback = RP_ADC_GetNumSlowADCChan,},
 	{.pattern = "RP:ADC:DECimation", .callback = RP_ADC_SetDecimation,},

@@ -21,7 +21,7 @@
 
 #define PDM_BUFF_SIZE 128  
 
-#define DAC_MODE_RASTERIZED 1
+#define DAC_MODE_AWG  1
 #define	DAC_MODE_STANDARD   0
 
 #define SIGNAL_TYPE_SINE 0
@@ -46,9 +46,6 @@ extern volatile uint32_t *slcr, *axi_hp0;
 extern void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *buf;
 extern char *pdm_cfg, *dac_cfg;
 
-extern uint16_t dac_channel_A_modulus[4];
-extern uint16_t dac_channel_B_modulus[4];
-
 // init routines
 extern int init();
 extern void loadBitstream();
@@ -60,16 +57,14 @@ extern int16_t getOffset(int);
 extern int setOffset(int16_t, int);
 extern double getFrequency(int, int);
 extern int setFrequency(double, int, int);
-extern int getModulusFactor(int, int);
-extern int setModulusFactor(uint32_t, int, int);
 extern double getPhase(int, int);
 extern int setPhase(double, int, int);
 extern int setDACMode(int);
 extern int getDACMode();
-extern int reconfigureDACModulus(int, int, int);
-extern int getDACModulus(int, int);
 extern int getSignalType(int);
 extern int setSignalType(int, int);
+extern float getJumpSharpness(int);
+extern int setJumpSharpness(int, float);
 
 // fast ADC
 extern int setDecimation(uint16_t decimation);
