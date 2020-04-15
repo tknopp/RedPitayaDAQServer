@@ -25,14 +25,13 @@ module signal_generator #
     input aresetn
 );
 
-    //reg [3:0] signal_type;
-    //wire dc_sign;
-	
-    //assign dc_sign_A = cfg_data[3];
+    reg [3:0] signal_type;
     
     reg [AXIS_TDATA_WIDTH-1:0] dac_out;
     reg [AXIS_TDATA_WIDTH-1:0] dac_out_temp;
     reg signed [DAC_WIDTH-1:0] phase;
+    reg signed [15:0] A, AIncrement;
+
 	
     always @(posedge clk)
     begin
@@ -41,47 +40,69 @@ module signal_generator #
             dac_out <= 0;
             dac_out_temp <= 0;
             phase <= 0;
+            A <= cfg_data[31:16];
+            AIncrement <= cfg_data[47:32]; // 2*8191 / (2*A);
+	    signal_type <= cfg_data[3:0];
         end
         else
         begin
 
-            //signal_type <= cfg_data[3:0];
             phase <= (s_axis_tdata_phase >>> (AXIS_TDATA_PHASE_WIDTH-DAC_WIDTH));
 
-            if (cfg_data == 0) // Sine
+            if (signal_type == 0) // Sine
             begin
                 dac_out_temp <= s_axis_tdata;
                 dac_out <= dac_out_temp;
 
             end
-            else if (cfg_data == 1) // Square wave
+            else if (signal_type == 1) // Trapezoid
             begin
-                if (phase < 0)
-                //if (s_axis_tdata > 4000)
+                if (phase < -A && phase > -(8191-A))
                 begin
-                    dac_out_temp <= -4000;//~0;
+                    dac_out_temp <= -8191;//~0;
                 end
-                else
+                else if (phase > A && phase < (8191-A) )
                 begin
-                    dac_out_temp <= 4000;
+                    dac_out_temp <= 8191;
+                end
+                else if (phase <= A && phase >= -A)
+                begin
+                    dac_out_temp <= AIncrement*phase;
+                end
+                else if (phase <= -(8191-A) )
+                begin
+                    dac_out_temp <= -AIncrement*(phase+8191);
+                end
+                else if (phase >= (8191-A))
+                begin
+                    dac_out_temp <= AIncrement*(8191-phase);
                 end
                 
                 dac_out <= dac_out_temp;
-	      end
-            else if (cfg_data == 2) // Triangle
+	    end
+            else if (signal_type == 2) // Triangle
             begin
-                if (phase < 0)
+                if (phase <= -4095 )
                 begin
-                    //dac_out_temp <= (phase >>> (AMPLITUDE_WIDTH-4));
-                    dac_out <= phase; //dac_out_temp_A-$signed({1'b0, amplitude_A});
+                    dac_out_temp <= -2*(phase+8191);
                 end
-                else
+                else if (phase >= 4095)
                 begin
-                    //dac_out_temp <= (phase >>> (AMPLITUDE_WIDTH-4));
-                    dac_out <= phase; //dac_out_temp_A-$signed({1'b0, amplitude_A});
+                    dac_out_temp <= 2*(8191-phase);
+	        end
+		else 
+                begin
+                    dac_out_temp <= 2*phase;
                 end
-            endsignal_gen1
-        end
+                
+                dac_out <= dac_out_temp;
+	    end
+            if (signal_type == 3) // Sawtooth
+            begin
+                dac_out_temp <= phase;
+                dac_out <= dac_out_temp;
+            end
+       end
     end
     
     assign m_axis_tvalid = 1;

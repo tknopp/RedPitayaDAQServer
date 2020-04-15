@@ -709,6 +709,10 @@ CONFIG.AXIS_TDATA_PHASE_WIDTH {48} \
 CONFIG.CFG_DATA_WIDTH {64} \
  ] $signal_generator_0
 
+  set_property -dict [ list \
+CONFIG.TDATA_NUM_BYTES {2} \
+ ] [get_bd_intf_pins /fourier_synth_standard/signal_compose1/signal_gen/signal_generator_0/m_axis]
+
   # Create instance: xlconcat_A_channel_1, and set properties
   set xlconcat_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_A_channel_1 ]
   set_property -dict [ list \
