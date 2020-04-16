@@ -342,6 +342,9 @@ static scpi_result_t RP_ADC_SetSamplesPerPeriod(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 
+
+        // Adapt the slowDAC frequency to match the period length
+	setPDMClockDivider(numSamplesPerPeriod*getDecimation());
 	return SCPI_RES_OK;
 }
 
