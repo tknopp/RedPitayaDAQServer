@@ -880,14 +880,14 @@ static scpi_result_t RP_InstantResetStatus(scpi_t * context) {
 
 static scpi_result_t RP_ADC_SetSlowDACLUT(scpi_t * context) {
 
-    if(numPeriodsPerFrame > 0 && numSlowDACChan > 0) {
+    if(getNumSlowDACPeriodsPerFrame() > 0 && numSlowDACChan > 0) {
     	if(slowDACLUT != NULL) {
             free(slowDACLUT);
         }
         printf("Allocating slowDACLUT\n");
-        slowDACLUT = (float *)malloc(numSlowDACChan * numPeriodsPerFrame * sizeof(float));
+        slowDACLUT = (float *)malloc(numSlowDACChan * getNumSlowDACPeriodsPerFrame() * sizeof(float));
    
-        int n = read(newdatasockfd,slowDACLUT,numSlowDACChan * numPeriodsPerFrame * sizeof(float));
+        int n = read(newdatasockfd,slowDACLUT,numSlowDACChan * getNumSlowDACPeriodsPerFrame() * sizeof(float));
         //for(int i=0;i<params.numFFChannels* params.numPatches; i++) printf(" %f ",ffValues[i]);
         //printf("\n");
         if (n < 0) perror("ERROR reading from socket");

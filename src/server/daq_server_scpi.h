@@ -38,7 +38,6 @@
 #define ACQUISITION_ON 1
 
 extern int numSamplesPerPeriod;
-extern int numSamplesPerSubPeriod;
 extern int numPeriodsPerFrame;
 extern int numSlowDACChan;
 extern int numSlowADCChan;
@@ -94,9 +93,8 @@ extern scpi_t scpi_context;
 extern uint64_t getCurrentFrameTotal();
 extern uint64_t getCurrentPeriodTotal();
 extern uint64_t getNumSamplesPerFrame();
-extern uint64_t getNumSubPeriodsPerPeriod();
-extern uint64_t getNumSubPeriodsPerFrame();
-extern uint64_t getNumSamplesPerSubPeriod();
+extern uint64_t getNumSlowDACPeriodsPerFrame();
+extern uint64_t getNumSamplesPerSlowDACPeriod();
 
 extern int createServer(int);
 extern int waitServer(int);

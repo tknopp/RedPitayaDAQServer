@@ -119,16 +119,12 @@ uint64_t getNumSamplesPerFrame() {
   return numSamplesPerPeriod * numPeriodsPerFrame;
 }
 
-uint64_t getNumSamplesPerSubPeriod() {
+uint64_t getNumSamplesPerSlowDACPeriod() {
   return getPDMClockDivider() / getDecimation();
 }
 
-uint64_t getNumSubPeriodsPerPeriod() {
-  return numSamplesPerPeriod / getNumSamplesPerSubPeriod();
-}
-
-uint64_t getNumSubPeriodsPerFrame() {
-  return getNumSubPeriodsPerPeriod() * numPeriodsPerFrame;
+uint64_t getNumSlowDACPeriodsPerFrame() {
+  return getNumSamplesPerFrame() / getNumSamplesPerSlowDACPeriod();
 }
 
 uint64_t getCurrentFrameTotal() {
