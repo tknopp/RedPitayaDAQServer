@@ -178,10 +178,11 @@ function readDataSlow_(rp::RedPitaya, startFrame, numFrames)
   numChan = numSlowADCChan(rp)
 
   command = string("RP:ADC:SLOW:FRAMES:DATA ",Int64(startFrame),",",Int64(numFrames))
-  send(rp, command)
+  #send(rp, command)
 
   @debug "read data ..."
-  u = read!(rp.dataSocket, Array{Float32}(undef, numChan * numFrames * numPeriods))
+  #u = read!(rp.dataSocket, Array{Float32}(undef, numChan * numFrames * numPeriods))
   @debug "read data!"
-  return reshape(u, numChan, numPeriods, numFrames)
+  #return reshape(u, numChan, numPeriods, numFrames)
+  return zeros(Float32, numChan, numPeriods, numFrames)
 end
