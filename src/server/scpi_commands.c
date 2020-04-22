@@ -23,11 +23,8 @@
 #include "scpi/scpi.h"
 
 #include "../lib/rp-daq-lib.h"
-#include "../server/scpi_commands.h"
+#include "../server/daq_server_scpi.h"
 
-int newdatasockfd;
-struct sockaddr_in newdatasockaddr;
-socklen_t newdatasocklen;
 
 static scpi_result_t RP_Init(scpi_t * context) {
 
@@ -577,7 +574,7 @@ static scpi_result_t RP_ADC_Slow_GetFrames(scpi_t * context) {
 	}
 	
 	//printf("invoke sendDataToHost()");
-	sendSlowFramesToHost(frame, numFrames);
+	//sendSlowFramesToHost(frame, numFrames);
 	
     return SCPI_RES_OK;
 }
