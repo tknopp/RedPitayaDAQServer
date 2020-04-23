@@ -36,7 +36,8 @@ function currentPeriod(rpc::RedPitayaCluster)
   return currentPeriods
 end
 
-for op in [:periodsPerFrame,  :samplesPerPeriod, :decimation, :keepAliveReset, :triggerMode]
+for op in [:periodsPerFrame,  :samplesPerPeriod, :decimation, :keepAliveReset,
+           :triggerMode, :slowDACPeriodsPerFrame]
   @eval $op(rpc::RedPitayaCluster) = $op(master(rpc))
   @eval begin
     function $op(rpc::RedPitayaCluster, value)

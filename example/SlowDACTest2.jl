@@ -8,11 +8,12 @@ modulus = 4800
 base_frequency = 125000000
 periods_per_step = 1
 samples_per_period = div(modulus, dec)*periods_per_step
-periods_per_frame = div(10, periods_per_step) # about 0.5 s frame length
+periods_per_frame = div(20, periods_per_step) # about 0.5 s frame length
 
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
 periodsPerFrame(rp, periods_per_frame)
+slowDACPeriodsPerFrame(rp, periods_per_frame)
 numSlowDACChan(rp, 1)
 lut = collect(range(0,1,length=periods_per_frame))
 setSlowDACLUT(rp, lut)
@@ -26,9 +27,7 @@ phaseDAC(rp, 1, 1, 0.0 ) # Phase has to be given in between 0 and 1
 ramWriterMode(rp, "TRIGGERED")
 triggerMode(rp, "INTERNAL")
 
-numTrials = 50
-
-
+numTrials = 30
 
 signals = zeros(samples_per_period*periods_per_frame, 2, numTrials)
 
