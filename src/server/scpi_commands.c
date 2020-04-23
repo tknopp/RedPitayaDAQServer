@@ -23,11 +23,8 @@
 #include "scpi/scpi.h"
 
 #include "../lib/rp-daq-lib.h"
-#include "../server/scpi_commands.h"
+#include "../server/daq_server_scpi.h"
 
-int newdatasockfd;
-struct sockaddr_in newdatasockaddr;
-socklen_t newdatasocklen;
 
 static scpi_result_t RP_Init(scpi_t * context) {
 
@@ -138,36 +135,6 @@ static scpi_result_t RP_DAC_SetFrequency(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_GetModulusFactor(scpi_t * context) {
-    int32_t numbers[2];
-	SCPI_CommandNumbers(context, numbers, 2, 1);
-	int channel = numbers[0];
-	int component = numbers[1];
-
-	SCPI_ResultUInt32(context, getModulusFactor(channel, component));
-
-    return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_DAC_SetModulusFactor(scpi_t * context) {
-    int32_t numbers[2];
-	SCPI_CommandNumbers(context, numbers, 2, 1);
-	int channel = numbers[0];
-	int component = numbers[1];
-	
-	uint32_t modulus_factor;
-    if (!SCPI_ParamInt32(context, &modulus_factor, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-	
-	int result = setModulusFactor(modulus_factor, channel, component);
-	if (result < 0) {
-		return SCPI_RES_ERR;
-	}
-	
-    return SCPI_RES_OK;
-}
-
 static scpi_result_t RP_DAC_GetPhase(scpi_t * context) {
     int32_t numbers[2];
 	SCPI_CommandNumbers(context, numbers, 2, 1);
@@ -201,7 +168,7 @@ static scpi_result_t RP_DAC_SetPhase(scpi_t * context) {
 
 scpi_choice_def_t DAC_modes[] = {
     {"STANDARD", DAC_MODE_STANDARD},
-    {"RASTERIZED", DAC_MODE_RASTERIZED},
+    {"AWG", DAC_MODE_AWG},
     SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
@@ -261,36 +228,6 @@ static scpi_result_t RP_DAC_GetTriggerMode(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_ReconfigureDACModulus(scpi_t * context) {
-    int32_t numbers[2];
-	SCPI_CommandNumbers(context, numbers, 2, 1);
-	int channel = numbers[0];
-	int component = numbers[1];
-	
-	uint32_t modulus;
-    if (!SCPI_ParamInt32(context, &modulus, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-	
-	int result = reconfigureDACModulus(modulus, channel, component);
-	if (result < 0) {
-		return SCPI_RES_ERR;
-	}
-
-    return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_DAC_GetDACModulus(scpi_t * context) {
-    int32_t numbers[2];
-	SCPI_CommandNumbers(context, numbers, 2, 1);
-	int channel = numbers[0];
-	int component = numbers[1];
-	
-	SCPI_ResultUInt32(context, getDACModulus(channel, component));
-
-    return SCPI_RES_OK;
-}
-
 scpi_choice_def_t signal_types[] = {
     {"SINE", SIGNAL_TYPE_SINE},
     {"SQUARE", SIGNAL_TYPE_SQUARE},
@@ -330,6 +267,35 @@ static scpi_result_t RP_DAC_GetSignalType(scpi_t * context) {
 
     return SCPI_RES_OK;
 }
+
+static scpi_result_t RP_DAC_GetJumpSharpness(scpi_t * context) {
+    int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	SCPI_ResultDouble(context, getJumpSharpness(channel));
+
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetJumpSharpness(scpi_t * context) {
+    int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+	
+	double percentage;
+        if (!SCPI_ParamDouble(context, &percentage, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+	
+	int result = setJumpSharpness(channel, percentage);
+	if (result < 0) {
+		return SCPI_RES_ERR;
+	}
+	
+    return SCPI_RES_OK;
+}
+
 
 static scpi_result_t RP_ADC_SetDecimation(scpi_t * context) {
 	// Enforce changing the decimation to be only
@@ -373,6 +339,7 @@ static scpi_result_t RP_ADC_SetSamplesPerPeriod(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 
+
 	return SCPI_RES_OK;
 }
 
@@ -401,6 +368,32 @@ static scpi_result_t RP_ADC_GetPeriodsPerFrame(scpi_t * context) {
 
 	return SCPI_RES_OK;
 }
+
+static scpi_result_t RP_ADC_SetSlowDACPeriodsPerFrame(scpi_t * context) {
+	// Enforce changing the periods per frame to be only
+	// possible while not acquiring data
+	if(rxEnabled) {
+		return SCPI_RES_ERR;
+	}
+
+	if (!SCPI_ParamInt32(context, &numSlowDACPeriodsPerFrame, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+
+        // Adapt the slowDAC frequency to match the period length
+	setPDMClockDivider(getNumSamplesPerSlowDACPeriod()*getDecimation());
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_ADC_GetSlowDACPeriodsPerFrame(scpi_t * context) {
+	SCPI_ResultInt32(context, numSlowDACPeriodsPerFrame);
+
+	return SCPI_RES_OK;
+}
+
+
 
 static scpi_result_t RP_ADC_SetPDMClockDivider(scpi_t * context) {
 	if(rxEnabled) {
@@ -473,6 +466,8 @@ static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
 	 while(!enableSlowDACAck)
 	 {
            usleep(1.0);
+	   //sleep(1.0);
+	   //printf("WAIT FOR SLOW DACAck\n");
 	 }
          SCPI_ResultInt64(context, frameSlowDACEnabled);
        } else
@@ -603,7 +598,7 @@ static scpi_result_t RP_ADC_Slow_GetFrames(scpi_t * context) {
 	}
 	
 	//printf("invoke sendDataToHost()");
-	sendSlowFramesToHost(frame, numFrames);
+	//sendSlowFramesToHost(frame, numFrames);
 	
     return SCPI_RES_OK;
 }
@@ -909,14 +904,14 @@ static scpi_result_t RP_InstantResetStatus(scpi_t * context) {
 
 static scpi_result_t RP_ADC_SetSlowDACLUT(scpi_t * context) {
 
-    if(numPeriodsPerFrame > 0 && numSlowDACChan > 0) {
+    if(numSlowDACPeriodsPerFrame > 0 && numSlowDACChan > 0) {
     	if(slowDACLUT != NULL) {
             free(slowDACLUT);
         }
         printf("Allocating slowDACLUT\n");
-        slowDACLUT = (float *)malloc(numSlowDACChan * numPeriodsPerFrame * sizeof(float));
+        slowDACLUT = (float *)malloc(numSlowDACChan * numSlowDACPeriodsPerFrame * sizeof(float));
    
-        int n = read(newdatasockfd,slowDACLUT,numSlowDACChan * numPeriodsPerFrame * sizeof(float));
+        int n = read(newdatasockfd,slowDACLUT,numSlowDACChan * numSlowDACPeriodsPerFrame * sizeof(float));
         //for(int i=0;i<params.numFFChannels* params.numPatches; i++) printf(" %f ",ffValues[i]);
         //printf("\n");
         if (n < 0) perror("ERROR reading from socket");
@@ -969,16 +964,14 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:CHannel#:OFFset", .callback = RP_DAC_SetOffset,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency?", .callback = RP_DAC_GetFrequency,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency", .callback = RP_DAC_SetFrequency,},
-	{.pattern = "RP:DAC:CHannel#:COMPonent#:FACtor?", .callback = RP_DAC_GetModulusFactor,},
-	{.pattern = "RP:DAC:CHannel#:COMPonent#:FACtor", .callback = RP_DAC_SetModulusFactor,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:PHAse?", .callback = RP_DAC_GetPhase,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:PHAse", .callback = RP_DAC_SetPhase,},
 	{.pattern = "RP:DAC:MODe", .callback = RP_DAC_SetDACMode,},
 	{.pattern = "RP:DAC:MODe?", .callback = RP_DAC_GetDACMode,},
-	{.pattern = "RP:DAC:CHannel#:COMPonent#:MODulus", .callback = RP_DAC_ReconfigureDACModulus,},
-	{.pattern = "RP:DAC:CHannel#:COMPonent#:MODulus?", .callback = RP_DAC_GetDACModulus,},
 	{.pattern = "RP:DAC:CHannel#:SIGnaltype", .callback = RP_DAC_SetSignalType,},
 	{.pattern = "RP:DAC:CHannel#:SIGnaltype?", .callback = RP_DAC_GetSignalType,},
+	{.pattern = "RP:DAC:CHannel#:JumpSharpness", .callback = RP_DAC_SetJumpSharpness,},
+	{.pattern = "RP:DAC:CHannel#:JumpSharpness?", .callback = RP_DAC_GetJumpSharpness,},
 	{.pattern = "RP:ADC:SlowADC", .callback = RP_ADC_SetNumSlowADCChan,},
 	{.pattern = "RP:ADC:SlowADC?", .callback = RP_ADC_GetNumSlowADCChan,},
 	{.pattern = "RP:ADC:DECimation", .callback = RP_ADC_SetDecimation,},
@@ -995,6 +988,8 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:SlowDACLostSteps?", .callback = RP_ADC_GetSlowDACLostSteps,},
 	{.pattern = "RP:ADC:FRAme", .callback = RP_ADC_SetPeriodsPerFrame,},
 	{.pattern = "RP:ADC:FRAme?", .callback = RP_ADC_GetPeriodsPerFrame,},
+	{.pattern = "RP:ADC:SlowDACPeriodsPerFrame", .callback = RP_ADC_SetSlowDACPeriodsPerFrame,},
+	{.pattern = "RP:ADC:SlowDACPeriodsPerFrame?", .callback = RP_ADC_GetSlowDACPeriodsPerFrame,},
 	{.pattern = "RP:ADC:FRAmes:CURRent?", .callback = RP_ADC_GetCurrentFrame,},
 	{.pattern = "RP:ADC:WP:CURRent?", .callback = RP_ADC_GetCurrentWP,},
 	{.pattern = "RP:ADC:FRAmes:DATa", .callback = RP_ADC_GetFrames,},

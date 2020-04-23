@@ -26,7 +26,6 @@ int main () {
   uint64_t wpTotal, wpPDMTotal, wpPDMTotalOld;
 
   init();
-  setDACMode(DAC_MODE_RASTERIZED);
   setWatchdogMode(OFF);  
 
   setRAMWriterMode(ADC_MODE_TRIGGERED);
