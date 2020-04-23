@@ -39,7 +39,7 @@ float getSlowDACVal(int period, int i,
   int frame = period / numSlowDACPeriodsPerFrame + frameRampUpStarted;
 
   // Within regular LUT
-  if(frameSlowDACEnabled <= frame < frameSlowDACEnabled - numSlowDACFramesEnabled)
+  if(frameSlowDACEnabled <= frame < frameSlowDACEnabled + numSlowDACFramesEnabled)
   {
     val = slowDACLUT[(period % numSlowDACPeriodsPerFrame)*numSlowDACChan+i];
   }
@@ -101,7 +101,6 @@ void* controlThread(void* ch)
   bool firstCycle;
 
   int64_t data_read_total;
-  int64_t numSamplesPerFrame; 
   int64_t frameRampUpStarted=-1; 
   int64_t slowDACPeriodRampUpStarted=-1; 
   int enableSlowDACLocal=0;
@@ -122,8 +121,6 @@ void* controlThread(void* ch)
       data_read_total = 0; 
       oldPeriodTotal = 0;
       oldSlowDACPeriodTotal = 0;
-
-      numSamplesPerFrame = numSamplesPerPeriod * numPeriodsPerFrame; 
 
       wp_old = startWP;
 
@@ -151,7 +148,7 @@ void* controlThread(void* ch)
 
           currentSlowDACPeriodTotal = data_read_total / getNumSamplesPerSlowDACPeriod();
           currentPeriodTotal = data_read_total / numSamplesPerPeriod;
-          currentFrameTotal = data_read_total / numSamplesPerFrame;
+          currentFrameTotal = data_read_total / getNumSamplesPerFrame();
 
           if(currentSlowDACPeriodTotal > oldSlowDACPeriodTotal + (lookahead-lookprehead) && 
 			  numPeriodsPerFrame > 1) 
@@ -187,7 +184,7 @@ void* controlThread(void* ch)
             {
 	      // we are now lookprehead subperiods or less before the next frame
               double bandwidth = 125e6 / getDecimation();
-              double period = numSamplesPerFrame / bandwidth;
+              double period = getNumSamplesPerFrame() / bandwidth;
               rampingTotalFrames = ceil(slowDACRampUpTime / period);
               rampingTotalPeriods = ceil(slowDACRampUpTime / (getNumSamplesPerSlowDACPeriod() / bandwidth) );
               rampingPeriods = ceil(slowDACRampUpTime*slowDACFractionRampUp 

@@ -209,7 +209,7 @@ int main(int argc, char** argv) {
   while (true) 
   {
     printf("\033[0m");
-    printf("Waiting for new connection\n");
+    //printf("Waiting for new connection\n");
     clilen = sizeof (cliaddr);
     int clifdTmp = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
 
