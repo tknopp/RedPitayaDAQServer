@@ -124,7 +124,8 @@ uint64_t getNumSamplesPerSlowDACPeriod() {
 }
 
 uint64_t getNumSlowDACPeriodsPerFrame() {
-  return getNumSamplesPerFrame() / getNumSamplesPerSlowDACPeriod();
+  //return getNumSamplesPerFrame() / getNumSamplesPerSlowDACPeriod();
+  return numPeriodsPerFrame;
 }
 
 uint64_t getCurrentFrameTotal() {
