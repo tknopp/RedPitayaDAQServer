@@ -507,6 +507,8 @@ int getPDMClockDivider() {
 }
 
 int setPDMClockDivider(int divider) {
+    printf("SetPDMClockDivider to %d\n", divider);
+
     *((int32_t *)(cfg + 4)) = divider/2;
 
     return 0;
@@ -667,12 +669,15 @@ int getMasterTrigger() {
 int setMasterTrigger(int mode) {
     if(mode == OFF) {
         setKeepAliveReset(ON);
+	double waitTime = getPDMClockDivider() / 125e6;
+	usleep( 10*waitTime * 1000000);
 	if(getTriggerMode() == TRIGGER_MODE_INTERNAL)
 	{
           *((uint8_t *)(cfg + 1)) &= ~32;
 	} else {
           *((uint8_t *)(cfg + 1)) &= ~4;
 	}
+	usleep( 10*waitTime * 1000000);
         setRAMWriterMode(ADC_MODE_TRIGGERED);
         setKeepAliveReset(OFF);
     } else if(mode == ON) {

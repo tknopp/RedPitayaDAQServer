@@ -215,7 +215,7 @@ void* controlThread(void* ch)
             {
 	      for(int y=lookprehead; y<lookahead; y++) // lookahead
 	      {
-		int64_t localPeriod = (currentSlowDACPeriodTotal-slowDACPeriodRampUpStarted+y); 
+		int64_t localPeriod = (currentSlowDACPeriodTotal - slowDACPeriodRampUpStarted + y); 
                 float val = getSlowDACVal(localPeriod, i, 
 		                 rampingTotalFrames, rampingTotalPeriods, rampingPeriods,
 		                 frameRampUpStarted, frameSlowDACEnabled,
@@ -226,8 +226,7 @@ void* controlThread(void* ch)
 		int status = 0;          
                 if(enableSlowDACLocal)
 	        {
- 		  int64_t currSlowDACPeriod = currentSlowDACPeriodTotal - slowDACPeriodRampUpStarted;
-	  	  int64_t currPDMIndex = (wpPDMStart + currSlowDACPeriod + y) % PDM_BUFF_SIZE;
+	  	  int64_t currPDMIndex = (wpPDMStart + localPeriod) % PDM_BUFF_SIZE;
                   status = setPDMValueVolt(val, i, currPDMIndex);
 	        }
 
@@ -242,7 +241,7 @@ void* controlThread(void* ch)
           oldSlowDACPeriodTotal = currentSlowDACPeriodTotal;
         } else 
         {
-          printf("Counter not increased %d %d \n", wp_old, wp);
+          //printf("Counter not increased %d %d \n", wp_old, wp);
           usleep(2);
         }
         usleep(20);
