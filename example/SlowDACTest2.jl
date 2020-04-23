@@ -1,7 +1,7 @@
 using RedPitayaDAQServer
 using PyPlot
 
-rp = RedPitaya("rp-f04972.local")
+rp = RedPitaya("192.168.178.46")
 
 dec = 64
 modulus = 4800
@@ -15,7 +15,6 @@ samplesPerPeriod(rp, samples_per_period)
 periodsPerFrame(rp, periods_per_frame)
 numSlowDACChan(rp, 1)
 lut = collect(range(0,1,length=periods_per_frame))
-#lut[1:2:end] .= 0
 setSlowDACLUT(rp, lut)
 
 modeDAC(rp, "STANDARD")
@@ -25,7 +24,7 @@ println(" frequency = $(frequencyDAC(rp,1,1))")
 amplitudeDAC(rp, 1, 1, 4000)
 phaseDAC(rp, 1, 1, 0.0 ) # Phase has to be given in between 0 and 1
 ramWriterMode(rp, "TRIGGERED")
-triggerMode(rp, "EXTERNAL")
+triggerMode(rp, "INTERNAL")
 
 numTrials = 50
 

@@ -1,7 +1,8 @@
 export decimation, samplesPerPeriod, periodsPerFrame, masterTrigger, currentFrame,
      currentPeriod, ramWriterMode, connectADC, startADC, stopADC, readData,
      numSlowDACChan, setSlowDACLUT, enableSlowDAC, currentWP, slowDACInterpolation,
-     numSlowADCChan, numLostStepsSlowADC, bufferSize, keepAliveReset, triggerMode
+     numSlowADCChan, numLostStepsSlowADC, bufferSize, keepAliveReset, triggerMode,
+     slowDACPeriodsPerFrame
 
 
 decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
@@ -53,6 +54,11 @@ periodsPerFrame(rp::RedPitaya) = query(rp,"RP:ADC:FRAme?", Int64)
 function periodsPerFrame(rp::RedPitaya, value)
   rp.periodsPerFrame = Int64(value)
   send(rp, string("RP:ADC:FRAme ", rp.periodsPerFrame))
+end
+
+slowDACPeriodsPerFrame(rp::RedPitaya) = query(rp,"RP:ADC:SlowDACPeriodsPerFrame?", Int64)
+function slowDACPeriodsPerFrame(rp::RedPitaya, value)
+  send(rp, string("RP:ADC:SlowDACPeriodsPerFrame ", value))
 end
 
 currentFrame(rp::RedPitaya) = query(rp,"RP:ADC:FRAMES:CURRENT?", Int64)
@@ -133,7 +139,7 @@ function readData(rp::RedPitaya, startFrame, numFrames, numBlockAverages=1)
   l=1
 
   numFramesInMemoryBuffer = bufferSize(rp) / numSamp
-  @info "numFramesInMemoryBuffer = $numFramesInMemoryBuffer"
+  @debug "numFramesInMemoryBuffer = $numFramesInMemoryBuffer"
 
   # This is a wild guess for a good chunk size
   chunkSize = max(1,  round(Int, 1000000 / numSampPerFrame)  )

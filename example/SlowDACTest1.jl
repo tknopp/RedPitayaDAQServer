@@ -5,8 +5,6 @@ using ProgressMeter
 #rp = RedPitayaCluster(["rp-f04972.local","rp-f044d6.local"])
 rp = RedPitayaCluster(["rp-f04972.local"])
 
-@info bufferSize(rp)
-
 dec = 32
 modulus = 4800
 base_frequency = 125000000
