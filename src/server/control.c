@@ -36,20 +36,19 @@ float getSlowDACVal(int period, int i,
 {
   float val = 0.0;
 
-  //int period = subPeriod / getNumSlowDACPeriodsPerFrame();
-  int frame = period / getNumSlowDACPeriodsPerFrame() + frameRampUpStarted;
+  int frame = period / numSlowDACPeriodsPerFrame + frameRampUpStarted;
 
   // Within regular LUT
   if(frameSlowDACEnabled <= frame < frameSlowDACEnabled - numSlowDACFramesEnabled)
   {
-    val = slowDACLUT[(period % getNumSlowDACPeriodsPerFrame())*numSlowDACChan+i];
+    val = slowDACLUT[(period % numSlowDACPeriodsPerFrame)*numSlowDACChan+i];
   }
 
   // Ramp up phase
   if(frameRampUpStarted <= frame < frameSlowDACEnabled) 
   {
     int64_t currRampUpPeriod = period;
-    int64_t totalPeriodsInRampUpFrames = getNumSlowDACPeriodsPerFrame()*rampingTotalFrames;
+    int64_t totalPeriodsInRampUpFrames = numSlowDACPeriodsPerFrame*rampingTotalFrames;
     int64_t stepAfterRampUp = totalPeriodsInRampUpFrames -  
 				                     (rampingTotalPeriods - rampingPeriods);
     if( currRampUpPeriod < totalPeriodsInRampUpFrames - rampingTotalPeriods )
@@ -60,7 +59,7 @@ float getSlowDACVal(int period, int i,
       int64_t currRampUpStep = currRampUpPeriod - 
                    (totalPeriodsInRampUpFrames - rampingTotalPeriods);
                 
-       val = slowDACLUT[ (stepAfterRampUp % getNumSlowDACPeriodsPerFrame()) *numSlowDACChan+i] *
+       val = slowDACLUT[ (stepAfterRampUp % numSlowDACPeriodsPerFrame) *numSlowDACChan+i] *
 	(0.9640+tanh(-2.0 + (currRampUpStep / ((float)rampingPeriods-1))*4.0))/1.92806;
      }
    }
@@ -68,7 +67,7 @@ float getSlowDACVal(int period, int i,
    // Ramp down phase
    if(frame >= frameSlowDACEnabled + numSlowDACFramesEnabled) 
    {
-      int64_t totalPeriodsFromRampUp = getNumSlowDACPeriodsPerFrame() *
+      int64_t totalPeriodsFromRampUp = numSlowDACPeriodsPerFrame *
 	                               (rampingTotalFrames+numSlowDACFramesEnabled);
       int64_t currRampDownPeriod = period - totalPeriodsFromRampUp;
 		
@@ -80,7 +79,7 @@ float getSlowDACVal(int period, int i,
         int64_t currRampDownStep = currRampDownPeriod - 
 	                   (rampingTotalPeriods - rampingPeriods);
                   
-	val = slowDACLUT[ (currRampDownPeriod % getNumSlowDACPeriodsPerFrame()) *numSlowDACChan+i] *
+	val = slowDACLUT[ (currRampDownPeriod % numSlowDACPeriodsPerFrame) *numSlowDACChan+i] *
 	(0.9640+tanh(-2.0 + ((rampingPeriods-currRampDownStep-1) / ((float)rampingPeriods-1))*4.0))/1.92806;
       }
     }
@@ -165,7 +164,7 @@ void* controlThread(void* ch)
           }
           if(currentSlowDACPeriodTotal > oldSlowDACPeriodTotal) 
           {
-            int currSlowDACStep = currentSlowDACPeriodTotal % getNumSlowDACPeriodsPerFrame();
+            int currSlowDACStep = currentSlowDACPeriodTotal % numSlowDACPeriodsPerFrame;
 
             if(enableSlowDACLocal && numSlowDACFramesEnabled>0 && frameSlowDACEnabled >0)
 	    {
@@ -183,7 +182,7 @@ void* controlThread(void* ch)
 	    }
 
             if(enableSlowDAC && !enableSlowDACAck && (wpPDMOld == wpPDM) && (
-			    ( currSlowDACStep > getNumSlowDACPeriodsPerFrame()-lookprehead-1 ) || 
+			    ( currSlowDACStep > numSlowDACPeriodsPerFrame-lookprehead-1 ) || 
 			     (numPeriodsPerFrame == 1) )) 
             {
 	      // we are now lookprehead subperiods or less before the next frame
@@ -197,7 +196,7 @@ void* controlThread(void* ch)
               //printf("rampUpFrames = %d, rampUpPeriods = %d \n", rampUpTotalFrames,rampUpPeriods);
 
 	      frameRampUpStarted = currentFrameTotal+1;
-	      int64_t numSlowDACPeriodsUntilEnd = getNumSlowDACPeriodsPerFrame() - currSlowDACStep;
+	      int64_t numSlowDACPeriodsUntilEnd = numSlowDACPeriodsPerFrame - currSlowDACStep;
 	      slowDACPeriodRampUpStarted = currentSlowDACPeriodTotal + numSlowDACPeriodsUntilEnd;
 	      enableSlowDACLocal = true;
 	      frameSlowDACEnabled = currentFrameTotal + rampingTotalFrames + 1;

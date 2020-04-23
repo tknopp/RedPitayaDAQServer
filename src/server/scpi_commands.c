@@ -340,8 +340,6 @@ static scpi_result_t RP_ADC_SetSamplesPerPeriod(scpi_t * context) {
 	}
 
 
-        // Adapt the slowDAC frequency to match the period length
-	setPDMClockDivider(numSamplesPerPeriod*getDecimation());
 	return SCPI_RES_OK;
 }
 
@@ -370,6 +368,32 @@ static scpi_result_t RP_ADC_GetPeriodsPerFrame(scpi_t * context) {
 
 	return SCPI_RES_OK;
 }
+
+static scpi_result_t RP_ADC_SetSlowDACPeriodsPerFrame(scpi_t * context) {
+	// Enforce changing the periods per frame to be only
+	// possible while not acquiring data
+	if(rxEnabled) {
+		return SCPI_RES_ERR;
+	}
+
+	if (!SCPI_ParamInt32(context, &numSlowDACPeriodsPerFrame, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+
+        // Adapt the slowDAC frequency to match the period length
+	setPDMClockDivider(getNumSamplesPerSlowDACPeriod()*getDecimation());
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_ADC_GetSlowDACPeriodsPerFrame(scpi_t * context) {
+	SCPI_ResultInt32(context, numSlowDACPeriodsPerFrame);
+
+	return SCPI_RES_OK;
+}
+
+
 
 static scpi_result_t RP_ADC_SetPDMClockDivider(scpi_t * context) {
 	if(rxEnabled) {
@@ -880,14 +904,14 @@ static scpi_result_t RP_InstantResetStatus(scpi_t * context) {
 
 static scpi_result_t RP_ADC_SetSlowDACLUT(scpi_t * context) {
 
-    if(getNumSlowDACPeriodsPerFrame() > 0 && numSlowDACChan > 0) {
+    if(numSlowDACPeriodsPerFrame > 0 && numSlowDACChan > 0) {
     	if(slowDACLUT != NULL) {
             free(slowDACLUT);
         }
         printf("Allocating slowDACLUT\n");
-        slowDACLUT = (float *)malloc(numSlowDACChan * getNumSlowDACPeriodsPerFrame() * sizeof(float));
+        slowDACLUT = (float *)malloc(numSlowDACChan * numSlowDACPeriodsPerFrame * sizeof(float));
    
-        int n = read(newdatasockfd,slowDACLUT,numSlowDACChan * getNumSlowDACPeriodsPerFrame() * sizeof(float));
+        int n = read(newdatasockfd,slowDACLUT,numSlowDACChan * numSlowDACPeriodsPerFrame * sizeof(float));
         //for(int i=0;i<params.numFFChannels* params.numPatches; i++) printf(" %f ",ffValues[i]);
         //printf("\n");
         if (n < 0) perror("ERROR reading from socket");
@@ -964,6 +988,8 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:SlowDACLostSteps?", .callback = RP_ADC_GetSlowDACLostSteps,},
 	{.pattern = "RP:ADC:FRAme", .callback = RP_ADC_SetPeriodsPerFrame,},
 	{.pattern = "RP:ADC:FRAme?", .callback = RP_ADC_GetPeriodsPerFrame,},
+	{.pattern = "RP:ADC:SlowDACPeriodsPerFrame", .callback = RP_ADC_SetSlowDACPeriodsPerFrame,},
+	{.pattern = "RP:ADC:SlowDACPeriodsPerFrame?", .callback = RP_ADC_GetSlowDACPeriodsPerFrame,},
 	{.pattern = "RP:ADC:FRAmes:CURRent?", .callback = RP_ADC_GetCurrentFrame,},
 	{.pattern = "RP:ADC:WP:CURRent?", .callback = RP_ADC_GetCurrentWP,},
 	{.pattern = "RP:ADC:FRAmes:DATa", .callback = RP_ADC_GetFrames,},

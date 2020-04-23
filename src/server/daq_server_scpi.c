@@ -60,6 +60,7 @@
 
 int numSamplesPerPeriod = 5000;
 int numPeriodsPerFrame = 20;
+int numSlowDACPeriodsPerFrame = 20;
 int numSlowDACChan = 0;
 int numSlowADCChan = 0;
 int numSlowDACFramesEnabled = 0;
@@ -120,12 +121,7 @@ uint64_t getNumSamplesPerFrame() {
 }
 
 uint64_t getNumSamplesPerSlowDACPeriod() {
-  return getPDMClockDivider() / getDecimation();
-}
-
-uint64_t getNumSlowDACPeriodsPerFrame() {
-  //return getNumSamplesPerFrame() / getNumSamplesPerSlowDACPeriod();
-  return numPeriodsPerFrame;
+  return getNumSamplesPerFrame() / numSlowDACPeriodsPerFrame;
 }
 
 uint64_t getCurrentFrameTotal() {
