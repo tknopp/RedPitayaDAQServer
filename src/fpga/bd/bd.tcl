@@ -709,10 +709,6 @@ CONFIG.AXIS_TDATA_PHASE_WIDTH {48} \
 CONFIG.CFG_DATA_WIDTH {64} \
  ] $signal_generator_0
 
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {2} \
- ] [get_bd_intf_pins /fourier_synth_standard/signal_compose1/signal_gen/signal_generator_0/m_axis]
-
   # Create instance: xlconcat_A_channel_1, and set properties
   set xlconcat_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_A_channel_1 ]
   set_property -dict [ list \
@@ -1325,10 +1321,6 @@ CONFIG.DOUT_WIDTH {64} \
 CONFIG.AXIS_TDATA_PHASE_WIDTH {48} \
 CONFIG.CFG_DATA_WIDTH {64} \
  ] $signal_generator_0
-
-  set_property -dict [ list \
-CONFIG.TDATA_NUM_BYTES {2} \
- ] [get_bd_intf_pins /fourier_synth_standard/signal_compose/signal_gen/signal_generator_0/m_axis]
 
   # Create instance: xlconcat_A_channel_1, and set properties
   set xlconcat_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_A_channel_1 ]
@@ -2262,6 +2254,7 @@ CONFIG.Sync_Threshold_Output {false} \
   set cfg_clk_div_0 [ create_bd_cell -type ip -vlnv referencedesigner.com:user:cfg_clk_div:1.1 cfg_clk_div_0 ]
   set_property -dict [ list \
 CONFIG.CONFIGURABLE {TRUE} \
+CONFIG.WIDTH {32} \
  ] $cfg_clk_div_0
 
   # Create instance: pdm_1, and set properties
