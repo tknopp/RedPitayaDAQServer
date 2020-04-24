@@ -16,6 +16,7 @@ classdef RedPitaya < handle
         decimation
         samplesPerPeriod
         periodsPerFrame
+        slowPeriodsPerFrame
         printStatus = false
     end
     
@@ -57,6 +58,9 @@ classdef RedPitaya < handle
                 % Connect to SCPI server
                 RP.socket = tcpip(RP.host, RP.port);
                 fopen(RP.socket);
+                
+                % Initialize RedPitaya with FPGA image
+                RP.init();
                 
                 % Request a data connection
                 RP.startAcquisitionConnection();
@@ -125,7 +129,7 @@ classdef RedPitaya < handle
         
         function data = readDataLowLevel(RP, startFrame, numFrames)
             % Initiate transaction
-            RP.send(sprintf('RP:ADC:FRAMES:DATA %.0f,%.0f', startFrame, numFrames));
+            RP.initiateReadingFrameData(startFrame, numFrames);
             
             % Read specified amount of data
             if RP.printStatus
@@ -139,17 +143,32 @@ classdef RedPitaya < handle
             end
             
             % Reshape to one row per ADC channel
-            data = reshape(data, 2, numSampPerFrame, numFrames);
+            data = reshape(data, 2, RP.samplesPerPeriod, RP.periodsPerFrame, numFrames);
         end
         
-        function data = readData(RP, startFrame, numFrames)
+        function data = readData(RP, startFrame, numFrames, numBlockAverages)
+            if nargin < 4
+                numBlockAverages = 1;
+            end
+            
             numSamp = RP.samplesPerPeriod*numFrames;
             numSampPerFrame = RP.samplesPerPeriod*RP.periodsPerFrame;
             
-            data = int16(zeros(2, RP.samplesPerPeriod, RP.periodsPerFrame, numFrames));
+            if mod(RP.samplesPerPeriod, numBlockAverages) ~= 0
+                error("Block averages has to be a divider of numSampPerPeriod")
+            end
+            
+            numAveragedSampPerPeriod = RP.samplesPerPeriod/numBlockAverages;
+            
+            data = int16(zeros(numAveragedSampPerPeriod, 2, RP.periodsPerFrame, numFrames));
             
             wpRead = startFrame;
             l = 1;
+            
+            numFramesInMemoryBuffer = RP.getBufferSize()/numSamp;
+            if RP.printStatus
+                fprintf("numFramesInMemoryBuffer = %d\n\r", numFramesInMemoryBuffer);
+            end
 
             % This is a wild guess for a good chunk size
             chunkSize = max(1, round(1000000 / numSampPerFrame));
@@ -165,13 +184,17 @@ classdef RedPitaya < handle
                     end
                 end
                 
-                chunk = min(wpWrite-wpRead,chunkSize); % Determine how many frames to read
+                chunk = min(wpWrite-wpRead, chunkSize); % Determine how many frames to read
                 if RP.printStatus
                     fprintf("chunk=%d\n\r", chunk);
                 end
                 
                 if l+chunk > numFrames
                     chunk = numFrames-l+1;
+                end
+                
+                if wpWrite - numFramesInMemoryBuffer > wpRead
+                    fprintf("WARNING: We have lost data!");
                 end
 
                 if RP.printStatus
@@ -180,7 +203,17 @@ classdef RedPitaya < handle
                 
                 u = RP.readDataLowLevel(wpRead, chunk);
 
-                data(:,:,:,l:(l+chunk-1)) = u;
+                %data(:,:,:,l:(l+chunk-1)) = u;
+                
+                utmp1 = reshape(u, 2, numAveragedSampPerPeriod, numBlockAverages, size(u,3), size(u,4));
+                if numBlockAverages > 1
+                    utmp2 = mean(utmp1, 3);
+                else
+                    utmp2 = utmp1;
+                end
+
+                data(:,1,:,l:(l+chunk-1)) = utmp2(1,:,1,:,:);
+                data(:,2,:,l:(l+chunk-1)) = utmp2(2,:,1,:,:);
 
                 l = l+chunk;
                 wpRead = wpRead+chunk;
@@ -189,6 +222,10 @@ classdef RedPitaya < handle
         
         
         %% API functions
+        
+        function init(RP)
+            RP.send(sprintf('RP:Init'));
+        end
         
         function data = getAmplitude(RP, channel, component)
             data = RP.query(sprintf('RP:DAC:CHannel%d:COMPonent%d:AMPlitude?', channel, component));
@@ -199,27 +236,16 @@ classdef RedPitaya < handle
             RP.send(sprintf('RP:DAC:CHannel%d:COMPonent%d:AMPlitude %d', channel, component, amplitude));
         end
         
-        function rampAmplitude(RP, channel, component, amplitude, maxIncrease)
-            if nargin < 5
-                maxIncrease = 20;
+        function data = getOffset(RP, channel)
+            data = RP.query(sprintf('RP:DAC:CHannel%d:OFFset?', channel, component));
+            data = str2int(data);
+        end
+        
+        function setOffset(RP, channel, offset)
+            if offset > 8191
+                error("Offset value is larger than 8191!")
             end
-            
-            currentAmplitude = RP.getAmplitude(channel, component);
-            
-            diff = amplitude-currentAmplitude;
-            steps = round(abs(diff)/maxIncrease);
-            pauseTime = 0.01; % s
-            speed = round(diff/steps);
-            
-            if speed == 0
-                error('maxIncrease is too low!');
-            end
-            
-            for step=1:steps
-                RP.setAmplitude(channel, component, currentAmplitude+step*speed);
-                pause(pauseTime);
-            end
-            RP.setAmplitude(channel, component, amplitude);
+            RP.send(sprintf('RP:DAC:CHannel%d:OFFset %d', channel, offset));
         end
         
         function data = getFrequency(RP, channel, component)
@@ -231,15 +257,6 @@ classdef RedPitaya < handle
             RP.send(sprintf('RP:DAC:CHannel%d:COMPonent%d:FREQuency %f', channel, component, frequency));
         end
         
-        function data = getModulusFactor(RP, channel, component)
-            data = RP.query(sprintf('RP:DAC:CHannel%d:COMPonent%d:FACtor?', channel, component));
-            data = str2double(data);
-        end
-        
-        function setModulusFactor(RP, channel, component, factor)
-            RP.send(sprintf('RP:DAC:CHannel%d:COMPonent%d:FACtor %d', channel, component, factor));
-        end
-        
         function data = getPhase(RP, channel, component)
             data = RP.query(sprintf('RP:DAC:CHannel%d:COMPonent%d:PHAse?', channel, component));
             data = str2double(data);
@@ -249,51 +266,19 @@ classdef RedPitaya < handle
             RP.send(sprintf('RP:DAC:CHannel%d:COMPonent%d:PHAse %d', channel, component, phase));
         end
         
-        function rampPhase(RP, channel, component, phase, maxIncrease)
-            if nargin < 5
-                maxIncrease = 2*pi/200;
-            end
-            
-            currentPhase = RP.getPhase(channel, component);
-            
-            diff = phase-currentPhase;
-            steps = abs(diff)/maxIncrease;
-            pauseTime = 0.01; % s
-            speed = diff/steps;
-            
-            if speed == 0
-                error('maxIncrease is too low!');
-            end
-            
-            for step=1:steps
-                RP.setPhase(channel, component, currentPhase+step*speed);
-                pause(pauseTime);
-            end
-            RP.setPhase(channel, component, phase);
-        end
-        
         function data = getDACMode(RP, channel)
             data = RP.query(sprintf('RP:DAC:CHannel%d:MODe?', channel));
             data = lower(data);
         end
         
         function setDACMode(RP, channel, mode)
-            if strcmp(mode, 'rasterized')
-                RP.send(sprintf('RP:DAC:CHannel%d:MODe %s', channel, 'RASTERIZED'));
+            if strcmp(mode, 'awg')
+                RP.send(sprintf('RP:DAC:CHannel%d:MODe %s', channel, 'AWG'));
             elseif strcmp(mode, 'standard')
                 RP.send(sprintf('RP:DAC:CHannel%d:MODe %s', channel, 'STANDARD'));
             else
                 error('Invalid DAC mode.');
             end
-        end
-        
-        function data = getDACModulus(RP, channel, component)
-            data = RP.query(sprintf('RP:DAC:CHannel%d:COMPonent%d:MODulus?', channel, component));
-            data = str2double(data);
-        end
-        
-        function reconfigureDACModulus(RP, channel, component, modulus)
-            RP.send(sprintf('RP:DAC:CHannel%d:COMPonent%d:MODulus %d', channel, component, modulus));
         end
         
         function data = getSignalType(RP, channel)
@@ -302,34 +287,35 @@ classdef RedPitaya < handle
         end
         
         function setSignalType(RP, channel, signalType)
-            if strcmp(signalType, 'sine')
+            if strcmpi(signalType, 'sine')
                 RP.send(sprintf('RP:DAC:CHannel%d:SIGnaltype %s', channel, 'SINE'));
-            elseif strcmp(signalType, 'dc')
-                RP.send(sprintf('RP:DAC:CHannel%d:SIGnaltype %s', channel, 'DC'));
-            elseif strcmp(signalType, 'square')
+            elseif strcmpi(signalType, 'square')
                 RP.send(sprintf('RP:DAC:CHannel%d:SIGnaltype %s', channel, 'SQUARE'));
-            elseif strcmp(signalType, 'triangle')
+            elseif strcmpi(signalType, 'triangle')
                 RP.send(sprintf('RP:DAC:CHannel%d:SIGnaltype %s', channel, 'TRIANGLE'));
-            elseif strcmp(signalType, 'sawtooth')
+            elseif strcmpi(signalType, 'sawtooth')
                 RP.send(sprintf('RP:DAC:CHannel%d:SIGnaltype %s', channel, 'SAWTOOTH'));
             else
                 error('Invalid signal type.');
             end
         end
         
-        function data = getDCSign(RP, channel)
-            data = RP.query(sprintf('RP:DAC:CHannel%d:DC:SIGn?', channel));
-            data = lower(data);
+        function data = getJumpSharpness(RP, channel)
+            data = RP.query(sprintf('RP:DAC:CHannel%d:JumpSharpness?', channel));
+            data = str2double(data);
         end
         
-        function setDCSign(RP, channel, sign)
-            if strcmp(sign, 'positive')
-                RP.send(sprintf('RP:DAC:CHannel%d:DC:SIGn %s', channel, 'POSITIVE'));
-            elseif strcmp(sign, 'negative')
-                RP.send(sprintf('RP:DAC:CHannel%d:DC:SIGn %s', channel, 'NEGATIVE'));
-            else
-                error('Invalid DC sign.');
-            end
+        function setJumpSharpness(RP, channel, jumpSharpness)
+            RP.send(sprintf('RP:DAC:CHannel%d:JumpSharpness? %f', channel, jumpSharpness));
+        end
+        
+        function data = getNumSlowADCChannels(RP)
+            data = RP.query(sprintf('RP:ADC:SlowADC?'));
+            data = str2double(data);
+        end
+        
+        function setNumSlowADCChannels(RP, numSlowADCChannels)
+            RP.send(sprintf('RP:ADC:SlowADC %d', numSlowADCChannels));
         end
         
         function data = getDecimation(RP)
@@ -362,7 +348,60 @@ classdef RedPitaya < handle
             RP.samplesPerPeriod = samplesPerPeriod;
         end
         
+        function data = getCurrentPeriod(RP)
+            data = RP.query(sprintf('RP:ADC:PERIODS:CURRENT?'));
+            data = str2double(data);
+        end
+        
+        function initiateReadingPeriodData(RP, startPeriod, numPeriods)
+            RP.send(sprintf('RP:ADC:PERiods:DATa %d, %d', startPeriod, numPeriods));
+        end
+        
+        function data = getNumSlowDACChannels(RP)
+            data = RP.query(sprintf('RP:ADC:SlowDAC?'));
+            data = str2double(data);
+        end
+        
+        function setNumSlowDACChannels(RP, numSlowDACChannels)
+            RP.send(sprintf('RP:ADC:SlowDAC %d', numSlowDACChannels));
+        end
+        
+        function setSlowDACLUT(RP, LUT)
+            RP.send(sprintf('RP:ADC:SlowDACLUT'));
+            
+            %% TODO
+            %write(rp.dataSocket, lutFloat32)
+        end
+        
+        %% TODO: Explain values
+        function enableSlowDAC(RP, enable, numFrames, rampUpTime, rampUpFraction)
+            if nargin < 3
+                numFrames = 0;
+            end
+            
+            if nargin < 4
+                rampUpTime = 0.4;
+            end
+            
+            if nargin < 5
+                rampUpFraction = 0.8;
+            end
+            
+            RP.send(sprintf('RP:ADC:SlowDACEnable %d, %d, %f, %f', enable, numFrames, rampUpTime, rampUpFraction));
+        end
+        
+        function enableSlowDACInterpolation(RP, enable)
+            RP.send(sprintf('RP:ADC:SlowDACInterpolation %d', enable));
+        end
+        
+        function data = getLostStepsSlowADC(RP)
+            data = RP.query(sprintf('RP:ADC:SlowDACLostSteps?'));
+            data = str2double(data);
+        end
+        
         function data = getPeriodsPerFrame(RP)
+            
+            % Cache data to prevent too many requests
             if isempty(RP.samplesPerPeriod)
                 data = RP.query(sprintf('RP:ADC:FRAme?'));
                 data = str2double(data);
@@ -377,9 +416,49 @@ classdef RedPitaya < handle
             RP.periodsPerFrame = periodsPerFrame;
         end
         
+        function data = getSlowPeriodsPerFrame(RP)
+            
+            % Cache data to prevent too many requests
+            if isempty(RP.slowPeriodsPerFrame)
+                data = RP.query(sprintf('RP:ADC:SlowDACPeriodsPerFrame?'));
+                data = str2double(data);
+                RP.slowPeriodsPerFrame = data;
+            else
+                data = RP.slowPeriodsPerFrame;
+            end
+        end
+        
+        function setSlowPeriodsPerFrame(RP, slowPeriodsPerFrame)
+            RP.send(sprintf('RP:ADC:SlowDACPeriodsPerFrame %d', slowPeriodsPerFrame));
+            RP.slowSamplesPerPeriod = slowPeriodsPerFrame;
+        end
+        
         function data = getCurrentFrame(RP)
             data = RP.query(sprintf('RP:ADC:FRAMES:CURRENT?'));
             data = str2double(data);
+        end
+        
+        function data = getCurrentWritePointer(RP)
+            data = RP.query(sprintf('RP:ADC:WP:CURRENT?'));
+            data = str2double(data);
+        end
+
+        function data = getADCFrames(RP)
+            data = RP.query(sprintf('RP:ADC:WP:CURRENT?'));
+            data = str2double(data);
+        end
+
+        function initiateReadingFrameData(RP, startFrame, numFrames)
+            RP.send(sprintf('RP:ADC:FRAMES:DATA %d, %d', startFrame, numFrames));
+        end
+        
+        function data = getBufferSize(RP)
+            data = RP.query(sprintf('RP:ADC:BUFfer:Size?'));
+            data = str2double(data);
+        end
+       
+        function initiateReadingSlowData(RP, startFrame, numFrames)
+            RP.send(sprintf('RP:ADC:SLOW:FRAMES:DATA %d, %d', startFrame, numFrames));
         end
         
         function startAcquisitionConnection(RP)
@@ -401,6 +480,15 @@ classdef RedPitaya < handle
             end
         end
         
+        function data = getSlowDACClockDivider(RP)
+            data = RP.query(sprintf('RP:PDM:ClockDivider?'));
+            data = str2double(data);
+        end
+        
+        function setSlowDACClockDivider(RP, divider)
+            RP.send(sprintf('RP:PDM:ClockDivider %d', divider));
+        end
+
         function data = getPDMNextValue(RP, channel)
             data = RP.query(sprintf('RP:PDM:CHannel%d:NextValue?', channel));
             data = str2double(data);
@@ -410,9 +498,8 @@ classdef RedPitaya < handle
             RP.send(sprintf('RP:PDM:CHannel%d:NextValue %d', channel, nextValue));
         end
         
-        function data = getPDMCurrentValue(RP, channel)
-            data = RP.query(sprintf('RP:PDM:CHannel%d:CurrentValue?', channel));
-            data = str2double(data);
+        function setPDMNextValueVolt(RP, channel, nextValueVolt)
+            RP.send(sprintf('RP:PDM:CHannel%d:NextValueVolt %f', channel, nextValueVolt));
         end
         
         function data = getXADCValueVolt(RP, channel)
@@ -420,20 +507,20 @@ classdef RedPitaya < handle
             data = str2double(data);
         end
         
-        function data = getDIOOutput(RP, pin)
-            data = RP.query(sprintf('RP:DIO:PIN%d?', pin));
-            data = lower(data);
-        end
+%         function data = getDIOOutput(RP, pin)
+%             data = RP.query(sprintf('RP:DIO:PIN%d?', pin));
+%             data = lower(data);
+%         end
         
-        function setDIOOutput(RP, pin, value)
-            if strcmp(value, 'on')
-                RP.send(sprintf('RP:DIO:PIN%d %s', pin, 'ON'));
-            elseif strcmp(value, 'off')
-                RP.send(sprintf('RP:DIO:PIN%d %s', pin, 'OFF'));
-            else
-                error('Invalid DIO output.');
-            end
-        end
+%         function setDIOOutput(RP, pin, value)
+%             if strcmp(value, 'on')
+%                 RP.send(sprintf('RP:DIO:PIN%d %s', pin, 'ON'));
+%             elseif strcmp(value, 'off')
+%                 RP.send(sprintf('RP:DIO:PIN%d %s', pin, 'OFF'));
+%             else
+%                 error('Invalid DIO output.');
+%             end
+%         end
         
         function mode = getWatchDogMode(RP)
             data = RP.query(sprintf('RP:WatchDogMode?'));
@@ -466,6 +553,40 @@ classdef RedPitaya < handle
                 RP.send(sprintf('RP:RamWriterMode %s', 'TRIGGERED'));
             else
                 error('Invalid RAM writer mode.');
+            end
+        end
+        
+        function mode = getKeepAliveReset(RP)
+            data = RP.query(sprintf('RP:KeepAliveReset?'));
+            if strcmp(data, 'ON')
+                mode = true;
+            elseif strcmp(data, 'OFF')
+                mode = false;
+            else
+                error('Invalid keep alive reset mode returned');
+            end
+        end
+        
+        function setKeepAliveReset(RP, mode)
+            if mode == true
+                RP.send(sprintf('RP:KeepAliveReset %s', 'ON'));
+            else
+                RP.send(sprintf('RP:KeepAliveReset %s', 'OFF'));
+            end
+        end
+        
+        function data = getTriggerMode(RP)
+            data = RP.query(sprintf('RP:Trigger:Mode?'));
+            data = lower(data);
+        end
+        
+        function setTriggerMode(RP, mode)
+            if strcmp(mode, 'internal')
+                RP.send(sprintf('RP:Trigger:Mode %s', 'INTERNAL'));
+            elseif strcmp(mode, 'external')
+                RP.send(sprintf('RP:Trigger:Mode %s', 'EXTERNAL'));
+            else
+                error('Invalid trigger mode.');
             end
         end
         
