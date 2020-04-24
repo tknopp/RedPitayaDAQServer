@@ -155,7 +155,7 @@ classdef RedPitaya < handle
             numSampPerFrame = RP.samplesPerPeriod*RP.periodsPerFrame;
             
             if mod(RP.samplesPerPeriod, numBlockAverages) ~= 0
-                error("Block averages has to be a divider of numSampPerPeriod")
+                error(sprintf("Block averages has to be a divider of numSampPerPeriod. This is not true with samplesPerPeriod=%d and numBlockAverages=%d.", RP.samplesPerPeriod, numBlockAverages));
             end
             
             numAveragedSampPerPeriod = RP.samplesPerPeriod/numBlockAverages;
@@ -264,21 +264,6 @@ classdef RedPitaya < handle
         
         function setPhase(RP, channel, component, phase)
             RP.send(sprintf('RP:DAC:CHannel%d:COMPonent%d:PHAse %d', channel, component, phase));
-        end
-        
-        function data = getDACMode(RP, channel)
-            data = RP.query(sprintf('RP:DAC:CHannel%d:MODe?', channel));
-            data = lower(data);
-        end
-        
-        function setDACMode(RP, channel, mode)
-            if strcmp(mode, 'awg')
-                RP.send(sprintf('RP:DAC:CHannel%d:MODe %s', channel, 'AWG'));
-            elseif strcmp(mode, 'standard')
-                RP.send(sprintf('RP:DAC:CHannel%d:MODe %s', channel, 'STANDARD'));
-            else
-                error('Invalid DAC mode.');
-            end
         end
         
         function data = getSignalType(RP, channel)

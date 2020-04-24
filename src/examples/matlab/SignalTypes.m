@@ -23,9 +23,6 @@ rp.setDecimation(dec);
 rp.setSamplesPerPeriod(samples_per_period);
 rp.setPeriodsPerFrame(periods_per_frame);
 
-rp.setDACMode(0, "awg");
-rp.setDACMode(1, "awg");
-
 rp.setFrequency(0, 0, 25000);
 rp.setFrequency(0, 1, 25000);
 rp.setFrequency(0, 2, 25000);
