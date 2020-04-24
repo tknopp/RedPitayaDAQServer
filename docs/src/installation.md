@@ -19,6 +19,11 @@ and clone the RedPitayaDAQServer project:
 ```
 git clone https://github.com/tknopp/RedPitayaDAQServer
 ```
+Sometimes you might need to make the file system writable by entering
+```
+mount -o remount,rw /dev/mmcblk0p1
+```
+
 Then cd into RedPitayaDAQServer
 ```
 cd /root/apps/RedPitayaDAQServer
