@@ -4,6 +4,7 @@ import time
 import numpy as np
 import select
 import struct
+import logging
 
 class RedPitaya:
     """Provides access to the DAQ functions of the Red Pitaya
@@ -23,6 +24,7 @@ class RedPitaya:
     _decimation = None
     _samplesPerPeriod = None
     _periodsPerFrame = None
+    _slowPeriodsPerFrame = None
     
     def __init__(self, host, port = 5025, dataPort = 5026):
         if isinstance(host, str):
@@ -50,6 +52,9 @@ class RedPitaya:
             # Connect to SCPI server
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self._socket.connect((self._host, self._port))
+			
+			# Initialize RedPitaya with FPGA image
+            self.init();
             
             # Request a data connection
             self.startAcquisitionConnection()
@@ -68,17 +73,6 @@ class RedPitaya:
         """
     
         if self._isConnected:
-            # Check for running acquisitions ad stop them
-            if self.getAcquisitionStatus() == True:
-                self.setAcquisitionStatus(False)
-            
-            if self.getMasterTrigger() == True:
-                self.setMasterTrigger(False)
-            
-            # Wait a short time to make sure, that all burst transactions
-            # are shut down. This prevents the blocking of the AXI bus
-            time.sleep(0.1)
-            
             # Close sockets
             self._dataSocket.shutdown(socket.SHUT_RDWR)
             self._socket.shutdown(socket.SHUT_RDWR)
@@ -106,7 +100,7 @@ class RedPitaya:
             for s in inputready:
                 s.recv(1)
         
-        print('Sending command: %s' % command)
+        logging.debug('Sending command: %s' % command)
         self._socket.sendall((command + self._delim).encode())
     
     def receive(self):
@@ -137,10 +131,10 @@ class RedPitaya:
     
     def readDataLowLevel(self, startFrame, numFrames):
         # Initiate transaction
-        self.send('RP:ADC:FRAMES:DATA %.0f,%.0f' % (startFrame, numFrames))
+        self.initiateReadingFrameData(startFrame, numFrames);
         
         # Read specified amount of data
-        print('Read data...')
+        logging.debug('Read data...')
         numSampPerFrame = self._samplesPerPeriod*self._periodsPerFrame
         
         data = []
@@ -162,34 +156,45 @@ class RedPitaya:
         
         return data
     
-    def readData(self, startFrame, numFrames):
+    def readData(self, startFrame, numFrames, numBlockAverages = 1):
+        numSamp = self._samplesPerPeriod*numFrames
         numSampPerFrame = self._samplesPerPeriod*self._periodsPerFrame
+		
+        if not (self._samplesPerPeriod % numBlockAverages) == 0:
+            raise TypeError('Block averages has to be a divider of numSampPerPeriod. This is not true with samplesPerPeriod=%.0f and numBlockAverages=%.0f.' % (RP.samplesPerPeriod, numBlockAverages))
         
-        data = np.zeros((2, self._samplesPerPeriod, self._periodsPerFrame, numFrames))
+        numAveragedSampPerPeriod = int(self._samplesPerPeriod/numBlockAverages);
+        
+        data = np.zeros((2, numAveragedSampPerPeriod, self._periodsPerFrame, numFrames))
         
         wpRead = startFrame
         chunksRead = 0
 
         # This is a wild guess for a good chunk size
         chunkSize = max(1, round(1000000 / numSampPerFrame))
-        print("chunkSize = %d\n\r" % chunkSize)
+        logging.debug("chunkSize = %d" % chunkSize)
         while chunksRead < numFrames:
             wpWrite = self.getCurrentFrame()
             while wpRead >= wpWrite: # Wait that startFrame is reached
                 wpWrite = self.getCurrentFrame()
-                print("wpWrite=%d\n\r" % wpWrite)
+                logging.debug("wpWrite=%d" % wpWrite)
             
-            chunk = min(wpWrite-wpRead,chunkSize) # Determine how many frames to read
-            print("chunk=%d\n\r" % chunk)
+            chunk = int(min(wpWrite-wpRead, chunkSize)) # Determine how many frames to read
+            logging.debug("chunk=%d" % chunk)
             
             if chunksRead+chunk > numFrames:
                 chunk = numFrames-chunksRead
 
-            print("Read from %.0f until %.0f, WpWrite %.0f, chunk=%.0f\n\r" % (wpRead, wpRead+chunk-1, wpWrite, chunk))
+            logging.debug("Read from %.0f until %.0f, WpWrite %.0f, chunk=%.0f" % (wpRead, wpRead+chunk-1, wpWrite, chunk))
 
             u = self.readDataLowLevel(wpRead, chunk)
-
-            data[:,:,:,chunksRead:(chunksRead+chunk)] = u
+            
+            if numBlockAverages > 1:
+                utmp = np.reshape(u, (2, numAveragedSampPerPeriod, numBlockAverages, np.size(u, 2), np.size(u, 3)), 'F')
+                utmp = np.mean(utmp, 2);
+                data[:,:,:,chunksRead:(chunksRead+chunk)] = utmp
+            else:
+                data[:,:,:,chunksRead:(chunksRead+chunk)] = u
 
             chunksRead = chunksRead+chunk
             wpRead = wpRead+chunk
@@ -197,6 +202,9 @@ class RedPitaya:
         return data
     
     ## API functions
+	
+    def init(self):
+        self.send('RP:Init')
     
     def getAmplitude(self, channel, component):
         data = self.query('RP:DAC:CHannel%d:COMPonent%d:AMPlitude?' % (channel, component))
@@ -204,6 +212,15 @@ class RedPitaya:
     
     def setAmplitude(self, channel, component, amplitude):
         self.send('RP:DAC:CHannel%d:COMPonent%d:AMPlitude %d' % (channel, component, amplitude))
+		
+    def getOffset(self, channel):
+        data = self.query('RP:DAC:CHannel%d:OFFset?' % (channel))
+        return Decimal(data)
+    
+    def setOffset(self, channel, offset):
+        if offset > 8191:
+            raise TypeError("Offset value is larger than 8191!")
+        self.send('RP:DAC:CHannel%d:OFFset %d' % (channel, offset))
     
     def getFrequency(self, channel, component):
         data = self.query('RP:DAC:CHannel%d:COMPonent%d:FREQuency?' % (channel, component))
@@ -212,38 +229,42 @@ class RedPitaya:
     def setFrequency(self, channel, component, frequency):
         self.send('RP:DAC:CHannel%d:COMPonent%d:FREQuency %f' % (channel, component, frequency))
     
-    def getModulusFactor(self, channel, component):
-        data = self.query('RP:DAC:CHannel%d:COMPonent%d:FACtor?' % (channel, component))
-        return Decimal(data)
-    
-    def setModulusFactor(self, channel, component, factor):
-        self.send('RP:DAC:CHannel%d:COMPonent%d:FACtor %d' % (channel, component, factor))
-    
     def getPhase(self, channel, component):
         data = self.query('RP:DAC:CHannel%d:COMPonent%d:FACtor?' % (channel, component))
         return Decimal(data)
     
     def setPhase(self, channel, component, phase):
         self.send('RP:DAC:CHannel%d:COMPonent%d:PHAse %d' % (channel, component, phase))
+		
+    def getSignalType(self, channel):
+        data = self.query('RP:DAC:CHannel%d:SIGnaltype?' % (channel))
+        return data
     
-    def getDACMode(self):
-        data = self.query('RP:DAC:MODe?')
-        return data.lower();
-    
-    def setDACMode(self, mode):
-        if mode == 'rasterized':
-            self.send('RP:DAC:MODe %s' % 'RASTERIZED')
-        elif mode == 'standard':
-            self.send('RP:DAC:MODe %s' % 'STANDARD')
+    def setSignalType(self, channel, signalType):
+        if signalType.lower() == 'sine':
+            self.send('RP:DAC:CHannel%d:SIGnaltype %s' % (channel, 'SINE'))
+        elif signalType.lower() == 'square':
+            self.send('RP:DAC:CHannel%d:SIGnaltype %s' % (channel, 'SQUARE'))
+        elif signalType.lower() == 'triangle':
+            self.send('RP:DAC:CHannel%d:SIGnaltype %s' % (channel, 'TRIANGLE'))
+        elif signalType.lower() == 'sawtooth':
+            self.send('RP:DAC:CHannel%d:SIGnaltype %s' % (channel, 'SAWTOOTH'))
         else:
-            raise ValueError('Invalid DAC mode.')
-    
-    def getDACModulus(self, channel, component):
-        data = self.query('RP:DAC:CHannel%d:COMPonent%d:MODulus?' % (channel, component))
+            raise TypeError('Invalid signal type.');
+			
+    def getJumpSharpness(self, channel):
+        data = self.query('RP:DAC:CHannel%d:JumpSharpness?' % (channel))
         return Decimal(data)
     
-    def reconfigureDACModulus(self, channel, component, modulus):
-        self.send('RP:DAC:CHannel%d:COMPonent%d:MODulus %d' % (channel, component, modulus))
+    def setJumpSharpness(self, channel, jumpSharpness):
+        self.send('RP:DAC:CHannel%d:JumpSharpness %f' % (channel, jumpSharpness))
+		
+    def getNumSlowADCChannels(self):
+        data = self.query('RP:ADC:SlowADC?')
+        return Decimal(data)
+    
+    def setNumSlowADCChannels(self, numSlowADCChannels):
+        self.send('RP:ADC:SlowADC %d' % (numSlowADCChannels))
     
     def getDecimation(self):
         if self._decimation is None:
@@ -272,8 +293,41 @@ class RedPitaya:
     def setSamplesPerPeriod(self, _samplesPerPeriod):
         self.send('RP:ADC:PERiod %d' % _samplesPerPeriod)
         self._samplesPerPeriod = _samplesPerPeriod
+		
+    def getCurrentPeriod(self):
+        data = self.query('RP:ADC:PERIODS:CURRENT?')
+        return Decimal(data)
+		
+    def initiateReadingPeriodData(self, startPeriod, numPeriods):
+        self.send('RP:ADC:PERiods:DATa %d, %d' % (startPeriod, numPeriods))
+		
+    def getNumSlowDACChannels(self):
+        data = self.query('RP:ADC:SlowDAC?')
+        return Decimal(data)
+		
+    def setNumSlowDACChannels(self, numSlowDACChannels):
+        self.send('RP:ADC:SlowDAC %d' % numSlowDACChannels)
+
+    def setSlowDACLUT(self, LUT):
+        RP.send(sprintf('RP:ADC:SlowDACLUT'));
+            
+        # TODO
+        #write(rp.dataSocket, lutFloat32)
+	
+	# TODO: Explain values
+    def enableSlowDAC(self, enable, numFrames = 0, rampUpTime = 0.4, rampUpFraction = 0.8):
+        self.send('RP:ADC:SlowDACEnable %d, %d, %f, %f' % (enable, numFrames, rampUpTime, rampUpFraction));
+	
+    def enableSlowDACInterpolation(self, enable):
+        self.send('RP:ADC:SlowDACInterpolation %d' % (enable));
+    
+    def getLostStepsSlowADC(self):
+        data = self.query('RP:ADC:SlowDACLostSteps?')
+        return Decimal(data)
     
     def getPeriodsPerFrame(self):
+	
+		# Cache data to prevent too many requests
         if self._samplesPerPeriod is None:
             data = self.query('RP:ADC:FRAme?')
             data = Decimal(data)
@@ -286,10 +340,39 @@ class RedPitaya:
     def setPeriodsPerFrame(self, _periodsPerFrame):
         self.send('RP:ADC:FRAme %d' % _periodsPerFrame)
         self._periodsPerFrame = _periodsPerFrame
+		
+    def getPeriodsPerFrame(self):
+        # Cache data to prevent too many requests
+        if self._slowPeriodsPerFrame is None:
+            data = self.query('RP:ADC:SlowDACPeriodsPerFrame?')
+            data = Decimal(data)
+            self._slowPeriodsPerFrame = data
+        else:
+            data = self._slowPeriodsPerFrame
+            
+        return data
+		
+    def setSlowPeriodsPerFrame(self, slowPeriodsPerFrame):
+        self.send('RP:ADC:SlowDACPeriodsPerFrame %d' % slowPeriodsPerFrame)
+        self._periodsPerFrame = slowPeriodsPerFrame
     
     def getCurrentFrame(self):
         data = self.query('RP:ADC:FRAMES:CURRENT?')
         return Decimal(data)
+		
+    def getCurrentWritePointer(self):
+        data = self.query('RP:ADC:WP:CURRENT?')
+        return Decimal(data)
+		
+    def initiateReadingFrameData(self, startFrame, numFrames):
+        self.send('RP:ADC:FRAMES:DATA %d, %d' % (startFrame, numFrames))
+		
+    def getBufferSize(self):
+        data = self.query('RP:ADC:BUFfer:Size?')
+        return Decimal(data)
+		
+    def initiateReadingSlowData(self, startFrame, numFrames):
+        self.send('RP:ADC:SLOW:FRAMES:DATA %d, %d' % (startFrame, numFrames))
     
     def startAcquisitionConnection(self):
         self.send('RP:ADC:ACQCONNect')
@@ -297,20 +380,27 @@ class RedPitaya:
     def getAcquisitionStatus(self):
         data = self.query('RP:ADC:ACQSTATus?')
         
-        if data == 'ON':
+        if data.lower() == 'on':
             status = True
-        elif data == 'OFF':
+        elif data.lower() == 'off':
             status = False
         else:
             raise ValueError('Invalid acquisition status returned')
             
         return status
     
-    def setAcquisitionStatus(self, status):
+    def setAcquisitionStatus(self, status, writePointer):
         if status == True:
-            self.send('RP:ADC:ACQSTATus %s' % 'ON')
+            self.send('RP:ADC:ACQSTATus %s,%d' % ('ON', writePointer))
         else:
-            self.send('RP:ADC:ACQSTATus %s' % 'OFF')
+            self.send('RP:ADC:ACQSTATus %s,%d' % ('ON', writePointer))
+			
+    def getSlowDACClockDivider(self):
+        data = self.query('RP:PDM:ClockDivider?')
+        return Decimal(data)
+    
+    def setSlowDACClockDivider(self, divider):
+        self.send('RP:PDM:ClockDivider %d' % (divider))
     
     def getPDMNextValue(self, channel):
         data = self.query('RP:PDM:CHannel%d:NextValue?' % (channel))
@@ -318,10 +408,9 @@ class RedPitaya:
     
     def setPDMNextValue(self, channel, nextValue):
         self.send('RP:PDM:CHannel%d:NextValue %d' % (channel, nextValue))
-    
-    def getPDMCurrentValue(self, channel):
-        data = self.query('RP:PDM:CHannel%d:CurrentValue?' % channel)
-        return Decimal(data)
+		
+    def setPDMNextValueVolt(self, channel, nextValueVolt):
+        self.send('RP:PDM:CHannel%d:NextValueVolt %d' % (channel, nextValueVolt))
     
     def getXADCValueVolt(self, channel):
         data = self.query('RP:XADC:CHannel%d?' % channel)
@@ -330,9 +419,9 @@ class RedPitaya:
     def getWatchDogMode(self):
         data = self.query('RP:WatchDogMode?')
         
-        if data == 'ON':
+        if data.lower() == 'on':
             mode = True
-        elif data == 'OFF':
+        elif data.lower() == 'off':
             mode = False
         else:
             raise ValueError('Invalid watchdog mode returned')
@@ -350,19 +439,49 @@ class RedPitaya:
         return data.lower()
     
     def setRamWriterMode(self, mode):
-        if mode == 'continuous':
+        if mode.lower() == 'continuous':
             self.send('RP:RamWriterMode %s' % 'CONTINUOUS')
-        elif mode == 'triggered':
+        elif mode.lower() == 'triggered':
             self.send('RP:RamWriterMode %s' % 'TRIGGERED')
         else:
             raise ValueError('Invalid RAM writer mode.')
     
+    def getKeepAliveReset(self):
+        data = self.query('RP:KeepAliveReset?')
+        
+        if data.lower() == 'on':
+            status = True
+        elif data.lower() == 'off':
+            status = False
+        else:
+            raise ValueError('Invalid keep alive reset status returned')
+            
+        return status
+    
+    def setKeepAliveReset(self, mode):
+        if mode == True:
+            self.send('RP:KeepAliveReset %s' % 'ON')
+        else:
+            self.send('RP:KeepAliveReset %s' % 'OFF')
+    
+    def getTriggerMode(self):
+        data = self.query('RP:Trigger:Mode?')
+        return data.lower()
+    
+    def setTriggerMode(self, mode):
+        if mode.lower() == 'internal':
+            self.send('RP:Trigger:Mode %s' % 'INTERNAL')
+        elif mode.lower() == 'external':
+            self.send('RP:Trigger:Mode %s' % 'EXTERNAL')
+        else:
+            raise ValueError('Invalid trigger mode.')
+    
     def getMasterTrigger(self):
         data = self.query('RP:MasterTrigger?')
         
-        if data == 'ON':
+        if data.lower() == 'on':
             status = True
-        elif data == 'OFF':
+        elif data.lower() == 'off':
             status = False
         else:
             raise ValueError('Invalid master trigger status returned')
@@ -378,9 +497,9 @@ class RedPitaya:
     def getInstantResetMode(self):
         data = self.query('RP:InstantResetMode?')
         
-        if data == 'ON':
+        if data.lower() == 'on':
             mode = True
-        elif data == 'OFF':
+        elif data.lower() == 'off':
             mode = False
         else:
             raise ValueError('Invalid instant reset mode returned')

@@ -137,7 +137,10 @@ classdef RedPitaya < handle
             end
             numSampPerFrame = RP.samplesPerPeriod*RP.periodsPerFrame;
             data = int16(fread(RP.dataSocket, 2*numSampPerFrame*numFrames, 'int16'));
+            
+            % Correct endianness
             data = swapbytes(data);
+            
             if RP.printStatus
                 fprintf('Read data!\n\r');
             end
@@ -163,7 +166,7 @@ classdef RedPitaya < handle
             data = int16(zeros(numAveragedSampPerPeriod, 2, RP.periodsPerFrame, numFrames));
             
             wpRead = startFrame;
-            l = 1;
+            chunksRead = 1;
             
             numFramesInMemoryBuffer = RP.getBufferSize()/numSamp;
             if RP.printStatus
@@ -175,7 +178,7 @@ classdef RedPitaya < handle
             if RP.printStatus
                 fprintf("chunkSize = %d\n\r", chunkSize);
             end
-            while l<=numFrames
+            while chunksRead<=numFrames
                 wpWrite = RP.getCurrentFrame();
                 while wpRead >= wpWrite % Wait that startFrame is reached
                     wpWrite = RP.getCurrentFrame();
@@ -189,8 +192,8 @@ classdef RedPitaya < handle
                     fprintf("chunk=%d\n\r", chunk);
                 end
                 
-                if l+chunk > numFrames
-                    chunk = numFrames-l+1;
+                if chunksRead+chunk > numFrames
+                    chunk = numFrames-chunksRead+1;
                 end
                 
                 if wpWrite - numFramesInMemoryBuffer > wpRead
@@ -205,17 +208,21 @@ classdef RedPitaya < handle
 
                 %data(:,:,:,l:(l+chunk-1)) = u;
                 
+                size(u)
+                
                 utmp1 = reshape(u, 2, numAveragedSampPerPeriod, numBlockAverages, size(u,3), size(u,4));
                 if numBlockAverages > 1
                     utmp2 = mean(utmp1, 3);
                 else
                     utmp2 = utmp1;
                 end
+                
+                size(u)
 
-                data(:,1,:,l:(l+chunk-1)) = utmp2(1,:,1,:,:);
-                data(:,2,:,l:(l+chunk-1)) = utmp2(2,:,1,:,:);
+                data(:,1,:,chunksRead:(chunksRead+chunk-1)) = utmp2(1,:,1,:,:);
+                data(:,2,:,chunksRead:(chunksRead+chunk-1)) = utmp2(2,:,1,:,:);
 
-                l = l+chunk;
+                chunksRead = chunksRead+chunk;
                 wpRead = wpRead+chunk;
             end
         end
@@ -428,11 +435,6 @@ classdef RedPitaya < handle
             data = str2double(data);
         end
 
-        function data = getADCFrames(RP)
-            data = RP.query(sprintf('RP:ADC:WP:CURRENT?'));
-            data = str2double(data);
-        end
-
         function initiateReadingFrameData(RP, startFrame, numFrames)
             RP.send(sprintf('RP:ADC:FRAMES:DATA %d, %d', startFrame, numFrames));
         end
@@ -456,9 +458,9 @@ classdef RedPitaya < handle
         end
         
         function setAcquisitionStatus(RP, status, writePointer)
-            if strcmp(status, 'on')
+            if strcmpi(status, 'on')
                 RP.send(sprintf('RP:ADC:ACQSTATus %s,%d', 'ON', writePointer));
-            elseif strcmp(status, 'off')
+            elseif strcmpi(status, 'off')
                 RP.send(sprintf('RP:ADC:ACQSTATus %s,%d', 'OFF', writePointer));
             else
                 error('Invalid acquisition status.');
@@ -509,9 +511,9 @@ classdef RedPitaya < handle
         
         function mode = getWatchDogMode(RP)
             data = RP.query(sprintf('RP:WatchDogMode?'));
-            if strcmp(data, 'ON')
+            if strcmpi(data, 'ON')
                 mode = true;
-            elseif strcmp(data, 'OFF')
+            elseif strcmpi(data, 'OFF')
                 mode = false;
             else
                 error('Invalid watchdog mode returned');
@@ -532,9 +534,9 @@ classdef RedPitaya < handle
         end
         
         function setRamWriterMode(RP, mode)
-            if strcmp(mode, 'continuous')
+            if strcmpi(mode, 'continuous')
                 RP.send(sprintf('RP:RamWriterMode %s', 'CONTINUOUS'));
-            elseif strcmp(mode, 'triggered')
+            elseif strcmpi(mode, 'triggered')
                 RP.send(sprintf('RP:RamWriterMode %s', 'TRIGGERED'));
             else
                 error('Invalid RAM writer mode.');
@@ -543,9 +545,9 @@ classdef RedPitaya < handle
         
         function mode = getKeepAliveReset(RP)
             data = RP.query(sprintf('RP:KeepAliveReset?'));
-            if strcmp(data, 'ON')
+            if strcmpi(data, 'ON')
                 mode = true;
-            elseif strcmp(data, 'OFF')
+            elseif strcmpi(data, 'OFF')
                 mode = false;
             else
                 error('Invalid keep alive reset mode returned');
@@ -566,9 +568,9 @@ classdef RedPitaya < handle
         end
         
         function setTriggerMode(RP, mode)
-            if strcmp(mode, 'internal')
+            if strcmpi(mode, 'internal')
                 RP.send(sprintf('RP:Trigger:Mode %s', 'INTERNAL'));
-            elseif strcmp(mode, 'external')
+            elseif strcmpi(mode, 'external')
                 RP.send(sprintf('RP:Trigger:Mode %s', 'EXTERNAL'));
             else
                 error('Invalid trigger mode.');
@@ -581,9 +583,9 @@ classdef RedPitaya < handle
         end
         
         function setMasterTrigger(RP, mode)
-            if strcmp(mode, 'on')
+            if strcmpi(mode, 'on')
                 RP.send(sprintf('RP:MasterTrigger %s', 'ON'));
-            elseif strcmp(mode, 'off')
+            elseif strcmpi(mode, 'off')
                 RP.send(sprintf('RP:MasterTrigger %s', 'OFF'));
             else
                 error('Invalid master trigger mode');
@@ -592,9 +594,9 @@ classdef RedPitaya < handle
         
         function mode = getInstantResetMode(RP)
             data = RP.query(sprintf('RP:InstantResetMode?'));
-            if strcmp(data, 'on')
+            if strcmpi(data, 'on')
                 mode = true;
-            elseif strcmp(data, 'off')
+            elseif strcmpi(data, 'off')
                 mode = false;
             else
                 error('Invalid instant reset mode returned');
@@ -602,9 +604,9 @@ classdef RedPitaya < handle
         end
         
         function setInstantResetMode(RP, mode)
-            if strcmp(mode, 'on')
+            if strcmpi(mode, 'on')
                 RP.send(sprintf('RP:InstantResetMode %s', 'ON'));
-            elseif strcmp(mode, 'off')
+            elseif strcmpi(mode, 'off')
                 RP.send(sprintf('RP:InstantResetMode %s', 'OFF'));
             else
                 error('Invalid instant reset mode');

@@ -11,14 +11,14 @@ rp.connect();
 rp.setPrintStatus(true);
 
 % Define acquisition parameters
-dec = 32;
+decimation = 8;
 frequency = 25000;
 base_frequency = 125000000;
 samples_per_period = base_frequency/frequency;
-periods_per_frame = 10;
+periods_per_frame = 12;
 
 % Set acquisition parameters
-rp.setDecimation(dec);
+rp.setDecimation(decimation);
 rp.setSamplesPerPeriod(samples_per_period);
 rp.setPeriodsPerFrame(periods_per_frame);
 rp.setFrequency(0, 0, frequency);
