@@ -22,11 +22,13 @@ length(rpc::RedPitayaCluster) = length(rpc.rp)
 numChan(rpc::RedPitayaCluster) = 2*length(rpc)
 master(rpc::RedPitayaCluster) = rpc.rp[1]
 
+const _currentFrame = Ref(0)
+
 function currentFrame(rpc::RedPitayaCluster)
-  currentFrames = currentFrame(rpc.rp[1]) #[ currentFrame(rp) for rp in rpc.rp ]
-  @debug "Current frame: $currentFrames"
+  _currentFrame[] = currentFrame(rpc.rp[1]) #[ currentFrame(rp) for rp in rpc.rp ]
+  @debug "Current frame: $(_currentFrame[])"
   #return minimum(currentFrames)
-  return currentFrames
+  return _currentFrame[]
 end
 
 function currentPeriod(rpc::RedPitayaCluster)
@@ -198,17 +200,31 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
 
     @debug "Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)"
 
-    for (d,rp) in enumerate(rpc.rp)
-     # @sync  @async begin
-        u = readData_(rp, Int64(wpRead), Int64(chunk))
-        utmp1 = reshape(u,2,numTrueSampPerPeriod,numBlockAverages,
-                            size(u,3)*numPeriodsPerPatch,size(u,4))
-        utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
+    #@sync begin
+    done = zeros(Bool, length(rpc.rp))
+    @async for (d,rp) in enumerate(rpc.rp)
 
-        data[:,2*d-1,:,l:(l+chunk-1)] = utmp2[1,:,1,:,:]
-        data[:,2*d,:,l:(l+chunk-1)] = utmp2[2,:,1,:,:]
-     #  end
+      u = readData_(rp, Int64(wpRead), Int64(chunk))
+      utmp1 = reshape(u,2,numTrueSampPerPeriod,numBlockAverages,
+                        size(u,3)*numPeriodsPerPatch,size(u,4))
+      utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
+
+      data[:,2*d-1,:,l:(l+chunk-1)] = utmp2[1,:,1,:,:]
+      data[:,2*d,:,l:(l+chunk-1)] = utmp2[2,:,1,:,:]
+      done[d] = true
     end
+    timeout = 10
+    t = Timer(timeout)
+    while isopen(t)
+      sleep(0.001)
+      if all(done)
+        break
+      end
+    end
+    if !all(done)
+      error("Timout reached when reading from sockets")
+    end
+    #end
 
     l += chunk
     wpRead += chunk
