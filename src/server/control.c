@@ -19,6 +19,7 @@
 #include <pthread.h>
 #include <sched.h>
 #include <errno.h>
+#include "logger.h"
 
 #include <scpi/scpi.h>
 
@@ -110,14 +111,14 @@ void* controlThread(void* ch)
   int lookahead=110;
   int lookprehead=5;
 
-  printf("Starting control thread\n");
+  LOG_INFO("Starting control thread");
   getprio(pthread_self());
 
   while(controlThreadRunning) {
     // Reset everything in order to provide a fresh start
     // everytime the acquisition is started
     if(rxEnabled && numSlowDACChan > 0) {
-      printf("SLOW_DAQ: Start sending...\n");
+      LOG_INFO("SLOW_DAQ: Start sending...");
       data_read_total = 0; 
       oldPeriodTotal = 0;
       oldSlowDACPeriodTotal = 0;
@@ -131,7 +132,7 @@ void* controlThread(void* ch)
         usleep(100);
       }*/
 
-      printf("SLOW_DAQ: Trigger received, start sending\n");		
+      //LOG_INFO("SLOW_DAQ: Trigger received, start sending");		
 
       while(rxEnabled) 
       {
@@ -153,10 +154,10 @@ void* controlThread(void* ch)
           if(currentSlowDACPeriodTotal > oldSlowDACPeriodTotal + (lookahead-lookprehead) && 
 			  numPeriodsPerFrame > 1) 
           {
-            printf("\033[1;31m");
-            printf("WARNING: We lost a slow DAC step! oldSlowDACPeriod %lld newSlowDACPeriod %lld size=%lld\n", 
+            //printf("\033[1;31m");
+            LOG_WARN("WARNING: We lost a slow DAC step! oldSlowDACPeriod %lld newSlowDACPeriod %lld size=%lld\n", 
                 oldSlowDACPeriodTotal, currentSlowDACPeriodTotal, currentSlowDACPeriodTotal-oldSlowDACPeriodTotal);
-            printf("\033[0m");
+            //printf("\033[0m");
 	    numSlowDACLostSteps += 1;
           }
           if(currentSlowDACPeriodTotal > oldSlowDACPeriodTotal) 

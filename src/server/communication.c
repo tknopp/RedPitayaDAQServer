@@ -19,6 +19,7 @@
 #include <pthread.h>
 #include <sched.h>
 #include <errno.h>
+#include "logger.h"
 
 #include <scpi/scpi.h>
 
@@ -44,7 +45,7 @@ scpi_result_t SCPI_Flush(scpi_t * context) {
 int SCPI_Error(scpi_t * context, int_fast16_t err) {
   (void) context;
   /* BEEP */
-  fprintf(stderr, "**ERROR: %d, \"%s\"\r\n", (int16_t) err, SCPI_ErrorTranslate(err));
+  LOG_ERROR("**ERROR: %d, \"%s\"\r\n", (int16_t) err, SCPI_ErrorTranslate(err));
   return 0;
 }
 
@@ -52,9 +53,9 @@ scpi_result_t SCPI_Control(scpi_t * context, scpi_ctrl_name_t ctrl, scpi_reg_val
   (void) context;
 
   if (SCPI_CTRL_SRQ == ctrl) {
-    fprintf(stderr, "**SRQ: 0x%X (%d)\r\n", val, val);
+    LOG_ERROR("**SRQ: 0x%X (%d)\r\n", val, val);
   } else {
-    fprintf(stderr, "**CTRL %02x: 0x%X (%d)\r\n", ctrl, val, val);
+    LOG_ERROR("**CTRL %02x: 0x%X (%d)\r\n", ctrl, val, val);
   }
   return SCPI_RES_OK;
 }
@@ -62,7 +63,7 @@ scpi_result_t SCPI_Control(scpi_t * context, scpi_ctrl_name_t ctrl, scpi_reg_val
 scpi_result_t SCPI_Reset(scpi_t * context) {
   (void) context;
 
-  fprintf(stderr, "**Reset\r\n");
+  LOG_ERROR("**Reset\r\n");
   return SCPI_RES_OK;
 }
 
@@ -173,8 +174,7 @@ static void writeDataChunked(int fd, const void *buf, size_t count)
     
       if (n < 0) 
       {
-        printf("Error in sendToHost()\n");
-        perror("ERROR writing to socket"); 
+        LOG_ERROR("Error in sendToHost()");
       }
       ptr += size;
       usleep(30);
@@ -241,7 +241,7 @@ void* communicationThread(void* p)
           break;
         }
       } else if (rc == 0) {
-        printf("Connection closed\r\n");
+        LOG_INFO("Connection closed");
         stopTx();
         //setMasterTrigger(OFF);
         joinControlThread();
@@ -252,8 +252,9 @@ void* communicationThread(void* p)
       }
     }
     usleep(1000);
+    logger_flush();
   }
-  printf("Comm almost done\n");
+  LOG_INFO("Comm almost done");
 
   close(clifd);
   if(newdatasockfd > 0) {
@@ -261,7 +262,7 @@ void* communicationThread(void* p)
     newdatasockfd = 0;
   }
 
-  printf("Comm thread done\n");
+  LOG_INFO("Comm thread done");
   return NULL;
 }
 

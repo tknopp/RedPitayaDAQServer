@@ -5,4 +5,4 @@ LDLIBS = -lm -lpthread -lscpi
 
 all: daq_server_scpi.c
 	mkdir -p ../../build/server/
-	gcc $(CFLAGS) daq_server_scpi.c scpi_commands.c control.c communication.c $(LDFLAGS) $(LDLIBS) -o ../../build/server/daq_server_scpi
+	gcc $(CFLAGS) daq_server_scpi.c scpi_commands.c control.c logger.c communication.c $(LDFLAGS) $(LDLIBS) -o ../../build/server/daq_server_scpi

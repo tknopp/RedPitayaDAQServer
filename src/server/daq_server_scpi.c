@@ -52,6 +52,7 @@
 #include <pthread.h>
 #include <sched.h>
 #include <errno.h>
+#include "logger.h"
 
 #include <scpi/scpi.h>
 
@@ -147,7 +148,7 @@ void createThreads()
   pthread_attr_init(&attrControl);
   pthread_attr_setinheritsched(&attrControl, PTHREAD_EXPLICIT_SCHED);
   pthread_attr_setschedpolicy(&attrControl, SCHED_RR);
-  if( pthread_attr_setschedparam(&attrControl, &scheduleControl) != 0) printf("Failed to set sched param on control thread");
+  if( pthread_attr_setschedparam(&attrControl, &scheduleControl) != 0) LOG_INFO("Failed to set sched param on control thread");
   pthread_create(&pControl, &attrControl, controlThread, NULL);
 
   struct sched_param scheduleComm;
@@ -157,7 +158,7 @@ void createThreads()
   pthread_attr_init(&attrComm);
   pthread_attr_setinheritsched(&attrComm, PTHREAD_EXPLICIT_SCHED);
   pthread_attr_setschedpolicy(&attrComm, SCHED_RR);
-  if( pthread_attr_setschedparam(&attrComm, &scheduleComm) != 0) printf("Failed to set sched param on communication thread");
+  if( pthread_attr_setschedparam(&attrComm, &scheduleComm) != 0) LOG_INFO("Failed to set sched param on communication thread");
   pthread_create(&pComm, &attrComm, communicationThread, (void*)clifd);
   //pthread_detach(pComm);
 
@@ -168,10 +169,16 @@ void createThreads()
  *
  */
 int main(int argc, char** argv) {
-  (void) argc;
-  (void) argv;
-  int rc;
 
+  logger_initFileLogger("/media/mmcblk0p1/apps/RedPitayaDAQServer/log.txt", 1024 * 1024 * 1024, 5);
+  logger_setLevel(LogLevel_DEBUG);
+  logger_autoFlush(1);
+
+  LOG_INFO("Starting RedPitayaDAQServer");
+
+  logger_flush();
+
+  int rc;
   int listenfd;
 
   // Start socket for sending the data
@@ -187,7 +194,7 @@ int main(int argc, char** argv) {
     pthread_t this_thread = pthread_self();
     int ret = pthread_setschedparam(this_thread, SCHED_RR, &p);
     if (ret != 0) {
-      printf("Unsuccessful in setting thread realtime prio.\n");
+      LOG_INFO("Unsuccessful in setting thread realtime prio.\n");
       return 1;     
     }
 
@@ -208,6 +215,7 @@ int main(int argc, char** argv) {
 
   while (true) 
   {
+    logger_flush();
     printf("\033[0m");
     //printf("Waiting for new connection\n");
     clilen = sizeof (cliaddr);
@@ -215,7 +223,7 @@ int main(int argc, char** argv) {
 
     if (clifdTmp >= 0) 
     {
-      printf("Connection established %s\r\n", inet_ntoa(cliaddr.sin_addr));
+      LOG_INFO("Connection established %s\r\n", inet_ntoa(cliaddr.sin_addr));
       clifd = clifdTmp;
 
       scpi_context.user_context = &clifd;
