@@ -169,10 +169,11 @@ void* controlThread(void* ch)
 	      if(currentFrameTotal >= numSlowDACFramesEnabled + frameSlowDACEnabled + rampingTotalFrames)
 	      { // We now have measured enough frames and switch of the slow DAC
                 enableSlowDAC = false;
-                for(int i=0; i<4; i++)
+		stopTx();
+                /*for(int i=0; i<4; i++)
 		{
 		  setPDMAllValuesVolt(0.0, i);
-		}
+		}*/
 		frameSlowDACEnabled = -1;
 		frameRampUpStarted = -1;
 		slowDACPeriodRampUpStarted = -1;

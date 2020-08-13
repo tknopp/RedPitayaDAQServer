@@ -1,1 +1,2 @@
+mount -o rw,remount /media/mmcblk0p1
 /root/apps/RedPitayaDAQServer/build/server/daq_server_scpi  &
