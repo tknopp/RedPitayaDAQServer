@@ -97,6 +97,7 @@ int init() {
 	setRAMWriterMode(ADC_MODE_CONTINUOUS);
 	setMasterTrigger(OFF);
 	setInstantResetMode(OFF);
+        setPassPDMToFastDAC(OFF);
 
 	stopTx();
 
@@ -310,21 +311,22 @@ int setPhase(double phase, int channel, int component)
 }
 
 int setDACMode(int mode) {
-    if(mode == DAC_MODE_STANDARD) {
-        *((uint32_t *)(cfg + 0)) &= ~8;
+    //if(mode == DAC_MODE_STANDARD) {
+    //    *((uint32_t *)(cfg + 0)) &= ~8;
     //} else if(mode == DAC_MODE_AWG) {
 	// TODO AWG
         //*((uint32_t *)(cfg + 0)) |= 8;
-    } else {
-        return -1;
-    }
+    //} else {
+    //    return -1;
+    //}
     
     return 0;
 }
 
 int getDACMode() {
-    uint32_t register_value = *((uint32_t *)(cfg + 0));
-    return ((register_value & 0x00000008) >> 3);
+   return DAC_MODE_STANDARD;
+    //uint32_t register_value = *((uint32_t *)(cfg + 0));
+    //return ((register_value & 0x00000008) >> 3);
 }
 
 int setSignalType(int channel, int signal_type) {
@@ -454,23 +456,25 @@ int setPDMRegisterAllValues(uint64_t value) {
     return 0;
 }
 
-int setPDMValue(uint16_t value, int channel, int index) {
-    if(value < 0 || value >= 2048) {
+int setPDMValue(int16_t value, int channel, int index) {
+    printf("setPDMValue: value=%d channel=%d index=%d \n", value, channel, index);
+    
+    //if(value < 0 || value >= 2048) {
+    /*if( value >= 8192) {
         return -1;
-    }
+    }*/
     
     if(channel < 0 || channel >= 4) {
         return -2;
     }
     
-    //printf("setPDMValue: value=%u channel=%d index=%d \n", value, channel, index);
     //printf("%p   %p   %d \n", (void*)pdm_cfg, (void*)((uint16_t *)(pdm_cfg+2*(channel+4*index))), 2*(channel+4*index) );
-    *((uint16_t *)(pdm_cfg + 2*(channel+4*index))) = value;
+    *((int16_t *)(pdm_cfg + 2*(channel+4*index))) = value;
     
     return 0;
 }
 
-int setPDMAllValues(uint16_t value, int channel) {
+int setPDMAllValues(int16_t value, int channel) {
     for(int i=0; i<PDM_BUFF_SIZE; i++)
     {
       setPDMValue(value, channel, i);
@@ -483,10 +487,18 @@ int setPDMValueVolt(float voltage, int channel, int index) {
   //int n;
   /// Not sure what is correct here: might be helpful https://forum.redpitaya.com/viewtopic.php?f=9&t=614
   if (voltage > 1.8) voltage = 1.8;
-  if (voltage < 0) voltage = 0;
+  //if (voltage < 0) voltage = 0;
+  
   //n = (voltage / 1.8) * 2496.;
   //uint16_t val = ((n / 16) << 16) + (0xffff >> (16 - (n % 16)));
-  uint16_t val = (voltage / 1.8) * 2038.;
+  
+  int16_t val;
+
+  if( !getPassPDMToFastDAC() || channel >= 2 ) {
+    val = (voltage / 1.8) * 2038.;
+  } else {
+    val = voltage * 8192.;
+  }
 
   //printf("set val %04x.\n", val);
   return setPDMValue(val, channel, index);
@@ -717,6 +729,32 @@ int setInstantResetMode(int mode) {
     
     return 0;
 }
+
+int getPassPDMToFastDAC() {
+    int value = (((int)(*((uint8_t *)(cfg))) & 0x08) >> 3);
+	
+	if(value == 0) {
+		return OFF;
+	} else if(value == 1) {
+		return ON;
+	}
+	
+	return -1;
+}
+
+int setPassPDMToFastDAC(int mode) {
+    if(mode == OFF) {
+        *((uint8_t *)(cfg)) &= ~8;
+    } else if(mode == ON) {
+        *((uint8_t *)(cfg)) |= 8;
+    } else {
+        return -1;
+    }
+    
+    return 0;
+}
+
+
 
 
 int getKeepAliveReset() {

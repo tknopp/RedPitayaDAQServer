@@ -749,6 +749,30 @@ static scpi_result_t RP_SetWatchdogMode(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_GetPassPDMToFastDAC(scpi_t * context) {
+	const char * name;
+
+    SCPI_ChoiceToName(onoff_modes, getPassPDMToFastDAC(), &name);
+	SCPI_ResultText(context, name);
+
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_SetPassPDMToFastDAC(scpi_t * context) {
+    int32_t selection;
+
+    if (!SCPI_ParamChoice(context, onoff_modes, &selection, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+	
+	int result = setPassPDMToFastDAC(selection);
+	if (result < 0) {
+		return SCPI_RES_ERR;
+	}
+
+    return SCPI_RES_OK;
+}
+
 scpi_choice_def_t RAM_writer_modes[] = {
     {"CONTINUOUS", ADC_MODE_CONTINUOUS},
     {"TRIGGERED", ADC_MODE_TRIGGERED},
@@ -1008,6 +1032,8 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:WatchDogMode?", .callback = RP_GetWatchdogMode,},
 	{.pattern = "RP:RamWriterMode", .callback = RP_SetRAMWriterMode,},
 	{.pattern = "RP:RamWriterMode?", .callback = RP_GetRAMWriterMode,},
+	{.pattern = "RP:PassPDMToFastDAC", .callback = RP_SetPassPDMToFastDAC,},
+	{.pattern = "RP:PassPDMToFastDAC?", .callback = RP_GetPassPDMToFastDAC,},
 	{.pattern = "RP:KeepAliveReset", .callback = RP_SetKeepAliveReset,},
 	{.pattern = "RP:KeepAliveReset?", .callback = RP_GetKeepAliveReset,},
 	{.pattern = "RP:Trigger:MODe", .callback = RP_DAC_SetTriggerMode,},

@@ -83,8 +83,8 @@ extern int getPDMClockDivider();
 extern int setPDMClockDivider(int);
 extern int setPDMRegisterValue(uint64_t, int);
 extern int setPDMRegisterAllValues(uint64_t);
-extern int setPDMValue(uint16_t, int, int);
-extern int setPDMAllValues(uint16_t, int);
+extern int setPDMValue(int16_t, int, int);
+extern int setPDMAllValues(int16_t, int);
 extern int setPDMValueVolt(float, int, int);
 extern int setPDMAllValuesVolt(float, int);
 extern uint64_t getPDMRegisterValue();
@@ -116,6 +116,8 @@ extern int getXADCAResetN();
 extern int getTriggerStatus();
 extern int getWatchdogStatus();
 extern int getInstantResetStatus();
+extern int getPassPDMToFastDAC();
+extern int setPassPDMToFastDAC(int);
 extern void stopTx();
 
 #endif /* RP_DAQ_LIB_H */
