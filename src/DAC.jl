@@ -1,5 +1,11 @@
 export amplitudeDAC, frequencyDAC, phaseDAC, modeDAC,
-       DCSignDAC, signalTypeDAC, offsetDAC, jumpSharpnessDAC
+       DCSignDAC, signalTypeDAC, offsetDAC, jumpSharpnessDAC, passPDMToFastDAC
+
+function passPDMToFastDAC(rp::RedPitaya, val::Bool)
+  valStr = val ? "ON" : "OFF"
+  send(rp, string("RP:PassPDMToFastDAC ", valStr))
+end
+passPDMToFastDAC(rp::RedPitaya) = occursin("ON", query(rp,"RP:PassPDMToFastDAC?"))
 
 # TODO: make this Float64
 function amplitudeDAC(rp::RedPitaya, channel, component)
