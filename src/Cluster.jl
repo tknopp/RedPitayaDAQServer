@@ -86,7 +86,7 @@ function ramWriterMode(rpc::RedPitayaCluster, mode::String)
   end
 end
 
-for op in [:amplitudeDAC,  :frequencyDAC, :phaseDAC, :modulusFactorDAC, :modulusDAC]
+for op in [:amplitudeDAC, :amplitudeDACNext, :frequencyDAC, :phaseDAC, :modulusFactorDAC, :modulusDAC]
   @eval function $op(rpc::RedPitayaCluster, chan::Integer, component::Integer)
     idxRP = div(chan-1, 2) + 1
     chanRP = mod1(chan, 2)
