@@ -486,8 +486,6 @@ int setPDMValueVolt(float voltage, int channel, int index) {
 //    uint16_t val = (uint16_t) (((value - ANALOG_OUT_MIN_VAL) / (ANALOG_OUT_MAX_VAL - ANALOG_OUT_MIN_VAL)) * ANALOG_OUT_MAX_VAL_INTEGER);
   //int n;
   /// Not sure what is correct here: might be helpful https://forum.redpitaya.com/viewtopic.php?f=9&t=614
-  if (voltage > 1.8) voltage = 1.8;
-  //if (voltage < 0) voltage = 0;
   
   //n = (voltage / 1.8) * 2496.;
   //uint16_t val = ((n / 16) << 16) + (0xffff >> (16 - (n % 16)));
@@ -495,8 +493,12 @@ int setPDMValueVolt(float voltage, int channel, int index) {
   int16_t val;
 
   if( !getPassPDMToFastDAC() || channel >= 2 ) {
+    if (voltage > 1.8) voltage = 1.8;
+    if (voltage < 0) voltage = 0;
     val = (voltage / 1.8) * 2038.;
   } else {
+    if (voltage > 1) voltage = 1;
+    if (voltage < -1) voltage = -1;
     val = voltage * 8192.;
   }
 
