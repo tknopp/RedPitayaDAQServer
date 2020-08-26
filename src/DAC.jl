@@ -1,4 +1,4 @@
-export amplitudeDAC, frequencyDAC, phaseDAC, modeDAC,
+export amplitudeDAC, frequencyDAC, phaseDAC, modeDAC, amplitudeDACNext,
        DCSignDAC, signalTypeDAC, offsetDAC, jumpSharpnessDAC, passPDMToFastDAC
 
 function passPDMToFastDAC(rp::RedPitaya, val::Bool)
@@ -7,29 +7,41 @@ function passPDMToFastDAC(rp::RedPitaya, val::Bool)
 end
 passPDMToFastDAC(rp::RedPitaya) = occursin("ON", query(rp,"RP:PassPDMToFastDAC?"))
 
-# TODO: make this Float64
 function amplitudeDAC(rp::RedPitaya, channel, component)
   command = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":AMP?")
-  return query(rp, command, Int64)
+  return query(rp, command, Float64)
 end
 function amplitudeDAC(rp::RedPitaya, channel, component, value)
-  if value > 8191
-    error("$value is larger than 8191!")
+  if value > 1.0
+    error("$value is larger than 1.0 V!")
   end
   command = string("RP:DAC:CH", Int(channel)-1, ":COMP",
-                   Int(component)-1, ":AMP ", Int64(value))
+                   Int(component)-1, ":AMP ", Float64(value))
+  return send(rp, command)
+end
+
+function amplitudeDACNext(rp::RedPitaya, channel, component)
+  command = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":Next:AMP?")
+  return query(rp, command, Float64)
+end
+function amplitudeDACNext(rp::RedPitaya, channel, component, value)
+  if value > 1.0
+    error("$value is larger than 1.0 V!")
+  end
+  command = string("RP:DAC:CH", Int(channel)-1, ":COMP",
+                   Int(component)-1, ":Next:AMP ", Float64(value))
   return send(rp, command)
 end
 
 function offsetDAC(rp::RedPitaya, channel)
   command = string("RP:DAC:CH", Int(channel)-1, ":OFF?")
-  return query(rp, command, Int64)
+  return query(rp, command, Float64)
 end
 function offsetDAC(rp::RedPitaya, channel, value)
-  if value > 8191
-    error("$value is larger than 8191!")
+  if value > 1.0
+    error("$value is larger than 1.0 V!")
   end
-  command = string("RP:DAC:CH", Int(channel)-1, ":OFF ", Int64(value))
+  command = string("RP:DAC:CH", Int(channel)-1, ":OFF ", Float64(value))
   return send(rp, command)
 end
 
