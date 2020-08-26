@@ -85,6 +85,8 @@ double slowDACRampUpTime = 0.4;
 double slowDACFractionRampUp = 0.8;
 float *slowADCBuffer = NULL;
 
+float fastDACNextAmplitude[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
+
 pthread_t pControl;
 pthread_t pComm;
 

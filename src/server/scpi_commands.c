@@ -42,57 +42,89 @@ static scpi_result_t RP_Init(scpi_t * context) {
 
 static scpi_result_t RP_DAC_GetAmplitude(scpi_t * context) {
     int32_t numbers[2];
-	SCPI_CommandNumbers(context, numbers, 2, 1);
-	int channel = numbers[0];
-	int component = numbers[1];
+    SCPI_CommandNumbers(context, numbers, 2, 1);
+    int channel = numbers[0];
+    int component = numbers[1];
 
-	SCPI_ResultUInt16(context, getAmplitude(channel, component));
+    SCPI_ResultDouble(context, getAmplitude(channel, component) / 8192.0 );
 
     return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_DAC_SetAmplitude(scpi_t * context) {
     int32_t numbers[2];
-	SCPI_CommandNumbers(context, numbers, 2, 1);
-	int channel = numbers[0];
-	int component = numbers[1];
+    SCPI_CommandNumbers(context, numbers, 2, 1);
+    int channel = numbers[0];
+    int component = numbers[1];
 	
-	uint32_t amplitude;
-    if (!SCPI_ParamInt32(context, &amplitude, TRUE)) {
+    double amplitude;
+    if (!SCPI_ParamDouble(context, &amplitude, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 	
-	int result = setAmplitude((uint16_t)amplitude, channel, component);
+	int result = setAmplitude((uint16_t)(amplitude*8192.0), channel, component);
 	if (result < 0) {
 		return SCPI_RES_ERR;
 	}
 	
-	printf("channel = %d; component = %d, amplitude = %d\n", channel, component, amplitude);
+	printf("channel = %d; component = %d, amplitude = %f\n", channel, component, amplitude);
 	
     return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_DAC_GetNextAmplitude(scpi_t * context) {
+    int32_t numbers[2];
+    SCPI_CommandNumbers(context, numbers, 2, 1);
+    int channel = numbers[0];
+    int component = numbers[1];
+
+    SCPI_ResultDouble(context, fastDACNextAmplitude[component+4*channel]  / 8192.0 );
+
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetNextAmplitude(scpi_t * context) {
+    int32_t numbers[2];
+    SCPI_CommandNumbers(context, numbers, 2, 1);
+    int channel = numbers[0];
+    int component = numbers[1];
+	
+    double amplitude;
+    if (!SCPI_ParamDouble(context, &amplitude, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+    fastDACNextAmplitude[component+4*channel] = (uint16_t)(amplitude*8192.0); 
+	
+    printf("SetNextAmpl: channel = %d; component = %d, amplitude = %f\n", channel, component, amplitude);
+	
+    return SCPI_RES_OK;
+}
+
+
+
 static scpi_result_t RP_DAC_GetOffset(scpi_t * context) {
     int32_t numbers[1];
-	SCPI_CommandNumbers(context, numbers, 1, 1);
-	int channel = numbers[0];
+    SCPI_CommandNumbers(context, numbers, 1, 1);
+    int channel = numbers[0];
 
-	SCPI_ResultInt16(context, getOffset(channel));
+    double offset = getOffset(channel)/8192.0;
+    SCPI_ResultDouble(context, offset);
 
     return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_DAC_SetOffset(scpi_t * context) {
     int32_t numbers[1];
-	SCPI_CommandNumbers(context, numbers, 1, 1);
-	int channel = numbers[0];
+    SCPI_CommandNumbers(context, numbers, 1, 1);
+    int channel = numbers[0];
 	
-	int32_t offset;
-    if (!SCPI_ParamInt32(context, &offset, TRUE)) {
+    double offset;
+    if (!SCPI_ParamDouble(context, &offset, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 	
-	int result = setOffset((int16_t)offset, channel);
+	int result = setOffset((int16_t)(offset*8192.0), channel);
 	if (result < 0) {
 		return SCPI_RES_ERR;
 	}
@@ -109,8 +141,6 @@ static scpi_result_t RP_DAC_GetFrequency(scpi_t * context) {
 	int component = numbers[1];
 
         double freq = getFrequency(channel, component);
-        
-	printf("freq = %f \n", freq);
 	SCPI_ResultDouble(context, freq);
 
     return SCPI_RES_OK;
@@ -984,6 +1014,8 @@ const scpi_command_t scpi_commands[] = {
     {.pattern = "RP:Init", .callback = RP_Init,},
     {.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude?", .callback = RP_DAC_GetAmplitude,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude", .callback = RP_DAC_SetAmplitude,},
+    {.pattern = "RP:DAC:CHannel#:COMPonent#:Next:AMPlitude?", .callback = RP_DAC_GetNextAmplitude,},
+	{.pattern = "RP:DAC:CHannel#:COMPonent#:Next:AMPlitude", .callback = RP_DAC_SetNextAmplitude,},
     {.pattern = "RP:DAC:CHannel#:OFFset?", .callback = RP_DAC_GetOffset,},
 	{.pattern = "RP:DAC:CHannel#:OFFset", .callback = RP_DAC_SetOffset,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency?", .callback = RP_DAC_GetFrequency,},

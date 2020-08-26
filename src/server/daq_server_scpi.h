@@ -76,6 +76,7 @@ extern double slowDACRampUpTime;
 extern double slowDACFractionRampUp;
 extern float *slowADCBuffer;
 
+extern float fastDACNextAmplitude[8];
 
 extern void getprio(pthread_t id);
 

@@ -457,7 +457,7 @@ int setPDMRegisterAllValues(uint64_t value) {
 }
 
 int setPDMValue(int16_t value, int channel, int index) {
-    printf("setPDMValue: value=%d channel=%d index=%d \n", value, channel, index);
+    //printf("setPDMValue: value=%d channel=%d index=%d \n", value, channel, index);
     
     //if(value < 0 || value >= 2048) {
     /*if( value >= 8192) {
