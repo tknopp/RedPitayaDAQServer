@@ -1137,7 +1137,7 @@ CONFIG.Spurious_Free_Dynamic_Range {84} \
 CONFIG.DIN_FROM {63} \
 CONFIG.DIN_TO {16} \
 CONFIG.DIN_WIDTH {112} \
-CONFIG.DOUT_WIDTH {48} \
+CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_1_slice
 
   # Create instance: mult_gen_0, and set properties
@@ -1157,7 +1157,7 @@ CONFIG.Use_Custom_Output_Width {true} \
 CONFIG.DIN_FROM {111} \
 CONFIG.DIN_TO {64} \
 CONFIG.DIN_WIDTH {112} \
-CONFIG.DOUT_WIDTH {48} \
+CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_1_slice
 
   # Create instance: xlconcat_A_channel_1, and set properties
@@ -1237,7 +1237,7 @@ proc create_hier_cell_signal_gen { parentCell nameHier } {
 CONFIG.DIN_FROM {95} \
 CONFIG.DIN_TO {80} \
 CONFIG.DIN_WIDTH {192} \
-CONFIG.DOUT_WIDTH {16} \
+CONFIG.DOUT_WIDTH {1} \
  ] $amplitude_A_channel_1_slice1
 
   # Create instance: axis_variable_A_channel_1, and set properties
@@ -1307,7 +1307,7 @@ CONFIG.Spurious_Free_Dynamic_Range {84} \
 CONFIG.DIN_FROM {143} \
 CONFIG.DIN_TO {96} \
 CONFIG.DIN_WIDTH {192} \
-CONFIG.DOUT_WIDTH {48} \
+CONFIG.DOUT_WIDTH {1} \
  ] $freq_A_channel_1_slice
 
   # Create instance: mult_gen_0, and set properties
@@ -1336,7 +1336,7 @@ CONFIG.DOUT_WIDTH {16} \
 CONFIG.DIN_FROM {191} \
 CONFIG.DIN_TO {144} \
 CONFIG.DIN_WIDTH {192} \
-CONFIG.DOUT_WIDTH {48} \
+CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_1_slice
 
   # Create instance: phase_A_channel_1_slice1, and set properties
@@ -1345,7 +1345,7 @@ CONFIG.DOUT_WIDTH {48} \
 CONFIG.DIN_FROM {79} \
 CONFIG.DIN_TO {16} \
 CONFIG.DIN_WIDTH {192} \
-CONFIG.DOUT_WIDTH {64} \
+CONFIG.DOUT_WIDTH {1} \
  ] $phase_A_channel_1_slice1
 
   # Create instance: signal_generator_0, and set properties
@@ -1768,7 +1768,7 @@ CONFIG.Out_Width {16} \
 CONFIG.DIN_FROM {191} \
 CONFIG.DIN_TO {0} \
 CONFIG.DIN_WIDTH {528} \
-CONFIG.DOUT_WIDTH {192} \
+CONFIG.DOUT_WIDTH {1} \
  ] $xlslice_0
 
   # Create instance: xlslice_1, and set properties
@@ -1777,7 +1777,7 @@ CONFIG.DOUT_WIDTH {192} \
 CONFIG.DIN_FROM {303} \
 CONFIG.DIN_TO {192} \
 CONFIG.DIN_WIDTH {528} \
-CONFIG.DOUT_WIDTH {112} \
+CONFIG.DOUT_WIDTH {1} \
  ] $xlslice_1
 
   # Create instance: xlslice_2, and set properties
@@ -1786,7 +1786,7 @@ CONFIG.DOUT_WIDTH {112} \
 CONFIG.DIN_FROM {415} \
 CONFIG.DIN_TO {304} \
 CONFIG.DIN_WIDTH {528} \
-CONFIG.DOUT_WIDTH {112} \
+CONFIG.DOUT_WIDTH {1} \
  ] $xlslice_2
 
   # Create instance: xlslice_3, and set properties
@@ -1795,7 +1795,7 @@ CONFIG.DOUT_WIDTH {112} \
 CONFIG.DIN_FROM {527} \
 CONFIG.DIN_TO {416} \
 CONFIG.DIN_WIDTH {528} \
-CONFIG.DOUT_WIDTH {112} \
+CONFIG.DOUT_WIDTH {1} \
  ] $xlslice_3
 
   # Create port connections
@@ -2128,7 +2128,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   create_bd_pin -dir O -type rst FCLK_RESET0_N
   create_bd_pin -dir I -type clk S_AXI_HP0_ACLK
   create_bd_pin -dir I -from 63 -to 0 adc_sts
-  create_bd_pin -dir O -from 63 -to 0 cfg_data
+  create_bd_pin -dir O -from 71 -to 0 cfg_data
   create_bd_pin -dir I -from 63 -to 0 curr_pdm_values
   create_bd_pin -dir O -from 1055 -to 0 dac_cfg
   create_bd_pin -dir I dcm_locked
@@ -2140,7 +2140,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   set axi_cfg_register_cfg [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 axi_cfg_register_cfg ]
   set_property -dict [ list \
 CONFIG.AXI_ADDR_WIDTH {32} \
-CONFIG.CFG_DATA_WIDTH {64} \
+CONFIG.CFG_DATA_WIDTH {72} \
  ] $axi_cfg_register_cfg
 
   # Create instance: axi_cfg_register_dac, and set properties
@@ -2167,7 +2167,7 @@ CONFIG.NUM_MI {7} \
   set axi_sts_register_adc [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_sts_register:1.0 axi_sts_register_adc ]
   set_property -dict [ list \
 CONFIG.AXI_ADDR_WIDTH {32} \
-CONFIG.STS_DATA_WIDTH {72} \
+CONFIG.STS_DATA_WIDTH {64} \
  ] $axi_sts_register_adc
 
   # Create instance: axi_sts_register_pdm, and set properties
@@ -2541,7 +2541,7 @@ CONFIG.C_SIZE {1} \
 CONFIG.DIN_FROM {527} \
 CONFIG.DIN_TO {0} \
 CONFIG.DIN_WIDTH {1056} \
-CONFIG.DOUT_WIDTH {528} \
+CONFIG.DOUT_WIDTH {1} \
  ] $xlslice_0
 
   # Create instance: xlslice_1, and set properties
@@ -2550,7 +2550,7 @@ CONFIG.DOUT_WIDTH {528} \
 CONFIG.DIN_FROM {1055} \
 CONFIG.DIN_TO {528} \
 CONFIG.DIN_WIDTH {1056} \
-CONFIG.DOUT_WIDTH {528} \
+CONFIG.DOUT_WIDTH {1} \
  ] $xlslice_1
 
   # Create instance: xlslice_2, and set properties
@@ -2883,7 +2883,7 @@ CONFIG.DOUT_WIDTH {1} \
 CONFIG.DIN_FROM {63} \
 CONFIG.DIN_TO {32} \
 CONFIG.DIN_WIDTH {72} \
-CONFIG.DOUT_WIDTH {32} \
+CONFIG.DOUT_WIDTH {1} \
  ] $xlslice_1
 
   # Create instance: xlslice_2, and set properties
@@ -3027,6 +3027,4 @@ CONFIG.DOUT_WIDTH {8} \
 
 create_root_design ""
 
-
-common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
