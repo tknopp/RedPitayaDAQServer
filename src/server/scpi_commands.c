@@ -755,6 +755,38 @@ scpi_choice_def_t onoff_modes[] = {
     SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
+static scpi_result_t RP_DIO_SetDIOOutput(scpi_t * context) {
+    int32_t numbers[1];
+    SCPI_CommandNumbers(context, numbers, 1, 1);
+    int pin = numbers[0];
+
+    int32_t DIO_pin_output_selection;
+
+    if (!SCPI_ParamChoice(context, onoff_modes, &DIO_pin_output_selection, TRUE)) {
+        return SCPI_RES_ERR;
+    }
+
+    int result = setDIO(pin, DIO_pin_output_selection);
+    if (result < 0) {
+        return SCPI_RES_ERR;
+    }
+
+    return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DIO_GetDIOOutput(scpi_t * context) {
+    int32_t numbers[1];
+    SCPI_CommandNumbers(context, numbers, 1, 1);
+    int pin = numbers[0];
+
+    const char* name;
+
+    SCPI_ChoiceToName(onoff_modes, getDIO(pin), &name);
+    SCPI_ResultText(context, name);
+
+    return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_GetWatchdogMode(scpi_t * context) {
 	const char * name;
 
@@ -1060,6 +1092,8 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:PDM:CHannel#:NextValueVolt", .callback = RP_PDM_SetPDMNextValueVolt,},
 	{.pattern = "RP:PDM:CHannel#:NextValue?", .callback = RP_PDM_GetPDMNextValue,},
 	{.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},
+	{.pattern = "RP:DIO:PIN#", .callback = RP_DIO_SetDIOOutput,},
+	{.pattern = "RP:DIO:PIN#?", .callback = RP_DIO_GetDIOOutput,},
 	{.pattern = "RP:WatchDogMode", .callback = RP_SetWatchdogMode,},
 	{.pattern = "RP:WatchDogMode?", .callback = RP_GetWatchdogMode,},
 	{.pattern = "RP:RamWriterMode", .callback = RP_SetRAMWriterMode,},

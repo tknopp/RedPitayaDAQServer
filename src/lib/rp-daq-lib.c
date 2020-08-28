@@ -848,6 +848,31 @@ int getInstantResetStatus() {
     return value;
 }
 
+int setDIO(int pin, int value) {
+        if(pin < 0 || pin > 8) {
+        return -3;
+    }
+
+    if(value == OFF) {
+            *((uint8_t *)(cfg + 8)) &= ~(0x1 << (pin));
+    } else if(value == ON) {
+            *((uint8_t *)(cfg + 8)) |= (0x1 << (pin));
+    } else {
+        return -1;
+    }
+
+    return 0;
+}
+
+int getDIO(int pin) {
+        if(pin < 0 || pin > 8) {
+        return -3;
+    }
+
+    uint32_t register_value = *((uint8_t *)(cfg + 8));
+    return ((register_value & (0x1 << (pin))) >> (pin));
+}
+
 void stopTx() {
 	setAmplitude(0, 0, 0);
 	setAmplitude(0, 0, 1);
