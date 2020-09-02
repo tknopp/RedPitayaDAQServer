@@ -2128,6 +2128,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   create_bd_pin -dir O -type rst FCLK_RESET0_N
   create_bd_pin -dir I -type clk S_AXI_HP0_ACLK
   create_bd_pin -dir I -from 63 -to 0 adc_sts
+  create_bd_pin -dir I -type rst aresetn
   create_bd_pin -dir O -from 79 -to 0 cfg_data
   create_bd_pin -dir I -from 63 -to 0 curr_pdm_values
   create_bd_pin -dir O -from 1055 -to 0 dac_cfg
@@ -2135,6 +2136,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   create_bd_pin -dir O -from 8191 -to 0 pdm_data
   create_bd_pin -dir O -from 0 -to 0 -type rst peripheral_aresetn
   create_bd_pin -dir I -from 31 -to 0 reset_sts
+  create_bd_pin -dir I -from 7 -to 0 sts_data
 
   # Create instance: axi_cfg_register_cfg, and set properties
   set axi_cfg_register_cfg [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 axi_cfg_register_cfg ]
@@ -2160,8 +2162,19 @@ CONFIG.CFG_DATA_WIDTH {8192} \
   # Create instance: axi_interconnect_0, and set properties
   set axi_interconnect_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0 ]
   set_property -dict [ list \
-CONFIG.NUM_MI {7} \
+CONFIG.NUM_MI {8} \
  ] $axi_interconnect_0
+
+  # Create instance: axi_sts_register_DIO_In, and set properties
+  set axi_sts_register_DIO_In [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_sts_register:1.0 axi_sts_register_DIO_In ]
+  set_property -dict [ list \
+CONFIG.STS_DATA_WIDTH {8} \
+ ] $axi_sts_register_DIO_In
+
+  set_property -dict [ list \
+CONFIG.NUM_READ_OUTSTANDING {1} \
+CONFIG.NUM_WRITE_OUTSTANDING {1} \
+ ] [get_bd_intf_pins /system/axi_sts_register_DIO_In/S_AXI]
 
   # Create instance: axi_sts_register_adc, and set properties
   set axi_sts_register_adc [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_sts_register:1.0 axi_sts_register_adc ]
@@ -2209,23 +2222,26 @@ CONFIG.PCW_USE_S_AXI_HP1 {0} \
   connect_bd_intf_net -intf_net axi_interconnect_0_M04_AXI [get_bd_intf_pins axi_interconnect_0/M04_AXI] [get_bd_intf_pins axi_sts_register_pdm/S_AXI]
   connect_bd_intf_net -intf_net axi_interconnect_0_M05_AXI [get_bd_intf_pins axi_cfg_register_cfg/S_AXI] [get_bd_intf_pins axi_interconnect_0/M05_AXI]
   connect_bd_intf_net -intf_net axi_interconnect_0_M06_AXI [get_bd_intf_pins axi_interconnect_0/M06_AXI] [get_bd_intf_pins axi_sts_register_reset/S_AXI]
+  connect_bd_intf_net -intf_net axi_interconnect_0_M07_AXI [get_bd_intf_pins axi_interconnect_0/M07_AXI] [get_bd_intf_pins axi_sts_register_DIO_In/S_AXI]
   connect_bd_intf_net -intf_net axis_ram_writer_0_m_axi [get_bd_intf_pins S_AXI_HP0] [get_bd_intf_pins processing_system7_0/S_AXI_HP0]
   connect_bd_intf_net -intf_net processing_system7_0_DDR [get_bd_intf_pins DDR] [get_bd_intf_pins processing_system7_0/DDR]
   connect_bd_intf_net -intf_net processing_system7_0_FIXED_IO [get_bd_intf_pins FIXED_IO] [get_bd_intf_pins processing_system7_0/FIXED_IO]
   connect_bd_intf_net -intf_net processing_system7_0_M_AXI_GP0 [get_bd_intf_pins axi_interconnect_0/S00_AXI] [get_bd_intf_pins processing_system7_0/M_AXI_GP0]
 
   # Create port connections
+  connect_bd_net -net aresetn_1 [get_bd_pins aresetn] [get_bd_pins axi_sts_register_DIO_In/aresetn]
   connect_bd_net -net axi_cfg_register_1_cfg_data1 [get_bd_pins dac_cfg] [get_bd_pins axi_cfg_register_dac/cfg_data]
   connect_bd_net -net axi_cfg_register_1_cfg_data2 [get_bd_pins cfg_data] [get_bd_pins axi_cfg_register_cfg/cfg_data]
   connect_bd_net -net axi_cfg_register_pdm_cfg_data [get_bd_pins pdm_data] [get_bd_pins axi_cfg_register_pdm/cfg_data]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins S_AXI_HP0_ACLK] [get_bd_pins axi_cfg_register_cfg/aclk] [get_bd_pins axi_cfg_register_dac/aclk] [get_bd_pins axi_cfg_register_pdm/aclk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/M01_ACLK] [get_bd_pins axi_interconnect_0/M02_ACLK] [get_bd_pins axi_interconnect_0/M03_ACLK] [get_bd_pins axi_interconnect_0/M04_ACLK] [get_bd_pins axi_interconnect_0/M05_ACLK] [get_bd_pins axi_interconnect_0/M06_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_sts_register_adc/aclk] [get_bd_pins axi_sts_register_pdm/aclk] [get_bd_pins axi_sts_register_reset/aclk] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins processing_system7_0/S_AXI_HP0_ACLK] [get_bd_pins rst_ps7_0_125M/slowest_sync_clk]
+  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins S_AXI_HP0_ACLK] [get_bd_pins axi_cfg_register_cfg/aclk] [get_bd_pins axi_cfg_register_dac/aclk] [get_bd_pins axi_cfg_register_pdm/aclk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/M01_ACLK] [get_bd_pins axi_interconnect_0/M02_ACLK] [get_bd_pins axi_interconnect_0/M03_ACLK] [get_bd_pins axi_interconnect_0/M04_ACLK] [get_bd_pins axi_interconnect_0/M05_ACLK] [get_bd_pins axi_interconnect_0/M06_ACLK] [get_bd_pins axi_interconnect_0/M07_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_sts_register_DIO_In/aclk] [get_bd_pins axi_sts_register_adc/aclk] [get_bd_pins axi_sts_register_pdm/aclk] [get_bd_pins axi_sts_register_reset/aclk] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins processing_system7_0/S_AXI_HP0_ACLK] [get_bd_pins rst_ps7_0_125M/slowest_sync_clk]
   connect_bd_net -net clk_wiz_0_locked [get_bd_pins dcm_locked] [get_bd_pins rst_ps7_0_125M/dcm_locked]
   connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins FCLK_CLK0] [get_bd_pins processing_system7_0/FCLK_CLK0]
   connect_bd_net -net processing_system7_0_FCLK_RESET0_N [get_bd_pins FCLK_RESET0_N] [get_bd_pins processing_system7_0/FCLK_RESET0_N]
   connect_bd_net -net rst_ps7_0_125M_interconnect_aresetn [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins rst_ps7_0_125M/interconnect_aresetn]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins peripheral_aresetn] [get_bd_pins axi_cfg_register_cfg/aresetn] [get_bd_pins axi_cfg_register_dac/aresetn] [get_bd_pins axi_cfg_register_pdm/aresetn] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/M02_ARESETN] [get_bd_pins axi_interconnect_0/M03_ARESETN] [get_bd_pins axi_interconnect_0/M04_ARESETN] [get_bd_pins axi_interconnect_0/M05_ARESETN] [get_bd_pins axi_interconnect_0/M06_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_sts_register_adc/aresetn] [get_bd_pins axi_sts_register_pdm/aresetn] [get_bd_pins axi_sts_register_reset/aresetn] [get_bd_pins rst_ps7_0_125M/peripheral_aresetn]
+  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins peripheral_aresetn] [get_bd_pins axi_cfg_register_cfg/aresetn] [get_bd_pins axi_cfg_register_dac/aresetn] [get_bd_pins axi_cfg_register_pdm/aresetn] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/M02_ARESETN] [get_bd_pins axi_interconnect_0/M03_ARESETN] [get_bd_pins axi_interconnect_0/M04_ARESETN] [get_bd_pins axi_interconnect_0/M05_ARESETN] [get_bd_pins axi_interconnect_0/M06_ARESETN] [get_bd_pins axi_interconnect_0/M07_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_sts_register_adc/aresetn] [get_bd_pins axi_sts_register_pdm/aresetn] [get_bd_pins axi_sts_register_reset/aresetn] [get_bd_pins rst_ps7_0_125M/peripheral_aresetn]
   connect_bd_net -net sts_data1_1 [get_bd_pins curr_pdm_values] [get_bd_pins axi_sts_register_pdm/sts_data]
   connect_bd_net -net sts_data_1 [get_bd_pins reset_sts] [get_bd_pins axi_sts_register_reset/sts_data]
+  connect_bd_net -net sts_data_2 [get_bd_pins sts_data] [get_bd_pins axi_sts_register_DIO_In/sts_data]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins adc_sts] [get_bd_pins axi_sts_register_adc/sts_data]
   connect_bd_net -net xlconstant_6_dout [get_bd_pins rst_ps7_0_125M/ext_reset_in] [get_bd_pins xlconstant_6/dout]
 
@@ -2987,6 +3003,7 @@ CONFIG.DOUT_WIDTH {1} \
   connect_bd_net -net fourier_synth_standard_synth_tvalid [get_bd_pins axis_red_pitaya_dac_0/s_axis_tvalid] [get_bd_pins fourier_synth_standard/synth_tvalid]
   connect_bd_net -net pdm_oa_dac [get_bd_pins fourier_synth_standard/oa_dac] [get_bd_pins pdm/oa_dac]
   connect_bd_net -net pdm_pdm_sts [get_bd_pins pdm/pdm_sts] [get_bd_pins system/curr_pdm_values]
+  connect_bd_net -net proc_sys_reset_fourier_synth_peripheral_aresetn [get_bd_pins proc_sys_reset_fourier_synth/peripheral_aresetn] [get_bd_pins system/aresetn]
   connect_bd_net -net proc_sys_reset_pdm_peripheral_aresetn [get_bd_pins pdm/aresetn] [get_bd_pins proc_sys_reset_pdm/peripheral_aresetn]
   connect_bd_net -net proc_sys_reset_write_to_ram_peripheral_aresetn [get_bd_pins proc_sys_reset_write_to_ram/peripheral_aresetn] [get_bd_pins write_to_ram/aresetn]
   connect_bd_net -net proc_sys_reset_xadc_peripheral_aresetn [get_bd_pins proc_sys_reset_xadc/peripheral_aresetn] [get_bd_pins xadc_wiz_0/s_axi_aresetn]
@@ -3007,6 +3024,7 @@ CONFIG.DOUT_WIDTH {1} \
   connect_bd_net -net util_vector_logic_0_Res [get_bd_pins clk_wiz_0/clk_in_sel] [get_bd_pins util_vector_logic_0/Res]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins system/adc_sts] [get_bd_pins write_to_ram/sts_data]
   connect_bd_net -net xlconcat_0_dout1 [get_bd_ports dac_pwm_o] [get_bd_pins pdm/dout]
+  connect_bd_net -net xlconcat_2_dout [get_bd_pins system/sts_data] [get_bd_pins xlconcat_2/dout]
   connect_bd_net -net xlconstant_0_dout [get_bd_ports ext_DIO1_N] [get_bd_pins xlconstant_0/dout]
   connect_bd_net -net xlconstant_5_dout [get_bd_pins clk_wiz_0/reset] [get_bd_pins clk_wiz_1/reset] [get_bd_pins util_vector_logic_1/Res]
   connect_bd_net -net xlslice_0_Dout [get_bd_pins pdm/Din] [get_bd_pins system/pdm_data]
@@ -3022,6 +3040,7 @@ CONFIG.DOUT_WIDTH {1} \
   create_bd_addr_seg -range 0x00001000 -offset 0x40004000 [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_cfg_register_cfg/s_axi/reg0] SEG_axi_cfg_register_cfg_reg0
   create_bd_addr_seg -range 0x00001000 -offset 0x40000000 [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_cfg_register_dac/s_axi/reg0] SEG_axi_cfg_register_dac_reg0
   create_bd_addr_seg -range 0x00001000 -offset 0x40002000 [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_cfg_register_pdm/s_axi/reg0] SEG_axi_cfg_register_pdm_reg0
+  create_bd_addr_seg -range 0x00001000 -offset 0x43C00000 [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_sts_register_DIO_In/s_axi/reg0] SEG_axi_sts_register_0_reg0
   create_bd_addr_seg -range 0x00001000 -offset 0x40001000 [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_sts_register_adc/s_axi/reg0] SEG_axi_sts_register_adc_reg0
   create_bd_addr_seg -range 0x00001000 -offset 0x40003000 [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_sts_register_pdm/s_axi/reg0] SEG_axi_sts_register_pdm_reg0
   create_bd_addr_seg -range 0x00001000 -offset 0x40005000 [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_sts_register_reset/s_axi/reg0] SEG_axi_sts_register_reset_reg0
