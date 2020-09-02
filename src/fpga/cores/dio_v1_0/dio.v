@@ -1,5 +1,6 @@
 `timescale 1ns / 1ps
 
+(* DONT_TOUCH = "yes" *)
 module dio #
 (
     // No parameters
@@ -24,10 +25,8 @@ module dio #
     output DIO_7_in,
     
     input [8-1:0] value,
-    input [8-1:0] state,
-    
-    input clk,
-    input aresetn
+    input [8-1:0] state
+
 );
 
     wire DIO_0_out;

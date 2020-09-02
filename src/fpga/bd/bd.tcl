@@ -2128,7 +2128,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   create_bd_pin -dir O -type rst FCLK_RESET0_N
   create_bd_pin -dir I -type clk S_AXI_HP0_ACLK
   create_bd_pin -dir I -from 63 -to 0 adc_sts
-  create_bd_pin -dir O -from 71 -to 0 cfg_data
+  create_bd_pin -dir O -from 79 -to 0 cfg_data
   create_bd_pin -dir I -from 63 -to 0 curr_pdm_values
   create_bd_pin -dir O -from 1055 -to 0 dac_cfg
   create_bd_pin -dir I dcm_locked
@@ -2140,7 +2140,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   set axi_cfg_register_cfg [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 axi_cfg_register_cfg ]
   set_property -dict [ list \
 CONFIG.AXI_ADDR_WIDTH {32} \
-CONFIG.CFG_DATA_WIDTH {72} \
+CONFIG.CFG_DATA_WIDTH {80} \
  ] $axi_cfg_register_cfg
 
   # Create instance: axi_cfg_register_dac, and set properties
@@ -2661,7 +2661,7 @@ CONFIG.FREQ_HZ {125000000} \
   set ext_DIO0_P [ create_bd_port -dir IO ext_DIO0_P ]
   set ext_DIO1_N [ create_bd_port -dir O -from 0 -to 0 ext_DIO1_N ]
   set ext_DIO1_P [ create_bd_port -dir IO ext_DIO1_P ]
-  set ext_DIO2_N [ create_bd_port -dir IO ext_DIO2_N ]
+  set ext_DIO2_N [ create_bd_port -dir IO -from 0 -to 0 ext_DIO2_N ]
   set ext_DIO2_P [ create_bd_port -dir IO ext_DIO2_P ]
   set ext_DIO3_N [ create_bd_port -dir IO ext_DIO3_N ]
   set ext_DIO3_P [ create_bd_port -dir IO ext_DIO3_P ]
@@ -2855,25 +2855,30 @@ CONFIG.SINGLE_CHANNEL_SELECTION {TEMPERATURE} \
 CONFIG.XADC_STARUP_SELECTION {independent_adc} \
  ] $xadc_wiz_0
 
+  # Create instance: xlconcat_2, and set properties
+  set xlconcat_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_2 ]
+  set_property -dict [ list \
+CONFIG.NUM_PORTS {8} \
+ ] $xlconcat_2
+
   # Create instance: xlconstant_0, and set properties
   set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
   set_property -dict [ list \
 CONFIG.CONST_VAL {0} \
  ] $xlconstant_0
 
-  # Create instance: xlconstant_1, and set properties
-  set xlconstant_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_1 ]
+  # Create instance: xlconstant_2, and set properties
+  set xlconstant_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_2 ]
   set_property -dict [ list \
-CONFIG.CONST_VAL {0} \
 CONFIG.CONST_WIDTH {8} \
- ] $xlconstant_1
+ ] $xlconstant_2
 
   # Create instance: xlslice_0, and set properties
   set xlslice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_0 ]
   set_property -dict [ list \
 CONFIG.DIN_FROM {3} \
 CONFIG.DIN_TO {3} \
-CONFIG.DIN_WIDTH {72} \
+CONFIG.DIN_WIDTH {80} \
 CONFIG.DOUT_WIDTH {1} \
  ] $xlslice_0
 
@@ -2882,7 +2887,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {63} \
 CONFIG.DIN_TO {32} \
-CONFIG.DIN_WIDTH {72} \
+CONFIG.DIN_WIDTH {80} \
 CONFIG.DOUT_WIDTH {1} \
  ] $xlslice_1
 
@@ -2891,7 +2896,7 @@ CONFIG.DOUT_WIDTH {1} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {31} \
 CONFIG.DIN_TO {16} \
-CONFIG.DIN_WIDTH {72} \
+CONFIG.DIN_WIDTH {80} \
 CONFIG.DOUT_WIDTH {16} \
  ] $xlslice_2
 
@@ -2900,7 +2905,7 @@ CONFIG.DOUT_WIDTH {16} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {15} \
 CONFIG.DIN_TO {8} \
-CONFIG.DIN_WIDTH {72} \
+CONFIG.DIN_WIDTH {80} \
 CONFIG.DOUT_WIDTH {8} \
  ] $xlslice_3
 
@@ -2909,9 +2914,18 @@ CONFIG.DOUT_WIDTH {8} \
   set_property -dict [ list \
 CONFIG.DIN_FROM {71} \
 CONFIG.DIN_TO {64} \
-CONFIG.DIN_WIDTH {72} \
-CONFIG.DOUT_WIDTH {8} \
+CONFIG.DIN_WIDTH {80} \
+CONFIG.DOUT_WIDTH {1} \
  ] $xlslice_4
+
+  # Create instance: xlslice_5, and set properties
+  set xlslice_5 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_5 ]
+  set_property -dict [ list \
+CONFIG.DIN_FROM {79} \
+CONFIG.DIN_TO {72} \
+CONFIG.DIN_WIDTH {80} \
+CONFIG.DOUT_WIDTH {1} \
+ ] $xlslice_5
 
   # Create interface connections
   connect_bd_intf_net -intf_net Vaux0_1 [get_bd_intf_ports Vaux0] [get_bd_intf_pins xadc_wiz_0/Vaux0]
@@ -2933,14 +2947,14 @@ CONFIG.DOUT_WIDTH {8} \
   connect_bd_net -net Net3 [get_bd_ports ext_DIO3_P] [get_bd_pins reset_manager_0/instant_reset]
   connect_bd_net -net Net4 [get_bd_ports ext_DIO4_P] [get_bd_pins reset_manager_0/alive_signal]
   connect_bd_net -net Net5 [get_bd_ports ext_DIO5_P] [get_bd_pins reset_manager_0/master_trigger]
-  connect_bd_net -net Net6 [get_bd_ports ext_DIO7_P] [get_bd_pins dio_0/DIO_0]
-  connect_bd_net -net Net7 [get_bd_ports ext_DIO7_N] [get_bd_pins dio_0/DIO_1]
-  connect_bd_net -net Net8 [get_bd_ports ext_DIO6_P] [get_bd_pins dio_0/DIO_2]
-  connect_bd_net -net Net9 [get_bd_ports ext_DIO6_N] [get_bd_pins dio_0/DIO_3]
-  connect_bd_net -net Net10 [get_bd_ports ext_DIO5_N] [get_bd_pins dio_0/DIO_4]
-  connect_bd_net -net Net11 [get_bd_ports ext_DIO4_N] [get_bd_pins dio_0/DIO_5]
-  connect_bd_net -net Net12 [get_bd_ports ext_DIO3_N] [get_bd_pins dio_0/DIO_6]
-  connect_bd_net -net Net13 [get_bd_ports ext_DIO2_N] [get_bd_pins dio_0/DIO_7]
+  connect_bd_net -net Net6 [get_bd_ports ext_DIO2_N] [get_bd_pins dio_0/DIO_0]
+  connect_bd_net -net Net7 [get_bd_ports ext_DIO3_N] [get_bd_pins dio_0/DIO_1]
+  connect_bd_net -net Net8 [get_bd_ports ext_DIO4_N] [get_bd_pins dio_0/DIO_2]
+  connect_bd_net -net Net9 [get_bd_ports ext_DIO5_N] [get_bd_pins dio_0/DIO_3]
+  connect_bd_net -net Net10 [get_bd_ports ext_DIO6_N] [get_bd_pins dio_0/DIO_4]
+  connect_bd_net -net Net11 [get_bd_ports ext_DIO6_P] [get_bd_pins dio_0/DIO_5]
+  connect_bd_net -net Net12 [get_bd_ports ext_DIO7_N] [get_bd_pins dio_0/DIO_6]
+  connect_bd_net -net Net13 [get_bd_ports ext_DIO7_P] [get_bd_pins dio_0/DIO_7]
   connect_bd_net -net adc_clk_n_i_1 [get_bd_ports adc_clk_n_i] [get_bd_pins axis_red_pitaya_adc_0/adc_clk_n]
   connect_bd_net -net adc_clk_p_i_1 [get_bd_ports adc_clk_p_i] [get_bd_pins axis_red_pitaya_adc_0/adc_clk_p]
   connect_bd_net -net adc_dat_a_i_1 [get_bd_ports adc_dat_a_i] [get_bd_pins axis_red_pitaya_adc_0/adc_dat_a]
@@ -2955,24 +2969,30 @@ CONFIG.DOUT_WIDTH {8} \
   connect_bd_net -net axis_red_pitaya_dac_0_dac_sel [get_bd_ports dac_sel_o] [get_bd_pins axis_red_pitaya_dac_0/dac_sel]
   connect_bd_net -net axis_red_pitaya_dac_0_dac_wrt [get_bd_ports dac_wrt_o] [get_bd_pins axis_red_pitaya_dac_0/dac_wrt]
   connect_bd_net -net clk_wiz_0_clk_ddr [get_bd_pins axis_red_pitaya_dac_0/ddr_clk] [get_bd_pins clk_wiz_0/clk_ddr] [get_bd_pins pdm/ddr_clk]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins axis_red_pitaya_dac_0/aclk] [get_bd_pins clk_wiz_0/clk_internal] [get_bd_pins dio_0/clk] [get_bd_pins fourier_synth_standard/aclk] [get_bd_pins pdm/aclk] [get_bd_pins proc_sys_reset_fourier_synth/slowest_sync_clk] [get_bd_pins proc_sys_reset_pdm/slowest_sync_clk] [get_bd_pins proc_sys_reset_write_to_ram/slowest_sync_clk] [get_bd_pins proc_sys_reset_xadc/slowest_sync_clk] [get_bd_pins reset_manager_0/clk] [get_bd_pins selectio_wiz_1/clk_in] [get_bd_pins system/S_AXI_HP0_ACLK] [get_bd_pins util_ds_buf_0/OBUF_IN] [get_bd_pins write_to_ram/aclk] [get_bd_pins xadc_wiz_0/s_axi_aclk]
+  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins axis_red_pitaya_dac_0/aclk] [get_bd_pins clk_wiz_0/clk_internal] [get_bd_pins fourier_synth_standard/aclk] [get_bd_pins pdm/aclk] [get_bd_pins proc_sys_reset_fourier_synth/slowest_sync_clk] [get_bd_pins proc_sys_reset_pdm/slowest_sync_clk] [get_bd_pins proc_sys_reset_write_to_ram/slowest_sync_clk] [get_bd_pins proc_sys_reset_xadc/slowest_sync_clk] [get_bd_pins reset_manager_0/clk] [get_bd_pins selectio_wiz_1/clk_in] [get_bd_pins system/S_AXI_HP0_ACLK] [get_bd_pins util_ds_buf_0/OBUF_IN] [get_bd_pins write_to_ram/aclk] [get_bd_pins xadc_wiz_0/s_axi_aclk]
   connect_bd_net -net clk_wiz_0_locked [get_bd_pins axis_red_pitaya_dac_0/locked] [get_bd_pins clk_wiz_0/locked] [get_bd_pins selectio_wiz_1/clock_enable] [get_bd_pins system/dcm_locked]
   connect_bd_net -net clk_wiz_1_clk_out1 [get_bd_pins clk_wiz_0/clk_in2] [get_bd_pins clk_wiz_1/clk_out1]
   connect_bd_net -net daisy_n_i_1 [get_bd_ports daisy_n_i] [get_bd_pins selectio_wiz_2/data_in_from_pins_n]
   connect_bd_net -net daisy_p_i_1 [get_bd_ports daisy_p_i] [get_bd_pins selectio_wiz_2/data_in_from_pins_p]
+  connect_bd_net -net dio_0_DIO_0_in [get_bd_pins dio_0/DIO_0_in] [get_bd_pins xlconcat_2/In0]
+  connect_bd_net -net dio_0_DIO_1_in [get_bd_pins dio_0/DIO_1_in] [get_bd_pins xlconcat_2/In1]
+  connect_bd_net -net dio_0_DIO_2_in [get_bd_pins dio_0/DIO_2_in] [get_bd_pins xlconcat_2/In2]
+  connect_bd_net -net dio_0_DIO_3_in [get_bd_pins dio_0/DIO_3_in] [get_bd_pins xlconcat_2/In3]
+  connect_bd_net -net dio_0_DIO_4_in [get_bd_pins dio_0/DIO_4_in] [get_bd_pins xlconcat_2/In4]
+  connect_bd_net -net dio_0_DIO_5_in [get_bd_pins dio_0/DIO_5_in] [get_bd_pins xlconcat_2/In5]
+  connect_bd_net -net dio_0_DIO_6_in [get_bd_pins dio_0/DIO_6_in] [get_bd_pins xlconcat_2/In6]
+  connect_bd_net -net dio_0_DIO_7_in [get_bd_pins dio_0/DIO_7_in] [get_bd_pins xlconcat_2/In7]
   connect_bd_net -net ext_DIO0_N_1 [get_bd_ports ext_DIO0_N] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net fourier_synth_standard_synth_tdata [get_bd_pins axis_red_pitaya_dac_0/s_axis_tdata] [get_bd_pins fourier_synth_standard/synth_tdata]
   connect_bd_net -net fourier_synth_standard_synth_tvalid [get_bd_pins axis_red_pitaya_dac_0/s_axis_tvalid] [get_bd_pins fourier_synth_standard/synth_tvalid]
   connect_bd_net -net pdm_oa_dac [get_bd_pins fourier_synth_standard/oa_dac] [get_bd_pins pdm/oa_dac]
   connect_bd_net -net pdm_pdm_sts [get_bd_pins pdm/pdm_sts] [get_bd_pins system/curr_pdm_values]
-  connect_bd_net -net proc_sys_reset_fourier_synth_peripheral_aresetn [get_bd_pins fourier_synth_standard/aresetn] [get_bd_pins proc_sys_reset_fourier_synth/peripheral_aresetn]
   connect_bd_net -net proc_sys_reset_pdm_peripheral_aresetn [get_bd_pins pdm/aresetn] [get_bd_pins proc_sys_reset_pdm/peripheral_aresetn]
   connect_bd_net -net proc_sys_reset_write_to_ram_peripheral_aresetn [get_bd_pins proc_sys_reset_write_to_ram/peripheral_aresetn] [get_bd_pins write_to_ram/aresetn]
   connect_bd_net -net proc_sys_reset_xadc_peripheral_aresetn [get_bd_pins proc_sys_reset_xadc/peripheral_aresetn] [get_bd_pins xadc_wiz_0/s_axi_aresetn]
   connect_bd_net -net reset_manager_0_fourier_synth_aresetn [get_bd_pins proc_sys_reset_fourier_synth/ext_reset_in] [get_bd_pins reset_manager_0/fourier_synth_aresetn]
   connect_bd_net -net reset_manager_0_led [get_bd_ports led_o] [get_bd_pins reset_manager_0/led]
   connect_bd_net -net reset_manager_0_pdm_aresetn [get_bd_pins proc_sys_reset_pdm/ext_reset_in] [get_bd_pins reset_manager_0/pdm_aresetn]
-  connect_bd_net -net reset_manager_0_reset_sts [get_bd_pins reset_manager_0/reset_sts] [get_bd_pins system/reset_sts]
   connect_bd_net -net reset_manager_0_write_to_ram_aresetn [get_bd_pins proc_sys_reset_write_to_ram/ext_reset_in] [get_bd_pins reset_manager_0/write_to_ram_aresetn]
   connect_bd_net -net reset_manager_0_xadc_aresetn [get_bd_pins proc_sys_reset_xadc/ext_reset_in] [get_bd_pins reset_manager_0/xadc_aresetn]
   connect_bd_net -net selectio_wiz_1_data_out_to_pins_n [get_bd_ports daisy_n_o] [get_bd_pins selectio_wiz_1/data_out_to_pins_n]
@@ -2980,15 +3000,14 @@ CONFIG.DOUT_WIDTH {8} \
   connect_bd_net -net selectio_wiz_2_clk_out [get_bd_pins clk_wiz_1/clk_in1] [get_bd_pins selectio_wiz_2/clk_out]
   connect_bd_net -net system_FCLK_RESET0_N [get_bd_pins system/FCLK_RESET0_N] [get_bd_pins util_vector_logic_1/Op1]
   connect_bd_net -net system_cfg_data [get_bd_pins fourier_synth_standard/cfg_data] [get_bd_pins system/dac_cfg]
-  connect_bd_net -net system_cfg_data1 [get_bd_pins system/cfg_data] [get_bd_pins xlslice_0/Din] [get_bd_pins xlslice_1/Din] [get_bd_pins xlslice_2/Din] [get_bd_pins xlslice_3/Din] [get_bd_pins xlslice_4/Din]
-  connect_bd_net -net system_peripheral_aresetn [get_bd_pins dio_0/aresetn] [get_bd_pins reset_manager_0/peripheral_aresetn] [get_bd_pins system/peripheral_aresetn]
+  connect_bd_net -net system_cfg_data1 [get_bd_pins system/cfg_data] [get_bd_pins xlslice_0/Din] [get_bd_pins xlslice_1/Din] [get_bd_pins xlslice_2/Din] [get_bd_pins xlslice_3/Din] [get_bd_pins xlslice_4/Din] [get_bd_pins xlslice_5/Din]
+  connect_bd_net -net system_peripheral_aresetn [get_bd_pins reset_manager_0/peripheral_aresetn] [get_bd_pins system/peripheral_aresetn]
   connect_bd_net -net util_ds_buf_0_OBUF_DS_N [get_bd_ports adc_enc_n_o] [get_bd_pins util_ds_buf_0/OBUF_DS_N]
   connect_bd_net -net util_ds_buf_0_OBUF_DS_P [get_bd_ports adc_enc_p_o] [get_bd_pins util_ds_buf_0/OBUF_DS_P]
   connect_bd_net -net util_vector_logic_0_Res [get_bd_pins clk_wiz_0/clk_in_sel] [get_bd_pins util_vector_logic_0/Res]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins system/adc_sts] [get_bd_pins write_to_ram/sts_data]
   connect_bd_net -net xlconcat_0_dout1 [get_bd_ports dac_pwm_o] [get_bd_pins pdm/dout]
   connect_bd_net -net xlconstant_0_dout [get_bd_ports ext_DIO1_N] [get_bd_pins xlconstant_0/dout]
-  connect_bd_net -net xlconstant_1_dout [get_bd_pins dio_0/state] [get_bd_pins xlconstant_1/dout]
   connect_bd_net -net xlconstant_5_dout [get_bd_pins clk_wiz_0/reset] [get_bd_pins clk_wiz_1/reset] [get_bd_pins util_vector_logic_1/Res]
   connect_bd_net -net xlslice_0_Dout [get_bd_pins pdm/Din] [get_bd_pins system/pdm_data]
   connect_bd_net -net xlslice_0_Dout1 [get_bd_pins fourier_synth_standard/dyn_offset_enable] [get_bd_pins pdm/dyn_offset_enable] [get_bd_pins xlslice_0/Dout]
@@ -2997,6 +3016,7 @@ CONFIG.DOUT_WIDTH {8} \
   connect_bd_net -net xlslice_2_Dout [get_bd_pins write_to_ram/decimation] [get_bd_pins xlslice_2/Dout]
   connect_bd_net -net xlslice_3_Dout [get_bd_pins reset_manager_0/reset_cfg] [get_bd_pins xlslice_3/Dout]
   connect_bd_net -net xlslice_4_Dout [get_bd_pins dio_0/value] [get_bd_pins xlslice_4/Dout]
+  connect_bd_net -net xlslice_5_Dout [get_bd_pins dio_0/state] [get_bd_pins xlslice_5/Dout]
 
   # Create address segments
   create_bd_addr_seg -range 0x00001000 -offset 0x40004000 [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_cfg_register_cfg/s_axi/reg0] SEG_axi_cfg_register_cfg_reg0
@@ -3027,4 +3047,6 @@ CONFIG.DOUT_WIDTH {8} \
 
 create_root_design ""
 
+
+common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
