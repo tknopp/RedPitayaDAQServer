@@ -27,7 +27,7 @@ TARGET=monitor
 
 # GCC compiling & linking flags
 CFLAGS  = -g -std=gnu99 -Wall
-CFLAGS += -I../../api/include
+CFLAGS += -I./
 CFLAGS += -DVERSION=$(VERSION) -DREVISION=$(REVISION)
 
 # Additional libraries which needs to be dynamically linked to the executable
