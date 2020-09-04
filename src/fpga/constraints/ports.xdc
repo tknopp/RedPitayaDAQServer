@@ -158,100 +158,104 @@ set_property PACKAGE_PIN C20 [get_ports Vaux0_v_p]
 set_property PACKAGE_PIN B20 [get_ports Vaux0_v_n]
 
 ### Expansion connector
+### Expansion connector
 
-set_property IOSTANDARD LVCMOS33 [get_ports ext_DIO0_P]
-set_property SLEW FAST [get_ports ext_DIO0_P]
-set_property DRIVE 8 [get_ports ext_DIO0_P]
-set_property PULLDOWN true [get_ports ext_DIO0_P]
-set_property PACKAGE_PIN G17 [get_ports ext_DIO0_P]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_DIO0_P}];
+set_property SLEW FAST [get_ports {ext_DIO0_P}];
+set_property DRIVE 8 [get_ports {ext_DIO0_P}];
+set_property PULLTYPE PULLDOWN [get_ports {ext_DIO0_P}];
+set_property PACKAGE_PIN G17 [get_ports {ext_DIO0_P}]; # Ext. trigger
 
-set_property IOSTANDARD LVCMOS33 [get_ports ext_DIO0_N]
-set_property PULLDOWN true [get_ports ext_DIO0_N]
-set_property PACKAGE_PIN G18 [get_ports ext_DIO0_N]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_DIO0_N}];
+set_property SLEW FAST [get_ports {ext_DIO0_N}];
+set_property DRIVE 8 [get_ports {ext_DIO0_N}];
+set_property PULLTYPE PULLDOWN [get_ports {ext_DIO0_N}];
+set_property PACKAGE_PIN G18 [get_ports {ext_DIO0_N}];
 
-set_property IOSTANDARD LVCMOS33 [get_ports ext_DIO1_P]
-set_property SLEW FAST [get_ports ext_DIO1_P]
-set_property DRIVE 8 [get_ports ext_DIO1_P]
-set_property PULLDOWN true [get_ports ext_DIO1_P]
-set_property PACKAGE_PIN H16 [get_ports ext_DIO1_P]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_DIO1_P}];
+set_property SLEW FAST [get_ports {ext_DIO1_P}];
+set_property DRIVE 8 [get_ports {ext_DIO1_P}];
+set_property PULLTYPE PULLDOWN [get_ports {ext_DIO1_P}];
+set_property PACKAGE_PIN H16 [get_ports {ext_DIO1_P}];
 
-set_property IOSTANDARD LVCMOS33 [get_ports {ext_DIO1_N[0]}]
-set_property SLEW FAST [get_ports {ext_DIO1_N[0]}]
-set_property DRIVE 8 [get_ports {ext_DIO1_N[0]}]
-set_property PULLDOWN true [get_ports {ext_DIO1_N[0]}]
-set_property PACKAGE_PIN H17 [get_ports {ext_DIO1_N[0]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_DIO1_N}];
+set_property SLEW FAST [get_ports {ext_DIO1_N}];
+set_property DRIVE 8 [get_ports {ext_DIO1_N}];
+set_property PULLTYPE PULLDOWN [get_ports {ext_DIO1_N}];
+set_property PACKAGE_PIN H17 [get_ports {ext_DIO1_N}];
 
-set_property IOSTANDARD LVCMOS33 [get_ports ext_DIO2_P]
-set_property SLEW FAST [get_ports ext_DIO2_P]
-set_property DRIVE 8 [get_ports ext_DIO2_P]
-set_property PULLDOWN true [get_ports ext_DIO2_P]
-set_property PACKAGE_PIN J18 [get_ports ext_DIO2_P]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_DIO2_P}];
+set_property SLEW FAST [get_ports {ext_DIO2_P}];
+set_property DRIVE 8 [get_ports {ext_DIO2_P}];
+set_property PULLTYPE PULLDOWN [get_ports {ext_DIO2_P}];
+set_property PACKAGE_PIN J18 [get_ports {ext_DIO2_P}];
 
-set_property IOSTANDARD LVCMOS33 [get_ports {ext_DIO2_N[0]}]
-set_property SLEW FAST [get_ports {ext_DIO2_N[0]}]
-set_property DRIVE 8 [get_ports {ext_DIO2_N[0]}]
-set_property PULLDOWN true [get_ports {ext_DIO2_N[0]}]
-set_property PACKAGE_PIN H18 [get_ports {ext_DIO2_N[0]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_DIO2_N}];
+set_property SLEW FAST [get_ports {ext_DIO2_N}];
+set_property DRIVE 8 [get_ports {ext_DIO2_N}];
+set_property PULLTYPE PULLDOWN [get_ports {ext_DIO2_N}];
+set_property PACKAGE_PIN H18 [get_ports {ext_DIO2_N}];
 
-set_property IOSTANDARD LVCMOS33 [get_ports ext_DIO3_P]
-set_property SLEW FAST [get_ports ext_DIO3_P]
-set_property DRIVE 8 [get_ports ext_DIO3_P]
-set_property PULLDOWN true [get_ports ext_DIO3_P]
-set_property PACKAGE_PIN K17 [get_ports ext_DIO3_P]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_DIO3_P}];
+set_property SLEW FAST [get_ports {ext_DIO3_P}];
+set_property DRIVE 8 [get_ports {ext_DIO3_P}];
+set_property PULLTYPE PULLDOWN [get_ports {ext_DIO3_P}];
+set_property PACKAGE_PIN K17 [get_ports {ext_DIO3_P}];
 
-set_property IOSTANDARD LVCMOS33 [get_ports ext_DIO3_N]
-set_property SLEW FAST [get_ports ext_DIO3_N]
-set_property DRIVE 8 [get_ports ext_DIO3_N]
-set_property PULLDOWN true [get_ports ext_DIO3_N]
-set_property PACKAGE_PIN K18 [get_ports ext_DIO3_N]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_DIO3_N}];
+set_property SLEW FAST [get_ports {ext_DIO3_N}];
+set_property DRIVE 8 [get_ports {ext_DIO3_N}];
+set_property PULLTYPE PULLDOWN [get_ports {ext_DIO3_N}];
+set_property PACKAGE_PIN K18 [get_ports {ext_DIO3_N}];
 
-set_property IOSTANDARD LVCMOS33 [get_ports ext_DIO4_P]
-set_property SLEW FAST [get_ports ext_DIO4_P]
-set_property DRIVE 8 [get_ports ext_DIO4_P]
-set_property PULLDOWN true [get_ports ext_DIO4_P]
-set_property PACKAGE_PIN L14 [get_ports ext_DIO4_P]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_DIO4_P}];
+set_property SLEW FAST [get_ports {ext_DIO4_P}];
+set_property DRIVE 8 [get_ports {ext_DIO4_P}];
+set_property PULLTYPE PULLDOWN [get_ports {ext_DIO4_P}];
+set_property PACKAGE_PIN L14 [get_ports {ext_DIO4_P}];
 
-set_property IOSTANDARD LVCMOS33 [get_ports ext_DIO4_N]
-set_property SLEW FAST [get_ports ext_DIO4_N]
-set_property DRIVE 8 [get_ports ext_DIO4_N]
-set_property PULLDOWN true [get_ports ext_DIO4_N]
-set_property PACKAGE_PIN L15 [get_ports ext_DIO4_N]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_DIO4_N}];
+set_property SLEW FAST [get_ports {ext_DIO4_N}];
+set_property DRIVE 8 [get_ports {ext_DIO4_N}];
+set_property PULLTYPE PULLDOWN [get_ports {ext_DIO4_N}];
+set_property PACKAGE_PIN L15 [get_ports {ext_DIO4_N}];
 
-set_property IOSTANDARD LVCMOS33 [get_ports ext_DIO5_P]
-set_property SLEW FAST [get_ports ext_DIO5_P]
-set_property DRIVE 8 [get_ports ext_DIO5_P]
-set_property PULLDOWN true [get_ports ext_DIO5_P]
-set_property PACKAGE_PIN L16 [get_ports ext_DIO5_P]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_DIO5_P}];
+set_property SLEW FAST [get_ports {ext_DIO5_P}];
+set_property DRIVE 8 [get_ports {ext_DIO5_P}];
+set_property PULLTYPE PULLDOWN [get_ports {ext_DIO5_P}];
+set_property PACKAGE_PIN L16 [get_ports {ext_DIO5_P}];
 
-set_property IOSTANDARD LVCMOS33 [get_ports ext_DIO5_N]
-set_property SLEW FAST [get_ports ext_DIO5_N]
-set_property DRIVE 8 [get_ports ext_DIO5_N]
-set_property PULLDOWN true [get_ports ext_DIO5_N]
-set_property PACKAGE_PIN L17 [get_ports ext_DIO5_N]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_DIO5_N}];
+set_property SLEW FAST [get_ports {ext_DIO5_N}];
+set_property DRIVE 8 [get_ports {ext_DIO5_N}];
+set_property PULLTYPE PULLDOWN [get_ports {ext_DIO5_N}];
+set_property PACKAGE_PIN L17 [get_ports {ext_DIO5_N}];
 
-set_property IOSTANDARD LVCMOS33 [get_ports ext_DIO6_P]
-set_property SLEW FAST [get_ports ext_DIO6_P]
-set_property DRIVE 8 [get_ports ext_DIO6_P]
-set_property PULLDOWN true [get_ports ext_DIO6_P]
-set_property PACKAGE_PIN K16 [get_ports ext_DIO6_P]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_DIO6_P}];
+set_property SLEW FAST [get_ports {ext_DIO6_P}];
+set_property DRIVE 8 [get_ports {ext_DIO6_P}];
+set_property PULLTYPE PULLDOWN [get_ports {ext_DIO6_P}];
+set_property PACKAGE_PIN K16 [get_ports {ext_DIO6_P}];
 
-set_property IOSTANDARD LVCMOS33 [get_ports ext_DIO6_N]
-set_property SLEW FAST [get_ports ext_DIO6_N]
-set_property DRIVE 8 [get_ports ext_DIO6_N]
-set_property PULLDOWN true [get_ports ext_DIO6_N]
-set_property PACKAGE_PIN J16 [get_ports ext_DIO6_N]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_DIO6_N}];
+set_property SLEW FAST [get_ports {ext_DIO6_N}];
+set_property DRIVE 8 [get_ports {ext_DIO6_N}];
+set_property PULLTYPE PULLDOWN [get_ports {ext_DIO6_N}];
+set_property PACKAGE_PIN J16 [get_ports {ext_DIO6_N}];
 
-set_property IOSTANDARD LVCMOS33 [get_ports ext_DIO7_P]
-set_property SLEW FAST [get_ports ext_DIO7_P]
-set_property DRIVE 8 [get_ports ext_DIO7_P]
-set_property PULLDOWN true [get_ports ext_DIO7_P]
-set_property PACKAGE_PIN M14 [get_ports ext_DIO7_P]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_DIO7_P}];
+set_property SLEW FAST [get_ports {ext_DIO7_P}];
+set_property DRIVE 8 [get_ports {ext_DIO7_P}];
+set_property PULLTYPE PULLDOWN [get_ports {ext_DIO7_P}];
+set_property PACKAGE_PIN M14 [get_ports {ext_DIO7_P}];
 
-set_property IOSTANDARD LVCMOS33 [get_ports ext_DIO7_N]
-set_property SLEW FAST [get_ports ext_DIO7_N]
-set_property DRIVE 8 [get_ports ext_DIO7_N]
-set_property PULLDOWN true [get_ports ext_DIO7_N]
-set_property PACKAGE_PIN M15 [get_ports ext_DIO7_N]
+set_property IOSTANDARD LVCMOS33 [get_ports {ext_DIO7_N}];
+set_property SLEW FAST [get_ports {ext_DIO7_N}];
+set_property DRIVE 8 [get_ports {ext_DIO7_N}];
+set_property PULLTYPE PULLDOWN [get_ports {ext_DIO7_N}];
+set_property PACKAGE_PIN M15 [get_ports {ext_DIO7_N}];
+
 
 ### SATA connector
 
@@ -294,7 +298,11 @@ set_property PACKAGE_PIN G14 [get_ports {led_o[5]}]
 set_property PACKAGE_PIN J15 [get_ports {led_o[6]}]
 set_property PACKAGE_PIN J14 [get_ports {led_o[7]}]
 
-set_property DONT_TOUCH true [get_cells system_i/dio_0]
-set_property DONT_TOUCH true [get_cells system_i/dio_0/inst]
-set_property DONT_TOUCH true [get_cells system_i/xlslice_4]
-set_property DONT_TOUCH true [get_cells system_i/xlslice_5]
+#set_property DONT_TOUCH true [get_cells system_i/dio_0]
+#set_property DONT_TOUCH true [get_cells system_i/dio_0/inst]
+#set_property DONT_TOUCH true [get_cells system_i/xlslice_4]
+#set_property DONT_TOUCH true [get_cells system_i/xlslice_5]
+#set_property DONT_TOUCH true [get_cells system_i/xlconcat_2]
+#set_property DONT_TOUCH true [get_cells system_i/system/xlconcat_0]
+#set_property DONT_TOUCH true [get_cells system_i/system/axi_sts_register_adc]
+#set_property DONT_TOUCH true [get_cells system_i/system/axi_sts_register_adc/inst]
