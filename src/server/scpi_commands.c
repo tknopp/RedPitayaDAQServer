@@ -749,6 +749,33 @@ static scpi_result_t RP_XADC_GetXADCValueVolt(scpi_t * context) {
     return SCPI_RES_OK;
 }
 
+scpi_choice_def_t inout_modes[] = {
+    {"IN", IN},
+    {"OUT", OUT},
+    SCPI_CHOICE_LIST_END /* termination of option list */
+};
+
+static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context) {
+    int32_t numbers[1];
+    SCPI_CommandNumbers(context, numbers, 1, 1);
+    int pin = numbers[0];
+
+    int32_t DIO_pin_output_selection;
+
+    if (!SCPI_ParamChoice(context, inout_modes, &DIO_pin_output_selection, TRUE)) {
+        return SCPI_RES_ERR;
+    }
+
+    int result = setDIODirection(pin, DIO_pin_output_selection);
+    if (result < 0) {
+        return SCPI_RES_ERR;
+    }
+
+    return SCPI_RES_OK;
+}
+
+
+
 scpi_choice_def_t onoff_modes[] = {
     {"OFF", OFF},
     {"ON", ON},
@@ -1092,6 +1119,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:PDM:CHannel#:NextValueVolt", .callback = RP_PDM_SetPDMNextValueVolt,},
 	{.pattern = "RP:PDM:CHannel#:NextValue?", .callback = RP_PDM_GetPDMNextValue,},
 	{.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},
+	{.pattern = "RP:DIO:DIR:PIN#", .callback = RP_DIO_SetDIODirection,},
 	{.pattern = "RP:DIO:PIN#", .callback = RP_DIO_SetDIOOutput,},
 	{.pattern = "RP:DIO:PIN#?", .callback = RP_DIO_GetDIOOutput,},
 	{.pattern = "RP:WatchDogMode", .callback = RP_SetWatchdogMode,},

@@ -21,7 +21,7 @@ bool verbose = false;
 
 int mmapfd;
 volatile uint32_t *slcr, *axi_hp0;
-void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram;
+void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *dio_sts;
 char *pdm_cfg, *dac_cfg;
 volatile int32_t *xadc;
 
@@ -79,6 +79,7 @@ int init() {
 	pdm_cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40002000);
 	pdm_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40003000);
 	reset_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40005000);
+	dio_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40006000);
 	cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40004000);
 	ram = mmap(NULL, sizeof(int32_t)*ADC_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, ADC_BUFF_MEM_ADDRESS); 
         xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
@@ -848,6 +849,24 @@ int getInstantResetStatus() {
     return value;
 }
 
+int setDIODirection(int pin, int value) {
+    if(pin < 0 || pin > 8) {
+        return -3;
+    }
+
+    if(value == OUT) {
+            *((uint8_t *)(cfg + 9)) &= ~(0x1 << (pin));
+    } else if(value == IN) {
+            *((uint8_t *)(cfg + 9)) |= (0x1 << (pin));
+    } else {
+        return -1;
+    }
+
+    return 0;
+}
+
+
+
 int setDIO(int pin, int value) {
         if(pin < 0 || pin > 8) {
         return -3;
@@ -869,7 +888,7 @@ int getDIO(int pin) {
         return -3;
     }
 
-    uint32_t register_value = *((uint8_t *)(cfg + 8));
+    uint32_t register_value = *((uint8_t *)(dio_sts));
     return ((register_value & (0x1 << (pin))) >> (pin));
 }
 
