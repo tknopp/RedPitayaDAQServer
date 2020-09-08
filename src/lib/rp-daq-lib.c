@@ -849,15 +849,39 @@ int getInstantResetStatus() {
     return value;
 }
 
-int setDIODirection(int pin, int value) {
-    if(pin < 0 || pin > 8) {
+int getInternalPINNumber(char* pin) {
+  if(strncmp(pin, "DIO7_P", 6) == 0) {
+    return 0;
+  } else if(strncmp(pin, "DIO7_N", 6) == 0) {
+    return 1;
+  } else if(strncmp(pin, "DIO6_P", 6) == 0) {
+    return 2;
+  } else if(strncmp(pin, "DIO6_N", 6) == 0) {
+    return 3;
+  } else if(strncmp(pin, "DIO5_N", 6) == 0) {
+    return 4;
+  } else if(strncmp(pin, "DIO4_N", 6) == 0) {
+    return 5;
+  } else if(strncmp(pin, "DIO3_N", 6) == 0) {
+    return 6;
+  } else if(strncmp(pin, "DIO2_N", 6) == 0) {
+    return 7;
+  } else {
+
+    return -1;
+  }	  
+}
+
+int setDIODirection(char* pin, int value) {
+    int pinInternal = getInternalPINNumber(pin);
+    if(pinInternal < 0) {
         return -3;
     }
 
     if(value == OUT) {
-            *((uint8_t *)(cfg + 9)) &= ~(0x1 << (pin));
+            *((uint8_t *)(cfg + 9)) &= ~(0x1 << (pinInternal));
     } else if(value == IN) {
-            *((uint8_t *)(cfg + 9)) |= (0x1 << (pin));
+            *((uint8_t *)(cfg + 9)) |= (0x1 << (pinInternal));
     } else {
         return -1;
     }
@@ -867,15 +891,16 @@ int setDIODirection(int pin, int value) {
 
 
 
-int setDIO(int pin, int value) {
-        if(pin < 0 || pin > 8) {
+int setDIO(char* pin, int value) {
+    int pinInternal = getInternalPINNumber(pin);
+    if(pinInternal < 0) {
         return -3;
     }
 
     if(value == OFF) {
-            *((uint8_t *)(cfg + 8)) &= ~(0x1 << (pin));
+            *((uint8_t *)(cfg + 8)) &= ~(0x1 << (pinInternal));
     } else if(value == ON) {
-            *((uint8_t *)(cfg + 8)) |= (0x1 << (pin));
+            *((uint8_t *)(cfg + 8)) |= (0x1 << (pinInternal));
     } else {
         return -1;
     }
@@ -883,13 +908,14 @@ int setDIO(int pin, int value) {
     return 0;
 }
 
-int getDIO(int pin) {
-        if(pin < 0 || pin > 8) {
+int getDIO(char* pin) {
+    int pinInternal = getInternalPINNumber(pin);
+    if(pinInternal < 0) {
         return -3;
     }
 
     uint32_t register_value = *((uint8_t *)(dio_sts));
-    return ((register_value & (0x1 << (pin))) >> (pin));
+    return ((register_value & (0x1 << (pinInternal))) >> (pinInternal));
 }
 
 void stopTx() {

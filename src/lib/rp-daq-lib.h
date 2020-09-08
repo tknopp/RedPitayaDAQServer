@@ -99,9 +99,9 @@ extern uint32_t getXADCValue(int);
 extern float getXADCValueVolt(int);
 
 // misc
-extern int setDIODirection(int,int);
-extern int setDIO(int,int);
-extern int getDIO(int);
+extern int setDIODirection(char*,int);
+extern int setDIO(char*,int);
+extern int getDIO(char*);
 extern int setTriggerMode(int);
 extern int getTriggerMode();
 extern int getWatchdogMode();
