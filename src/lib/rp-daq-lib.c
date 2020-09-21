@@ -442,6 +442,37 @@ void readADCData(uint32_t wp, uint32_t size, uint32_t* buffer) {
 }
 
 // Slow IO
+int setEnableDACAll(int8_t value, int channel) {
+    for(int i=0; i<PDM_BUFF_SIZE; i++)
+    {
+      setEnableDAC(value,channel,i);
+    }
+    return 0;
+}
+
+int setEnableDAC(int8_t value, int channel, int index) {
+    
+    if(value < 0 || value >= 2) {
+        return -1;
+    }
+    
+    if(channel < 0 || channel >= 4) {
+        return -2;
+    }
+   
+    int bitpos = 12 + channel;
+
+    // The enable bits are in the 4-th slowDAC channel
+    // clear the bit
+    *((int16_t *)(pdm_cfg + 2*(3+4*index))) &= ~(1u << bitpos);
+    // set the bit
+    *((int16_t *)(pdm_cfg + 2*(3+4*index))) |= (value << bitpos);
+
+    return 0;
+}
+
+
+
 
 int setPDMRegisterValue(uint64_t value, int index) {
     //printf("setPDMRegisterValue: value=%llu index=%d \n", value, index);
@@ -849,7 +880,7 @@ int getInstantResetStatus() {
     return value;
 }
 
-int getInternalPINNumber(char* pin) {
+int getInternalPINNumber(const char* pin) {
   if(strncmp(pin, "DIO7_P", 6) == 0) {
     return 0;
   } else if(strncmp(pin, "DIO7_N", 6) == 0) {
@@ -872,7 +903,7 @@ int getInternalPINNumber(char* pin) {
   }	  
 }
 
-int setDIODirection(char* pin, int value) {
+int setDIODirection(const char* pin, int value) {
     int pinInternal = getInternalPINNumber(pin);
     if(pinInternal < 0) {
         return -3;
@@ -891,7 +922,7 @@ int setDIODirection(char* pin, int value) {
 
 
 
-int setDIO(char* pin, int value) {
+int setDIO(const char* pin, int value) {
     int pinInternal = getInternalPINNumber(pin);
     if(pinInternal < 0) {
         return -3;
@@ -908,7 +939,7 @@ int setDIO(char* pin, int value) {
     return 0;
 }
 
-int getDIO(char* pin) {
+int getDIO(const char* pin) {
     int pinInternal = getInternalPINNumber(pin);
     if(pinInternal < 0) {
         return -3;

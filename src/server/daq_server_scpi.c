@@ -80,6 +80,7 @@ bool controlThreadRunning = false;
 bool commThreadRunning = false;
 
 float *slowDACLUT = NULL;
+bool *enableDACLUT = NULL;
 bool slowDACInterpolation = false;
 double slowDACRampUpTime = 0.4;
 double slowDACFractionRampUp = 0.8;

@@ -87,7 +87,6 @@ float getSlowDACVal(int period, int i,
   return val;
 }
 
-
 void* controlThread(void* ch) 
 { 
   uint32_t wp, wp_old;
@@ -209,6 +208,15 @@ void* controlThread(void* ch)
 	          setAmplitude(fastDACNextAmplitude[c+4*d],d,c);
 	        }
 	      }
+              
+              setEnableDACAll(1,0);
+              setEnableDACAll(1,1);
+              
+              //for(int i=64; i<68; i++)
+	      //{
+	      //  setEnableDAC(0,0,i);
+	      //  setEnableDAC(0,1,i);
+	      //}
 	    }
 
             if(!enableSlowDAC) 
@@ -239,6 +247,19 @@ void* controlThread(void* ch)
                 {
                   printf("Could not set AO[%d] voltage.\n", i);
                 }
+	        
+
+	        if (enableDACLUT != NULL) {
+		  int frame = localPeriod / numSlowDACPeriodsPerFrame + frameRampUpStarted;
+                  // Within regular LUT
+                  bool val = false;
+                  if(frameSlowDACEnabled <= frame < frameSlowDACEnabled + numSlowDACFramesEnabled)
+                  {
+                    val = enableDACLUT[(localPeriod % numSlowDACPeriodsPerFrame)*numSlowDACChan+i];
+                  }
+	  	  int64_t currPDMIndex = (wpPDMStart + localPeriod) % PDM_BUFF_SIZE;
+                  setEnableDAC(val, i, currPDMIndex);
+	        }
 	      }
             }
           }

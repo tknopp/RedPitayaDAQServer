@@ -1044,6 +1044,24 @@ static scpi_result_t RP_ADC_SetSlowDACLUT(scpi_t * context) {
 }
 
 
+static scpi_result_t RP_ADC_SetEnableDACLUT(scpi_t * context) {
+
+    if(numSlowDACPeriodsPerFrame > 0 && numSlowDACChan > 0) {
+    	if(enableDACLUT != NULL) {
+            free(enableDACLUT);
+        }
+        printf("Allocating enableDACLUT\n");
+        enableDACLUT = (bool *)malloc(numSlowDACChan * numSlowDACPeriodsPerFrame * sizeof(bool));
+   
+        int n = read(newdatasockfd, enableDACLUT, numSlowDACChan * numSlowDACPeriodsPerFrame * sizeof(bool));
+        //for(int i=0;i<numSlowDACPeriodsPerFrame; i++) printf(" %s ",enableDACLUT[i] ? "true" : "false");
+        //printf("\n");
+        if (n < 0) perror("ERROR reading from socket");
+     }
+    return SCPI_RES_OK;
+}
+
+
 
 const scpi_command_t scpi_commands[] = {
     /* IEEE Mandated Commands (SCPI std V1999.0 4.1.1) */
@@ -1108,6 +1126,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:SlowDAC", .callback = RP_ADC_SetNumSlowDACChan,},
 	{.pattern = "RP:ADC:SlowDAC?", .callback = RP_ADC_GetNumSlowDACChan,},
 	{.pattern = "RP:ADC:SlowDACLUT", .callback = RP_ADC_SetSlowDACLUT,},
+	{.pattern = "RP:ADC:EnableDACLUT", .callback = RP_ADC_SetEnableDACLUT,},
 	{.pattern = "RP:ADC:SlowDACEnable", .callback = RP_ADC_EnableSlowDAC,},
 	{.pattern = "RP:ADC:SlowDACInterpolation", .callback = RP_ADC_SlowDACInterpolation,},
 	{.pattern = "RP:ADC:SlowDACLostSteps?", .callback = RP_ADC_GetSlowDACLostSteps,},

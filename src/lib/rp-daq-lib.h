@@ -97,11 +97,13 @@ extern int* getPDMNextValues();
 extern int getPDMNextValue();
 extern uint32_t getXADCValue(int);
 extern float getXADCValueVolt(int);
+extern int setEnableDACAll(int8_t, int);
+extern int setEnableDAC(int8_t, int, int);
 
 // misc
-extern int setDIODirection(char*,int);
-extern int setDIO(char*,int);
-extern int getDIO(char*);
+extern int setDIODirection(const char*,int);
+extern int setDIO(const char*,int);
+extern int getDIO(const char*);
 extern int setTriggerMode(int);
 extern int getTriggerMode();
 extern int getWatchdogMode();

@@ -71,6 +71,7 @@ extern const scpi_command_t scpi_commands[];
 extern scpi_t scpi_context;
 
 extern float *slowDACLUT;
+extern bool *enableDACLUT;
 extern bool slowDACInterpolation;
 extern double slowDACRampUpTime;
 extern double slowDACFractionRampUp;
