@@ -21,7 +21,7 @@ bool verbose = false;
 
 int mmapfd;
 volatile uint32_t *slcr, *axi_hp0;
-void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram;
+void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *dio_sts;
 char *pdm_cfg, *dac_cfg;
 volatile int32_t *xadc;
 
@@ -79,6 +79,7 @@ int init() {
 	pdm_cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40002000);
 	pdm_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40003000);
 	reset_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40005000);
+	dio_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40006000);
 	cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40004000);
 	ram = mmap(NULL, sizeof(int32_t)*ADC_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, ADC_BUFF_MEM_ADDRESS); 
         xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
@@ -848,15 +849,39 @@ int getInstantResetStatus() {
     return value;
 }
 
-int setDIO(int pin, int value) {
-        if(pin < 0 || pin > 8) {
+int getInternalPINNumber(char* pin) {
+  if(strncmp(pin, "DIO7_P", 6) == 0) {
+    return 0;
+  } else if(strncmp(pin, "DIO7_N", 6) == 0) {
+    return 1;
+  } else if(strncmp(pin, "DIO6_P", 6) == 0) {
+    return 2;
+  } else if(strncmp(pin, "DIO6_N", 6) == 0) {
+    return 3;
+  } else if(strncmp(pin, "DIO5_N", 6) == 0) {
+    return 4;
+  } else if(strncmp(pin, "DIO4_N", 6) == 0) {
+    return 5;
+  } else if(strncmp(pin, "DIO3_N", 6) == 0) {
+    return 6;
+  } else if(strncmp(pin, "DIO2_N", 6) == 0) {
+    return 7;
+  } else {
+
+    return -1;
+  }	  
+}
+
+int setDIODirection(char* pin, int value) {
+    int pinInternal = getInternalPINNumber(pin);
+    if(pinInternal < 0) {
         return -3;
     }
 
-    if(value == OFF) {
-            *((uint8_t *)(cfg + 8)) &= ~(0x1 << (pin));
-    } else if(value == ON) {
-            *((uint8_t *)(cfg + 8)) |= (0x1 << (pin));
+    if(value == OUT) {
+            *((uint8_t *)(cfg + 9)) &= ~(0x1 << (pinInternal));
+    } else if(value == IN) {
+            *((uint8_t *)(cfg + 9)) |= (0x1 << (pinInternal));
     } else {
         return -1;
     }
@@ -864,13 +889,33 @@ int setDIO(int pin, int value) {
     return 0;
 }
 
-int getDIO(int pin) {
-        if(pin < 0 || pin > 8) {
+
+
+int setDIO(char* pin, int value) {
+    int pinInternal = getInternalPINNumber(pin);
+    if(pinInternal < 0) {
         return -3;
     }
 
-    uint32_t register_value = *((uint8_t *)(cfg + 8));
-    return ((register_value & (0x1 << (pin))) >> (pin));
+    if(value == OFF) {
+            *((uint8_t *)(cfg + 8)) &= ~(0x1 << (pinInternal));
+    } else if(value == ON) {
+            *((uint8_t *)(cfg + 8)) |= (0x1 << (pinInternal));
+    } else {
+        return -1;
+    }
+
+    return 0;
+}
+
+int getDIO(char* pin) {
+    int pinInternal = getInternalPINNumber(pin);
+    if(pinInternal < 0) {
+        return -3;
+    }
+
+    uint32_t register_value = *((uint8_t *)(dio_sts));
+    return ((register_value & (0x1 << (pinInternal))) >> (pinInternal));
 }
 
 void stopTx() {

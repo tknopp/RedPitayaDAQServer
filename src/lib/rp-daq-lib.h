@@ -38,13 +38,16 @@
 #define OFF 0
 #define ON 1
 
+#define IN 0
+#define OUT 1
+
 extern bool verbose;
 
 extern int mmapfd;
 extern volatile uint32_t *slcr, *axi_hp0;
 // FPGA registers that are memory mapped
-extern void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *buf;
-extern char *pdm_cfg, *dac_cfg;
+extern void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *buf, *dio_sts;
+extern char *pdm_cfg, *dac_cfg; 
 
 // init routines
 extern int init();
@@ -96,8 +99,9 @@ extern uint32_t getXADCValue(int);
 extern float getXADCValueVolt(int);
 
 // misc
-extern int setDIO(int,int);
-extern int getDIO(int);
+extern int setDIODirection(char*,int);
+extern int setDIO(char*,int);
+extern int getDIO(char*);
 extern int setTriggerMode(int);
 extern int getTriggerMode();
 extern int getWatchdogMode();
