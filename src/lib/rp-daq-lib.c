@@ -129,6 +129,11 @@ int init() {
 	setAmplitude(0, 1, 2);
 	setAmplitude(0, 1, 3);
 
+        setEnableDACAll(1, 0);
+        setEnableDACAll(1, 1);
+        setEnableDACAll(1, 2);
+        setEnableDACAll(1, 3);
+
 	return 0;
 }
 
@@ -963,4 +968,9 @@ void stopTx() {
 	setPDMAllValuesVolt(0.0, 1);
 	setPDMAllValuesVolt(0.0, 2);
 	setPDMAllValuesVolt(0.0, 3);
+
+
+        for(int d=0; d<4; d++) {
+	  setEnableDACAll(1,d);
+	}
 }

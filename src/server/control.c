@@ -209,14 +209,9 @@ void* controlThread(void* ch)
 	        }
 	      }
               
-              setEnableDACAll(1,0);
-              setEnableDACAll(1,1);
-              
-              //for(int i=64; i<68; i++)
-	      //{
-	      //  setEnableDAC(0,0,i);
-	      //  setEnableDAC(0,1,i);
-	      //}
+              for(int d=0; d<numSlowDACChan; d++) {
+		  setEnableDACAll(1,d);
+	      }
 	    }
 
             if(!enableSlowDAC) 

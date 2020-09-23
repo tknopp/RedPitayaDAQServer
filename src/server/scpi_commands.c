@@ -33,6 +33,16 @@ static scpi_result_t RP_Init(scpi_t * context) {
         init();
         initialized = true;
     }
+    
+    if(slowDACLUT != NULL) {
+        free(slowDACLUT);
+        slowDACLUT = NULL;
+    }
+    
+    if(enableDACLUT != NULL) {
+        free(enableDACLUT);
+        enableDACLUT = NULL;
+    }
 	
     return SCPI_RES_OK;
 }
