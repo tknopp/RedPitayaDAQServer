@@ -182,10 +182,21 @@ static void writeDataChunked(int fd, const void *buf, size_t count)
 }
 
 void sendDataToHost(uint64_t wpTotal, uint64_t size) {
+    uint64_t daqTotal = getTotalWritePointer();
     uint32_t wp = getInternalWritePointer(wpTotal);
+    bool wasFine = true;
+    if (daqTotal >= wpTotal && getInternalWritePointer(daqTotal) > wp && getInternalPointerOverflows(daqTotal) > getInternalPointerOverflows(wp)) {
+    	wasFine = false;  	
+	printf("%lli Requested data was overwritten\n", wpTotal);	
+    } 
     if(wp+size <= ADC_BUFF_SIZE) 
     {
-       writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, size*sizeof(uint32_t)); 
+       writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, size*sizeof(uint32_t));
+       daqTotal = getTotalWritePointer();
+       if (wasFine && daqTotal >= wpTotal && getInternalWritePointer(daqTotal) > wp && getInternalPointerOverflows(daqTotal) > getInternalPointerOverflows(wp)) {
+          printf("%lli Sent data could have been corrupted\n", wpTotal);	
+       } 
+   
     } else {                                                                                                  
        uint32_t size1 = ADC_BUFF_SIZE - wp;                                                              
        uint32_t size2 = size - size1;                                                                    

@@ -416,6 +416,10 @@ uint32_t getInternalWritePointer(uint64_t wp) {
     return wp&mask;
 }
 
+uint32_t getInternalPointerOverflows(uint64_t wp) {
+	return wp >> (ADC_BUFF_NUM_BITS + 1);
+}
+
 uint32_t getWritePointerOverflows() {
     return (*(((uint64_t *)(adc_sts + 0)))) >> ADC_BUFF_NUM_BITS; // Extract upper bits
 }
