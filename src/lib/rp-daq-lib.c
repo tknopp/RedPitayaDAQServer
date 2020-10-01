@@ -421,7 +421,7 @@ uint32_t getWritePointerOverflows() {
 }
 
 uint64_t getTotalWritePointer() {
-    return getWritePointer() + (getWritePointerOverflows() << (ADC_BUFF_NUM_BITS+1));
+	return 2*(*(((uint64_t *)(adc_sts + 0))));
 }
 
 uint32_t getWritePointerDistance(uint32_t start_pos, uint32_t end_pos) {

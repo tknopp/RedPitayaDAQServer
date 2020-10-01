@@ -89,7 +89,7 @@ float getSlowDACVal(int period, int i,
 
 void* controlThread(void* ch) 
 { 
-  uint32_t wp, wp_old;
+  uint64_t wp, wp_old;
   uint64_t wpPDM, wpPDMOld, wpPDMStart;
   // Its very important to have a local copy of currentPeriodTotal and currentFrameTotal
   // since we do not want to interfere with the values written by the data acquisition thread
@@ -100,7 +100,6 @@ void* controlThread(void* ch)
   int64_t oldSlowDACPeriodTotal;
   bool firstCycle;
 
-  int64_t data_read_total;
   int64_t frameRampUpStarted=-1; 
   int64_t slowDACPeriodRampUpStarted=-1; 
   int enableSlowDACLocal=0;
@@ -118,7 +117,6 @@ void* controlThread(void* ch)
     // everytime the acquisition is started
     if(rxEnabled && numSlowDACChan > 0) {
       LOG_INFO("SLOW_DAQ: Start sending...");
-      data_read_total = 0; 
       oldPeriodTotal = 0;
       oldSlowDACPeriodTotal = 0;
 
@@ -136,19 +134,17 @@ void* controlThread(void* ch)
       while(rxEnabled) 
       {
 	wpPDMOld = getPDMWritePointer(); 
-        wp = getWritePointer();
+        wp = getTotalWritePointer();
 	wpPDM = getPDMWritePointer(); 
-
-        uint32_t size = getWritePointerDistance(wp_old, wp)-1;
+        uint64_t size = wp - wp_old;
 
         if (size > 0) 
         {
-          data_read_total += size;
-          wp_old = (wp_old + size) % ADC_BUFF_SIZE;
+          wp_old = wp;
 
-          currentSlowDACPeriodTotal = data_read_total / getNumSamplesPerSlowDACPeriod();
-          currentPeriodTotal = data_read_total / numSamplesPerPeriod;
-          currentFrameTotal = data_read_total / getNumSamplesPerFrame();
+          currentSlowDACPeriodTotal = wp / getNumSamplesPerSlowDACPeriod();
+          currentPeriodTotal = wp / numSamplesPerPeriod;
+          currentFrameTotal = wp / getNumSamplesPerFrame();
 
           if(currentSlowDACPeriodTotal > oldSlowDACPeriodTotal + (lookahead-lookprehead) && 
 			  numPeriodsPerFrame > 1) 
