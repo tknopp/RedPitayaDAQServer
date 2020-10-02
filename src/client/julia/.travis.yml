@@ -1,0 +1,27 @@
+## Documentation: http://docs.travis-ci.com/user/languages/julia/
+language: julia
+sudo: required
+os:
+  - linux
+
+julia:
+  - 1.4
+notifications:
+  email: false
+git:
+  depth: 10
+
+
+## uncomment following lines to deploy documentation
+jobs:
+   include:
+     - stage: Documentation
+       julia: 1.4
+       os: linux
+       script:
+         - julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.add(PackageSpec(path=pwd()))'
+         - julia --project=docs docs/make.jl
+       after_success: skip
+
+#after_success:
+#  - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
