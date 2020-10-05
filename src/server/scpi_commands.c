@@ -1065,6 +1065,28 @@ static scpi_result_t RP_ADC_SetEnableDACLUT(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_GetOverwrittenStatus(scpi_t * context) {
+	SCPI_ResultBool(context, getOverwrittenStatus());
+	return SCPI_RES_OK;
+}
+
+
+static scpi_result_t RP_GetCorruptedStatus(scpi_t * context) {
+	SCPI_ResultBool(context, getCorruptedStatus());
+	return SCPI_RES_OK;
+}
+
+
+static scpi_result_t RP_GetStatus(scpi_t * context) {
+	SCPI_ResultBool(context, getErrorStatus());
+	return SCPI_RES_OK;
+}
+
+
+static scpi_result_t RP_GetLostStatus(scpi_t * context) {
+	SCPI_ResultBool(context, getLostStepsStatus());
+	return SCPI_RES_OK;
+}
 
 
 const scpi_command_t scpi_commands[] = {
@@ -1177,6 +1199,12 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:TriggerStatus?", .callback = RP_TriggerStatus,},
 	{.pattern = "RP:WatchdogStatus?", .callback = RP_WatchdogStatus,},
 	{.pattern = "RP:InstantResetStatus?", .callback = RP_InstantResetStatus,},
+	/* RP-DAQ Errors */
+	{.pattern = "RP:STATus:OVERwritten?", .callback = RP_GetOverwrittenStatus,},
+	{.pattern = "RP:STATus:CORRupted?", .callback = RP_GetCorruptedStatus,},
+	{.pattern = "RP:STATus?", .callback = RP_GetStatus,},
+	{.pattern = "RP:STATus:LOSTSteps?", .callback = RP_GetLostStatus,},
+
 
 	SCPI_CMD_LIST_END
 };

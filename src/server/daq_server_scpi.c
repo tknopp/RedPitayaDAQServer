@@ -104,6 +104,8 @@ char scpi_input_buffer[SCPI_INPUT_BUFFER_LENGTH];
 scpi_error_t scpi_error_queue_data[SCPI_ERROR_QUEUE_SIZE];
 scpi_t scpi_context;
 
+struct status err;
+
 void getprio( pthread_t id ) {
 	int policy;
 	struct sched_param param;
@@ -137,6 +139,36 @@ uint64_t getCurrentFrameTotal() {
 uint64_t getCurrentPeriodTotal() {
 	return (getTotalWritePointer()-startWP) / numSamplesPerPeriod; 
 }
+
+
+uint8_t getErrorStatus() {
+	return err.overwritten | err.corrupted << 1 | err.lostSteps << 2;
+}
+
+uint8_t getOverwrittenStatus() {
+	return err.overwritten;
+}
+
+void clearOverwrittenStatus() {
+	err.overwritten = 0;
+}
+
+uint8_t getCorruptedStatus() {
+	return err.corrupted;
+}
+
+void clearCorruptedStatus() {
+	err.corrupted = 0;
+}
+
+uint8_t getLostStepsStatus() {
+	return err.lostSteps;
+}
+
+void clearLostStepsStatus() {
+	err.lostSteps = 0;
+}
+
 
 
 void createThreads() {

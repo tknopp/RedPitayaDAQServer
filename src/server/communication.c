@@ -166,8 +166,7 @@ static void writeDataChunked(int fd, const void *buf, size_t count)
 	size_t chunkSize = 200000;
 	size_t ptr = 0;
 	size_t size;
-	while(ptr < count)
-	{
+	while(ptr < count) {
 		size = MIN(count-ptr, chunkSize);
 
 		n = write(fd, buf + ptr, size);
@@ -184,17 +183,19 @@ static void writeDataChunked(int fd, const void *buf, size_t count)
 void sendDataToHost(uint64_t wpTotal, uint64_t size) {
 	uint64_t daqTotal = getTotalWritePointer();
 	uint32_t wp = getInternalWritePointer(wpTotal);
-	bool wasFine = true;
+	// Requested data specific status
+	err.overwritten = 0;
+	err.corrupted = 0;
 	if (daqTotal >= wpTotal && getInternalWritePointer(daqTotal) > wp && getInternalPointerOverflows(daqTotal) > getInternalPointerOverflows(wp)) {
-		wasFine = false;  	
-		printf("%lli Requested data was overwritten\n", wpTotal);	
+		err.overwritten = 1;  	
+		LOG_WARN("%lli Requested data was overwritten\n", wpTotal);	
 	} 
-	if(wp+size <= ADC_BUFF_SIZE) 
-	{
+	if(wp+size <= ADC_BUFF_SIZE) {
 		writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, size*sizeof(uint32_t));
 		daqTotal = getTotalWritePointer();
-		if (wasFine && daqTotal >= wpTotal && getInternalWritePointer(daqTotal) > wp && getInternalPointerOverflows(daqTotal) > getInternalPointerOverflows(wp)) {
-			printf("%lli Sent data could have been corrupted\n", wpTotal);	
+		if (err.overwritten == 0 && daqTotal >= wpTotal && getInternalWritePointer(daqTotal) > wp && getInternalPointerOverflows(daqTotal) > getInternalPointerOverflows(wp)) {
+			err.corrupted = 1;
+			LOG_WARN("%lli Sent data could have been corrupted\n", wpTotal);	
 		} 
 
 	} else {                                                                                                  

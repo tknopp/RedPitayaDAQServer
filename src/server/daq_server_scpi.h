@@ -109,5 +109,20 @@ extern void sendFramesToHost(int64_t, int64_t);
 extern void sendPeriodsToHost(int64_t, int64_t);
 extern void sendSlowFramesToHost(int64_t, int64_t);
 
+// data loss
+struct status {
+	uint8_t overwritten :1;
+	uint8_t corrupted :1;
+	uint8_t lostSteps :1;
+};
+struct status err;
+extern uint8_t getErrorStatus();
+extern uint8_t getOverwrittenStatus();
+extern void clearOverwrittenStatus();
+extern uint8_t getCorruptedStatus();
+extern void clearCorruptedStatus();
+extern uint8_t getLostStepsStatus();
+extern void clearLostStepsStatus();
+
 #endif /* __DAQ_SERVER_SCPI_H_ */
 
