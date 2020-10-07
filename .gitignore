@@ -9,3 +9,8 @@ src/client/python/.project
 src/examples/python/.pydevproject
 src/examples/python/.project
 core
+*.jl.cov
+*.jl.*.cov
+*.jl.mem
+docs/build/
+Manifest.toml
