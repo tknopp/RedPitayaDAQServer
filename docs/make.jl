@@ -21,5 +21,5 @@ makedocs(
 #    html_prettyurls = false, #!("local" in ARGS),
 )
 
-deploydocs(repo   = "github.com/tknopp/RedPitayaDAQServer.jl.git",
+deploydocs(repo   = "github.com/tknopp/RedPitayaDAQServer.git",
            target = "build")
