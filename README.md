@@ -3,7 +3,7 @@ This project contains software to be used with the STEMlab 125-14 device from Re
 
 ## Documentation
 
-Please read the docs [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://tknopp.github.io/RedPitayaDAQServer.jl/dev) for further information on building, usage and specifications.
+Please read the docs [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://tknopp.github.io/RedPitayaDAQServer/dev) for further information on building, usage and specifications.
 
 
 
