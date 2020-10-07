@@ -19,7 +19,7 @@ jobs:
        julia: 1.5
        os: linux
        script:
-         - julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.add(PackageSpec(path=pwd()))'
+         - julia --project=docs -e 'using Pkg; Pkg.instantiate(); Pkg.add(PackageSpec(path=pwd()),subdir="src/client/julia")'
          - julia --project=docs docs/make.jl
        after_success: skip
 
