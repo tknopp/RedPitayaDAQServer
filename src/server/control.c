@@ -110,7 +110,7 @@ void* controlThread(void* ch) {
 			LOG_INFO("SLOW_DAQ: Start sending...");
 			oldPeriodTotal = 0;
 			oldSlowDACPeriodTotal = 0;
-
+			err.lostSteps = 0;
 			wp_old = startWP;
 
 			/*while(getTriggerStatus() == 0 && rxEnabled)
@@ -141,6 +141,7 @@ void* controlThread(void* ch) {
 						LOG_WARN("WARNING: We lost a slow DAC step! oldSlowDACPeriod %lld newSlowDACPeriod %lld size=%lld\n", 
 								oldSlowDACPeriodTotal, currentSlowDACPeriodTotal, currentSlowDACPeriodTotal-oldSlowDACPeriodTotal);
 						//printf("\033[0m");
+						err.lostSteps = 1;
 						numSlowDACLostSteps += 1;
 					}
 					if(currentSlowDACPeriodTotal > oldSlowDACPeriodTotal) {
