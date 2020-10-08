@@ -159,20 +159,32 @@ int waitServer(int fd) {
 }
 
 
+static int writeAll(int fd, const void *buf, size_t len);
+static int writeAll(int fd, const void *buf, size_t len) {
+	size_t bytesSent = 0;
+	size_t bytesLeft = len;
+	size_t n; 
+	while (bytesSent < len) {
+		n = write(fd, buf + bytesSent, bytesLeft);
+		if (n == -1) {
+			return n;
+		} 
+		bytesSent+=n;
+		bytesLeft-=n;
+	}
+	return bytesSent;
+} 
+
 static void writeDataChunked(int fd, const void *buf, size_t count);
-static void writeDataChunked(int fd, const void *buf, size_t count) 
-{
+static void writeDataChunked(int fd, const void *buf, size_t count) {
 	int n;
 	size_t chunkSize = 200000;
 	size_t ptr = 0;
 	size_t size;
 	while(ptr < count) {
 		size = MIN(count-ptr, chunkSize);
-
-		n = write(fd, buf + ptr, size);
-
-		if (n < 0) 
-		{
+		n = writeAll(fd, buf + ptr, size);
+		if (n < 0) {
 			LOG_ERROR("Error in sendToHost()");
 		}
 		ptr += size;
@@ -207,23 +219,20 @@ void sendDataToHost(uint64_t wpTotal, uint64_t size) {
 	}                                                                                                         
 }  
 
-void sendFramesToHost(int64_t frame, int64_t numFrames) 
-{
+void sendFramesToHost(int64_t frame, int64_t numFrames) {
 	int64_t wpTotal = startWP + frame*getNumSamplesPerFrame();
 	int64_t size = numFrames*getNumSamplesPerFrame();
 	sendDataToHost(wpTotal, size);
 }
 
-void sendPeriodsToHost(int64_t frame, int64_t numPeriods) 
-{
+void sendPeriodsToHost(int64_t frame, int64_t numPeriods) {
 	int64_t wpTotal = startWP + frame*numSamplesPerPeriod;
 	int64_t size = numPeriods*numSamplesPerPeriod;
 	sendDataToHost(wpTotal, size);
 }
 
 
-void* communicationThread(void* p) 
-{ 
+void* communicationThread(void* p) { 
 	int clifd = (int)p;
 	int rc;
 	char smbuffer[10];
