@@ -204,10 +204,6 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
       chunk = numFrames - l + 1
     end
 
-    if wpWrite - numFramesInMemoryBuffer >= wpRead
-      @error("WARNING: We have lost data !!!!!!!!!!")
-    end
-
     @debug "Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)"
 
     #@sync begin
@@ -222,6 +218,14 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
       data[:,2*d-1,:,l:(l+chunk-1)] = utmp2[1,:,1,:,:]
       data[:,2*d,:,l:(l+chunk-1)] = utmp2[2,:,1,:,:]
       done[d] = true
+
+      if wasOverwritten(rp)
+        @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) was overwritten"
+      end
+      if wasCorrupted(rp)
+        @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) might have been corrupted"
+      end
+
     end
     timeout = 10
     t = Timer(timeout)

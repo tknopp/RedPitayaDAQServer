@@ -101,6 +101,9 @@ connectADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQCONNect")
 startADC(rp::RedPitaya, wp::Integer = currentWP(rp)) = send(rp, "RP:ADC:ACQSTATUS ON,$wp")
 stopADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQSTATUS OFF,0")
 
+wasOverwritten(rp::RedPitaya) = query(rp, "RP:STATus:OVERwritten?", Bool)
+wasCorrupted(rp::RedPitaya) = query(rp, "RP:STATus:CORRupted?", Bool)
+
 # Low level read. One has to take care that the numFrames are available
 function readData_(rp::RedPitaya, startFrame, numFrames)
   numSampPerPeriod = rp.samplesPerPeriod
@@ -132,7 +135,7 @@ end
 function readData(rp::RedPitaya, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1)
   dec = rp.decimation
   numSampPerPeriod = rp.samplesPerPeriod
-  numSamp = numSampPerPeriod * numFrames
+  numSamp = numSampPerPeriod * numFrames # ??
   numPeriods = rp.periodsPerFrame
   numSampPerFrame = numSampPerPeriod * numPeriods
 
@@ -165,19 +168,20 @@ function readData(rp::RedPitaya, startFrame, numFrames, numBlockAverages=1, numP
       chunk = numFrames - l + 1
     end
 
-    if wpWrite - numFramesInMemoryBuffer > wpRead
-      @error "WARNING: We have lost data !!!!!!!!!!"
-    end
-
     @debug "Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)"
-
 
     u = readData_(rp, Int64(wpRead), Int64(chunk))
     utmp1 = reshape(u,2,numTrueSampPerPeriod,numBlockAverages,size(u,3)*numPeriodsPerPatch,size(u,4))
     utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
-
     data[:,1,:,l:(l+chunk-1)] = utmp2[1,:,1,:,:]
     data[:,2,:,l:(l+chunk-1)] = utmp2[2,:,1,:,:]
+
+    if wasOverwritten(rp)
+      @error "Requested data from $wpRead until $(wpRead+chunk) was overwritten"
+    end
+    if wasCorrupted(rp)
+      @error "Requested data from $wpRead until $(wpRead+chunk) might have been corrupted"
+    end
 
     l += chunk
     wpRead += chunk
