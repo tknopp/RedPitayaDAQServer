@@ -1,6 +1,0 @@
-theme: jekyll-theme-architect
-navigation:
-  - title: Home
-    url: /
-  - title: Setup
-    url: installation

@@ -1,3 +1,0 @@
-# Installation
-
-## Custom RedPitaya Image
