@@ -188,14 +188,14 @@ void sendDataToHost(uint64_t wpTotal, uint64_t size) {
 	err.corrupted = 0;
 	if (daqTotal >= wpTotal && getInternalWritePointer(daqTotal) > wp && getInternalPointerOverflows(daqTotal) > getInternalPointerOverflows(wp)) {
 		err.overwritten = 1;  	
-		LOG_WARN("%lli Requested data was overwritten\n", wpTotal);	
+		LOG_WARN("%lli Requested data was overwritten", wpTotal);	
 	} 
 	if(wp+size <= ADC_BUFF_SIZE) {
 		writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, size*sizeof(uint32_t));
 		daqTotal = getTotalWritePointer();
 		if (err.overwritten == 0 && daqTotal >= wpTotal && getInternalWritePointer(daqTotal) > wp && getInternalPointerOverflows(daqTotal) > getInternalPointerOverflows(wp)) {
 			err.corrupted = 1;
-			LOG_WARN("%lli Sent data could have been corrupted\n", wpTotal);	
+			LOG_WARN("%lli Sent data could have been corrupted", wpTotal);	
 		} 
 
 	} else {                                                                                                  
