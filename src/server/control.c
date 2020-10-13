@@ -37,7 +37,7 @@ float getSlowDACVal(int period, int i,
 	float val = 0.0;
 
 	int frame = period / numSlowDACPeriodsPerFrame + frameRampUpStarted;
-
+	//TODO These cases are mutually exclusive
 	// Within regular LUT
 	if(frameSlowDACEnabled <= frame < frameSlowDACEnabled + numSlowDACFramesEnabled) {
 		val = slowDACLUT[(period % numSlowDACPeriodsPerFrame)*numSlowDACChan+i];
@@ -80,6 +80,7 @@ float getSlowDACVal(int period, int i,
 }
 
 void* controlThread(void* ch) { 
+	//TODO move these variables as static outside the thread, but for thread startup initialize them again, make this a function 
 	uint64_t wp, wp_old;
 	uint64_t wpPDM, wpPDMOld, wpPDMStart;
 	// Its very important to have a local copy of currentPeriodTotal and currentFrameTotal
@@ -106,6 +107,7 @@ void* controlThread(void* ch) {
 	while(controlThreadRunning) {
 		// Reset everything in order to provide a fresh start
 		// everytime the acquisition is started
+		//TODO Possibly extend this check to see if DAC is properly setup by client, there where some checks later in the code iirc
 		if(rxEnabled && numSlowDACChan > 0) {
 			LOG_INFO("SLOW_DAQ: Start sending...");
 			oldPeriodTotal = 0;
@@ -125,7 +127,7 @@ void* controlThread(void* ch) {
 			while(rxEnabled) {
 				wpPDMOld = getPDMWritePointer(); 
 				wp = getTotalWritePointer();
-				wpPDM = getPDMWritePointer(); 
+				wpPDM = getPDMWritePointer(); //TODO wpPDM is not being used anymore  
 				uint64_t size = wp - wp_old;
 
 				if (size > 0) {
@@ -134,7 +136,7 @@ void* controlThread(void* ch) {
 					currentSlowDACPeriodTotal = wp / getNumSamplesPerSlowDACPeriod();
 					currentPeriodTotal = wp / numSamplesPerPeriod;
 					currentFrameTotal = wp / getNumSamplesPerFrame();
-
+					//TODO thes computations dont seem necessary if slowDAC is not enabled
 					if(currentSlowDACPeriodTotal > oldSlowDACPeriodTotal + (lookahead-lookprehead) && 
 							numPeriodsPerFrame > 1) {
 						//printf("\033[1;31m");
@@ -144,12 +146,14 @@ void* controlThread(void* ch) {
 						err.lostSteps = 1;
 						numSlowDACLostSteps += 1;
 					}
+					//This check could probably be moved up too
 					if(currentSlowDACPeriodTotal > oldSlowDACPeriodTotal) {
 						int currSlowDACStep = currentSlowDACPeriodTotal % numSlowDACPeriodsPerFrame;
-
-						if(enableSlowDACLocal && numSlowDACFramesEnabled>0 && frameSlowDACEnabled >0) {
+						//TODO COMBINE Condition
+						if(enableSlowDACLocal && numSlowDACFramesEnabled>0 && frameSlowDACEnabled > 0) {
 							if(currentFrameTotal >= numSlowDACFramesEnabled + frameSlowDACEnabled + rampingTotalFrames) {
 								// We now have measured enough frames and switch of the slow DAC
+								//TODO give log message
 								enableSlowDAC = false;
 								stopTx();
 								/*for(int i=0; i<4; i++)
@@ -162,6 +166,11 @@ void* controlThread(void* ch) {
 							}
 						}
 
+						/** TODO
+						 * wpPDMOld == wpPDM are fetched at the same time and never used else
+						 * this whole code seems to initialize slowDAC and set the SlowDACACk as a reponse that it will be active next frame
+						 * Move to acknowledge slowDAC function
+						*/
 						if(enableSlowDAC && !enableSlowDACAck && (wpPDMOld == wpPDM) && (
 									( currSlowDACStep > numSlowDACPeriodsPerFrame-lookprehead-1 ) || 
 									(numPeriodsPerFrame == 1) )) {
@@ -195,11 +204,17 @@ void* controlThread(void* ch) {
 								setEnableDACAll(1,d);
 							}
 						}
-
+						/** TODO
+						 *  Disable local slowDAC flag, however this does not reset/turn of SlowDAC like the other checkin line 152.
+						 * 	If the local slowDAC flag is disabled, all the other computations done below seem unecessary*/
 						if(!enableSlowDAC) {
 							enableSlowDACLocal = false;
 						}
-
+						
+						/** TODO
+						 * "Actual" SlowDAC operation, moving the values from the LUT into the pdm_cfg, main part of this whole thread
+						 * If the slowDACLocal flag is not set though, these values are not being written. The enableLUT is being written either way
+						*/
 						for (int i=0; i< numSlowDACChan; i++) {
 							//lookahead
 							for(int y=lookprehead; y<lookahead; y++) {
@@ -235,7 +250,7 @@ void* controlThread(void* ch) {
 							}
 						}
 					}
-					oldPeriodTotal = currentPeriodTotal;
+					oldPeriodTotal = currentPeriodTotal; //TODO Remove this val is never used
 					oldSlowDACPeriodTotal = currentSlowDACPeriodTotal;
 				} else {
 					//printf("Counter not increased %d %d \n", wp_old, wp);
