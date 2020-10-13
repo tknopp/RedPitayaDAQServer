@@ -1028,6 +1028,22 @@ static scpi_result_t RP_InstantResetStatus(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+static int readAll(int fd, void *buf,  size_t len) {
+	size_t left = len;
+	size_t n = 0;
+	char *ptr = (char*) buf;
+
+	while(left > 0) {
+		n = read(fd, ptr, left);
+		if (n <= 0) {
+			return n;
+		}
+		ptr += n;
+		left -= n;
+	}
+	
+	return len;
+}
 
 static scpi_result_t RP_ADC_SetSlowDACLUT(scpi_t * context) {
 
@@ -1038,7 +1054,7 @@ static scpi_result_t RP_ADC_SetSlowDACLUT(scpi_t * context) {
 		printf("Allocating slowDACLUT\n");
 		slowDACLUT = (float *)malloc(numSlowDACChan * numSlowDACPeriodsPerFrame * sizeof(float));
 
-		int n = read(newdatasockfd,slowDACLUT,numSlowDACChan * numSlowDACPeriodsPerFrame * sizeof(float));
+		int n = readAll(newdatasockfd,slowDACLUT,numSlowDACChan * numSlowDACPeriodsPerFrame * sizeof(float));
 		//for(int i=0;i<params.numFFChannels* params.numPatches; i++) printf(" %f ",ffValues[i]);
 		//printf("\n");
 		if (n < 0) perror("ERROR reading from socket");
@@ -1057,7 +1073,7 @@ static scpi_result_t RP_ADC_SetEnableDACLUT(scpi_t * context) {
 		printf("Allocating enableDACLUT\n");
 		enableDACLUT = (bool *)malloc(numSlowDACChan * numSlowDACPeriodsPerFrame * sizeof(bool));
 
-		int n = read(newdatasockfd, enableDACLUT, numSlowDACChan * numSlowDACPeriodsPerFrame * sizeof(bool));
+		int n = readAll(newdatasockfd, enableDACLUT, numSlowDACChan * numSlowDACPeriodsPerFrame * sizeof(bool));
 		//for(int i=0;i<numSlowDACPeriodsPerFrame; i++) printf(" %s ",enableDACLUT[i] ? "true" : "false");
 		//printf("\n");
 		if (n < 0) perror("ERROR reading from socket");
