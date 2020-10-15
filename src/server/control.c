@@ -24,8 +24,56 @@
 #include <scpi/scpi.h>
 
 #include "../lib/rp-daq-lib.h"
-#include "../server/daq_server_scpi.h"
+#include "../server/daq_server_scpi.h"	
 
+static uint64_t wp, wp_old;
+static uint64_t wpPDM, wpPDMOld, wpPDMStart;
+// Its very important to have a local copy of currentPeriodTotal and currentFrameTotal
+// since we do not want to interfere with the values written by the data acquisition thread
+static uint64_t currentPeriodTotal;
+static uint64_t currentSlowDACPeriodTotal;
+static uint64_t currentSlowDACStep;
+static uint64_t currentFrameTotal;
+static uint64_t oldSlowDACPeriodTotal;
+
+static int64_t frameRampUpStarted=-1; 
+static int64_t slowDACPeriodRampUpStarted=-1; 
+static int enableSlowDACLocal=0;
+static int rampingTotalPeriods=-1;
+static int rampingPeriods=-1;
+static int rampingTotalFrames=-1;
+
+static int lookahead=110;
+static int lookprehead=5;
+
+void initSlowDAC() {
+	// Compute Ramping timing
+	double bandwidth = 125e6 / getDecimation();
+	double period = getNumSamplesPerFrame() / bandwidth;
+	rampingTotalFrames = ceil(slowDACRampUpTime / period);
+	rampingTotalPeriods = ceil(slowDACRampUpTime / (getNumSamplesPerSlowDACPeriod() / bandwidth) );
+	rampingPeriods = ceil(slowDACRampUpTime*slowDACFractionRampUp / ( getNumSamplesPerSlowDACPeriod() / bandwidth) );
+	frameRampUpStarted = currentFrameTotal+1;
+	int64_t numSlowDACPeriodsUntilEnd = numSlowDACPeriodsPerFrame - currentSlowDACStep;
+	slowDACPeriodRampUpStarted = currentSlowDACPeriodTotal + numSlowDACPeriodsUntilEnd;
+	
+	// Enable and acknowledge SlowDAC
+	enableSlowDACLocal = true;
+	frameSlowDACEnabled = currentFrameTotal + rampingTotalFrames + 1;
+	enableSlowDACAck = true;	
+	// 3 in the following line is a magic number
+	wpPDMStart = ((currentSlowDACPeriodTotal + numSlowDACPeriodsUntilEnd) % PDM_BUFF_SIZE);
+
+	for(int d=0; d<2; d++) {
+		for(int c=0; c<4; c++) {
+			setAmplitude(fastDACNextAmplitude[c+4*d],d,c);
+		}
+	}
+
+	for(int d=0; d<numSlowDACChan; d++) {
+		setEnableDACAll(1,d);
+	}
+}
 
 float getSlowDACVal(int period, int i, 
 		int rampingTotalFrames,
@@ -80,25 +128,14 @@ float getSlowDACVal(int period, int i,
 }
 
 void* controlThread(void* ch) { 
-	uint64_t wp, wp_old;
-	uint64_t wpPDM, wpPDMOld, wpPDMStart;
-	// Its very important to have a local copy of currentPeriodTotal and currentFrameTotal
-	// since we do not want to interfere with the values written by the data acquisition thread
-	int64_t currentPeriodTotal;
-	int64_t currentSlowDACPeriodTotal;
-	int64_t currentFrameTotal;
-	int64_t oldPeriodTotal;
-	int64_t oldSlowDACPeriodTotal;
-	bool firstCycle;
-
-	int64_t frameRampUpStarted=-1; 
-	int64_t slowDACPeriodRampUpStarted=-1; 
-	int enableSlowDACLocal=0;
-	int rampingTotalPeriods=-1;
-	int rampingPeriods=-1;
-	int rampingTotalFrames=-1;
-	int lookahead=110;
-	int lookprehead=5;
+	frameRampUpStarted=-1; 
+	slowDACPeriodRampUpStarted=-1; 
+	enableSlowDACLocal=0;
+	rampingTotalPeriods=-1;
+	rampingPeriods=-1;
+	rampingTotalFrames=-1;
+	lookahead=110;
+	lookprehead=5;
 
 	LOG_INFO("Starting control thread");
 	getprio(pthread_self());
@@ -108,7 +145,6 @@ void* controlThread(void* ch) {
 		// everytime the acquisition is started
 		if(rxEnabled && numSlowDACChan > 0) {
 			LOG_INFO("SLOW_DAQ: Start sending...");
-			oldPeriodTotal = 0;
 			oldSlowDACPeriodTotal = 0;
 			err.lostSteps = 0;
 			wp_old = startWP;
@@ -137,63 +173,30 @@ void* controlThread(void* ch) {
 
 					if(currentSlowDACPeriodTotal > oldSlowDACPeriodTotal + (lookahead-lookprehead) && 
 							numPeriodsPerFrame > 1) {
-						//printf("\033[1;31m");
 						LOG_WARN("WARNING: We lost a slow DAC step! oldSlowDACPeriod %lld newSlowDACPeriod %lld size=%lld\n", 
 								oldSlowDACPeriodTotal, currentSlowDACPeriodTotal, currentSlowDACPeriodTotal-oldSlowDACPeriodTotal);
-						//printf("\033[0m");
 						err.lostSteps = 1;
 						numSlowDACLostSteps += 1;
 					}
-					if(currentSlowDACPeriodTotal > oldSlowDACPeriodTotal) {
-						int currSlowDACStep = currentSlowDACPeriodTotal % numSlowDACPeriodsPerFrame;
 
-						if(enableSlowDACLocal && numSlowDACFramesEnabled>0 && frameSlowDACEnabled >0) {
-							if(currentFrameTotal >= numSlowDACFramesEnabled + frameSlowDACEnabled + rampingTotalFrames) {
-								// We now have measured enough frames and switch of the slow DAC
-								enableSlowDAC = false;
-								stopTx();
-								/*for(int i=0; i<4; i++)
-								  {
-								  setPDMAllValuesVolt(0.0, i);
-								  }*/
-								frameSlowDACEnabled = -1;
-								frameRampUpStarted = -1;
-								slowDACPeriodRampUpStarted = -1;
-							}
+					if(currentSlowDACPeriodTotal > oldSlowDACPeriodTotal) {
+						currentSlowDACStep = currentSlowDACPeriodTotal % numSlowDACPeriodsPerFrame;
+
+						if(enableSlowDACLocal && numSlowDACFramesEnabled > 0 && frameSlowDACEnabled > 0 
+								&& (currentFrameTotal >= numSlowDACFramesEnabled + frameSlowDACEnabled + rampingTotalFrames)) {
+							// We now have measured enough frames and switch of the slow DAC
+							enableSlowDAC = false;
+							stopTx();
+							frameSlowDACEnabled = -1;
+							frameRampUpStarted = -1;
+							slowDACPeriodRampUpStarted = -1;
 						}
 
 						if(enableSlowDAC && !enableSlowDACAck && (wpPDMOld == wpPDM) && (
-									( currSlowDACStep > numSlowDACPeriodsPerFrame-lookprehead-1 ) || 
+									( currentSlowDACStep > numSlowDACPeriodsPerFrame-lookprehead-1 ) || 
 									(numPeriodsPerFrame == 1) )) {
 							// we are now lookprehead subperiods or less before the next frame
-							double bandwidth = 125e6 / getDecimation();
-							double period = getNumSamplesPerFrame() / bandwidth;
-							rampingTotalFrames = ceil(slowDACRampUpTime / period);
-							rampingTotalPeriods = ceil(slowDACRampUpTime / (getNumSamplesPerSlowDACPeriod() / bandwidth) );
-							rampingPeriods = ceil(slowDACRampUpTime*slowDACFractionRampUp 
-									/ ( getNumSamplesPerSlowDACPeriod() / bandwidth) );
-
-							//printf("rampUpFrames = %d, rampUpPeriods = %d \n", rampUpTotalFrames,rampUpPeriods);
-
-							frameRampUpStarted = currentFrameTotal+1;
-							int64_t numSlowDACPeriodsUntilEnd = numSlowDACPeriodsPerFrame - currSlowDACStep;
-							slowDACPeriodRampUpStarted = currentSlowDACPeriodTotal + numSlowDACPeriodsUntilEnd;
-							enableSlowDACLocal = true;
-							frameSlowDACEnabled = currentFrameTotal + rampingTotalFrames + 1;
-							enableSlowDACAck = true;
-							//wpPDMStart = (wpPDM + numSubPeriodsUntilEnd) % PDM_BUFF_SIZE;
-							// 3 in the following line is a magic number
-							wpPDMStart = ((currentSlowDACPeriodTotal + numSlowDACPeriodsUntilEnd) % PDM_BUFF_SIZE);
-
-							for(int d=0; d<2; d++) {
-								for(int c=0; c<4; c++) {
-									setAmplitude(fastDACNextAmplitude[c+4*d],d,c);
-								}
-							}
-
-							for(int d=0; d<numSlowDACChan; d++) {
-								setEnableDACAll(1,d);
-							}
+							initSlowDAC();
 						}
 
 						if(!enableSlowDAC) {
@@ -235,7 +238,6 @@ void* controlThread(void* ch) {
 							}
 						}
 					}
-					oldPeriodTotal = currentPeriodTotal;
 					oldSlowDACPeriodTotal = currentSlowDACPeriodTotal;
 				} else {
 					//printf("Counter not increased %d %d \n", wp_old, wp);
