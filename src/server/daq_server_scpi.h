@@ -105,8 +105,7 @@ extern void* communicationThread(void*);
 extern void* controlThread(void*);
 extern void joinControlThread();
 
-extern void sendFramesToHost(int64_t, int64_t);
-extern void sendPeriodsToHost(int64_t, int64_t);
+extern void sendDataToClient(uint64_t, uint64_t);
 extern void sendSlowFramesToHost(int64_t, int64_t);
 
 // data loss
