@@ -20,6 +20,7 @@ mutable struct RedPitaya
   decimation::Int64
   samplesPerPeriod::Int64
   periodsPerFrame::Int64
+  startWP::Int64
   isConnected::Bool
   isMaster::Bool
   destroyed::Bool
@@ -92,7 +93,7 @@ end
 
 function RedPitaya(host, port=5025, isMaster=true)
 
-  rp = RedPitaya(host,"\n", TCPSocket(), TCPSocket(), 1, 1, 1, false, isMaster, false)
+  rp = RedPitaya(host,"\n", TCPSocket(), TCPSocket(), 1, 1, 1, 0, false, isMaster, false)
 
   connect(rp)
 

@@ -69,8 +69,14 @@ function slowDACPeriodsPerFrame(rp::RedPitaya, value)
   send(rp, string("RP:ADC:SlowDACPeriodsPerFrame ", value))
 end
 
-currentFrame(rp::RedPitaya) = query(rp,"RP:ADC:FRAMES:CURRENT?", Int64)
-currentPeriod(rp::RedPitaya) = query(rp,"RP:ADC:PERIODS:CURRENT?", Int64)
+function currentFrame(rp::RedPitaya)
+  return Int64(floor((currentWP(rp) - rp.startWP) / (rp.samplesPerPeriod * rp.periodsPerFrame)))
+end
+
+function currentPeriod(rp::RedPitaya) 
+  return Int64(floor((currentWP(rp) - rp.startWP) / (rp.samplesPerPeriod)))
+end
+
 currentWP(rp::RedPitaya) = query(rp,"RP:ADC:WP:CURRENT?", Int64)
 bufferSize(rp::RedPitaya) = query(rp,"RP:ADC:BUFFER:SIZE?", Int64)
 
@@ -98,36 +104,24 @@ function triggerMode(rp::RedPitaya, mode::String)
 end
 
 connectADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQCONNect")
-startADC(rp::RedPitaya, wp::Integer = currentWP(rp)) = send(rp, "RP:ADC:ACQSTATUS ON,$wp")
+function startADC(rp::RedPitaya, wp::Integer = currentWP(rp))
+  rp.startWP = wp 
+  send(rp, "RP:ADC:ACQSTATUS ON,$wp")
+end
 stopADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQSTATUS OFF,0")
 
 wasOverwritten(rp::RedPitaya) = query(rp, "RP:STATus:OVERwritten?", Bool)
 wasCorrupted(rp::RedPitaya) = query(rp, "RP:STATus:CORRupted?", Bool)
 
 # Low level read. One has to take care that the numFrames are available
-function readData_(rp::RedPitaya, startFrame, numFrames)
-  numSampPerPeriod = rp.samplesPerPeriod
-  numPeriods = rp.periodsPerFrame
-  numSampPerFrame = numSampPerPeriod * numPeriods
-
-  command = string("RP:ADC:FRAMES:DATA ",Int64(startFrame),",",Int64(numFrames))
+function readData_(rp::RedPitaya, reqWP, numSamples)
+  command = string("RP:ADC:DATA? ",Int64(reqWP),",",Int64(numSamples))
   send(rp, command)
 
   @debug "read data ..."
-  u = read!(rp.dataSocket, Array{Int16}(undef, 2 * numFrames * numSampPerFrame))
+  u = read!(rp.dataSocket, Array{Int16}(undef, 2 * numSamples))
   @debug "read data!"
-  return reshape(u, 2, rp.samplesPerPeriod, numPeriods, numFrames)
-end
-
-# Low level read. One has to take care that the numFrames are available
-function readDataPeriods_(rp::RedPitaya, startPeriod, numPeriods)
-  command = string("RP:ADC:PERiods:DATa ",Int64(startPeriod),",",Int64(numPeriods))
-  send(rp, command)
-
-  @debug "read data ..."
-  u = read!(rp.dataSocket, Array{Int16}(undef, 2 * numPeriods * rp.samplesPerPeriod))
-  @debug "read data!"
-  return reshape(u, 2, rp.samplesPerPeriod, numPeriods)
+  return u
 end
 
 # High level read. numFrames can adress a future frame. Data is read in
@@ -169,8 +163,11 @@ function readData(rp::RedPitaya, startFrame, numFrames, numBlockAverages=1, numP
     end
 
     @debug "Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)"
-
-    u = readData_(rp, Int64(wpRead), Int64(chunk))
+    # Compute Server WP 
+    reqWP = rp.startWP + wpRead * numSampPerFrame
+    numSamples = chunk * numSampPerFrame
+    t = readData_(rp, Int64(reqWP), Int64(numSamples))
+    u = reshape(t, 2, rp.samplesPerPeriod, numPeriods, numFrames)
     utmp1 = reshape(u,2,numTrueSampPerPeriod,numBlockAverages,size(u,3)*numPeriodsPerPatch,size(u,4))
     utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
     data[:,1,:,l:(l+chunk-1)] = utmp2[1,:,1,:,:]
