@@ -192,7 +192,7 @@ static void writeDataChunked(int fd, const void *buf, size_t count) {
 	}
 }
 
-void sendDataToHost(uint64_t wpTotal, uint64_t size) {
+void sendDataToClient(uint64_t wpTotal, uint64_t numSamples) {
 	uint64_t daqTotal = getTotalWritePointer();
 	uint32_t wp = getInternalWritePointer(wpTotal);
 	// Requested data specific status
@@ -202,8 +202,8 @@ void sendDataToHost(uint64_t wpTotal, uint64_t size) {
 		err.overwritten = 1;  	
 		LOG_WARN("%lli Requested data was overwritten", wpTotal);	
 	} 
-	if(wp+size <= ADC_BUFF_SIZE) {
-		writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, size*sizeof(uint32_t));
+	if(wp+numSamples <= ADC_BUFF_SIZE) {
+		writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, numSamples*sizeof(uint32_t));
 		daqTotal = getTotalWritePointer();
 		if (err.overwritten == 0 && daqTotal >= wpTotal && getInternalWritePointer(daqTotal) > wp && getInternalPointerOverflows(daqTotal) > getInternalPointerOverflows(wp)) {
 			err.corrupted = 1;
@@ -212,23 +212,11 @@ void sendDataToHost(uint64_t wpTotal, uint64_t size) {
 
 	} else {                                                                                                  
 		uint32_t size1 = ADC_BUFF_SIZE - wp;                                                              
-		uint32_t size2 = size - size1;                                                                    
+		uint32_t size2 = numSamples - size1;                                                                    
 
 		writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, size1*sizeof(uint32_t));
 		writeDataChunked(newdatasockfd, ram, size2*sizeof(uint32_t));
 	}                                                                                                         
-}  
-
-void sendFramesToHost(int64_t frame, int64_t numFrames) {
-	int64_t wpTotal = startWP + frame*getNumSamplesPerFrame();
-	int64_t size = numFrames*getNumSamplesPerFrame();
-	sendDataToHost(wpTotal, size);
-}
-
-void sendPeriodsToHost(int64_t frame, int64_t numPeriods) {
-	int64_t wpTotal = startWP + frame*numSamplesPerPeriod;
-	int64_t size = numPeriods*numSamplesPerPeriod;
-	sendDataToHost(wpTotal, size);
 }
 
 
