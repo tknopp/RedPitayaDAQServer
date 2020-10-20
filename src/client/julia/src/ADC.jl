@@ -1,7 +1,6 @@
-export decimation, samplesPerPeriod, periodsPerFrame, masterTrigger, currentFrame,
-     currentPeriod, ramWriterMode, connectADC, startADC, stopADC, readData,
-     numSlowDACChan, setSlowDACLUT, enableSlowDAC, currentWP, slowDACInterpolation,
-     numSlowADCChan, numLostStepsSlowADC, bufferSize, keepAliveReset, triggerMode,
+export decimation, masterTrigger, currentFrame, ramWriterMode, connectADC, startADC, stopADC, readData,
+     numSlowDACChan, setSlowDACLUT, enableSlowDAC, slowDACStepsPerRotation, samplesPerSlowDACStep, prepareSlowDAC,
+     currentWP, slowDACInterpolation, numSlowADCChan, numLostStepsSlowADC, bufferSize, keepAliveReset, triggerMode,
      slowDACPeriodsPerFrame, enableDACLUT
 
 
@@ -9,12 +8,6 @@ decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
 function decimation(rp::RedPitaya, dec)
   rp.decimation = Int64(dec)
   send(rp, string("RP:ADC:DECimation ", rp.decimation))
-end
-
-samplesPerPeriod(rp::RedPitaya) = query(rp,"RP:ADC:PERiod?", Int64)
-function samplesPerPeriod(rp::RedPitaya, value)
-  rp.samplesPerPeriod = Int64(value)
-  send(rp, string("RP:ADC:PERiod ", rp.samplesPerPeriod))
 end
 
 numSlowDACChan(rp::RedPitaya) = query(rp,"RP:ADC:SlowDAC?", Int64)
@@ -58,15 +51,20 @@ end
 
 numLostStepsSlowADC(rp::RedPitaya) = query(rp,"RP:ADC:SlowDACLostSteps?", Int64)
 
-periodsPerFrame(rp::RedPitaya) = query(rp,"RP:ADC:FRAme?", Int64)
-function periodsPerFrame(rp::RedPitaya, value)
-  rp.periodsPerFrame = Int64(value)
-  send(rp, string("RP:ADC:FRAme ", rp.periodsPerFrame))
+samplesPerSlowDACStep(rp::RedPitaya) = query(rp,"RP:ADC:SlowDAC:SamplesPerStep?", Int64)
+function samplesPerSlowDACStep(rp::RedPitaya, value)
+  send(rp, string("RP:ADC:SlowDAC:SamplesPerStep ", value))
 end
 
-slowDACPeriodsPerFrame(rp::RedPitaya) = query(rp,"RP:ADC:SlowDACPeriodsPerFrame?", Int64)
-function slowDACPeriodsPerFrame(rp::RedPitaya, value)
-  send(rp, string("RP:ADC:SlowDACPeriodsPerFrame ", value))
+slowDACStepsPerRotation(rp::RedPitaya) = query(rp,"RP:ADC:SlowDAC:StepsPerRotation?", Int64)
+function slowDACStepsPerRotation(rp::RedPitaya, value)
+  send(rp, string("RP:ADC:SlowDAC:StepsPerRotation ", value))
+end
+
+function prepareSlowDAC(rp::RedPitaya, samplesPerStep, stepsPerRotation, numOfChan)
+  numSlowDACChan(rp, numOfChan)
+  samplesPerSlowDACStep(rp, samplesPerStep)
+  slowDACStepsPerRotation(rp, stepsPerRotation)
 end
 
 function currentFrame(rp::RedPitaya)
@@ -104,11 +102,11 @@ function triggerMode(rp::RedPitaya, mode::String)
 end
 
 connectADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQCONNect")
-function startADC(rp::RedPitaya, wp::Integer = currentWP(rp))
-  rp.startWP = wp 
-  send(rp, "RP:ADC:ACQSTATUS ON,$wp")
+function startADC(rp::RedPitaya)
+  rp.startWP = currentWP(rp)
+  send(rp, "RP:ADC:ACQSTATUS ON")
 end
-stopADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQSTATUS OFF,0")
+stopADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQSTATUS OFF")
 
 wasOverwritten(rp::RedPitaya) = query(rp, "RP:STATus:OVERwritten?", Bool)
 wasCorrupted(rp::RedPitaya) = query(rp, "RP:STATus:CORRupted?", Bool)
