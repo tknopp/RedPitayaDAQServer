@@ -37,18 +37,16 @@
 #define ACQUISITION_OFF 0
 #define ACQUISITION_ON 1
 
-extern int numSamplesPerPeriod;
-extern int numPeriodsPerFrame;
-extern int numSlowDACPeriodsPerFrame;
+extern int numSamplesPerSlowDACStep;
+extern int numSlowDACStepsPerRotation;
 extern int numSlowDACChan;
 extern int numSlowADCChan;
 extern int enableSlowDAC;
 extern int enableSlowDACAck;
-extern int numSlowDACFramesEnabled;
+extern int numSlowDACRotationsEnabled;
 extern int numSlowDACLostSteps;
-extern int64_t frameSlowDACEnabled;
+extern uint64_t rotationSlowDACEnabled;
 
-extern int64_t startWP;
 extern int64_t channel;
 
 extern uint32_t *buffer;

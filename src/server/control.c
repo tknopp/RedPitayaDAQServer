@@ -26,72 +26,61 @@
 #include "../lib/rp-daq-lib.h"
 #include "../server/daq_server_scpi.h"	
 
-static uint64_t wp, wp_old;
+static uint64_t wp;
 static uint64_t wpPDMStart;
-// Its very important to have a local copy of currentPeriodTotal and currentFrameTotal
-// since we do not want to interfere with the values written by the data acquisition thread
-static uint64_t currentPeriodTotal;
-static uint64_t currentSlowDACPeriodTotal;
+static uint64_t currentSlowDACStepTotal;
 static uint64_t currentSlowDACStep;
-static uint64_t currentFrameTotal;
-static uint64_t oldSlowDACPeriodTotal;
+static uint64_t currentRotationTotal;
+static uint64_t oldSlowDACStepTotal;
 
-static int64_t frameRampUpStarted=-1; 
-static int64_t slowDACPeriodRampUpStarted=-1; 
+static int64_t rotationRampUpStarted=-1; 
+static int64_t slowDACStepRampUpStarted=-1; 
 static int enableSlowDACLocal=0;
-static int rampingTotalPeriods=-1;
-static int rampingPeriods=-1;
-static int rampingTotalFrames=-1;
+static int rampingTotalSteps=-1;
+static int rampingSteps=-1;
+static int rampingTotalRotations=-1;
 
 static int lookahead=110;
 static int lookprehead=5;
 
 
-static float getSlowDACVal(int period, int i, 
-		int rampingTotalFrames,
-		int rampingTotalPeriods,
-		int rampingPeriods,
-		int frameRampUpStarted,
-		int frameSlowDACEnabled,
-		int numSlowDACFramesEnabled) {
+static float getSlowDACVal(int step, int i) {
 	float val = 0.0;
 
-	int frame = period / numSlowDACPeriodsPerFrame + frameRampUpStarted;
-	//TODO These cases are mutually exclusive
+	int rotation = step / numSlowDACStepsPerRotation + rotationRampUpStarted;
+	
 	// Within regular LUT
-	if(frameSlowDACEnabled <= frame < frameSlowDACEnabled + numSlowDACFramesEnabled) {
-		val = slowDACLUT[(period % numSlowDACPeriodsPerFrame)*numSlowDACChan+i];
+	if(rotationSlowDACEnabled <= rotation < rotationSlowDACEnabled + numSlowDACRotationsEnabled) {
+		val = slowDACLUT[(step % numSlowDACStepsPerRotation)*numSlowDACChan+i];
 	}
 	// Ramp up phase
-	else if(frameRampUpStarted <= frame < frameSlowDACEnabled) {
-		int64_t currRampUpPeriod = period;
-		int64_t totalPeriodsInRampUpFrames = numSlowDACPeriodsPerFrame*rampingTotalFrames;
-		int64_t stepAfterRampUp = totalPeriodsInRampUpFrames -  
-			(rampingTotalPeriods - rampingPeriods);
-		if( currRampUpPeriod < totalPeriodsInRampUpFrames - rampingTotalPeriods ) { // Before ramp up
+	else if(rotationRampUpStarted <= rotation < rotationSlowDACEnabled) {
+		int64_t currRampUpStep = step;
+		int64_t totalStepsInRampUpRotations = numSlowDACStepsPerRotation*rampingTotalRotations;
+		int64_t stepAfterRampUp = totalStepsInRampUpRotations -  
+			(rampingTotalSteps - rampingSteps);
+		if( currRampUpStep < totalStepsInRampUpRotations - rampingTotalSteps ) { // Before ramp up
 			val = 0.0;
-		} else if ( currRampUpPeriod < stepAfterRampUp ) { // Within ramp up
-			int64_t currRampUpStep = currRampUpPeriod - 
-				(totalPeriodsInRampUpFrames - rampingTotalPeriods);
+		} else if ( currRampUpStep < stepAfterRampUp ) { // Within ramp up
+			int64_t currRampUpStep = currRampUpStep - (totalStepsInRampUpRotations - rampingTotalSteps);
 
-			val = slowDACLUT[ (stepAfterRampUp % numSlowDACPeriodsPerFrame) *numSlowDACChan+i] *
-				(0.9640+tanh(-2.0 + (currRampUpStep / ((float)rampingPeriods-1))*4.0))/1.92806;
+			val = slowDACLUT[ (stepAfterRampUp % numSlowDACStepsPerRotation) *numSlowDACChan+i] *
+				(0.9640+tanh(-2.0 + (currRampUpStep / ((float)rampingSteps-1))*4.0))/1.92806;
 		}
 	}
 	// Ramp down phase
-	else if(frame >= frameSlowDACEnabled + numSlowDACFramesEnabled) {
-		int64_t totalPeriodsFromRampUp = numSlowDACPeriodsPerFrame *
-			(rampingTotalFrames+numSlowDACFramesEnabled);
-		int64_t currRampDownPeriod = period - totalPeriodsFromRampUp;
+	else if(rotation >= rotationSlowDACEnabled + numSlowDACRotationsEnabled) {
+		int64_t totalStepsFromRampUp = numSlowDACStepsPerRotation *
+			(rampingTotalRotations+numSlowDACRotationsEnabled);
+		int64_t currRampDownStep = step - totalStepsFromRampUp;
 
-		if( currRampDownPeriod > rampingTotalPeriods ) { // After ramp down
+		if( currRampDownStep > rampingTotalSteps ) { // After ramp down
 			val = 0.0;
-		} else if ( currRampDownPeriod > (rampingTotalPeriods - rampingPeriods) ) { // Within ramp down
-			int64_t currRampDownStep = currRampDownPeriod - 
-				(rampingTotalPeriods - rampingPeriods);
+		} else if ( currRampDownStep > (rampingTotalSteps - rampingSteps) ) { // Within ramp down
+			int64_t currRampDownStep = currRampDownStep - (rampingTotalSteps - rampingSteps);
 
-			val = slowDACLUT[ (currRampDownPeriod % numSlowDACPeriodsPerFrame) *numSlowDACChan+i] *
-				(0.9640+tanh(-2.0 + ((rampingPeriods-currRampDownStep-1) / ((float)rampingPeriods-1))*4.0))/1.92806;
+			val = slowDACLUT[ (currRampDownStep % numSlowDACStepsPerRotation) *numSlowDACChan+i] *
+				(0.9640+tanh(-2.0 + ((rampingSteps-currRampDownStep-1) / ((float)rampingSteps-1))*4.0))/1.92806;
 		}
 	}
 	return val;
@@ -101,20 +90,20 @@ static float getSlowDACVal(int period, int i,
 static void initSlowDAC() {
 	// Compute Ramping timing
 	double bandwidth = 125e6 / getDecimation();
-	double period = getNumSamplesPerFrame() / bandwidth;
-	rampingTotalFrames = ceil(slowDACRampUpTime / period);
-	rampingTotalPeriods = ceil(slowDACRampUpTime / (getNumSamplesPerSlowDACPeriod() / bandwidth) );
-	rampingPeriods = ceil(slowDACRampUpTime*slowDACFractionRampUp / ( getNumSamplesPerSlowDACPeriod() / bandwidth) );
-	frameRampUpStarted = currentFrameTotal+1;
-	int64_t numSlowDACPeriodsUntilEnd = numSlowDACPeriodsPerFrame - currentSlowDACStep;
-	slowDACPeriodRampUpStarted = currentSlowDACPeriodTotal + numSlowDACPeriodsUntilEnd;
+	double period = (numSamplesPerSlowDACStep * numSlowDACStepsPerRotation) / bandwidth;
+	rampingTotalRotations = ceil(slowDACRampUpTime / period);
+	rampingTotalSteps = ceil(slowDACRampUpTime / (numSamplesPerSlowDACStep / bandwidth) );
+	rampingSteps = ceil(slowDACRampUpTime*slowDACFractionRampUp / ( numSamplesPerSlowDACStep / bandwidth) );
+	rotationRampUpStarted = currentRotationTotal + 1;
+	int64_t numSlowDACStepsUntilEnd = numSlowDACStepsPerRotation - currentSlowDACStep;
+	slowDACStepRampUpStarted = currentSlowDACStepTotal + numSlowDACStepsUntilEnd;
 	
 	// Enable and acknowledge SlowDAC
 	enableSlowDACLocal = true;
-	frameSlowDACEnabled = currentFrameTotal + rampingTotalFrames + 1;
+	rotationSlowDACEnabled = currentRotationTotal + rampingTotalRotations + 1;
 	enableSlowDACAck = true;	
 	// 3 in the following line is a magic number
-	wpPDMStart = ((currentSlowDACPeriodTotal + numSlowDACPeriodsUntilEnd) % PDM_BUFF_SIZE);
+	wpPDMStart = ((currentSlowDACStepTotal + numSlowDACStepsUntilEnd) % PDM_BUFF_SIZE);
 
 	for(int d=0; d<2; d++) {
 		for(int c=0; c<4; c++) {
@@ -131,12 +120,9 @@ static void setNextLUTValues() {
 	for (int i=0; i< numSlowDACChan; i++) {
 		//lookahead
 		for(int y=lookprehead; y<lookahead; y++) {
-			uint64_t localPeriod = (currentSlowDACPeriodTotal - slowDACPeriodRampUpStarted + y); 
-			uint64_t currPDMIndex = (wpPDMStart + localPeriod) % PDM_BUFF_SIZE;
-			float val = getSlowDACVal(localPeriod, i, 
-					rampingTotalFrames, rampingTotalPeriods, rampingPeriods,
-					frameRampUpStarted, frameSlowDACEnabled,
-					numSlowDACFramesEnabled); 
+			uint64_t localStep = (currentSlowDACStepTotal - slowDACStepRampUpStarted + y); 
+			uint64_t currPDMIndex = (wpPDMStart + localStep) % PDM_BUFF_SIZE;
+			float val = getSlowDACVal(localStep, i); 
 
 			int status = setPDMValueVolt(val, i, currPDMIndex);
 
@@ -146,11 +132,11 @@ static void setNextLUTValues() {
 
 
 			if (enableDACLUT != NULL) {
-				int frame = localPeriod / numSlowDACPeriodsPerFrame + frameRampUpStarted;
+				int rotation = localStep / numSlowDACStepsPerRotation + rotationRampUpStarted;
 				// Within regular LUT
 				bool val = false;
-				if(frameSlowDACEnabled <= frame < frameSlowDACEnabled + numSlowDACFramesEnabled) {
-					val = enableDACLUT[(localPeriod % numSlowDACPeriodsPerFrame)*numSlowDACChan+i];
+				if(rotationSlowDACEnabled <= rotation < rotationSlowDACEnabled + numSlowDACRotationsEnabled) {
+					val = enableDACLUT[(localStep % numSlowDACStepsPerRotation)*numSlowDACChan+i];
 				}
 				setEnableDAC(val, i, currPDMIndex);
 			}
@@ -158,20 +144,20 @@ static void setNextLUTValues() {
 	}
 }
 
-static void handleLostSlowDACSteps(uint64_t oldSlowDACPeriod, uint64_t currentSlowDACPeriod) {
-	LOG_WARN("WARNING: We lost a slow DAC step! oldSlowDACPeriod %lld newSlowDACPeriod %lld size=%lld\n", 
-			oldSlowDACPeriod, currentSlowDACPeriod, currentSlowDACPeriod-oldSlowDACPeriod);
+static void handleLostSlowDACSteps(uint64_t oldSlowDACStep, uint64_t currentSlowDACStep) {
+	LOG_WARN("WARNING: We lost a slow DAC step! oldSlowDACStep %lld newSlowDACStep %lld size=%lld\n", 
+			oldSlowDACStep, currentSlowDACStep, currentSlowDACStep-oldSlowDACStep);
 	err.lostSteps = 1;
 	numSlowDACLostSteps += 1;
 }
 
 void* controlThread(void* ch) { 
-	frameRampUpStarted=-1; 
-	slowDACPeriodRampUpStarted=-1; 
+	rotationRampUpStarted=-1; 
+	slowDACStepRampUpStarted=-1; 
 	enableSlowDACLocal=0;
-	rampingTotalPeriods=-1;
-	rampingPeriods=-1;
-	rampingTotalFrames=-1;
+	rampingTotalSteps=-1;
+	rampingSteps=-1;
+	rampingTotalRotations=-1;
 	lookahead=110;
 	lookprehead=5;
 
@@ -184,43 +170,43 @@ void* controlThread(void* ch) {
 		//TODO Possibly extend this check to see if DAC is properly setup by client, there where some checks later in the code iirc
 		if(rxEnabled && numSlowDACChan > 0) {
 			LOG_INFO("SLOW_DAQ: Start sending...");
-			oldSlowDACPeriodTotal = 0;
+			oldSlowDACStepTotal = 0;
 			err.lostSteps = 0;
 
 			while(rxEnabled) {
 				wp = getTotalWritePointer();
-				currentSlowDACPeriodTotal = wp / getNumSamplesPerSlowDACPeriod();
+				currentSlowDACStepTotal =  wp / numSamplesPerSlowDACStep;
 
-
-				if (currentSlowDACPeriodTotal > oldSlowDACPeriodTotal) {
-					currentFrameTotal = wp / getNumSamplesPerFrame();
-					currentSlowDACStep = currentSlowDACPeriodTotal % numSlowDACPeriodsPerFrame;
+				if (currentSlowDACStepTotal > oldSlowDACStepTotal) {
+					currentRotationTotal = wp / (numSamplesPerSlowDACStep * numSlowDACStepsPerRotation);
+					currentSlowDACStep = currentSlowDACStepTotal % numSlowDACStepsPerRotation;
 
 					// Handle global-enableSlowDAC
 					if (!enableSlowDAC) {
 						// TODO Same reset as other case, in an if clause with enableSlowDACLocal == true?
 						enableSlowDACLocal = false;
 					}
-					else if(enableSlowDAC && !enableSlowDACAck && (( currentSlowDACStep > numSlowDACPeriodsPerFrame-lookprehead-1 ) || (numPeriodsPerFrame == 1)) ) {
-						// we are now lookprehead subperiods or less before the next frame
+					//TODO currentSlowDACStep > numSlowDACSteps - lookprehead -1, behaviour for numSlowDACStepsPerRotation < 6?
+					else if(enableSlowDAC && !enableSlowDACAck && (( currentSlowDACStep > numSlowDACStepsPerRotation-lookprehead-1 ) || (numSlowDACStepsPerRotation == 1)) ) {
+						// we are now lookprehead subperiods or less before the next rotation
 						initSlowDAC();
 					}
 					
 					// Handle local-enableSlowDAC
 					if (enableSlowDACLocal) {
 
-						if(currentSlowDACPeriodTotal > oldSlowDACPeriodTotal + (lookahead-lookprehead) && numPeriodsPerFrame > 1) {
-							handleLostSlowDACSteps(oldSlowDACPeriodTotal, currentSlowDACPeriodTotal);
+						if(currentSlowDACStepTotal > oldSlowDACStepTotal + (lookahead-lookprehead) && numSlowDACStepsPerRotation > 1) {
+							handleLostSlowDACSteps(oldSlowDACStepTotal, currentSlowDACStepTotal);
 						}
 
-						if(numSlowDACFramesEnabled > 0 && frameSlowDACEnabled > 0 
-								&& (currentFrameTotal >= numSlowDACFramesEnabled + frameSlowDACEnabled + rampingTotalFrames)) {
-							// We now have measured enough frames and switch of the slow DAC
+						if(numSlowDACRotationsEnabled > 0 && rotationSlowDACEnabled > 0 
+								&& (currentRotationTotal >= numSlowDACRotationsEnabled + rotationSlowDACEnabled + rampingTotalRotations)) {
+							// We now have measured enough rotations and switch of the slow DAC
 							enableSlowDAC = false;
 							stopTx();
-							frameSlowDACEnabled = -1;
-							frameRampUpStarted = -1;
-							slowDACPeriodRampUpStarted = -1;
+							rotationSlowDACEnabled = -1;
+							rotationRampUpStarted = -1;
+							slowDACStepRampUpStarted = -1;
 						}
 						else {
 							setNextLUTValues();
@@ -228,7 +214,7 @@ void* controlThread(void* ch) {
 
 					}
 				}
-				oldSlowDACPeriodTotal = currentSlowDACPeriodTotal;
+				oldSlowDACStepTotal = currentSlowDACStepTotal;
 				usleep(20);
 			}
 		}

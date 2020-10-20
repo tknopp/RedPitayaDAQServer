@@ -367,67 +367,47 @@ static scpi_result_t RP_ADC_GetDecimation(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_ADC_SetSamplesPerPeriod(scpi_t * context) {
-	// Enforce changing the samples per period to be only
+
+static scpi_result_t RP_ADC_SetSamplesPerSlowDACStep(scpi_t * context) {
+	// Enforce changing the samples per slowDAC steps to be only
 	// possible while not acquiring data
 	if(rxEnabled) {
 		return SCPI_RES_ERR;
 	}
 
-	if (!SCPI_ParamInt32(context, &numSamplesPerPeriod, TRUE)) {
+	if (!SCPI_ParamInt32(context, &numSamplesPerSlowDACStep, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_ADC_GetSamplesPerSlowDACStep(scpi_t * context) {
+	SCPI_ResultInt32(context, numSamplesPerSlowDACStep);
 
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_ADC_GetSamplesPerPeriod(scpi_t * context) {
-	SCPI_ResultInt32(context, numSamplesPerPeriod);
-
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_ADC_SetPeriodsPerFrame(scpi_t * context) {
-	// Enforce changing the periods per frame to be only
+static scpi_result_t RP_ADC_SetSlowDACStepsPerRotation(scpi_t * context) {
+	// Enforce changing the slowDAC steps per rotation to be only
 	// possible while not acquiring data
 	if(rxEnabled) {
 		return SCPI_RES_ERR;
 	}
 
-	if (!SCPI_ParamInt32(context, &numPeriodsPerFrame, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_ADC_GetPeriodsPerFrame(scpi_t * context) {
-	SCPI_ResultInt32(context, numPeriodsPerFrame);
-
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_ADC_SetSlowDACPeriodsPerFrame(scpi_t * context) {
-	// Enforce changing the periods per frame to be only
-	// possible while not acquiring data
-	if(rxEnabled) {
-		return SCPI_RES_ERR;
-	}
-
-	if (!SCPI_ParamInt32(context, &numSlowDACPeriodsPerFrame, TRUE)) {
+	if (!SCPI_ParamInt32(context, &numSlowDACStepsPerRotation, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 
 
-	// Adapt the slowDAC frequency to match the period length
-	setPDMClockDivider(getNumSamplesPerSlowDACPeriod()*getDecimation());
+	// Adapt the slowDAC frequency to match the step length
+	setPDMClockDivider(numSamplesPerSlowDACStep * getDecimation());
 
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_ADC_GetSlowDACPeriodsPerFrame(scpi_t * context) {
-	SCPI_ResultInt32(context, numSlowDACPeriodsPerFrame);
+static scpi_result_t RP_ADC_GetSlowDACStepsPerRotation(scpi_t * context) {
+	SCPI_ResultInt32(context, numSlowDACStepsPerRotation);
 
 	return SCPI_RES_OK;
 }
@@ -487,7 +467,7 @@ static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 
-	if (!SCPI_ParamInt32(context, &numSlowDACFramesEnabled, TRUE)) {
+	if (!SCPI_ParamInt32(context, &numSlowDACRotationsEnabled, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 	if (!SCPI_ParamDouble(context, &slowDACRampUpTime, TRUE)) {
@@ -506,7 +486,7 @@ static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
 			//sleep(1.0);
 			//printf("WAIT FOR SLOW DACAck\n");
 		}
-		SCPI_ResultInt64(context, frameSlowDACEnabled);
+		SCPI_ResultInt64(context, rotationSlowDACEnabled);
 	} else {
 		SCPI_ResultInt64(context, 0);
 	}
@@ -562,13 +542,6 @@ static scpi_result_t RP_ADC_GetBufferSize(scpi_t * context) {
 	SCPI_ResultUInt64(context, ADC_BUFF_SIZE);
 	return SCPI_RES_OK;
 }
-
-static scpi_result_t RP_ADC_GetCurrentPeriod(scpi_t * context) {
-	SCPI_ResultUInt64(context, getCurrentPeriodTotal());
-	return SCPI_RES_OK;
-}
-
-
 
 static scpi_result_t RP_ADC_GetData(scpi_t * context) {
 	// Reading is only possible while an acquisition is running
@@ -655,10 +628,6 @@ static scpi_result_t RP_ADC_SetAcquisitionStatus(scpi_t * context) {
 	if (!SCPI_ParamChoice(context, acquisition_status_modes, &acquisition_status_selection, TRUE)) {
 		return SCPI_RES_ERR;
 	}
-	if (!SCPI_ParamInt64(context, &startWP, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-
 	if(acquisition_status_selection == ACQUISITION_ON) {
 		rxEnabled = true;
 	} else {
@@ -1025,16 +994,14 @@ static int readAll(int fd, void *buf,  size_t len) {
 
 static scpi_result_t RP_ADC_SetSlowDACLUT(scpi_t * context) {
 
-	if(numSlowDACPeriodsPerFrame > 0 && numSlowDACChan > 0) {
+	if(numSlowDACStepsPerRotation > 0 && numSlowDACChan > 0) {
 		if(slowDACLUT != NULL) {
 			free(slowDACLUT);
 		}
 		printf("Allocating slowDACLUT\n");
-		slowDACLUT = (float *)malloc(numSlowDACChan * numSlowDACPeriodsPerFrame * sizeof(float));
+		slowDACLUT = (float *)malloc(numSlowDACChan * numSlowDACStepsPerRotation * sizeof(float));
 
-		int n = readAll(newdatasockfd,slowDACLUT,numSlowDACChan * numSlowDACPeriodsPerFrame * sizeof(float));
-		//for(int i=0;i<params.numFFChannels* params.numPatches; i++) printf(" %f ",ffValues[i]);
-		//printf("\n");
+		int n = readAll(newdatasockfd,slowDACLUT,numSlowDACChan * numSlowDACStepsPerRotation * sizeof(float));
 		if (n < 0) perror("ERROR reading from socket");
 
 	}
@@ -1044,16 +1011,14 @@ static scpi_result_t RP_ADC_SetSlowDACLUT(scpi_t * context) {
 
 static scpi_result_t RP_ADC_SetEnableDACLUT(scpi_t * context) {
 
-	if(numSlowDACPeriodsPerFrame > 0 && numSlowDACChan > 0) {
+	if(numSlowDACStepsPerRotation > 0 && numSlowDACChan > 0) {
 		if(enableDACLUT != NULL) {
 			free(enableDACLUT);
 		}
 		printf("Allocating enableDACLUT\n");
-		enableDACLUT = (bool *)malloc(numSlowDACChan * numSlowDACPeriodsPerFrame * sizeof(bool));
+		enableDACLUT = (bool *)malloc(numSlowDACChan * numSlowDACStepsPerRotation * sizeof(bool));
 
-		int n = readAll(newdatasockfd, enableDACLUT, numSlowDACChan * numSlowDACPeriodsPerFrame * sizeof(bool));
-		//for(int i=0;i<numSlowDACPeriodsPerFrame; i++) printf(" %s ",enableDACLUT[i] ? "true" : "false");
-		//printf("\n");
+		int n = readAll(newdatasockfd, enableDACLUT, numSlowDACChan * numSlowDACStepsPerRotation * sizeof(bool));
 		if (n < 0) perror("ERROR reading from socket");
 	}
 	return SCPI_RES_OK;
@@ -1139,9 +1104,6 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:SlowADC?", .callback = RP_ADC_GetNumSlowADCChan,},
 	{.pattern = "RP:ADC:DECimation", .callback = RP_ADC_SetDecimation,},
 	{.pattern = "RP:ADC:DECimation?", .callback = RP_ADC_GetDecimation,},
-	{.pattern = "RP:ADC:PERiod", .callback = RP_ADC_SetSamplesPerPeriod,},
-	{.pattern = "RP:ADC:PERiod?", .callback = RP_ADC_GetSamplesPerPeriod,},
-	{.pattern = "RP:ADC:PERiods:CURRent?", .callback = RP_ADC_GetCurrentPeriod,},
 	{.pattern = "RP:ADC:SlowDAC", .callback = RP_ADC_SetNumSlowDACChan,},
 	{.pattern = "RP:ADC:SlowDAC?", .callback = RP_ADC_GetNumSlowDACChan,},
 	{.pattern = "RP:ADC:SlowDACLUT", .callback = RP_ADC_SetSlowDACLUT,},
@@ -1149,11 +1111,10 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:SlowDACEnable", .callback = RP_ADC_EnableSlowDAC,},
 	{.pattern = "RP:ADC:SlowDACInterpolation", .callback = RP_ADC_SlowDACInterpolation,},
 	{.pattern = "RP:ADC:SlowDACLostSteps?", .callback = RP_ADC_GetSlowDACLostSteps,},
-	{.pattern = "RP:ADC:FRAme", .callback = RP_ADC_SetPeriodsPerFrame,},
-	{.pattern = "RP:ADC:FRAme?", .callback = RP_ADC_GetPeriodsPerFrame,},
-	{.pattern = "RP:ADC:SlowDACPeriodsPerFrame", .callback = RP_ADC_SetSlowDACPeriodsPerFrame,},
-	{.pattern = "RP:ADC:SlowDACPeriodsPerFrame?", .callback = RP_ADC_GetSlowDACPeriodsPerFrame,},
-	{.pattern = "RP:ADC:FRAmes:CURRent?", .callback = RP_ADC_GetCurrentFrame,},
+	{.pattern = "RP:ADC:SlowDAC:STEPsPerRotation", .callback = RP_ADC_SetSlowDACStepsPerRotation,},
+	{.pattern = "RP:ADC:SlowDAC:STEPsPerRotation?", .callback = RP_ADC_GetSlowDACStepsPerRotation,},
+	{.pattern = "RP:ADC:SlowDAC:SAMPlesPerStep", .callback = RP_ADC_SetSamplesPerSlowDACStep,},
+	{.pattern = "RP:ADC:SlowDAC:SAMPlesPerStep?", .callback = RP_ADC_GetSamplesPerSlowDACStep,},
 	{.pattern = "RP:ADC:WP:CURRent?", .callback = RP_ADC_GetCurrentWP,},
 	{.pattern = "RP:ADC:DATa?", .callback = RP_ADC_GetData,},
 	{.pattern = "RP:ADC:BUFfer:Size?", .callback = RP_ADC_GetBufferSize,},

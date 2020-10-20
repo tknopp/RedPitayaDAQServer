@@ -59,17 +59,15 @@
 #include "../lib/rp-daq-lib.h"
 #include "../server/daq_server_scpi.h"
 
-int numSamplesPerPeriod = 5000;
-int numPeriodsPerFrame = 20;
-int numSlowDACPeriodsPerFrame = 20;
+int numSamplesPerSlowDACStep = 0; 
+int numSlowDACStepsPerRotation = 20;
 int numSlowDACChan = 0;
 int numSlowADCChan = 0;
-int numSlowDACFramesEnabled = 0;
+int numSlowDACRotationsEnabled = 0;
 int numSlowDACLostSteps = 0;
 int enableSlowDAC = 0;
 int enableSlowDACAck = true;
-int64_t frameSlowDACEnabled = -1;
-int64_t startWP = -1;
+uint64_t rotationSlowDACEnabled = 0;
 
 int64_t channel;
 
@@ -122,25 +120,6 @@ void getprio( pthread_t id ) {
 	}
 }
 
-uint64_t getNumSamplesPerFrame() {
-	return numSamplesPerPeriod * numPeriodsPerFrame;
-}
-
-uint64_t getNumSamplesPerSlowDACPeriod() {
-	return getNumSamplesPerFrame() / numSlowDACPeriodsPerFrame;
-}
-
-uint64_t getCurrentFrameTotal() {
-	uint64_t currWP = getTotalWritePointer();
-	uint64_t currFrame = (currWP - startWP) / getNumSamplesPerFrame();
-	return currFrame;
-}
-
-uint64_t getCurrentPeriodTotal() {
-	return (getTotalWritePointer()-startWP) / numSamplesPerPeriod; 
-}
-
-
 uint8_t getErrorStatus() {
 	return err.overwritten | err.corrupted << 1 | err.lostSteps << 2;
 }
@@ -168,8 +147,6 @@ uint8_t getLostStepsStatus() {
 void clearLostStepsStatus() {
 	err.lostSteps = 0;
 }
-
-
 
 void createThreads() {
 	controlThreadRunning = true;
