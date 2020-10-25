@@ -10,7 +10,7 @@ using LinearAlgebra
 
 import Base: reset
 
-export RedPitaya, receive, query, start, stop, disconnect
+export RedPitaya, receive, query, start, stop, disconnect, getLog
 
 mutable struct RedPitaya
   host::String
@@ -79,6 +79,20 @@ function disconnect(rp::RedPitaya)
     end
   end
   return nothing
+end
+
+function getLog(rp::RedPitaya, log::io)
+  command = "RP:LOG?"
+  send(rp, command)
+  chunk_size = 1024
+  size = read(rp.dataSocket, Int64)
+  recv = 0
+  while (recv != size)
+    buff = read(rp.dataSocket, min(chunk_size, size - recv))
+    recv = recv + length(buff)
+    write(log, buff)
+  end
+  close(log)
 end
 
 include("ADC.jl")
