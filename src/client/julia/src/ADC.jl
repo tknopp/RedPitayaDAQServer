@@ -1,4 +1,4 @@
-export decimation, masterTrigger, currentFrame, ramWriterMode, connectADC, startADC, stopADC, readData,
+export decimation, masterTrigger, currentFrame, ramWriterMode, connectADC, startADC, stopADC, readData, samplesPerPeriods, periodsPerFrame
      numSlowDACChan, setSlowDACLUT, enableSlowDAC, slowDACStepsPerRotation, samplesPerSlowDACStep, prepareSlowDAC,
      currentWP, slowDACInterpolation, numSlowADCChan, numLostStepsSlowADC, bufferSize, keepAliveReset, triggerMode,
      slowDACPeriodsPerFrame, enableDACLUT
@@ -51,6 +51,20 @@ end
 
 numLostStepsSlowADC(rp::RedPitaya) = query(rp,"RP:ADC:SlowDACLostSteps?", Int64)
 
+function samplesPerPeriod(rp::RedPitaya) 
+  return rp.samplesPerPeriod
+end
+function samplesPerPeriod(rp::RedPitaya, value)
+  rp.samplesPerPeriod = value
+end
+
+function periodsPerFrame(rp::RedPitaya) 
+  return rp.periodsPerFrame
+end
+function periodsPerFrame(rp::RedPitaya, value)
+  rp.periodsPerFrame = value
+end
+
 samplesPerSlowDACStep(rp::RedPitaya) = query(rp,"RP:ADC:SlowDAC:SamplesPerStep?", Int64)
 function samplesPerSlowDACStep(rp::RedPitaya, value)
   send(rp, string("RP:ADC:SlowDAC:SamplesPerStep ", value))
@@ -68,11 +82,11 @@ function prepareSlowDAC(rp::RedPitaya, samplesPerStep, stepsPerRotation, numOfCh
 end
 
 function currentFrame(rp::RedPitaya)
-  return Int64(floor((currentWP(rp) - rp.startWP) / (rp.samplesPerPeriod * rp.periodsPerFrame)))
+  return Int64(floor(currentWP(rp) / (rp.samplesPerPeriod * rp.periodsPerFrame)))
 end
 
 function currentPeriod(rp::RedPitaya) 
-  return Int64(floor((currentWP(rp) - rp.startWP) / (rp.samplesPerPeriod)))
+  return Int64(floor(currentWP(rp) / (rp.samplesPerPeriod)))
 end
 
 currentWP(rp::RedPitaya) = query(rp,"RP:ADC:WP:CURRENT?", Int64)
@@ -103,7 +117,6 @@ end
 
 connectADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQCONNect")
 function startADC(rp::RedPitaya)
-  rp.startWP = currentWP(rp)
   send(rp, "RP:ADC:ACQSTATUS ON")
 end
 stopADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQSTATUS OFF")
@@ -162,7 +175,7 @@ function readData(rp::RedPitaya, startFrame, numFrames, numBlockAverages=1, numP
 
     @debug "Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)"
     # Compute Server WP 
-    reqWP = rp.startWP + wpRead * numSampPerFrame
+    reqWP = wpRead * numSampPerFrame
     numSamples = chunk * numSampPerFrame
     t = readData_(rp, Int64(reqWP), Int64(numSamples))
     u = reshape(t, 2, rp.samplesPerPeriod, numPeriods, numFrames)
