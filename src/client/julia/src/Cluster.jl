@@ -38,8 +38,12 @@ function currentPeriod(rpc::RedPitayaCluster)
   return currentPeriods
 end
 
-for op in [:periodsPerFrame,  :samplesPerPeriod, :decimation, :keepAliveReset,
-           :triggerMode, :slowDACPeriodsPerFrame]
+function currentWP(rpc::RedPitayaCluster)
+  return currentWP(master(rpc))
+end
+
+for op in [:periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset,
+           :triggerMode, :slowDACStepsPerRotation, :samplesPerSlowDACStep]
   @eval $op(rpc::RedPitayaCluster) = $op(master(rpc))
   @eval begin
     function $op(rpc::RedPitayaCluster, value)
@@ -61,9 +65,8 @@ for op in [:connectADC, :stopADC, :disconnect, :connect]
 end
 
 function startADC(rpc::RedPitayaCluster)
-  wp = currentWP(rpc.rp[1])
   for rp in rpc.rp
-    startADC(rp, wp)
+    startADC(rp)
   end
 end
 
@@ -168,6 +171,60 @@ function slowDACInterpolation(rpc::RedPitayaCluster, enable::Bool)
   end
 end
 
+
+function readRawSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize = 25000)
+  numOfReceivedSamples = 0
+  index = 1
+  rawData = zeros(Int16, numChan(rpc), numOfRequestedSamples)
+  while numOfReceivedSamples < numOfRequestedSamples
+    wpRead = wpStart + numOfReceivedSamples
+    wpWrite = currentWP(rpc)
+    
+    # Wait for data to be written
+    while wpRead >= wpWrite
+      wpWrite = currentWP(rpc)
+      @debug wpWrite
+    end
+
+    # Collect data
+    chunk = min(numOfRequestedSamples - numOfReceivedSamples, chunkSize)
+    done = zeros(Bool, length(rpc.rp))
+    @async for (d, rp) in enumerate(rpc.rp)
+      u = readData_(rp, Int64(wpRead), Int64(chunk))
+      samples = reshape(u, 2, chunk)
+      rawData[2*d-1, index:(index + chunk - 1)] = samples[1, :]
+      rawData[2*d, index:(index + chunk - 1)] = samples[2, :] 
+
+      if wasOverwritten(rp)
+        @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) was overwritten"
+      end
+      if wasCorrupted(rp)
+        @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) might have been corrupted"
+      end
+
+      done[d] = true
+    end
+
+    # Wait for data to be collected
+    timeout = 10
+    t = Timer(timeout)
+    while isopen(t)
+      sleep(0.001)
+      if all(done)
+        break
+      end
+    end
+    if !all(done)
+      error("Timout reached when reading from sockets")
+    end    
+
+    # Iterate
+    index += chunk
+    numOfReceivedSamples += chunk
+  end
+  return rawData
+end
+
 # High level read. numFrames can adress a future frame. Data is read in
 # chunks
 function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1)
@@ -183,65 +240,26 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
   numTrueSampPerPeriod = div(numSampPerPeriod,numBlockAverages*numPeriodsPerPatch)
 
   data = zeros(Float32, numTrueSampPerPeriod, numChan(rpc), numPeriods*numPeriodsPerPatch, numFrames)
-  wpRead = startFrame
-  l=1
+  wpStart = startFrame * numSampPerFrame
+  numOfRequestedSamples = numFrames * numSampPerFrame
 
   numFramesInMemoryBuffer = bufferSize(master(rpc)) / numSampPerFrame #numSamp
   @debug "numFramesInMemoryBuffer = $numFramesInMemoryBuffer"
 
   # This is a wild guess for a good chunk size
   chunkSize = max(1,  round(Int, 1000000 / numSampPerFrame)  )
-  @debug "chunkSize = $chunkSize"
-  while l<=numFrames
-    wpWrite = currentFrame(rpc)
-    while wpRead >= wpWrite # Wait that startFrame is reached
-      wpWrite = currentFrame(rpc)
-      @debug wpWrite
-    end
-    chunk = min(wpWrite-wpRead,chunkSize) # Determine how many frames to read
-    @debug chunk
-    if l+chunk > numFrames
-      chunk = numFrames - l + 1
-    end
-
-    @debug "Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)"
-
-    #@sync begin
-    done = zeros(Bool, length(rpc.rp))
-    @async for (d,rp) in enumerate(rpc.rp)
-
-      u = readData_(rp, Int64(wpRead), Int64(chunk))
-      utmp1 = reshape(u,2,numTrueSampPerPeriod,numBlockAverages,
-                        size(u,3)*numPeriodsPerPatch,size(u,4))
-      utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
-
-      data[:,2*d-1,:,l:(l+chunk-1)] = utmp2[1,:,1,:,:]
-      data[:,2*d,:,l:(l+chunk-1)] = utmp2[2,:,1,:,:]
-      done[d] = true
-
-      if wasOverwritten(rp)
-        @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) was overwritten"
-      end
-      if wasCorrupted(rp)
-        @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) might have been corrupted"
-      end
-
-    end
-    timeout = 10
-    t = Timer(timeout)
-    while isopen(t)
-      sleep(0.001)
-      if all(done)
-        break
-      end
-    end
-    if !all(done)
-      error("Timout reached when reading from sockets")
-    end
-    #end
-
-    l += chunk
-    wpRead += chunk
+  # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
+  rawSamples = readRawSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize)
+  
+  # Reshape/Avg Data
+  temp = reshape(rawSamples, numChan(rpc), numSampPerPeriod, numPeriods, numFrames)
+  for (d, rp) in enumerate(rpc.rp)
+    u = temp[2*d-1:2*d, :, :, :]
+    utmp1 = reshape(u,2,numTrueSampPerPeriod,numBlockAverages,
+      size(u,3)*numPeriodsPerPatch,size(u,4))
+    utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
+    data[:,2*d-1,:,:] = utmp2[1,:,1,:,:]
+    data[:,2*d,:,:] = utmp2[2,:,1,:,:]
   end
 
   return data
@@ -249,7 +267,6 @@ end
 
 function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAverages=1)
   numSampPerPeriod = master(rpc).samplesPerPeriod
-  numSamp = numSampPerPeriod * numPeriods
 
   if rem(numSampPerPeriod,numBlockAverages) != 0
     error("block averages has to be a divider of numSampPerPeriod")
@@ -258,40 +275,22 @@ function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBloc
   numAveragedSampPerPeriod = div(numSampPerPeriod,numBlockAverages)
 
   data = zeros(Float32, numAveragedSampPerPeriod, numChan(rpc), numPeriods)
-  wpRead = startPeriod
-  l=1
+  wpStart = startPeriod * numSampPerPeriod
+  numOfRequestedSamples = numPeriods * numSampPerPeriod
 
   # This is a wild guess for a good chunk size
   chunkSize = max(1,  round(Int, 1000000 / numSampPerPeriod)  )
-  println("chunkSize = $chunkSize; numPeriods = $numPeriods")
-  while l<=numPeriods
-    wpWrite = currentPeriod(rpc)
-    while wpRead >= wpWrite # Wait that startPeriod is reached
-      wpWrite = currentPeriod(rpc)
-      @debug wpWrite
-    end
-    chunk = min(wpWrite-wpRead,chunkSize) # Determine how many periods to read
-    @debug chunk
-    if l+chunk > numPeriods
-      chunk = numPeriods - l + 1
-    end
+  # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
+  rawSamples = readRawSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize)
 
-    @debug "Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)"
-
-    for (d,rp) in enumerate(rpc.rp)
-    # @sync   @async begin
-        u = readDataPeriods_(rp, Int64(wpRead), Int64(chunk))
-
-        utmp1 = reshape(u,2,numAveragedSampPerPeriod,numBlockAverages,size(u,3))
-        utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
-
-        data[:,2*d-1,l:(l+chunk-1)] = utmp2[1,:,1,:]
-        data[:,2*d,l:(l+chunk-1)] = utmp2[2,:,1,:]
-    #  end
-    end
-
-    l += chunk
-    wpRead += chunk
+  # Reshape/Avg Data
+  temp = reshape(rawSamples, numChan(rpc), numSampPerPeriod, numPeriods)
+  for (d, rp) in enumerate(rpc.rp)
+    u = temp[2*d-1:2*d, :, :, :]
+    utmp1 = reshape(u,2,numAveragedSampPerPeriod,numBlockAverages, size(u,3))
+    utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
+    data[:,2*d-1,:] = utmp2[1,:,1,:]
+    data[:,2*d,:] = utmp2[2,:,1,:]
   end
 
   return data

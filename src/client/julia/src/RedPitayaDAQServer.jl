@@ -80,7 +80,7 @@ function disconnect(rp::RedPitaya)
   return nothing
 end
 
-function getLog(rp::RedPitaya, log::io)
+function getLog(rp::RedPitaya, log)
   command = "RP:LOG?"
   send(rp, command)
   chunk_size = 1024
