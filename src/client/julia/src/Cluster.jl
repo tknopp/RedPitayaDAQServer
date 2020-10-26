@@ -188,6 +188,7 @@ function readRawSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSam
 
     # Collect data
     chunk = min(numOfRequestedSamples - numOfReceivedSamples, chunkSize)
+    if (wpRead + chunk > )
     done = zeros(Bool, length(rpc.rp))
     @async for (d, rp) in enumerate(rpc.rp)
       u = readData_(rp, Int64(wpRead), Int64(chunk))
