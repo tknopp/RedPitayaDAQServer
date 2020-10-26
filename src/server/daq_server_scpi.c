@@ -178,6 +178,10 @@ void createThreads() {
 	return;
 }
 
+FILE* getLogFile() {
+	return fopen("/media/mmcblk0p1/apps/RedPitayaDAQServer/log.txt", "rb");
+}
+
 /*
  *
  */

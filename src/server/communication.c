@@ -5,7 +5,7 @@
 #include <sys/ioctl.h>
 #include <sys/param.h>
 #include <inttypes.h>
-
+#include <sys/sendfile.h>
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
@@ -219,6 +219,21 @@ void sendDataToClient(uint64_t wpTotal, uint64_t numSamples) {
 	}                                                                                                         
 }
 
+void sendFileToClient(FILE* file) {
+	int fd = fileno(file);
+	struct stat fInfo;
+	off_t fSize = 0;
+	off_t offset = 0;
+	if (!fstat(fd, &fInfo)) {
+		fSize = fInfo.st_size;
+	}
+	int64_t remain = fSize; //To have known size
+	send(newdatasockfd, &remain, sizeof(remain), 0);
+	int64_t n = 0;
+	while (((n = sendfile(newdatasockfd, fd, &offset, remain)) > 0) && remain > 0) {
+		remain -= n;
+	}
+}
 
 void* communicationThread(void* p) { 
 	int clifd = (int)p;

@@ -8,7 +8,8 @@
 #include <sys/ioctl.h>
 #include <sys/param.h>
 #include <inttypes.h>
-
+#include <sys/stat.h>
+#include <sys/sendfile.h>
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
@@ -91,11 +92,6 @@ extern char scpi_input_buffer[SCPI_INPUT_BUFFER_LENGTH];
 extern scpi_error_t scpi_error_queue_data[SCPI_ERROR_QUEUE_SIZE];
 extern scpi_t scpi_context;
 
-extern uint64_t getCurrentFrameTotal();
-extern uint64_t getCurrentPeriodTotal();
-extern uint64_t getNumSamplesPerFrame();
-extern uint64_t getNumSamplesPerSlowDACPeriod();
-
 extern int createServer(int);
 extern int waitServer(int);
 
@@ -105,6 +101,7 @@ extern void joinControlThread();
 
 extern void sendDataToClient(uint64_t, uint64_t);
 extern void sendSlowFramesToHost(int64_t, int64_t);
+extern void sendFileToClient(FILE*);
 
 // data loss
 struct status {
@@ -120,6 +117,7 @@ extern uint8_t getCorruptedStatus();
 extern void clearCorruptedStatus();
 extern uint8_t getLostStepsStatus();
 extern void clearLostStepsStatus();
+extern FILE* getLogFile();
 
 #endif /* __DAQ_SERVER_SCPI_H_ */
 

@@ -1047,6 +1047,13 @@ static scpi_result_t RP_GetLostStatus(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_GetLog(scpi_t * context) {
+	FILE * log = getLogFile();
+	if (log != NULL) {
+		sendFileToClient(log);
+	}
+	return SCPI_RES_OK;
+}
 
 const scpi_command_t scpi_commands[] = {
 	/* IEEE Mandated Commands (SCPI std V1999.0 4.1.1) */
@@ -1158,6 +1165,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:STATus:CORRupted?", .callback = RP_GetCorruptedStatus,},
 	{.pattern = "RP:STATus?", .callback = RP_GetStatus,},
 	{.pattern = "RP:STATus:LOSTSteps?", .callback = RP_GetLostStatus,},
+	{.pattern = "RP:LOG?", .callback = RP_GetLog,},
 
 
 	SCPI_CMD_LIST_END
