@@ -10,7 +10,7 @@ using LinearAlgebra
 
 import Base: reset
 
-export RedPitaya, receive, query, start, stop, disconnect
+export RedPitaya, receive, query, start, stop, disconnect, getLog
 
 mutable struct RedPitaya
   host::String
@@ -20,7 +20,6 @@ mutable struct RedPitaya
   decimation::Int64
   samplesPerPeriod::Int64
   periodsPerFrame::Int64
-  startWP::Int64
   isConnected::Bool
   isMaster::Bool
   destroyed::Bool
@@ -81,6 +80,20 @@ function disconnect(rp::RedPitaya)
   return nothing
 end
 
+function getLog(rp::RedPitaya, log::io)
+  command = "RP:LOG?"
+  send(rp, command)
+  chunk_size = 1024
+  size = read(rp.dataSocket, Int64)
+  recv = 0
+  while (recv != size)
+    buff = read(rp.dataSocket, min(chunk_size, size - recv))
+    recv = recv + length(buff)
+    write(log, buff)
+  end
+  close(log)
+end
+
 include("ADC.jl")
 include("DAC.jl")
 include("Cluster.jl")
@@ -93,7 +106,7 @@ end
 
 function RedPitaya(host, port=5025, isMaster=true)
 
-  rp = RedPitaya(host,"\n", TCPSocket(), TCPSocket(), 1, 1, 1, 0, false, isMaster, false)
+  rp = RedPitaya(host,"\n", TCPSocket(), TCPSocket(), 1, 1, 1, false, isMaster, false)
 
   connect(rp)
 
