@@ -119,5 +119,13 @@ extern uint8_t getLostStepsStatus();
 extern void clearLostStepsStatus();
 extern FILE* getLogFile();
 
+// performance data
+struct performance {
+	uint64_t deltaRead;
+	uint64_t deltaSend;
+};
+struct performance perf;
+extern void sendPerformanceDataToClient();
+
 #endif /* __DAQ_SERVER_SCPI_H_ */
 

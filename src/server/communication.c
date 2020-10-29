@@ -198,22 +198,25 @@ void sendDataToClient(uint64_t wpTotal, uint64_t numSamples) {
 	// Requested data specific status
 	err.overwritten = 0;
 	err.corrupted = 0;
+	perf.deltaRead = daqTotal - wpTotal;
 	if (daqTotal >= wpTotal && getInternalWritePointer(daqTotal) > wp && getInternalPointerOverflows(daqTotal) > getInternalPointerOverflows(wp)) {
 		err.overwritten = 1;  	
 		LOG_WARN("%lli Requested data was overwritten", wpTotal);	
 	} 
 	if(wp+numSamples <= ADC_BUFF_SIZE) {
 		writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, numSamples*sizeof(uint32_t));
-		daqTotal = getTotalWritePointer();
-		if (err.overwritten == 0 && daqTotal >= wpTotal && getInternalWritePointer(daqTotal) > wp && getInternalPointerOverflows(daqTotal) > getInternalPointerOverflows(wp)) {
+		uint64_t daqTotalAfter = getTotalWritePointer();
+		perf.deltaSend = daqTotalAfter - daqTotal; 
+		if (err.overwritten == 0 && daqTotalAfter >= wpTotal && getInternalWritePointer(daqTotalAfter) > wp && getInternalPointerOverflows(daqTotalAfter) > getInternalPointerOverflows(wp)) {
 			err.corrupted = 1;
 			LOG_WARN("%lli Sent data could have been corrupted", wpTotal);	
 		} 
 
 	} else {                                                                                                  
 		uint32_t size1 = ADC_BUFF_SIZE - wp;                                                              
-		uint32_t size2 = numSamples - size1;                                                                    
-
+		uint32_t size2 = numSamples - size1;
+		printf("Buffer wraparound during sendDataToClient");
+		//TODO Instead of writeDataChunked change into recursive sendDataToClient -> handle case that size2 is larger than ADC_BUFF_SIZE
 		writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, size1*sizeof(uint32_t));
 		writeDataChunked(newdatasockfd, ram, size2*sizeof(uint32_t));
 	}                                                                                                         
@@ -232,6 +235,15 @@ void sendFileToClient(FILE* file) {
 	int64_t n = 0;
 	while (((n = sendfile(newdatasockfd, fd, &offset, remain)) > 0) && remain > 0) {
 		remain -= n;
+	}
+}
+
+void sendPerformanceDataToClient() {
+	uint64_t deltas[2] = {perf.deltaRead, perf.deltaSend};
+	int n = 0;
+	n = send(newdatasockfd, deltas, sizeof(deltas), 0);
+	if (n < 0) {
+		LOG_WARN("Error while sending performance data");
 	}
 }
 

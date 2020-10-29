@@ -1055,6 +1055,11 @@ static scpi_result_t RP_GetLog(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_GetPerformance(scpi_t * context) {
+	sendPerformanceDataToClient();
+	return SCPI_RES_OK;
+}
+
 const scpi_command_t scpi_commands[] = {
 	/* IEEE Mandated Commands (SCPI std V1999.0 4.1.1) */
 	{ .pattern = "*CLS", .callback = SCPI_CoreCls,},
@@ -1166,7 +1171,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:STATus?", .callback = RP_GetStatus,},
 	{.pattern = "RP:STATus:LOSTSteps?", .callback = RP_GetLostStatus,},
 	{.pattern = "RP:LOG?", .callback = RP_GetLog,},
-
+	{.pattern = "RP:PERF?", .callback = RP_GetPerformance,},	
 
 	SCPI_CMD_LIST_END
 };
