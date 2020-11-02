@@ -172,10 +172,11 @@ function slowDACInterpolation(rpc::RedPitayaCluster, enable::Bool)
 end
 
 
-function readRawSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize = 25000)
+function readRawSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize = 25000, collectPerformance=false)
   numOfReceivedSamples = 0
   index = 1
   rawData = zeros(Int16, numChan(rpc), numOfRequestedSamples)
+  perf = [ReadPerformanceRun([]) for i = 1:length(rpc)]
   while numOfReceivedSamples < numOfRequestedSamples
     wpRead = wpStart + numOfReceivedSamples
     wpWrite = currentWP(rpc)
@@ -204,7 +205,10 @@ function readRawSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSam
       if wasCorrupted(rp)
         @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) might have been corrupted"
       end
-
+      if collectPerformance
+        pData = performanceData(rp, UInt64(wpRead))
+        push!(perf[d].data, pData)
+      end
       done[d] = true
     end
 
@@ -225,12 +229,12 @@ function readRawSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSam
     index += chunk
     numOfReceivedSamples += chunk
   end
-  return rawData
+  return (rawData, perf)
 end
 
 # High level read. numFrames can adress a future frame. Data is read in
 # chunks
-function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1)
+function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; collectPerformance=false, chunkSize = 50000)
   numSampPerPeriod = master(rpc).samplesPerPeriod
   numSamp = numSampPerPeriod * numFrames
   numPeriods = master(rpc).periodsPerFrame
@@ -249,10 +253,8 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
   numFramesInMemoryBuffer = bufferSize(master(rpc)) / numSampPerFrame #numSamp
   @debug "numFramesInMemoryBuffer = $numFramesInMemoryBuffer"
 
-  # This is a wild guess for a good chunk size
-  chunkSize = max(1,  round(Int, 1000000 / numSampPerFrame)  )
   # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
-  rawSamples = readRawSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize)
+  (rawSamples, perf) = readRawSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, collectPerformance = collectPerformance)
   
   # Reshape/Avg Data
   temp = reshape(rawSamples, numChan(rpc), numSampPerPeriod, numPeriods, numFrames)
@@ -265,10 +267,14 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
     data[:,2*d,:,:] = utmp2[2,:,1,:,:]
   end
 
-  return data
+  if collectPerformance
+    return (data, perf)
+  else
+    return data
+  end
 end
 
-function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAverages=1)
+function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAverages=1; collectPerformance=false, chunkSize = 50000)
   numSampPerPeriod = master(rpc).samplesPerPeriod
 
   if rem(numSampPerPeriod,numBlockAverages) != 0
@@ -281,10 +287,8 @@ function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBloc
   wpStart = startPeriod * numSampPerPeriod
   numOfRequestedSamples = numPeriods * numSampPerPeriod
 
-  # This is a wild guess for a good chunk size
-  chunkSize = max(1,  round(Int, 1000000 / numSampPerPeriod)  )
   # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
-  rawSamples = readRawSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize)
+  (rawSamples, perf) = readRawSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, collectPerformance = collectPerformance)
 
   # Reshape/Avg Data
   temp = reshape(rawSamples, numChan(rpc), numSampPerPeriod, numPeriods)
@@ -295,8 +299,12 @@ function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBloc
     data[:,2*d-1,:] = utmp2[1,:,1,:]
     data[:,2*d,:] = utmp2[2,:,1,:]
   end
-
-  return data
+  
+  if collectPerformance
+    return (data, perf)
+  else
+    return data
+  end
 end
 
 

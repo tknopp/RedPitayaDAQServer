@@ -1,8 +1,18 @@
 export decimation, masterTrigger, currentFrame, ramWriterMode, connectADC, startADC, stopADC, readData, samplesPerPeriod, periodsPerFrame, 
      numSlowDACChan, setSlowDACLUT, enableSlowDAC, slowDACStepsPerRotation, samplesPerSlowDACStep, prepareSlowDAC,
      currentWP, slowDACInterpolation, numSlowADCChan, numLostStepsSlowADC, bufferSize, keepAliveReset, triggerMode,
-     slowDACPeriodsPerFrame, enableDACLUT
+     slowDACPeriodsPerFrame, enableDACLUT, ReadPerformanceData, ReadPerformanceRun
 
+
+struct ReadPerformanceData
+  wpRead::UInt64
+  deltaRead::UInt64
+  deltaSend::UInt64
+end
+
+struct ReadPerformanceRun
+  data::Vector{ReadPerformanceData}
+end
 
 decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
 function decimation(rp::RedPitaya, dec)
@@ -123,6 +133,17 @@ stopADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQSTATUS OFF")
 
 wasOverwritten(rp::RedPitaya) = query(rp, "RP:STATus:OVERwritten?", Bool)
 wasCorrupted(rp::RedPitaya) = query(rp, "RP:STATus:CORRupted?", Bool)
+
+function performanceData(rp::RedPitaya)
+  send(rp, "RP:PERF?")
+  perf = read!(rp.dataSocket, Array{UInt64}(undef, 2))
+  return perf
+end
+
+function performanceData(rp::RedPitaya, wpRead)
+  perf = performanceData(rp)
+  return ReadPerformanceData(wpRead, perf[1], perf[2])
+end
 
 # Low level read. One has to take care that the numFrames are available
 function readData_(rp::RedPitaya, reqWP, numSamples)
