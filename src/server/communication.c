@@ -192,34 +192,57 @@ static void writeDataChunked(int fd, const void *buf, size_t count) {
 	}
 }
 
-void sendDataToClient(uint64_t wpTotal, uint64_t numSamples) {
+struct performance sendDataToClient(uint64_t wpTotal, uint64_t numSamples, bool clearFlags) {
 	uint64_t daqTotal = getTotalWritePointer();
 	uint32_t wp = getInternalWritePointer(wpTotal);
+	uint64_t deltaRead = daqTotal - wpTotal;
+	uint64_t deltaSend = 0;
+	struct performance perfResult;
+	perfResult.deltaRead = deltaRead;
 	// Requested data specific status
-	err.overwritten = 0;
-	err.corrupted = 0;
-	perf.deltaRead = daqTotal - wpTotal;
-	if (daqTotal >= wpTotal && getInternalWritePointer(daqTotal) > wp && getInternalPointerOverflows(daqTotal) > getInternalPointerOverflows(wp)) {
+	if (clearFlags) { 
+		err.overwritten = 0;
+		err.corrupted = 0;
+	}
+
+	if (deltaRead > ADC_BUFF_SIZE && daqTotal > wpTotal) {
 		err.overwritten = 1;  	
 		LOG_WARN("%lli Requested data was overwritten", wpTotal);	
 	} 
+
+	// Send Data
 	if(wp+numSamples <= ADC_BUFF_SIZE) {
+		
 		writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, numSamples*sizeof(uint32_t));
+		
 		uint64_t daqTotalAfter = getTotalWritePointer();
-		perf.deltaSend = daqTotalAfter - daqTotal; 
-		if (err.overwritten == 0 && daqTotalAfter >= wpTotal && getInternalWritePointer(daqTotalAfter) > wp && getInternalPointerOverflows(daqTotalAfter) > getInternalPointerOverflows(wp)) {
+		deltaSend = daqTotalAfter - daqTotal;
+		if (err.overwritten == 0 && (daqTotalAfter - wpTotal) > ADC_BUFF_SIZE && daqTotalAfter > wpTotal) {
 			err.corrupted = 1;
 			LOG_WARN("%lli Sent data could have been corrupted", wpTotal);	
-		} 
+		}
+
+		perfResult.deltaSend = deltaSend;
 
 	} else {                                                                                                  
-		uint32_t size1 = ADC_BUFF_SIZE - wp;                                                              
-		uint32_t size2 = numSamples - size1;
+		uint64_t size1 = ADC_BUFF_SIZE - wp;                                                              
+		uint64_t size2 = numSamples - size1;
 		printf("Buffer wraparound during sendDataToClient");
-		//TODO Instead of writeDataChunked change into recursive sendDataToClient -> handle case that size2 is larger than ADC_BUFF_SIZE
-		writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, size1*sizeof(uint32_t));
-		writeDataChunked(newdatasockfd, ram, size2*sizeof(uint32_t));
-	}                                                                                                         
+		
+		struct performance temp1 = sendDataToClient(wpTotal, size1, false);
+		struct performance temp2 = sendDataToClient(wpTotal + size1, size2, false);
+
+		perfResult.deltaSend = temp1.deltaSend + temp2.deltaSend;
+
+		//writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, size1*sizeof(uint32_t));
+		//writeDataChunked(newdatasockfd, ram, size2*sizeof(uint32_t));
+	}
+
+	if (clearFlags) {
+		perf = perfResult;
+	}
+
+	return perfResult;
 }
 
 void sendFileToClient(FILE* file) {

@@ -560,7 +560,7 @@ static scpi_result_t RP_ADC_GetData(scpi_t * context) {
 	}
 
 	//printf("invoke sendDataToHost()");
-	sendDataToClient(reqWP, numSamples);
+	sendDataToClient(reqWP, numSamples, true);
 
 	return SCPI_RES_OK;
 }

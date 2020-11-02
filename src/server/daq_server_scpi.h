@@ -99,10 +99,6 @@ extern void* communicationThread(void*);
 extern void* controlThread(void*);
 extern void joinControlThread();
 
-extern void sendDataToClient(uint64_t, uint64_t);
-extern void sendSlowFramesToHost(int64_t, int64_t);
-extern void sendFileToClient(FILE*);
-
 // data loss
 struct status {
 	uint8_t overwritten :1;
@@ -125,7 +121,12 @@ struct performance {
 	uint64_t deltaSend;
 };
 struct performance perf;
+
+// Client communication
 extern void sendPerformanceDataToClient();
+extern struct performance sendDataToClient(uint64_t, uint64_t, bool);
+extern void sendSlowFramesToHost(int64_t, int64_t);
+extern void sendFileToClient(FILE*);
 
 #endif /* __DAQ_SERVER_SCPI_H_ */
 
