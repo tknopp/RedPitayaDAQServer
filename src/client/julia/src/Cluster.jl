@@ -214,16 +214,10 @@ function readRawSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSam
 
     # Wait for data to be collected
     timeout = 10
-    t = Timer(timeout)
-    while isopen(t)
-      sleep(0.001)
-      if all(done)
-        break
-      end
-    end
-    if !all(done)
+    poll = min(timeout, chunk / (125e6/master(rpc).decimation)/2)
+    if timedwait(() -> all(done), timeout, pollint=max(0.001, poll)) == :timed_out
       error("Timout reached when reading from sockets")
-    end    
+    end
 
     # Iterate
     index += chunk
@@ -249,9 +243,6 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
   data = zeros(Float32, numTrueSampPerPeriod, numChan(rpc), numPeriods*numPeriodsPerPatch, numFrames)
   wpStart = startFrame * numSampPerFrame
   numOfRequestedSamples = numFrames * numSampPerFrame
-
-  numFramesInMemoryBuffer = bufferSize(master(rpc)) / numSampPerFrame #numSamp
-  @debug "numFramesInMemoryBuffer = $numFramesInMemoryBuffer"
 
   # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
   (rawSamples, perf) = readRawSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, collectPerformance = collectPerformance)
