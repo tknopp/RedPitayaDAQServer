@@ -193,12 +193,13 @@ function readRawSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSam
       chunk = wpWrite - wpRead
     end
     done = zeros(Bool, length(rpc.rp))
+    iterationDone = Condition()
+    timeoutHappened = false
     @async for (d, rp) in enumerate(rpc.rp)
       u = readData_(rp, Int64(wpRead), Int64(chunk))
       samples = reshape(u, 2, chunk)
       rawData[2*d-1, index:(index + chunk - 1)] = samples[1, :]
       rawData[2*d, index:(index + chunk - 1)] = samples[2, :] 
-
       if wasOverwritten(rp)
         @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) was overwritten"
       end
@@ -210,12 +211,22 @@ function readRawSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSam
         push!(perf[d].data, pData)
       end
       done[d] = true
+      if (all(done))
+        notify(iterationDone)
+      end
     end
 
-    # Wait for data to be collected
     timeout = 10
-    poll = min(timeout, chunk / (125e6/master(rpc).decimation)/2)
-    if timedwait(() -> all(done), timeout, pollint=max(0.001, poll)) == :timed_out
+    t = Timer(timeout)
+    @async begin
+      wait(t)
+      notify(iterationDone)
+      timeoutHappened = true 
+    end
+
+    wait(iterationDone)
+    close(t)
+    if timeoutHappened
       error("Timout reached when reading from sockets")
     end
 
