@@ -172,7 +172,7 @@ function slowDACInterpolation(rpc::RedPitayaCluster, enable::Bool)
 end
 
 
-function readSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize = 25000, collectPerformance=false)
+function readSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, collectPerformance=false)
   numOfReceivedSamples = 0
   index = 1
   rawData = zeros(Int16, numChan(rpc), numOfRequestedSamples)
@@ -274,8 +274,7 @@ function readFrames(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverag
   temp = reshape(rawSamples, numChan(rpc), numSampPerPeriod, numPeriods, numFrames)
   for (d, rp) in enumerate(rpc.rp)
     u = temp[2*d-1:2*d, :, :, :]
-    utmp1 = reshape(u,2,numTrueSampPerPeriod,numBlockAverages,
-      size(u,3)*numPeriodsPerPatch,size(u,4))
+    utmp1 = reshape(u,2,numTrueSampPerPeriod,numBlockAverages, size(u,3)*numPeriodsPerPatch,size(u,4))
     utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
     data[:,2*d-1,:,:] = utmp2[1,:,1,:,:]
     data[:,2*d,:,:] = utmp2[2,:,1,:,:]
@@ -314,13 +313,13 @@ function readPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAve
 end
 
 
-function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; collectPerformance=false, chunkSize = 50000)
-  (data, overview) = readFrames(rpc, startFrame, numFrames, numBlockAverages, numPeriodsPerPatch, collectPerformance = collectPerformance, chunkSize = chunkSize)
+function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; chunkSize = 50000)
+  (data, overview) = readFrames(rpc, startFrame, numFrames, numBlockAverages, numPeriodsPerPatch, collectPerformance = false, chunkSize = chunkSize)
   return data
 end
 
-function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAverages=1; collectPerformance=false, chunkSize = 50000)
-  (data, overview) = readPeriods(rpc, startPeriod, numPeriods, numBlockAverages, collectPerformance = collectPerformance, chunkSize = chunkSize)
+function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAverages=1; chunkSize = 50000)
+  (data, overview) = readPeriods(rpc, startPeriod, numPeriods, numBlockAverages, collectPerformance = false, chunkSize = chunkSize)
   return data
 end
 

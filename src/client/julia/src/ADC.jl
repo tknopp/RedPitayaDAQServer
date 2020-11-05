@@ -1,7 +1,7 @@
 export decimation, masterTrigger, currentFrame, ramWriterMode, connectADC, startADC, stopADC, readData, samplesPerPeriod, periodsPerFrame, 
      numSlowDACChan, setSlowDACLUT, enableSlowDAC, slowDACStepsPerRotation, samplesPerSlowDACStep, prepareSlowDAC,
      currentWP, slowDACInterpolation, numSlowADCChan, numLostStepsSlowADC, bufferSize, keepAliveReset, triggerMode,
-     slowDACPeriodsPerFrame, enableDACLUT, ReadPerformanceData, ReadPerformances
+     slowDACPeriodsPerFrame, enableDACLUT, ReadPerformanceData, ReadPerformance, ReadStatus, ReadOverview
 
 
 struct ReadPerformanceData
@@ -161,7 +161,7 @@ function readSamples_(rp::RedPitaya, reqWP, numSamples)
   send(rp, command)
 
   @debug "read data ..."
-  u = read!(rp.dataSocket, Array{Int16}(undef, 2 * numSamples))
+  u = read!(rp.dataSocket, Array{Int16}(undef, 2 * Int64(numSamples)))
   @debug "read data!"
   return u
 end
