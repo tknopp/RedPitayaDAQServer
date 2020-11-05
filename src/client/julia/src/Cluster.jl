@@ -1,4 +1,4 @@
-export RedPitayaCluster, master, readDataPeriods, numChan, readDataSlow
+export RedPitayaCluster, master, readDataPeriods, numChan, readDataSlow, readFrames, readPeriods
 
 import Base: length
 
@@ -172,11 +172,12 @@ function slowDACInterpolation(rpc::RedPitayaCluster, enable::Bool)
 end
 
 
-function readRawSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize = 25000, collectPerformance=false)
+function readSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize = 25000, collectPerformance=false)
   numOfReceivedSamples = 0
   index = 1
   rawData = zeros(Int16, numChan(rpc), numOfRequestedSamples)
-  perf = [ReadPerformanceRun([]) for i = 1:length(rpc)]
+  errStatus = [Dict{UInt64, ReadStatus}() for i = 1:length(rpc)]
+  performances = [ReadPerformance([]) for i = 1:length(rpc)]
   while numOfReceivedSamples < numOfRequestedSamples
     wpRead = wpStart + numOfReceivedSamples
     wpWrite = currentWP(rpc)
@@ -196,26 +197,37 @@ function readRawSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSam
     iterationDone = Condition()
     timeoutHappened = false
     @async for (d, rp) in enumerate(rpc.rp)
-      u = readData_(rp, Int64(wpRead), Int64(chunk))
+      u = readSamples_(rp, Int64(wpRead), Int64(chunk))
       samples = reshape(u, 2, chunk)
       rawData[2*d-1, index:(index + chunk - 1)] = samples[1, :]
       rawData[2*d, index:(index + chunk - 1)] = samples[2, :] 
-      if wasOverwritten(rp)
+      
+      # Status
+      overwritten = wasOverwritten(rp)
+      corrupted = wasCorrupted(rp)
+      if overwritten || corrupted
+        errStatus[d][wpRead] = ReadStatus(overwritten, corrupted)
+      end
+      if overwritten
         @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) was overwritten"
       end
-      if wasCorrupted(rp)
+      if corrupted
         @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) might have been corrupted"
       end
+
+      # Performance
       if collectPerformance
         pData = performanceData(rp, UInt64(wpRead))
-        push!(perf[d].data, pData)
+        push!(performances[d].data, pData)
       end
+
       done[d] = true
       if (all(done))
         notify(iterationDone)
       end
     end
 
+    # Setup Timeout
     timeout = 10
     t = Timer(timeout)
     @async begin
@@ -234,12 +246,12 @@ function readRawSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSam
     index += chunk
     numOfReceivedSamples += chunk
   end
-  return (rawData, perf)
+  return (rawData, ReadOverview(errStatus, performances))
 end
 
 # High level read. numFrames can adress a future frame. Data is read in
 # chunks
-function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; collectPerformance=false, chunkSize = 50000)
+function readFrames(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; collectPerformance=false, chunkSize = 50000)
   numSampPerPeriod = master(rpc).samplesPerPeriod
   numSamp = numSampPerPeriod * numFrames
   numPeriods = master(rpc).periodsPerFrame
@@ -256,7 +268,7 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
   numOfRequestedSamples = numFrames * numSampPerFrame
 
   # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
-  (rawSamples, perf) = readRawSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, collectPerformance = collectPerformance)
+  (rawSamples, overview) = readSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, collectPerformance = collectPerformance)
   
   # Reshape/Avg Data
   temp = reshape(rawSamples, numChan(rpc), numSampPerPeriod, numPeriods, numFrames)
@@ -269,14 +281,10 @@ function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages
     data[:,2*d,:,:] = utmp2[2,:,1,:,:]
   end
 
-  if collectPerformance
-    return (data, perf)
-  else
-    return data
-  end
+  return (data, overview)
 end
 
-function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAverages=1; collectPerformance=false, chunkSize = 50000)
+function readPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAverages=1; collectPerformance=false, chunkSize = 50000)
   numSampPerPeriod = master(rpc).samplesPerPeriod
 
   if rem(numSampPerPeriod,numBlockAverages) != 0
@@ -290,7 +298,7 @@ function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBloc
   numOfRequestedSamples = numPeriods * numSampPerPeriod
 
   # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
-  (rawSamples, perf) = readRawSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, collectPerformance = collectPerformance)
+  (rawSamples, overview) = readSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, collectPerformance = collectPerformance)
 
   # Reshape/Avg Data
   temp = reshape(rawSamples, numChan(rpc), numSampPerPeriod, numPeriods)
@@ -302,11 +310,18 @@ function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBloc
     data[:,2*d,:] = utmp2[2,:,1,:]
   end
   
-  if collectPerformance
-    return (data, perf)
-  else
-    return data
-  end
+  return (data, overview)
+end
+
+
+function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; collectPerformance=false, chunkSize = 50000)
+  (data, overview) = readFrames(rpc, startFrame, numFrames, numBlockAverages, numPeriodsPerPatch, collectPerformance = collectPerformance, chunkSize = chunkSize)
+  return data
+end
+
+function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAverages=1; collectPerformance=false, chunkSize = 50000)
+  (data, overview) = readPeriods(rpc, startPeriod, numPeriods, numBlockAverages, collectPerformance = collectPerformance, chunkSize = chunkSize)
+  return data
 end
 
 

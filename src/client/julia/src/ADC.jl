@@ -1,7 +1,7 @@
 export decimation, masterTrigger, currentFrame, ramWriterMode, connectADC, startADC, stopADC, readData, samplesPerPeriod, periodsPerFrame, 
      numSlowDACChan, setSlowDACLUT, enableSlowDAC, slowDACStepsPerRotation, samplesPerSlowDACStep, prepareSlowDAC,
      currentWP, slowDACInterpolation, numSlowADCChan, numLostStepsSlowADC, bufferSize, keepAliveReset, triggerMode,
-     slowDACPeriodsPerFrame, enableDACLUT, ReadPerformanceData, ReadPerformanceRun
+     slowDACPeriodsPerFrame, enableDACLUT, ReadPerformanceData, ReadPerformances
 
 
 struct ReadPerformanceData
@@ -10,8 +10,18 @@ struct ReadPerformanceData
   deltaSend::UInt64
 end
 
-struct ReadPerformanceRun
+struct ReadPerformance
   data::Vector{ReadPerformanceData}
+end
+
+struct ReadStatus
+  overwritten::Bool
+  corrupted::Bool
+end
+
+struct ReadOverview
+  errStatus::Vector{Dict{UInt64, ReadStatus}}
+  performances::Vector{ReadPerformance}
 end
 
 decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
@@ -146,7 +156,7 @@ function performanceData(rp::RedPitaya, wpRead)
 end
 
 # Low level read. One has to take care that the numFrames are available
-function readData_(rp::RedPitaya, reqWP, numSamples)
+function readSamples_(rp::RedPitaya, reqWP, numSamples)
   command = string("RP:ADC:DATA? ",Int64(reqWP),",",Int64(numSamples))
   send(rp, command)
 
@@ -198,7 +208,7 @@ function readData(rp::RedPitaya, startFrame, numFrames, numBlockAverages=1, numP
     # Compute Server WP 
     reqWP = wpRead * numSampPerFrame
     numSamples = chunk * numSampPerFrame
-    t = readData_(rp, Int64(reqWP), Int64(numSamples))
+    t = readSamples_(rp, Int64(reqWP), Int64(numSamples))
     u = reshape(t, 2, rp.samplesPerPeriod, numPeriods, numFrames)
     utmp1 = reshape(u,2,numTrueSampPerPeriod,numBlockAverages,size(u,3)*numPeriodsPerPatch,size(u,4))
     utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
