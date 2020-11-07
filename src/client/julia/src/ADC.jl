@@ -17,6 +17,7 @@ end
 struct ReadStatus
   overwritten::Bool
   corrupted::Bool
+  #stepsLost::Bool
 end
 
 struct ReadOverview
@@ -164,6 +165,22 @@ function readSamples_(rp::RedPitaya, reqWP, numSamples)
   u = read!(rp.dataSocket, Array{Int16}(undef, 2 * Int64(numSamples)))
   @debug "read data!"
   return u
+end
+
+# Low level read, that includes performance and error data
+function readDetailedSamples_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
+  command = string("RP:ADC:DATA:DETAILED? ",Int64(reqWP),",",Int64(numSamples))
+  send(rp, command)
+
+  @debug "read detailed data ..."
+  data = read!(rp.dataSocket, Array{Int16}(undef, 2 * Int64(numSamples)))
+  statusRaw = read!(rp.dataSocket, Array{Int8}(undef, 1))
+  perfRaw = read!(rp.dataSocket, Array{UInt64}(undef, 2))
+  @debug "read detailed data"
+  status = ReadStatus(statusRaw[1] & 1, statusRaw[1] & (1 << 1))
+  perf = ReadPerformanceData(UInt64(reqWP), perfRaw[1], perfRaw[2])
+
+  return (data, status, perf)
 end
 
 # High level read. numFrames can adress a future frame. Data is read in

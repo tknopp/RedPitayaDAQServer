@@ -197,28 +197,25 @@ function readSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSample
     iterationDone = Condition()
     timeoutHappened = false
     @async for (d, rp) in enumerate(rpc.rp)
-      u = readSamples_(rp, Int64(wpRead), Int64(chunk))
+      (u, status, perf) = readDetailedSamples_(rp, Int64(wpRead), Int64(chunk))
       samples = reshape(u, 2, chunk)
       rawData[2*d-1, index:(index + chunk - 1)] = samples[1, :]
       rawData[2*d, index:(index + chunk - 1)] = samples[2, :] 
       
       # Status
-      overwritten = wasOverwritten(rp)
-      corrupted = wasCorrupted(rp)
-      if overwritten || corrupted
-        errStatus[d][wpRead] = ReadStatus(overwritten, corrupted)
+      if status.overwritten || status.corrupted
+        errStatus[d][wpRead] = status
       end
-      if overwritten
+      if status.overwritten
         @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) was overwritten"
       end
-      if corrupted
+      if status.corrupted
         @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) might have been corrupted"
       end
 
       # Performance
       if collectPerformance
-        pData = performanceData(rp, UInt64(wpRead))
-        push!(performances[d].data, pData)
+        push!(performances[d].data, perf)
       end
 
       done[d] = true
