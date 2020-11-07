@@ -151,7 +151,7 @@ int waitServer(int fd) {
 	FD_SET(fd, &fds);
 
 	timeout.tv_sec = 0;
-	timeout.tv_usec = 100;
+	timeout.tv_usec = 1000;
 
 	rc = select(max_fd + 1, &fds, NULL, NULL, &timeout);
 
@@ -188,7 +188,7 @@ static void writeDataChunked(int fd, const void *buf, size_t count) {
 			LOG_ERROR("Error in sendToHost()");
 		}
 		ptr += size;
-		usleep(30);
+		//usleep(30);
 	}
 }
 
@@ -273,7 +273,7 @@ void sendPerformanceDataToClient() {
 void* communicationThread(void* p) { 
 	int clifd = (int)p;
 	int rc;
-	char smbuffer[10];
+	char smbuffer[20];
 
 	while(true) {
 		//printf("Comm thread loop\n");
@@ -310,7 +310,6 @@ void* communicationThread(void* p) {
 				SCPI_Input(&scpi_context, smbuffer, rc);
 			}
 		}
-		usleep(1000);
 		logger_flush();
 	}
 	LOG_INFO("Comm almost done");
