@@ -177,7 +177,7 @@ function readDetailedSamples_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
   statusRaw = read!(rp.dataSocket, Array{Int8}(undef, 1))
   perfRaw = read!(rp.dataSocket, Array{UInt64}(undef, 2))
   @debug "read detailed data"
-  status = ReadStatus(statusRaw[1] & 1, statusRaw[1] & (1 << 1))
+  status = ReadStatus((statusRaw[1] & 1) != 0, (statusRaw[1] & (1 << 1)) != 0)
   perf = ReadPerformanceData(UInt64(reqWP), perfRaw[1], perfRaw[2])
 
   return (data, status, perf)
