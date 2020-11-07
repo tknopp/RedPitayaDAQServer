@@ -127,6 +127,7 @@ extern void sendPerformanceDataToClient();
 extern struct performance sendDataToClient(uint64_t, uint64_t, bool);
 extern void sendSlowFramesToHost(int64_t, int64_t);
 extern void sendFileToClient(FILE*);
+extern void sendErrorStatusToClient();
 
 #endif /* __DAQ_SERVER_SCPI_H_ */
 
