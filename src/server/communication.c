@@ -270,6 +270,15 @@ void sendPerformanceDataToClient() {
 	}
 }
 
+void sendErrorStatusToClient() {
+	uint8_t status = getErrorStatus();
+	int n = 0;
+	n = send(newdatasockfd, &status, sizeof(status), 0);
+	if (n < 0) {
+		LOG_WARN("Error while sending error status");
+	}
+}
+
 void* communicationThread(void* p) { 
 	int clifd = (int)p;
 	int rc;

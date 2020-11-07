@@ -565,6 +565,12 @@ static scpi_result_t RP_ADC_GetData(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_ADC_GetDetailedData(scpi_t * context) {
+	scpi_result_t res = RP_ADC_GetData(context);
+	sendErrorStatusToClient();
+	sendPerformanceDataToClient();
+	return res;
+}
 
 static scpi_result_t RP_ADC_Slow_GetFrames(scpi_t * context) {
 	// Reading is only possible while an acquisition is running
@@ -1129,6 +1135,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:SlowDAC:SAMPlesPerStep?", .callback = RP_ADC_GetSamplesPerSlowDACStep,},
 	{.pattern = "RP:ADC:WP:CURRent?", .callback = RP_ADC_GetCurrentWP,},
 	{.pattern = "RP:ADC:DATa?", .callback = RP_ADC_GetData,},
+	{.pattern = "RP:ADC:DATa:DETailed?", .callback = RP_ADC_GetDetailedData,},
 	{.pattern = "RP:ADC:BUFfer:Size?", .callback = RP_ADC_GetBufferSize,},
 	{.pattern = "RP:ADC:Slow:FRAmes:DATa", .callback = RP_ADC_Slow_GetFrames,},
 	{.pattern = "RP:ADC:ACQCONNect", .callback = RP_ADC_StartAcquisitionConnection,},
