@@ -565,11 +565,49 @@ static scpi_result_t RP_ADC_GetData(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_ADC_GetPipelinedData(scpi_t * context) {
+	if(!rxEnabled) {
+		return SCPI_RES_ERR;
+	}
+	
+	uint64_t reqWP;
+	if (!SCPI_ParamInt64(context, &reqWP, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+	uint64_t numSamples;
+	if (!SCPI_ParamInt64(context, &numSamples, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+	uint64_t chunkSize;
+	if (!SCPI_ParamInt64(context, &chunkSize, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+	sendPipelinedDataToClient(reqWP, numSamples, chunkSize);
+	return SCPI_RES_OK;
+
+}
+
 static scpi_result_t RP_ADC_GetDetailedData(scpi_t * context) {
-	scpi_result_t res = RP_ADC_GetData(context);
-	sendErrorStatusToClient();
-	sendPerformanceDataToClient();
-	return res;
+	if(!rxEnabled) {
+		return SCPI_RES_ERR;
+	}
+	
+	uint64_t reqWP;
+	if (!SCPI_ParamInt64(context, &reqWP, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+	uint64_t numSamples;
+	if (!SCPI_ParamInt64(context, &numSamples, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+	
+	sendPipelinedDataToClient(reqWP, numSamples, numSamples);
+
+	return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_ADC_Slow_GetFrames(scpi_t * context) {
@@ -1136,6 +1174,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:WP:CURRent?", .callback = RP_ADC_GetCurrentWP,},
 	{.pattern = "RP:ADC:DATa?", .callback = RP_ADC_GetData,},
 	{.pattern = "RP:ADC:DATa:DETailed?", .callback = RP_ADC_GetDetailedData,},
+	{.pattern = "RP:ADC:DATa:PIPElined?", .callback = RP_ADC_GetPipelinedData,},
 	{.pattern = "RP:ADC:BUFfer:Size?", .callback = RP_ADC_GetBufferSize,},
 	{.pattern = "RP:ADC:Slow:FRAmes:DATa", .callback = RP_ADC_Slow_GetFrames,},
 	{.pattern = "RP:ADC:ACQCONNect", .callback = RP_ADC_StartAcquisitionConnection,},

@@ -213,8 +213,9 @@ struct performance sendDataToClient(uint64_t wpTotal, uint64_t numSamples, bool 
 	// Send Data
 	if(wp+numSamples <= ADC_BUFF_SIZE) {
 		
-		writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, numSamples*sizeof(uint32_t));
-		
+		//writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, numSamples*sizeof(uint32_t));
+		writeAll(newdatasockfd, ram + sizeof(uint32_t)*wp, numSamples*sizeof(uint32_t));
+
 		uint64_t daqTotalAfter = getTotalWritePointer();
 		deltaSend = daqTotalAfter - daqTotal;
 		if (err.overwritten == 0 && (daqTotalAfter - wpTotal) > ADC_BUFF_SIZE && daqTotalAfter > wpTotal) {
@@ -227,7 +228,6 @@ struct performance sendDataToClient(uint64_t wpTotal, uint64_t numSamples, bool 
 	} else {                                                                                                  
 		uint64_t size1 = ADC_BUFF_SIZE - wp;                                                              
 		uint64_t size2 = numSamples - size1;
-		printf("Buffer wraparound during sendDataToClient");
 		
 		struct performance temp1 = sendDataToClient(wpTotal, size1, false);
 		struct performance temp2 = sendDataToClient(wpTotal + size1, size2, false);
@@ -244,6 +244,35 @@ struct performance sendDataToClient(uint64_t wpTotal, uint64_t numSamples, bool 
 
 	return perfResult;
 }
+
+void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t chunkSize) {
+	uint64_t readSamples = 0;
+	uint64_t writeWP = 0;
+	uint64_t readWP;
+	uint64_t chunk;
+
+	
+	while (readSamples < numSamples && chunkSize > 0 ) {
+		readWP = wpTotal + readSamples;
+		writeWP = getTotalWritePointer();
+
+		chunk = MIN(numSamples - readSamples, chunkSize);
+
+		// Wait for data to be written
+		while (readWP + chunk >= writeWP) {
+			writeWP = getTotalWritePointer();
+			usleep(30);
+		}
+		
+
+		sendDataToClient(readWP, chunk, true);
+		sendErrorStatusToClient();
+		sendPerformanceDataToClient();
+		readSamples += chunk;
+		
+	}
+}
+
 
 void sendFileToClient(FILE* file) {
 	int fd = fileno(file);
