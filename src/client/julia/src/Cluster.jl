@@ -171,6 +171,30 @@ function slowDACInterpolation(rpc::RedPitayaCluster, enable::Bool)
   end
 end
 
+function startPipelinedData(rpc::RedPitayaCluster, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
+  for rp in rpc.rp
+    startPipelinedData(rp, reqWP, numSamples, chunkSize)
+  end
+end
+
+function readPipelinedSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, collectPerformance=false)
+  numOfReceivedSamples = 0
+  index = 1
+  rawData = zeros(Int16, numChan(rpc), numOfRequestedSamples)
+  errStatus = [Dict{UInt64, ReadStatus}() for i = 1:length(rpc)]
+  performances = [ReadPerformance([]) for i = 1:length(rpc)]
+
+  startPipelinedData(rpc, wpStart, numOfRequestedSamples, chunkSize)
+  while numOfReceivedSamples < numOfRequestedSamples
+    wpRead = wpStart + numOfReceivedSamples
+    chunk = min(numOfRequestedSamples - numOfReceivedSamples, chunkSize)
+    collectSamples!(rpc, wpRead, chunk, rawData, errStatus, performances, index, pipelined=true, collectPerformance = collectPerformance)
+    index += chunk
+    numOfReceivedSamples += chunk
+  end
+  return (rawData, ReadOverview(errStatus, performances))
+
+end
 
 function readSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, collectPerformance=false)
   numOfReceivedSamples = 0
@@ -193,58 +217,66 @@ function readSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSample
     if (wpRead + chunk > wpWrite)
       chunk = wpWrite - wpRead
     end
-    done = zeros(Bool, length(rpc.rp))
-    iterationDone = Condition()
-    timeoutHappened = false
-    @async for (d, rp) in enumerate(rpc.rp)
-      (u, status, perf) = readDetailedSamples_(rp, Int64(wpRead), Int64(chunk))
-      samples = reshape(u, 2, chunk)
-      rawData[2*d-1, index:(index + chunk - 1)] = samples[1, :]
-      rawData[2*d, index:(index + chunk - 1)] = samples[2, :] 
-      
-      # Status
-      if status.overwritten || status.corrupted
-        errStatus[d][wpRead] = status
-      end
-      if status.overwritten
-        @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) was overwritten"
-      end
-      if status.corrupted
-        @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) might have been corrupted"
-      end
-
-      # Performance
-      if collectPerformance
-        push!(performances[d].data, perf)
-      end
-
-      done[d] = true
-      if (all(done))
-        notify(iterationDone)
-      end
-    end
-
-    # Setup Timeout
-    timeout = 10
-    t = Timer(timeout)
-    @async begin
-      wait(t)
-      notify(iterationDone)
-      timeoutHappened = true 
-    end
-
-    wait(iterationDone)
-    close(t)
-    if timeoutHappened
-      error("Timout reached when reading from sockets")
-    end
-
-    # Iterate
+    collectSamples!(rpc, wpRead, chunk, rawData, errStatus, performances, index, collectPerformance = collectPerformance)
     index += chunk
     numOfReceivedSamples += chunk
   end
   return (rawData, ReadOverview(errStatus, performances))
 end
+
+function collectSamples!(rpc::RedPitayaCluster, wpRead::Int64, chunk::Int64, rawData, errStatus, performances, index; pipelined=false, collectPerformance=false)
+  done = zeros(Bool, length(rpc.rp))
+  iterationDone = Condition()
+  timeoutHappened = false
+  collectFunction = readDetailedSamples_
+  if pipelined
+    collectFunction = readSamplesChunk_
+  end
+  @async for (d, rp) in enumerate(rpc.rp)
+    (u, status, perf) = collectFunction(rp, Int64(wpRead), Int64(chunk))
+    samples = reshape(u, 2, chunk)
+    rawData[2*d-1, index:(index + chunk - 1)] = samples[1, :]
+    rawData[2*d, index:(index + chunk - 1)] = samples[2, :] 
+    
+    # Status
+    if status.overwritten || status.corrupted
+      errStatus[d][wpRead] = status
+    end
+    if status.overwritten
+      @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) was overwritten"
+    end
+    if status.corrupted
+      @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) might have been corrupted"
+    end
+
+    # Performance
+    if collectPerformance
+      push!(performances[d].data, perf)
+    end
+
+    done[d] = true
+    if (all(done))
+      notify(iterationDone)
+    end
+  end
+
+  # Setup Timeout
+  timeout = 10
+  t = Timer(timeout)
+  @async begin
+    wait(t)
+    notify(iterationDone)
+    timeoutHappened = true 
+  end
+
+  wait(iterationDone)
+  close(t)
+  if timeoutHappened
+    error("Timout reached when reading from sockets")
+  end
+
+end
+
 
 # High level read. numFrames can adress a future frame. Data is read in
 # chunks
@@ -265,7 +297,7 @@ function readFrames(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverag
   numOfRequestedSamples = numFrames * numSampPerFrame
 
   # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
-  (rawSamples, overview) = readSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, collectPerformance = collectPerformance)
+  (rawSamples, overview) = readPipelinedSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, collectPerformance = collectPerformance)
   
   # Reshape/Avg Data
   temp = reshape(rawSamples, numChan(rpc), numSampPerPeriod, numPeriods, numFrames)

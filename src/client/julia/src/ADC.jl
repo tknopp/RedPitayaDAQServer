@@ -1,7 +1,7 @@
 export decimation, masterTrigger, currentFrame, ramWriterMode, connectADC, startADC, stopADC, readData, samplesPerPeriod, periodsPerFrame, 
      numSlowDACChan, setSlowDACLUT, enableSlowDAC, slowDACStepsPerRotation, samplesPerSlowDACStep, prepareSlowDAC,
      currentWP, slowDACInterpolation, numSlowADCChan, numLostStepsSlowADC, bufferSize, keepAliveReset, triggerMode,
-     slowDACPeriodsPerFrame, enableDACLUT, ReadPerformanceData, ReadPerformance, ReadStatus, ReadOverview
+     slowDACPeriodsPerFrame, enableDACLUT, ReadPerformanceData, ReadPerformance, ReadStatus, ReadOverview, startPipelinedData
 
 
 struct ReadPerformanceData
@@ -167,20 +167,27 @@ function readSamples_(rp::RedPitaya, reqWP, numSamples)
   return u
 end
 
+# Low level read, reads samples, error and perf. Values need to be already requested
+function readSamplesChunk_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
+  @debug "read samples chunk ..."
+  data = read!(rp.dataSocket, Array{Int16}(undef, 2 * Int64(numSamples)))
+  statusRaw = read!(rp.dataSocket, Array{Int8}(undef, 1))
+  perfRaw = read!(rp.dataSocket, Array{UInt64}(undef, 2))
+  @debug "read samples chunk ..."
+  status = ReadStatus((statusRaw[1] & 1) != 0, (statusRaw[1] & (1 << 1)) != 0)
+  perf = ReadPerformanceData(UInt64(reqWP), perfRaw[1], perfRaw[2])
+  return (data, status, perf)
+end
 # Low level read, that includes performance and error data
 function readDetailedSamples_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
   command = string("RP:ADC:DATA:DETAILED? ",Int64(reqWP),",",Int64(numSamples))
   send(rp, command)
+  return readSamplesChunk_(rp, reqWP, numSamples)
+end
 
-  @debug "read detailed data ..."
-  data = read!(rp.dataSocket, Array{Int16}(undef, 2 * Int64(numSamples)))
-  statusRaw = read!(rp.dataSocket, Array{Int8}(undef, 1))
-  perfRaw = read!(rp.dataSocket, Array{UInt64}(undef, 2))
-  @debug "read detailed data"
-  status = ReadStatus((statusRaw[1] & 1) != 0, (statusRaw[1] & (1 << 1)) != 0)
-  perf = ReadPerformanceData(UInt64(reqWP), perfRaw[1], perfRaw[2])
-
-  return (data, status, perf)
+function startPipelinedData(rp::RedPitaya, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
+  command = string("RP:ADC:DATA:PIPELINED? ", reqWP, ",", numSamples, ",", chunkSize)
+  send(rp, command)
 end
 
 # High level read. numFrames can adress a future frame. Data is read in
