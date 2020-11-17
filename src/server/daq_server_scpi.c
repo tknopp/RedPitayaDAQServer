@@ -31,6 +31,7 @@
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#define _GNU_SOURCE
 #include <stdint.h>
 #include <signal.h>
 #include <fcntl.h>
@@ -38,7 +39,6 @@
 #include <sys/ioctl.h>
 #include <sys/param.h>
 #include <inttypes.h>
-
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
@@ -50,6 +50,7 @@
 #include <sys/select.h>
 #include <netinet/in.h>
 #include <pthread.h>
+#include <sched.h>
 #include <sched.h>
 #include <errno.h>
 #include "logger.h"
@@ -155,7 +156,7 @@ void createThreads() {
 	struct sched_param scheduleControl;
 	pthread_attr_t attrControl;
 
-	scheduleControl.sched_priority = 1; //SCHED_RR goes from 1 -99
+	scheduleControl.sched_priority = 5; //SCHED_RR goes from 1 -99
 	pthread_attr_init(&attrControl);
 	pthread_attr_setinheritsched(&attrControl, PTHREAD_EXPLICIT_SCHED);
 	pthread_attr_setschedpolicy(&attrControl, SCHED_RR);
@@ -166,7 +167,7 @@ void createThreads() {
 	struct sched_param scheduleComm;
 	pthread_attr_t attrComm;
 
-	scheduleComm.sched_priority = 1; //SCHED_RR goes from 1 -99
+	scheduleComm.sched_priority = 5; //SCHED_RR goes from 1 -99
 	pthread_attr_init(&attrComm);
 	pthread_attr_setinheritsched(&attrComm, PTHREAD_EXPLICIT_SCHED);
 	pthread_attr_setschedpolicy(&attrComm, SCHED_RR);
@@ -174,6 +175,17 @@ void createThreads() {
 		LOG_INFO("Failed to set sched param on communication thread");
 	pthread_create(&pComm, &attrComm, communicationThread, (void*)clifd);
 	//pthread_detach(pComm);
+
+	cpu_set_t mask;
+	CPU_ZERO(&mask);
+	CPU_SET(1, &mask);
+	if (pthread_setaffinity_np(pComm, sizeof(mask), &mask))
+		printf("CPU Mask Comm failed\n");
+	CPU_ZERO(&mask);
+	CPU_SET(0, &mask);
+	if (pthread_setaffinity_np(pControl, sizeof(mask), &mask))
+		printf("CPU Mask Control failed\n");
+
 
 	return;
 }
@@ -207,7 +219,7 @@ int main(int argc, char** argv) {
 
 	// Set priority of this thread
 	struct sched_param p;
-	p.sched_priority = 99; 
+	p.sched_priority = 20;
 	pthread_t this_thread = pthread_self();
 	int ret = pthread_setschedparam(this_thread, SCHED_RR, &p);
 	if (ret != 0) {
@@ -233,10 +245,8 @@ int main(int argc, char** argv) {
 	while (true) {
 		logger_flush();
 		printf("\033[0m");
-		//printf("Waiting for new connection\n");
 		clilen = sizeof (cliaddr);
 		int clifdTmp = accept(listenfd, (struct sockaddr *) &cliaddr, &clilen);
-
 		if (clifdTmp >= 0) {
 			LOG_INFO("Connection established %s\r\n", inet_ntoa(cliaddr.sin_addr));
 			clifd = clifdTmp;
@@ -255,7 +265,7 @@ int main(int argc, char** argv) {
 
 			createThreads();
 		}
-
+		
 		if(commThreadRunning) {
 			sleep(5.0);
 		} else {

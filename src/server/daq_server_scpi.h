@@ -23,9 +23,8 @@
 #include <pthread.h>
 #include <sched.h>
 #include <errno.h>
-
+#include <sched.h>
 #include <scpi/scpi.h>
-
 #include "../lib/rp-daq-lib.h"
 
 #define SCPI_INPUT_BUFFER_LENGTH 25600
