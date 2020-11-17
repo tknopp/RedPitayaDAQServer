@@ -66,7 +66,7 @@ int init() {
 	loadBitstream();
 
 	// Open memory
-	if((mmapfd = open("/dev/mem", O_RDWR)) < 0) {
+	if((mmapfd = open("/dev/mem", O_RDWR|O_SYNC)) < 0) {
 		perror("open");
 		return 1;
 	}
