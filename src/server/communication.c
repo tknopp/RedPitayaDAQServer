@@ -335,7 +335,7 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 	uint64_t writeWP = 0;
 	uint64_t readWP;
 	uint64_t chunk;
-	size_t userSpaceSize = chunkSize * sizeof(uint32_t);
+	size_t userSpaceSize = 4 * 256 * 1024;
 	uint8_t * userSpaceBuffer = malloc(userSpaceSize * sizeof(uint8_t));
 
 	while (readSamples < numSamples && chunkSize > 0 ) {
