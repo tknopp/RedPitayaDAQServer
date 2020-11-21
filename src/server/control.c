@@ -114,6 +114,9 @@ static void initSlowDAC() {
 	for(int d=0; d<numSlowDACChan; d++) {
 		setEnableDACAll(1,d);
 	}
+
+	//Reset Lost Steps Flag
+	err.lostSteps = 0;
 }
 
 static void setNextLUTValues() {
