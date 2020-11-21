@@ -1033,34 +1033,43 @@ static int readAll(int fd, void *buf,  size_t len) {
 
 static scpi_result_t RP_ADC_SetSlowDACLUT(scpi_t * context) {
 
-	if(numSlowDACStepsPerRotation > 0 && numSlowDACChan > 0) {
+	if(numSlowDACStepsPerRotation > 0 && numSlowDACChan > 0 && !enableSlowDAC) {
 		if(slowDACLUT != NULL) {
 			free(slowDACLUT);
+			slowDACLUT = NULL;
 		}
 		printf("Allocating slowDACLUT\n");
 		slowDACLUT = (float *)malloc(numSlowDACChan * numSlowDACStepsPerRotation * sizeof(float));
 
 		int n = readAll(newdatasockfd,slowDACLUT,numSlowDACChan * numSlowDACStepsPerRotation * sizeof(float));
 		if (n < 0) perror("ERROR reading from socket");
-
+		
+		return SCPI_RES_OK;
 	}
-	return SCPI_RES_OK;
+	else {
+		return SCPI_RES_ERR;
+	}
 }
 
 
 static scpi_result_t RP_ADC_SetEnableDACLUT(scpi_t * context) {
 
-	if(numSlowDACStepsPerRotation > 0 && numSlowDACChan > 0) {
+	if(numSlowDACStepsPerRotation > 0 && numSlowDACChan > 0 && !enableSlowDAC) {
 		if(enableDACLUT != NULL) {
 			free(enableDACLUT);
+			enableDACLUT = NULL;
 		}
 		printf("Allocating enableDACLUT\n");
 		enableDACLUT = (bool *)malloc(numSlowDACChan * numSlowDACStepsPerRotation * sizeof(bool));
 
 		int n = readAll(newdatasockfd, enableDACLUT, numSlowDACChan * numSlowDACStepsPerRotation * sizeof(bool));
 		if (n < 0) perror("ERROR reading from socket");
+		
+		return SCPI_RES_OK;
 	}
-	return SCPI_RES_OK;
+	else {
+		return SCPI_RES_ERR;
+	}
 }
 
 static scpi_result_t RP_GetOverwrittenStatus(scpi_t * context) {
