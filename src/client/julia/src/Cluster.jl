@@ -181,8 +181,8 @@ function readPipelinedSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfReques
   numOfReceivedSamples = 0
   index = 1
   rawData = zeros(Int16, numChan(rpc), numOfRequestedSamples)
-  errStatus = [Dict{UInt64, ReadStatus}() for i = 1:length(rpc)]
-  performances = [ReadPerformance([]) for i = 1:length(rpc)]
+  errStatus = [Dict{UInt64, RPStatus}() for i = 1:length(rpc)]
+  performances = [RPPerformance([]) for i = 1:length(rpc)]
 
   startPipelinedData(rpc, wpStart, numOfRequestedSamples, chunkSize)
   while numOfReceivedSamples < numOfRequestedSamples
@@ -200,8 +200,8 @@ function readSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSample
   numOfReceivedSamples = 0
   index = 1
   rawData = zeros(Int16, numChan(rpc), numOfRequestedSamples)
-  errStatus = [Dict{UInt64, ReadStatus}() for i = 1:length(rpc)]
-  performances = [ReadPerformance([]) for i = 1:length(rpc)]
+  errStatus = [Dict{UInt64, RPStatus}() for i = 1:length(rpc)]
+  performances = [RPPerformance([]) for i = 1:length(rpc)]
   while numOfReceivedSamples < numOfRequestedSamples
     wpRead = wpStart + numOfReceivedSamples
     wpWrite = currentWP(rpc)

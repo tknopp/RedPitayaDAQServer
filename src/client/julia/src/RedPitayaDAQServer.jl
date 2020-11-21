@@ -94,8 +94,8 @@ function getLog(rp::RedPitaya, log)
   close(log)
 end
 
-include("ADC.jl")
 include("DAC.jl")
+include("ADC.jl")
 include("Cluster.jl")
 include("SlowIO.jl")
 

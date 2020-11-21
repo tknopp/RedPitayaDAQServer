@@ -1,28 +1,32 @@
 export decimation, masterTrigger, currentFrame, ramWriterMode, connectADC, startADC, stopADC, readData, samplesPerPeriod, periodsPerFrame, 
      numSlowDACChan, setSlowDACLUT, enableSlowDAC, slowDACStepsPerRotation, samplesPerSlowDACStep, prepareSlowDAC,
      currentWP, slowDACInterpolation, numSlowADCChan, numLostStepsSlowADC, bufferSize, keepAliveReset, triggerMode,
-     slowDACPeriodsPerFrame, enableDACLUT, ReadPerformanceData, ReadPerformance, ReadStatus, ReadOverview, startPipelinedData
+     slowDACPeriodsPerFrame, enableDACLUT, ADCPerformanceData, RPPerformance, RPStatus, ReadOverview, startPipelinedData
 
-
-struct ReadPerformanceData
-  wpRead::UInt64
+struct ADCPerformanceData
   deltaRead::UInt64
   deltaSend::UInt64
 end
 
-struct ReadPerformance
-  data::Vector{ReadPerformanceData}
+struct PerformanceData
+  wpRead::UInt64
+  adc::ADCPerformanceData
+  dac::DACPerformanceData
 end
 
-struct ReadStatus
+struct RPPerformance
+  data::Vector{PerformanceData}
+end
+
+struct RPStatus
   overwritten::Bool
   corrupted::Bool
-  #stepsLost::Bool
+  #stepsLost::Bool TODO Enable this, once this flag set it would be active until slowDAC Task ends
 end
 
 struct ReadOverview
-  errStatus::Vector{Dict{UInt64, ReadStatus}}
-  performances::Vector{ReadPerformance}
+  errStatus::Vector{Dict{UInt64, RPStatus}}
+  performances::Vector{RPPerformance}
 end
 
 decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
@@ -147,13 +151,29 @@ wasCorrupted(rp::RedPitaya) = query(rp, "RP:STATus:CORRupted?", Bool)
 
 function performanceData(rp::RedPitaya)
   send(rp, "RP:PERF?")
-  perf = read!(rp.dataSocket, Array{UInt64}(undef, 2))
-  return perf
+  return readPerformanceData(rp)
 end
 
 function performanceData(rp::RedPitaya, wpRead)
-  perf = performanceData(rp)
-  return ReadPerformanceData(wpRead, perf[1], perf[2])
+  (adc, dac) = performanceData(rp)
+  return PerformanceData(wpRead, adc, dac)
+end
+
+function readPerformanceData(rp::RedPitaya)
+  adc = readADCPerformanceData(rp)
+  dac = readDACPerformanceData(rp)
+  return (adc, dac)
+end
+
+function readADCPerformanceData(rp::RedPitaya)
+  perf = read!(rp.dataSocket, Array{UInt64}(undef, 2))
+  return ADCPerformanceData(perf[1], perf[2])
+end
+
+function readServerStatus(rp::RedPitaya)
+  statusRaw = read!(rp.dataSocket, Array{Int8}(undef, 1))
+  status = RPStatus((statusRaw[1] & 1) != 0, (statusRaw[1] & (1 << 1)) != 0)
+  return status
 end
 
 # Low level read. One has to take care that the numFrames are available
@@ -171,13 +191,13 @@ end
 function readSamplesChunk_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
   @debug "read samples chunk ..."
   data = read!(rp.dataSocket, Array{Int16}(undef, 2 * Int64(numSamples)))
-  statusRaw = read!(rp.dataSocket, Array{Int8}(undef, 1))
-  perfRaw = read!(rp.dataSocket, Array{UInt64}(undef, 2))
+  status = readServerStatus(rp)
+  (adc, dac) = readPerformanceData(rp)
   @debug "read samples chunk ..."
-  status = ReadStatus((statusRaw[1] & 1) != 0, (statusRaw[1] & (1 << 1)) != 0)
-  perf = ReadPerformanceData(UInt64(reqWP), perfRaw[1], perfRaw[2])
+  perf = PerformanceData(UInt64(reqWP), adc, dac)
   return (data, status, perf)
 end
+
 # Low level read, that includes performance and error data
 function readDetailedSamples_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
   command = string("RP:ADC:DATA:DETAILED? ",Int64(reqWP),",",Int64(numSamples))
