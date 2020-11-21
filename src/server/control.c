@@ -163,6 +163,10 @@ void* controlThread(void* ch) {
 	rampingTotalRotations=-1;
 	lookahead=110;
 	lookprehead=5;
+	//Performance related variables
+	int64_t deltaControl = 0;
+	int64_t deltaSet = 0;
+	uint64_t numOfSamples;
 
 	LOG_INFO("Starting control thread");
 	getprio(pthread_self());
@@ -193,6 +197,11 @@ void* controlThread(void* ch) {
 					else if(enableSlowDAC && !enableSlowDACAck && (( currentSlowDACStep > numSlowDACStepsPerRotation-lookprehead-1 ) || (numSlowDACStepsPerRotation == 1)) ) {
 						// we are now lookprehead subperiods or less before the next rotation
 						initSlowDAC();
+						deltaControl = 0;
+						deltaSet = 0;
+						numOfSamples = 0;
+						avgDeltaControl = 0;
+						avgDeltaSet = 0;
 					}
 					
 					// Handle local-enableSlowDAC
@@ -213,6 +222,14 @@ void* controlThread(void* ch) {
 						}
 						else {
 							setNextLUTValues();
+							
+							//Compute Perf. data
+							deltaControl = oldSlowDACStepTotal + lookahead - currentSlowDACStepTotal;
+							deltaSet = (getTotalWritePointer() / numSamplesPerSlowDACStep) - currentSlowDACStepTotal; 
+							
+							numOfSamples++;
+							avgDeltaControl = (deltaControl + (numOfSamples - 1) * avgDeltaControl)/numOfSamples;
+							avgDeltaSet = (deltaSet + (numOfSamples - 1) * avgDeltaSet)/numOfSamples;
 						}
 
 					}

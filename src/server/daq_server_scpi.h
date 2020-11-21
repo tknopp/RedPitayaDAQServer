@@ -115,14 +115,20 @@ extern void clearLostStepsStatus();
 extern FILE* getLogFile();
 
 // performance data
+// ADC Performance
 struct performance {
 	uint64_t deltaRead;
 	uint64_t deltaSend;
 };
 struct performance perf;
+// DAC/Control performance
+uint64_t avgDeltaControl;
+uint64_t avgDeltaSet; 
 
 // Client communication
 extern void sendPerformanceDataToClient();
+extern void sendADCPerformanceDataToClient();
+extern void sendDACPerformanceDataToClient();
 extern struct performance sendDataToClient(uint64_t, uint64_t, bool);
 extern void sendPipelinedDataToClient(uint64_t, uint64_t, uint64_t);
 extern void sendSlowFramesToHost(int64_t, int64_t);

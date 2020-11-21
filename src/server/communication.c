@@ -380,11 +380,25 @@ void sendFileToClient(FILE* file) {
 }
 
 void sendPerformanceDataToClient() {
+	sendADCPerformanceDataToClient();
+	sendDACPerformanceDataToClient();
+}
+
+void sendADCPerformanceDataToClient() {
 	uint64_t deltas[2] = {perf.deltaRead, perf.deltaSend};
 	int n = 0;
 	n = send(newdatasockfd, deltas, sizeof(deltas), 0);
 	if (n < 0) {
-		LOG_WARN("Error while sending performance data");
+		LOG_WARN("Error while sending ADC performance data");
+	}
+}
+
+void sendDACPerformanceDataToClient() {
+	uint64_t deltas[2] = {avgDeltaControl, avgDeltaSet};
+	int n = 0;
+	n = send(newdatasockfd, deltas, sizeof(deltas), 0);
+	if (n < 0) {
+		LOG_WARN("Error while sending DAC performance data");
 	}
 }
 
