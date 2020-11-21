@@ -528,11 +528,6 @@ static scpi_result_t RP_ADC_GetNumSlowADCChan(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_ADC_GetCurrentFrame(scpi_t * context) {
-	SCPI_ResultUInt64(context, getCurrentFrameTotal());
-	return SCPI_RES_OK;
-}
-
 static scpi_result_t RP_ADC_GetCurrentWP(scpi_t * context) {
 	SCPI_ResultUInt64(context, getTotalWritePointer());
 	return SCPI_RES_OK;

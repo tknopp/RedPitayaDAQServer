@@ -177,7 +177,7 @@ static int writeAll(int fd, const void *buf, size_t len) {
 
 
 
-void neoncopy(void *dst, void *src, int cnt)
+void neoncopy(void *dst, const void *src, int cnt)
 {
 	asm volatile
 		(
@@ -201,8 +201,8 @@ static void writeDataChunked(int fd, const void *buf, size_t count) {
 	size_t size;
 	while(ptr < count) {
 		size = MIN(count-ptr, chunkSize);
-		//memcpy(buffer, buf + ptr, size);
-		neoncopy(buffer, buf + ptr, size);
+		memcpy(buffer, buf + ptr, size);
+		//neoncopy(buffer, buf + ptr, size);
 		n = writeAll(fd, buffer, size);
 		if (n < 0) {
 			LOG_ERROR("Error in sendToHost()");
@@ -352,6 +352,7 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 
 
 		sendNeonDataToClient(readWP, chunk, true, userSpaceBuffer, userSpaceSize);
+		//sendDataToClient(readWP, chunk, true);
 		sendErrorStatusToClient();
 		sendPerformanceDataToClient();
 		readSamples += chunk;
