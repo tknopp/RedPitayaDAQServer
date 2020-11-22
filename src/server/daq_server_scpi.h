@@ -122,8 +122,8 @@ struct performance {
 };
 struct performance perf;
 // DAC/Control performance
-uint64_t avgDeltaControl;
-uint64_t avgDeltaSet; 
+int64_t avgDeltaControl;
+int64_t avgDeltaSet; 
 
 // Client communication
 extern void sendPerformanceDataToClient();

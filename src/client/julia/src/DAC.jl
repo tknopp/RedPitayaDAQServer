@@ -3,8 +3,8 @@ export amplitudeDAC, frequencyDAC, phaseDAC, modeDAC, amplitudeDACNext,
        waveforms, DACPerformanceData
 
 struct DACPerformanceData
-  uDeltaControl::UInt64
-  uDeltaSet::UInt64
+  uDeltaControl::Int64
+  uDeltaSet::Int64
 end
       
 function passPDMToFastDAC(rp::RedPitaya, val::Bool)
