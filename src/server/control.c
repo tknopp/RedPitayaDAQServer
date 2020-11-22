@@ -166,7 +166,7 @@ void* controlThread(void* ch) {
 	//Performance related variables
 	int64_t deltaControl = 0;
 	int64_t deltaSet = 0;
-	uint64_t numOfSamples;
+	float alpha = 0.7;
 
 	LOG_INFO("Starting control thread");
 	getprio(pthread_self());
@@ -199,7 +199,6 @@ void* controlThread(void* ch) {
 						initSlowDAC();
 						deltaControl = 0;
 						deltaSet = 0;
-						numOfSamples = 0;
 						avgDeltaControl = 0;
 						avgDeltaSet = 0;
 					}
@@ -227,9 +226,8 @@ void* controlThread(void* ch) {
 							deltaControl = oldSlowDACStepTotal + lookahead - currentSlowDACStepTotal;
 							deltaSet = (getTotalWritePointer() / numSamplesPerSlowDACStep) - currentSlowDACStepTotal; 
 							
-							numOfSamples++;
-							avgDeltaControl = (deltaControl + (numOfSamples - 1) * avgDeltaControl)/numOfSamples;
-							avgDeltaSet = (deltaSet + (numOfSamples - 1) * avgDeltaSet)/numOfSamples;
+							avgDeltaControl = alpha * deltaControl + (1-alpha) * avgDeltaControl;
+							avgDeltaSet = alpha * deltaSet + (1-alpha) * avgDeltaSet;
 						}
 
 					}
