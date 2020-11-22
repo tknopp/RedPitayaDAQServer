@@ -264,8 +264,8 @@ struct performance sendNeonDataToClient(uint64_t wpTotal, uint64_t numSamples, b
 		uint64_t size1 = ADC_BUFF_SIZE - wp;                                                              
 		uint64_t size2 = numSamples - size1;
 
-		struct performance temp1 = sendDataToClient(wpTotal, size1, false);
-		struct performance temp2 = sendDataToClient(wpTotal + size1, size2, false);
+		struct performance temp1 = sendNeonDataToClient(wpTotal, size1, false, userSpaceBuffer, userSpaceSize);
+		struct performance temp2 = sendNeonDataToClient(wpTotal + size1, size2, false, userSpaceBuffer, userSpaceSize);
 
 		perfResult.deltaSend = temp1.deltaSend + temp2.deltaSend;
 
