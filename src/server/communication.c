@@ -216,10 +216,18 @@ static void writeDataChunked(int fd, const void *buf, size_t count) {
 static void writeNeonDataChunked(int fd, const void *buf, size_t count, uint8_t *userSpaceBuffer, size_t userSpaceSize) {
 	int n;
 	size_t ptr = 0;
-	size_t size;
+	size_t size, sizeTemp;
 	while(ptr < count) {
-		size = MIN(count-ptr, userSpaceSize);
-		neoncopy(userSpaceBuffer, buf + ptr, size);
+		sizeTemp = MIN(count-ptr, userSpaceSize);
+		//Neon Copy copies 64 Byte in each iteration, size should always be a multiple of 64 or a different copy needs to be used
+		size = sizeTemp - (sizeTemp % 64);
+		if (size == 0) {
+			size = sizeTemp;
+			memcpy(userSpaceBuffer, buf + ptr, size);
+		}
+		else {
+			neoncopy(userSpaceBuffer, buf + ptr, size);
+		}
 		n = writeAll(fd, userSpaceBuffer, size);
 		if (n < 0) {
 			LOG_ERROR("Error in sendToHost()");
@@ -315,10 +323,9 @@ struct performance sendDataToClient(uint64_t wpTotal, uint64_t numSamples, bool 
 	} else {                                                                                                  
 		uint64_t size1 = ADC_BUFF_SIZE - wp;                                                              
 		uint64_t size2 = numSamples - size1;
-
+		
 		struct performance temp1 = sendDataToClient(wpTotal, size1, false);
 		struct performance temp2 = sendDataToClient(wpTotal + size1, size2, false);
-
 		perfResult.deltaSend = temp1.deltaSend + temp2.deltaSend;
 
 	}
