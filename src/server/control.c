@@ -201,6 +201,8 @@ void* controlThread(void* ch) {
 						deltaSet = 0;
 						avgDeltaControl = 0;
 						avgDeltaSet = 0;
+						minDeltaControl = 0xFF;
+						maxDeltaSet = 0x00;
 					}
 					
 					// Handle local-enableSlowDAC
@@ -226,8 +228,18 @@ void* controlThread(void* ch) {
 							deltaControl = oldSlowDACStepTotal + lookahead - currentSlowDACStepTotal;
 							deltaSet = (getTotalWritePointer() / numSamplesPerSlowDACStep) - currentSlowDACStepTotal; 
 							
+
 							avgDeltaControl = alpha * deltaControl + (1-alpha) * avgDeltaControl;
 							avgDeltaSet = alpha * deltaSet + (1-alpha) * avgDeltaSet;
+							
+							if (deltaControl < minDeltaControl) {
+								minDeltaControl = (deltaControl < 0) ? 0 : deltaControl;
+							}
+							if (deltaSet > maxDeltaSet) {
+								maxDeltaSet = (deltaSet > 0xFF) ? 0xFF : deltaSet;
+							}
+
+						//	printf("dc: %lld, udc: %lld, ds: %lld\n", deltaControl, avgDeltaControl, deltaSet);	
 						}
 
 					}

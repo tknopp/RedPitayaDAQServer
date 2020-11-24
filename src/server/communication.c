@@ -401,9 +401,9 @@ void sendADCPerformanceDataToClient() {
 }
 
 void sendDACPerformanceDataToClient() {
-	uint64_t deltas[2] = {avgDeltaControl, avgDeltaSet};
+	uint8_t perfValues[4] = {avgDeltaControl, avgDeltaSet, minDeltaControl, maxDeltaSet};
 	int n = 0;
-	n = send(newdatasockfd, deltas, sizeof(deltas), 0);
+	n = send(newdatasockfd, perfValues, sizeof(perfValues), 0);
 	if (n < 0) {
 		LOG_WARN("Error while sending DAC performance data");
 	}
