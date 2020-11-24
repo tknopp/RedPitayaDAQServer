@@ -227,16 +227,18 @@ void* controlThread(void* ch) {
 							//Compute Perf. data
 							deltaControl = oldSlowDACStepTotal + lookahead - currentSlowDACStepTotal;
 							deltaSet = (getTotalWritePointer() / numSamplesPerSlowDACStep) - currentSlowDACStepTotal; 
-							
+						
+							deltaSet = (deltaSet > 0xFF) ? 0xFF : deltaSet;
+							deltaControl = (deltaControl < 0) ? 0: deltaControl;
 
 							avgDeltaControl = alpha * deltaControl + (1-alpha) * avgDeltaControl;
 							avgDeltaSet = alpha * deltaSet + (1-alpha) * avgDeltaSet;
 							
 							if (deltaControl < minDeltaControl) {
-								minDeltaControl = (deltaControl < 0) ? 0 : deltaControl;
+								minDeltaControl = deltaControl;
 							}
 							if (deltaSet > maxDeltaSet) {
-								maxDeltaSet = (deltaSet > 0xFF) ? 0xFF : deltaSet;
+								maxDeltaSet = deltaSet;
 							}
 
 						//	printf("dc: %lld, udc: %lld, ds: %lld\n", deltaControl, avgDeltaControl, deltaSet);	
