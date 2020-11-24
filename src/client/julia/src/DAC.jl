@@ -3,8 +3,10 @@ export amplitudeDAC, frequencyDAC, phaseDAC, modeDAC, amplitudeDACNext,
        waveforms, DACPerformanceData
 
 struct DACPerformanceData
-  uDeltaControl::Int64
-  uDeltaSet::Int64
+  uDeltaControl::UInt8
+  uDeltaSet::UInt8
+  minDeltaControl::UInt8
+  maxDeltaSet::UInt8
 end
       
 function passPDMToFastDAC(rp::RedPitaya, val::Bool)
@@ -128,6 +130,6 @@ function DCSignDAC(rp::RedPitaya, channel, sign::Integer)
 end
 
 function readDACPerformanceData(rp::RedPitaya)
-  perf = read!(rp.dataSocket, Array{UInt64}(undef, 2))
-  return DACPerformanceData(perf[1], perf[2])
+  perf = read!(rp.dataSocket, Array{UInt8}(undef, 4))
+  return DACPerformanceData(perf[1], perf[2], perf[3], perf[4])
 end
