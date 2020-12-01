@@ -181,18 +181,17 @@ function readPipelinedSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfReques
   numOfReceivedSamples = 0
   index = 1
   rawData = zeros(Int16, numChan(rpc), numOfRequestedSamples)
-  errStatus = [Dict{UInt64, RPStatus}() for i = 1:length(rpc)]
   performances = [RPPerformance([]) for i = 1:length(rpc)]
 
   startPipelinedData(rpc, wpStart, numOfRequestedSamples, chunkSize)
   while numOfReceivedSamples < numOfRequestedSamples
     wpRead = wpStart + numOfReceivedSamples
     chunk = min(numOfRequestedSamples - numOfReceivedSamples, chunkSize)
-    collectSamples!(rpc, wpRead, chunk, rawData, errStatus, performances, index, pipelined=true, collectPerformance = collectPerformance)
+    collectSamples!(rpc, wpRead, chunk, rawData, performances, index, pipelined=true, collectPerformance = collectPerformance)
     index += chunk
     numOfReceivedSamples += chunk
   end
-  return (rawData, ReadOverview(errStatus, performances))
+  return (rawData, ReadOverview(performances))
 
 end
 
@@ -200,7 +199,6 @@ function readSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSample
   numOfReceivedSamples = 0
   index = 1
   rawData = zeros(Int16, numChan(rpc), numOfRequestedSamples)
-  errStatus = [Dict{UInt64, RPStatus}() for i = 1:length(rpc)]
   performances = [RPPerformance([]) for i = 1:length(rpc)]
   while numOfReceivedSamples < numOfRequestedSamples
     wpRead = wpStart + numOfReceivedSamples
@@ -217,14 +215,14 @@ function readSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSample
     if (wpRead + chunk > wpWrite)
       chunk = wpWrite - wpRead
     end
-    collectSamples!(rpc, wpRead, chunk, rawData, errStatus, performances, index, collectPerformance = collectPerformance)
+    collectSamples!(rpc, wpRead, chunk, rawData, performances, index, collectPerformance = collectPerformance)
     index += chunk
     numOfReceivedSamples += chunk
   end
-  return (rawData, ReadOverview(errStatus, performances))
+  return (rawData, ReadOverview(performances))
 end
 
-function collectSamples!(rpc::RedPitayaCluster, wpRead::Int64, chunk::Int64, rawData, errStatus, performances, index; pipelined=false, collectPerformance=false)
+function collectSamples!(rpc::RedPitayaCluster, wpRead::Int64, chunk::Int64, rawData, performances, index; pipelined=false, collectPerformance=false)
   done = zeros(Bool, length(rpc.rp))
   iterationDone = Condition()
   timeoutHappened = false
@@ -233,19 +231,16 @@ function collectSamples!(rpc::RedPitayaCluster, wpRead::Int64, chunk::Int64, raw
     collectFunction = readSamplesChunk_
   end
   @async for (d, rp) in enumerate(rpc.rp)
-    (u, status, perf) = collectFunction(rp, Int64(wpRead), Int64(chunk))
+    (u, perf) = collectFunction(rp, Int64(wpRead), Int64(chunk))
     samples = reshape(u, 2, chunk)
     rawData[2*d-1, index:(index + chunk - 1)] = samples[1, :]
     rawData[2*d, index:(index + chunk - 1)] = samples[2, :] 
     
     # Status
-    if status.overwritten || status.corrupted
-      errStatus[d][wpRead] = status
-    end
-    if status.overwritten
+    if perf.status.overwritten
       @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) was overwritten"
     end
-    if status.corrupted
+    if perf.status.corrupted
       @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) might have been corrupted"
     end
 

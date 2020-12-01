@@ -8,24 +8,26 @@ struct ADCPerformanceData
   deltaSend::UInt64
 end
 
+struct RPStatus
+  overwritten::Bool
+  corrupted::Bool
+  stepsLost::Bool
+  adcEnabled::Bool
+  dacEnabled::Bool
+end
+
 struct PerformanceData
   wpRead::UInt64
   adc::ADCPerformanceData
   dac::DACPerformanceData
+  status::RPStatus
 end
 
 struct RPPerformance
   data::Vector{PerformanceData}
 end
 
-struct RPStatus
-  overwritten::Bool
-  corrupted::Bool
-  #stepsLost::Bool TODO Enable this, once this flag set it would be active until slowDAC Task ends
-end
-
 struct ReadOverview
-  errStatus::Vector{Dict{UInt64, RPStatus}}
   performances::Vector{RPPerformance}
 end
 
@@ -171,8 +173,12 @@ function readADCPerformanceData(rp::RedPitaya)
 end
 
 function readServerStatus(rp::RedPitaya)
-  statusRaw = read!(rp.dataSocket, Array{Int8}(undef, 1))
-  status = RPStatus((statusRaw[1] & 1) != 0, (statusRaw[1] & (1 << 1)) != 0)
+  statusRaw = read!(rp.dataSocket, Array{Int8}(undef, 1))[1]
+  status = RPStatus((statusRaw & 1) != 0, # overwritten
+   (statusRaw & (1 << 1)) != 0, # corrupted
+   (statusRaw & (1 << 2)) != 0, # stepsLost
+   (statusRaw & (1 << 3)) != 0, # adcEnabled
+   (statusRaw & (1 << 4)) != 0) # dacEnabled
   return status
 end
 
@@ -194,8 +200,8 @@ function readSamplesChunk_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
   status = readServerStatus(rp)
   (adc, dac) = readPerformanceData(rp)
   @debug "read samples chunk ..."
-  perf = PerformanceData(UInt64(reqWP), adc, dac)
-  return (data, status, perf)
+  perf = PerformanceData(UInt64(reqWP), adc, dac, status)
+  return (data, perf)
 end
 
 # Low level read, that includes performance and error data
