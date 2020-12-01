@@ -121,6 +121,10 @@ void getprio( pthread_t id ) {
 	}
 }
 
+uint8_t getStatus() {
+	return getErrorStatus() | rxEnabled << 3 | enableSlowDAC << 4; 
+}
+
 uint8_t getErrorStatus() {
 	return err.overwritten | err.corrupted << 1 | err.lostSteps << 2;
 }

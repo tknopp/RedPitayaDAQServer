@@ -360,7 +360,7 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 
 		sendNeonDataToClient(readWP, chunk, true, userSpaceBuffer, userSpaceSize);
 		//sendDataToClient(readWP, chunk, true);
-		sendErrorStatusToClient();
+		sendStatusToClient();
 		sendPerformanceDataToClient();
 		readSamples += chunk;
 
@@ -409,12 +409,12 @@ void sendDACPerformanceDataToClient() {
 	}
 }
 
-void sendErrorStatusToClient() {
-	uint8_t status = getErrorStatus();
+void sendStatusToClient() {
+	uint8_t status = getStatus();
 	int n = 0;
 	n = send(newdatasockfd, &status, sizeof(status), 0);
 	if (n < 0) {
-		LOG_WARN("Error while sending error status");
+		LOG_WARN("Error while sending status");
 	}
 }
 

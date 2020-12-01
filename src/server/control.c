@@ -227,7 +227,7 @@ void* controlThread(void* ch) {
 							//Compute Perf. data
 							deltaControl = oldSlowDACStepTotal + lookahead - currentSlowDACStepTotal;
 							deltaSet = (getTotalWritePointer() / numSamplesPerSlowDACStep) - currentSlowDACStepTotal; 
-						
+							
 							deltaSet = (deltaSet > 0xFF) ? 0xFF : deltaSet;
 							deltaControl = (deltaControl < 0) ? 0: deltaControl;
 

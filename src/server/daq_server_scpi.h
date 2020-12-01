@@ -105,6 +105,7 @@ struct status {
 	uint8_t lostSteps :1;
 };
 struct status err;
+extern uint8_t getStatus();
 extern uint8_t getErrorStatus();
 extern uint8_t getOverwrittenStatus();
 extern void clearOverwrittenStatus();
@@ -135,7 +136,7 @@ extern struct performance sendDataToClient(uint64_t, uint64_t, bool);
 extern void sendPipelinedDataToClient(uint64_t, uint64_t, uint64_t);
 extern void sendSlowFramesToHost(int64_t, int64_t);
 extern void sendFileToClient(FILE*);
-extern void sendErrorStatusToClient();
+extern void sendStatusToClient();
 
 #endif /* __DAQ_SERVER_SCPI_H_ */
 

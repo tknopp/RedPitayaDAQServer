@@ -1085,7 +1085,7 @@ static scpi_result_t RP_GetCorruptedStatus(scpi_t * context) {
 
 
 static scpi_result_t RP_GetStatus(scpi_t * context) {
-	SCPI_ResultBool(context, getErrorStatus());
+	SCPI_ResultBool(context, getStatus());
 	return SCPI_RES_OK;
 }
 
