@@ -86,6 +86,11 @@ scpi_error_t scpi_error_queue_data[SCPI_ERROR_QUEUE_SIZE];
 
 scpi_t scpi_context;
 
+
+static const size_t userSpaceSizeSamples = 64 * 1024;
+static const size_t userSpaceSizeBytes = userSpaceSizeSamples * sizeof(uint32_t);
+static uint8_t * userSpaceBuffer = NULL;
+
 int createServer(int port) {
 	int fd;
 	int rc;
@@ -177,8 +182,7 @@ static int writeAll(int fd, const void *buf, size_t len) {
 
 
 
-void neoncopy(void *dst, const void *src, int cnt)
-{
+void neoncopy(void *dst, const void *src, int cnt) {
 	asm volatile
 		(
 		 "loop_%=:\n"
@@ -192,100 +196,58 @@ void neoncopy(void *dst, const void *src, int cnt)
 		);
 }
 
-static void writeDataChunked(int fd, const void *buf, size_t count);
-static void writeDataChunked(int fd, const void *buf, size_t count) {
-	int n;
-	size_t chunkSize = 4 * 256 * 1024;
-	uint8_t *buffer = malloc(chunkSize * sizeof(uint8_t));
-	size_t ptr = 0;
-	size_t size;
-	while(ptr < count) {
-		size = MIN(count-ptr, chunkSize);
-		memcpy(buffer, buf + ptr, size);
-		//neoncopy(buffer, buf + ptr, size);
-		n = writeAll(fd, buffer, size);
-		if (n < 0) {
-			LOG_ERROR("Error in sendToHost()");
-		}
-		ptr += size;
-		//usleep(30);
-	}
-	free(buffer);
-}
 
-static void writeNeonDataChunked(int fd, const void *buf, size_t count, uint8_t *userSpaceBuffer, size_t userSpaceSize) {
-	int n;
+/*
+ * This function copies count many bytes from the adc-pointer to the userspace buffer, starting from the beginning of the userspace buffer.
+ * Count has to fit in the userspace buffer. The function tries to use the neon copy whenever it can
+ * */
+static size_t copySamplesToBuffer(const void *adc, size_t count) {
 	size_t ptr = 0;
 	size_t size, sizeTemp;
 	while(ptr < count) {
-		sizeTemp = MIN(count-ptr, userSpaceSize);
+		sizeTemp = MIN(count-ptr, userSpaceSizeBytes);
 		//Neon Copy copies 64 Byte in each iteration, size should always be a multiple of 64 or a different copy needs to be used
 		size = sizeTemp - (sizeTemp % 64);
 		if (size == 0) {
 			size = sizeTemp;
-			memcpy(userSpaceBuffer, buf + ptr, size);
+			memcpy(userSpaceBuffer + ptr, adc + ptr, size);
 		}
 		else {
-			neoncopy(userSpaceBuffer, buf + ptr, size);
-		}
-		n = writeAll(fd, userSpaceBuffer, size);
-		if (n < 0) {
-			LOG_ERROR("Error in sendToHost()");
+			neoncopy(userSpaceBuffer + ptr, adc + ptr, size);
 		}
 		ptr += size;
 	}
+	return ptr;
 }
 
-struct performance sendNeonDataToClient(uint64_t wpTotal, uint64_t numSamples, bool clearFlags, uint8_t *userSpaceBuffer, size_t userSpaceSize) {
-	uint64_t daqTotal = getTotalWritePointer();
+static bool sendBufferedSamplesToClient(uint64_t wpTotal, uint64_t numSamples) {
+	bool wasCorrupted = false;
+	int n = 0;
 	uint32_t wp = getInternalWritePointer(wpTotal);
-	uint64_t deltaRead = daqTotal - wpTotal;
-	uint64_t deltaSend = 0;
-	struct performance perfResult;
-	perfResult.deltaRead = deltaRead;
-	// Requested data specific status
-	if (clearFlags) { 
-		err.overwritten = 0;
-		err.corrupted = 0;
-	}
+	uint64_t sendSamples = 0;
+	uint64_t daqTotal = 0;
+	uint64_t samplesToCopy = 0;
+	size_t copiedBytes = 0;
 
-	if (deltaRead > ADC_BUFF_SIZE && daqTotal > wpTotal) {
-		err.overwritten = 1;  	
-		LOG_WARN("%lli Requested data was overwritten", wpTotal);	
-	} 
+	while (sendSamples < numSamples) {
+		//Move samples to userspace
+		samplesToCopy = MIN(numSamples - sendSamples, userSpaceSizeSamples);
+		copiedBytes = copySamplesToBuffer(ram + sizeof(uint32_t)*(wp + sendSamples), samplesToCopy*sizeof(uint32_t));
 
-	// Send Data
-	if(wp+numSamples <= ADC_BUFF_SIZE) {
+		//Check if samples could have been corrupted
+		daqTotal = getTotalWritePointer();
+		wasCorrupted |= ((daqTotal - wpTotal + sendSamples + samplesToCopy) > ADC_BUFF_SIZE && daqTotal > (wpTotal + sendSamples + samplesToCopy));
 
-		writeNeonDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, numSamples*sizeof(uint32_t), userSpaceBuffer, userSpaceSize);
-
-		uint64_t daqTotalAfter = getTotalWritePointer();
-		deltaSend = daqTotalAfter - daqTotal;
-		if (err.overwritten == 0 && (daqTotalAfter - wpTotal) > ADC_BUFF_SIZE && daqTotalAfter > wpTotal) {
-			err.corrupted = 1;
-			LOG_WARN("%lli Sent data could have been corrupted", wpTotal);	
+		//Send samples to client
+		n = writeAll(newdatasockfd, userSpaceBuffer, copiedBytes);
+		if (n < 0) {
+			LOG_ERROR("Error in writeSamplesChunked.writeAll");
 		}
-
-		perfResult.deltaSend = deltaSend;
-
-	} else {                                                                                                  
-		uint64_t size1 = ADC_BUFF_SIZE - wp;                                                              
-		uint64_t size2 = numSamples - size1;
-
-		struct performance temp1 = sendNeonDataToClient(wpTotal, size1, false, userSpaceBuffer, userSpaceSize);
-		struct performance temp2 = sendNeonDataToClient(wpTotal + size1, size2, false, userSpaceBuffer, userSpaceSize);
-
-		perfResult.deltaSend = temp1.deltaSend + temp2.deltaSend;
-
+		sendSamples += samplesToCopy;
 	}
-
-	if (clearFlags) {
-		perf = perfResult;
-	}
-
-	return perfResult;
-}
-
+	
+	return wasCorrupted;
+} 
 
 struct performance sendDataToClient(uint64_t wpTotal, uint64_t numSamples, bool clearFlags) {
 	uint64_t daqTotal = getTotalWritePointer();
@@ -308,14 +270,13 @@ struct performance sendDataToClient(uint64_t wpTotal, uint64_t numSamples, bool 
 	// Send Data
 	if(wp+numSamples <= ADC_BUFF_SIZE) {
 
-		writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, numSamples*sizeof(uint32_t));
-		//writeAll(newdatasockfd, ram + sizeof(uint32_t)*wp, numSamples*sizeof(uint32_t));
-
+		bool wasCorrupted = sendBufferedSamplesToClient(wpTotal, numSamples);
+		
 		uint64_t daqTotalAfter = getTotalWritePointer();
 		deltaSend = daqTotalAfter - daqTotal;
-		if (err.overwritten == 0 && (daqTotalAfter - wpTotal) > ADC_BUFF_SIZE && daqTotalAfter > wpTotal) {
+		if (err.overwritten == 0 && wasCorrupted) {
 			err.corrupted = 1;
-			LOG_WARN("%lli Sent data could have been corrupted", wpTotal);	
+			LOG_WARN("%lli Sent data was corrupted", wpTotal);	
 		}
 
 		perfResult.deltaSend = deltaSend;
@@ -342,8 +303,6 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 	uint64_t writeWP = 0;
 	uint64_t readWP;
 	uint64_t chunk;
-	size_t userSpaceSize = 4 * 256 * 1024;
-	uint8_t * userSpaceBuffer = malloc(userSpaceSize * sizeof(uint8_t));
 
 	while (readSamples < numSamples && chunkSize > 0 ) {
 		readWP = wpTotal + readSamples;
@@ -358,15 +317,12 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 		}
 
 
-		sendNeonDataToClient(readWP, chunk, true, userSpaceBuffer, userSpaceSize);
-		//sendDataToClient(readWP, chunk, true);
+		sendDataToClient(readWP, chunk, true);
 		sendStatusToClient();
 		sendPerformanceDataToClient();
 		readSamples += chunk;
 
 	}
-	free(userSpaceBuffer);
-	userSpaceBuffer = NULL;
 }
 
 
@@ -423,6 +379,9 @@ void* communicationThread(void* p) {
 	int rc;
 	char smbuffer[20];
 
+ 	userSpaceBuffer = malloc(userSpaceSizeBytes);
+
+
 	while(true) {
 		//printf("Comm thread loop\n");
 		if(!commThreadRunning)
@@ -461,6 +420,9 @@ void* communicationThread(void* p) {
 		logger_flush();
 	}
 	LOG_INFO("Comm almost done");
+
+	free(userSpaceBuffer);
+	userSpaceBuffer = NULL;
 
 	close(clifd);
 	if(newdatasockfd > 0) {
