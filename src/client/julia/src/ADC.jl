@@ -1,7 +1,7 @@
 export decimation, masterTrigger, currentFrame, ramWriterMode, connectADC, startADC, stopADC, readData, samplesPerPeriod, periodsPerFrame, 
      numSlowDACChan, setSlowDACLUT, enableSlowDAC, slowDACStepsPerRotation, samplesPerSlowDACStep, prepareSlowDAC,
      currentWP, slowDACInterpolation, numSlowADCChan, numLostStepsSlowADC, bufferSize, keepAliveReset, triggerMode,
-     slowDACPeriodsPerFrame, enableDACLUT, ADCPerformanceData, RPPerformance, RPStatus, ReadOverview, startPipelinedData
+     slowDACPeriodsPerFrame, enableDACLUT, ADCPerformanceData, RPPerformance, RPStatus, RPInfo, startPipelinedData
 
 struct ADCPerformanceData
   deltaRead::UInt64
@@ -27,8 +27,12 @@ struct RPPerformance
   data::Vector{PerformanceData}
 end
 
-struct ReadOverview
+struct RPInfo
   performances::Vector{RPPerformance}
+end
+
+function RPInfo()
+  return RPInfo([RPPerformance([])])
 end
 
 decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)

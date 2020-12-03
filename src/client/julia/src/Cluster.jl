@@ -22,6 +22,10 @@ length(rpc::RedPitayaCluster) = length(rpc.rp)
 numChan(rpc::RedPitayaCluster) = 2*length(rpc)
 master(rpc::RedPitayaCluster) = rpc.rp[1]
 
+function RPInfo(rpc::RedPitayaCluster)
+  return RPInfo([RPPerformance([]) for i = 1:length(rpc)])
+end
+
 const _currentFrame = Ref(0)
 
 function currentFrame(rpc::RedPitayaCluster)
@@ -177,29 +181,27 @@ function startPipelinedData(rpc::RedPitayaCluster, reqWP::Int64, numSamples::Int
   end
 end
 
-function readPipelinedSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, collectPerformance=false)
+function readPipelinedSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
   numOfReceivedSamples = 0
   index = 1
   rawData = zeros(Int16, numChan(rpc), numOfRequestedSamples)
-  performances = [RPPerformance([]) for i = 1:length(rpc)]
 
   startPipelinedData(rpc, wpStart, numOfRequestedSamples, chunkSize)
   while numOfReceivedSamples < numOfRequestedSamples
     wpRead = wpStart + numOfReceivedSamples
     chunk = min(numOfRequestedSamples - numOfReceivedSamples, chunkSize)
-    collectSamples!(rpc, wpRead, chunk, rawData, performances, index, pipelined=true, collectPerformance = collectPerformance)
+    collectSamples!(rpc, wpRead, chunk, rawData, index, pipelined=true, rpInfo=rpInfo)
     index += chunk
     numOfReceivedSamples += chunk
   end
-  return (rawData, ReadOverview(performances))
+  return rawData
 
 end
 
-function readSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, collectPerformance=false)
+function readSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
   numOfReceivedSamples = 0
   index = 1
   rawData = zeros(Int16, numChan(rpc), numOfRequestedSamples)
-  performances = [RPPerformance([]) for i = 1:length(rpc)]
   while numOfReceivedSamples < numOfRequestedSamples
     wpRead = wpStart + numOfReceivedSamples
     wpWrite = currentWP(rpc)
@@ -215,14 +217,14 @@ function readSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSample
     if (wpRead + chunk > wpWrite)
       chunk = wpWrite - wpRead
     end
-    collectSamples!(rpc, wpRead, chunk, rawData, performances, index, collectPerformance = collectPerformance)
+    collectSamples!(rpc, wpRead, chunk, rawData, index, rpInfo=rpInfo)
     index += chunk
     numOfReceivedSamples += chunk
   end
-  return (rawData, ReadOverview(performances))
+  return rawData
 end
 
-function collectSamples!(rpc::RedPitayaCluster, wpRead::Int64, chunk::Int64, rawData, performances, index; pipelined=false, collectPerformance=false)
+function collectSamples!(rpc::RedPitayaCluster, wpRead::Int64, chunk::Int64, rawData, index; pipelined=false, rpInfo=nothing)
   done = zeros(Bool, length(rpc.rp))
   iterationDone = Condition()
   timeoutHappened = false
@@ -245,8 +247,8 @@ function collectSamples!(rpc::RedPitayaCluster, wpRead::Int64, chunk::Int64, raw
     end
 
     # Performance
-    if collectPerformance
-      push!(performances[d].data, perf)
+    if rpInfo !== nothing
+      push!(rpInfo.performances[d].data, perf)
     end
 
     done[d] = true
@@ -275,7 +277,7 @@ end
 
 # High level read. numFrames can adress a future frame. Data is read in
 # chunks
-function readFrames(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; collectPerformance=false, chunkSize = 50000)
+function readFrames(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; rpInfo=nothing, chunkSize = 50000)
   numSampPerPeriod = master(rpc).samplesPerPeriod
   numSamp = numSampPerPeriod * numFrames
   numPeriods = master(rpc).periodsPerFrame
@@ -292,7 +294,7 @@ function readFrames(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverag
   numOfRequestedSamples = numFrames * numSampPerFrame
 
   # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
-  (rawSamples, overview) = readPipelinedSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, collectPerformance = collectPerformance)
+  rawSamples = readPipelinedSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
   
   # Reshape/Avg Data
   temp = reshape(rawSamples, numChan(rpc), numSampPerPeriod, numPeriods, numFrames)
@@ -304,10 +306,10 @@ function readFrames(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverag
     data[:,2*d,:,:] = utmp2[2,:,1,:,:]
   end
 
-  return (data, overview)
+  return data
 end
 
-function readPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAverages=1; collectPerformance=false, chunkSize = 50000)
+function readPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAverages=1; rpInfo=nothing, chunkSize = 50000)
   numSampPerPeriod = master(rpc).samplesPerPeriod
 
   if rem(numSampPerPeriod,numBlockAverages) != 0
@@ -321,7 +323,7 @@ function readPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAve
   numOfRequestedSamples = numPeriods * numSampPerPeriod
 
   # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
-  (rawSamples, overview) = readSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, collectPerformance = collectPerformance)
+  rawSamples = readSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
 
   # Reshape/Avg Data
   temp = reshape(rawSamples, numChan(rpc), numSampPerPeriod, numPeriods)
@@ -333,17 +335,17 @@ function readPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAve
     data[:,2*d,:] = utmp2[2,:,1,:]
   end
   
-  return (data, overview)
+  return data
 end
 
 
 function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; chunkSize = 50000)
-  (data, overview) = readFrames(rpc, startFrame, numFrames, numBlockAverages, numPeriodsPerPatch, collectPerformance = false, chunkSize = chunkSize)
+  data = readFrames(rpc, startFrame, numFrames, numBlockAverages, numPeriodsPerPatch, chunkSize = chunkSize)
   return data
 end
 
 function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAverages=1; chunkSize = 50000)
-  (data, overview) = readPeriods(rpc, startPeriod, numPeriods, numBlockAverages, collectPerformance = false, chunkSize = chunkSize)
+  data = readPeriods(rpc, startPeriod, numPeriods, numBlockAverages, chunkSize = chunkSize)
   return data
 end
 
