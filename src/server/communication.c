@@ -236,7 +236,7 @@ static bool sendBufferedSamplesToClient(uint64_t wpTotal, uint64_t numSamples) {
 
 		//Check if samples could have been corrupted
 		daqTotal = getTotalWritePointer();
-		wasCorrupted |= ((daqTotal - wpTotal + sendSamples + samplesToCopy) > ADC_BUFF_SIZE && daqTotal > (wpTotal + sendSamples + samplesToCopy));
+		wasCorrupted |= ((daqTotal - (wpTotal + sendSamples + samplesToCopy)) > ADC_BUFF_SIZE && daqTotal > (wpTotal + sendSamples + samplesToCopy));
 
 		//Send samples to client
 		n = writeAll(newdatasockfd, userspaceBuffer, copiedBytes);
@@ -311,7 +311,6 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 		chunk = MIN(numSamples - sendSamplesTotal, chunkSize); // Client and Server can compute same chunk value
 		
 		// Send chunk
-		//printf("Send chunk %llu\n", chunk);
 		while (sendSamples < chunk) {
 			readWP = wpTotal + sendSamplesTotal + sendSamples;
 			writeWP = getTotalWritePointer();
@@ -319,12 +318,10 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 			// Wait for samples to be available
 			samplesToSend = MIN(userspaceSizeSamples, chunk - sendSamples);
 			while (readWP + samplesToSend >= writeWP) {
-		//		printf("Wait for at least %llu\n", samplesToSend);
 				writeWP = getTotalWritePointer();
 				usleep(30);
 			}
 			samplesToSend = MIN(writeWP - readWP, chunk - sendSamples);
-		//	printf("Send %llu, left %llu\n", samplesToSend, chunk - (sendSamples + samplesToSend));
 
 			sendDataToClient(readWP, samplesToSend, clearFlags);
 			sendSamples += samplesToSend;
