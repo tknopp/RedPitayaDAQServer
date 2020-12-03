@@ -232,28 +232,30 @@ function collectSamples!(rpc::RedPitayaCluster, wpRead::Int64, chunk::Int64, raw
   if pipelined
     collectFunction = readSamplesChunk_
   end
-  @async for (d, rp) in enumerate(rpc.rp)
-    (u, perf) = collectFunction(rp, Int64(wpRead), Int64(chunk))
-    samples = reshape(u, 2, chunk)
-    rawData[2*d-1, index:(index + chunk - 1)] = samples[1, :]
-    rawData[2*d, index:(index + chunk - 1)] = samples[2, :] 
-    
-    # Status
-    if perf.status.overwritten
-      @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) was overwritten"
-    end
-    if perf.status.corrupted
-      @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) might have been corrupted"
-    end
+  for (d, rp) in enumerate(rpc.rp)
+    @async begin
+      (u, perf) = collectFunction(rp, Int64(wpRead), Int64(chunk))
+      samples = reshape(u, 2, chunk)
+      rawData[2*d-1, index:(index + chunk - 1)] = samples[1, :]
+      rawData[2*d, index:(index + chunk - 1)] = samples[2, :] 
+      
+      # Status
+      if perf.status.overwritten
+        @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) was overwritten"
+      end
+      if perf.status.corrupted
+        @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) might have been corrupted"
+      end
 
-    # Performance
-    if rpInfo !== nothing
-      push!(rpInfo.performances[d].data, perf)
-    end
+      # Performance
+      if rpInfo !== nothing
+        push!(rpInfo.performances[d].data, perf)
+      end
 
-    done[d] = true
-    if (all(done))
-      notify(iterationDone)
+      done[d] = true
+      if (all(done))
+        notify(iterationDone)
+      end
     end
   end
 
