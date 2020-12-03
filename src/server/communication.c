@@ -87,9 +87,9 @@ scpi_error_t scpi_error_queue_data[SCPI_ERROR_QUEUE_SIZE];
 scpi_t scpi_context;
 
 
-static const size_t userSpaceSizeSamples = 64 * 1024;
-static const size_t userSpaceSizeBytes = userSpaceSizeSamples * sizeof(uint32_t);
-static uint8_t * userSpaceBuffer = NULL;
+static const size_t userspaceSizeSamples = 64 * 1024;
+static const size_t userspaceSizeBytes = userspaceSizeSamples * sizeof(uint32_t);
+static uint8_t * userspaceBuffer = NULL;
 
 int createServer(int port) {
 	int fd;
@@ -205,15 +205,15 @@ static size_t copySamplesToBuffer(const void *adc, size_t count) {
 	size_t ptr = 0;
 	size_t size, sizeTemp;
 	while(ptr < count) {
-		sizeTemp = MIN(count-ptr, userSpaceSizeBytes);
+		sizeTemp = MIN(count-ptr, userspaceSizeBytes);
 		//Neon Copy copies 64 Byte in each iteration, size should always be a multiple of 64 or a different copy needs to be used
 		size = sizeTemp - (sizeTemp % 64);
 		if (size == 0) {
 			size = sizeTemp;
-			memcpy(userSpaceBuffer + ptr, adc + ptr, size);
+			memcpy(userspaceBuffer + ptr, adc + ptr, size);
 		}
 		else {
-			neoncopy(userSpaceBuffer + ptr, adc + ptr, size);
+			neoncopy(userspaceBuffer + ptr, adc + ptr, size);
 		}
 		ptr += size;
 	}
@@ -231,7 +231,7 @@ static bool sendBufferedSamplesToClient(uint64_t wpTotal, uint64_t numSamples) {
 
 	while (sendSamples < numSamples) {
 		//Move samples to userspace
-		samplesToCopy = MIN(numSamples - sendSamples, userSpaceSizeSamples);
+		samplesToCopy = MIN(numSamples - sendSamples, userspaceSizeSamples);
 		copiedBytes = copySamplesToBuffer(ram + sizeof(uint32_t)*(wp + sendSamples), samplesToCopy*sizeof(uint32_t));
 
 		//Check if samples could have been corrupted
@@ -239,7 +239,7 @@ static bool sendBufferedSamplesToClient(uint64_t wpTotal, uint64_t numSamples) {
 		wasCorrupted |= ((daqTotal - wpTotal + sendSamples + samplesToCopy) > ADC_BUFF_SIZE && daqTotal > (wpTotal + sendSamples + samplesToCopy));
 
 		//Send samples to client
-		n = writeAll(newdatasockfd, userSpaceBuffer, copiedBytes);
+		n = writeAll(newdatasockfd, userspaceBuffer, copiedBytes);
 		if (n < 0) {
 			LOG_ERROR("Error in writeSamplesChunked.writeAll");
 		}
@@ -299,29 +299,46 @@ struct performance sendDataToClient(uint64_t wpTotal, uint64_t numSamples, bool 
 }
 
 void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t chunkSize) {
-	uint64_t readSamples = 0;
+	uint64_t sendSamplesTotal = 0;
+	uint64_t sendSamples = 0;
+	uint64_t samplesToSend = 0;
 	uint64_t writeWP = 0;
-	uint64_t readWP;
-	uint64_t chunk;
+	uint64_t readWP = 0;
+	uint64_t chunk = 0;
+	bool clearFlags = true;
 
-	while (readSamples < numSamples && chunkSize > 0 ) {
-		readWP = wpTotal + readSamples;
-		writeWP = getTotalWritePointer();
-
-		chunk = MIN(numSamples - readSamples, chunkSize);
-
-		// Wait for data to be written
-		while (readWP + chunk >= writeWP) {
+	while (sendSamplesTotal < numSamples && chunkSize > 0 ) {
+		chunk = MIN(numSamples - sendSamplesTotal, chunkSize); // Client and Server can compute same chunk value
+		
+		// Send chunk
+		//printf("Send chunk %llu\n", chunk);
+		while (sendSamples < chunk) {
+			readWP = wpTotal + sendSamplesTotal + sendSamples;
 			writeWP = getTotalWritePointer();
-			usleep(30);
+
+			// Wait for samples to be available
+			samplesToSend = MIN(userspaceSizeSamples, chunk - sendSamples);
+			while (readWP + samplesToSend >= writeWP) {
+		//		printf("Wait for at least %llu\n", samplesToSend);
+				writeWP = getTotalWritePointer();
+				usleep(30);
+			}
+			samplesToSend = MIN(writeWP - readWP, chunk - sendSamples);
+		//	printf("Send %llu, left %llu\n", samplesToSend, chunk - (sendSamples + samplesToSend));
+
+			sendDataToClient(readWP, samplesToSend, clearFlags);
+			sendSamples += samplesToSend;
+			clearFlags = false; // Only the first sendData each iteration clears the flags
 		}
 
-
-		sendDataToClient(readWP, chunk, true);
 		sendStatusToClient();
 		sendPerformanceDataToClient();
-		readSamples += chunk;
+		
 
+		sendSamples = 0;
+		clearFlags = true;
+		sendSamplesTotal += chunk;
+		
 	}
 }
 
@@ -379,7 +396,7 @@ void* communicationThread(void* p) {
 	int rc;
 	char smbuffer[20];
 
- 	userSpaceBuffer = malloc(userSpaceSizeBytes);
+ 	userspaceBuffer = malloc(userspaceSizeBytes);
 
 
 	while(true) {
@@ -421,8 +438,8 @@ void* communicationThread(void* p) {
 	}
 	LOG_INFO("Comm almost done");
 
-	free(userSpaceBuffer);
-	userSpaceBuffer = NULL;
+	free(userspaceBuffer);
+	userspaceBuffer = NULL;
 
 	close(clifd);
 	if(newdatasockfd > 0) {
