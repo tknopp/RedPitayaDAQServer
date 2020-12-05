@@ -164,7 +164,6 @@ int waitServer(int fd) {
 }
 
 
-static int writeAll(int fd, const void *buf, size_t len);
 static int writeAll(int fd, const void *buf, size_t len) {
 	size_t bytesSent = 0;
 	size_t bytesLeft = len;
@@ -249,17 +248,17 @@ static bool sendBufferedSamplesToClient(uint64_t wpTotal, uint64_t numSamples) {
 	return wasCorrupted;
 } 
 
-struct performance sendDataToClient(uint64_t wpTotal, uint64_t numSamples, bool clearFlags) {
+void sendDataToClient(uint64_t wpTotal, uint64_t numSamples, bool clearFlagsAndPerf) {
 	uint64_t daqTotal = getTotalWritePointer();
 	uint32_t wp = getInternalWritePointer(wpTotal);
 	uint64_t deltaRead = daqTotal - wpTotal;
 	uint64_t deltaSend = 0;
-	struct performance perfResult;
-	perfResult.deltaRead = deltaRead;
 	// Requested data specific status
-	if (clearFlags) { 
+	if (clearFlagsAndPerf) { 
 		err.overwritten = 0;
 		err.corrupted = 0;
+		perf.deltaRead = deltaRead;
+		perf.deltaSend = 0;
 	}
 
 	if (deltaRead > ADC_BUFF_SIZE && daqTotal > wpTotal) {
@@ -279,23 +278,17 @@ struct performance sendDataToClient(uint64_t wpTotal, uint64_t numSamples, bool 
 			LOG_WARN("%lli Sent data was corrupted", wpTotal);	
 		}
 
-		perfResult.deltaSend = deltaSend;
+		perf.deltaSend += deltaSend;
 
 	} else {                                                                                                  
 		uint64_t size1 = ADC_BUFF_SIZE - wp;                                                              
 		uint64_t size2 = numSamples - size1;
 		
-		struct performance temp1 = sendDataToClient(wpTotal, size1, false);
-		struct performance temp2 = sendDataToClient(wpTotal + size1, size2, false);
-		perfResult.deltaSend = temp1.deltaSend + temp2.deltaSend;
+		sendDataToClient(wpTotal, size1, false);
+		sendDataToClient(wpTotal + size1, size2, false);
 
 	}
 
-	if (clearFlags) {
-		perf = perfResult;
-	}
-
-	return perfResult;
 }
 
 void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t chunkSize) {
@@ -305,7 +298,7 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 	uint64_t writeWP = 0;
 	uint64_t readWP = 0;
 	uint64_t chunk = 0;
-	bool clearFlags = true;
+	bool clearFlagsAndPerf = true;
 
 	while (sendSamplesTotal < numSamples && chunkSize > 0 ) {
 		chunk = MIN(numSamples - sendSamplesTotal, chunkSize); // Client and Server can compute same chunk value
@@ -323,9 +316,9 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 			}
 			samplesToSend = MIN(writeWP - readWP, chunk - sendSamples);
 
-			sendDataToClient(readWP, samplesToSend, clearFlags);
+			sendDataToClient(readWP, samplesToSend, clearFlagsAndPerf);
 			sendSamples += samplesToSend;
-			clearFlags = false; // Only the first sendData each iteration clears the flags
+			clearFlagsAndPerf = false; // Only the first sendData each iteration clears the flags
 		}
 
 		sendStatusToClient();
@@ -333,7 +326,7 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 		
 
 		sendSamples = 0;
-		clearFlags = true;
+		clearFlagsAndPerf = true;
 		sendSamplesTotal += chunk;
 		
 	}

@@ -132,7 +132,7 @@ uint8_t maxDeltaSet;
 extern void sendPerformanceDataToClient();
 extern void sendADCPerformanceDataToClient();
 extern void sendDACPerformanceDataToClient();
-extern struct performance sendDataToClient(uint64_t, uint64_t, bool);
+extern void sendDataToClient(uint64_t, uint64_t, bool);
 extern void sendPipelinedDataToClient(uint64_t, uint64_t, uint64_t);
 extern void sendSlowFramesToHost(int64_t, int64_t);
 extern void sendFileToClient(FILE*);
