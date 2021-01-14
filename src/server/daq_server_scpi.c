@@ -167,6 +167,7 @@ void createThreads() {
 	if( pthread_attr_setschedparam(&attrControl, &scheduleControl) != 0)
 		LOG_INFO("Failed to set sched param on control thread");
 	pthread_create(&pControl, &attrControl, controlThread, NULL);
+	//pthread_create(&pControl, NULL, controlThread, NULL);
 
 	struct sched_param scheduleComm;
 	pthread_attr_t attrComm;
@@ -178,6 +179,8 @@ void createThreads() {
 	if( pthread_attr_setschedparam(&attrComm, &scheduleComm) != 0) 
 		LOG_INFO("Failed to set sched param on communication thread");
 	pthread_create(&pComm, &attrComm, communicationThread, (void*)clifd);
+	//pthread_create(&pComm, NULL, communicationThread, (void*)clifd);
+
 	//pthread_detach(pComm);
 
 	cpu_set_t mask;

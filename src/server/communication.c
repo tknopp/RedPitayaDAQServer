@@ -180,6 +180,25 @@ static int writeAll(int fd, const void *buf, size_t len) {
 } 
 
 
+static void writeDataChunked(int fd, const void *buf, size_t count) 
+{
+	int n;
+	size_t chunkSize = 200000;
+	size_t ptr = 0;
+	size_t size;
+	while(ptr < count) {
+		size = MIN(count-ptr, chunkSize);
+
+		n = write(fd, buf + ptr, size);
+
+		if (n < 0) 
+		{
+			LOG_ERROR("Error in sendToHost()");
+		}
+		ptr += size;
+	}
+}
+
 
 void neoncopy(void *dst, const void *src, int cnt) {
 	asm volatile
@@ -269,9 +288,14 @@ void sendDataToClient(uint64_t wpTotal, uint64_t numSamples, bool clearFlagsAndP
 	// Send Data
 	if(wp+numSamples <= ADC_BUFF_SIZE) {
 
-		bool wasCorrupted = sendBufferedSamplesToClient(wpTotal, numSamples);
-		
+		bool wasCorrupted = false;
+		//sendBufferedSamplesToClient(wpTotal, numSamples); New
+
+		// Old
+		writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, numSamples*sizeof(uint32_t));	
 		uint64_t daqTotalAfter = getTotalWritePointer();
+		wasCorrupted = daqTotalAfter >= wpTotal && getInternalWritePointer(daqTotalAfter) > wp && getInternalPointerOverflows(daqTotalAfter) > getInternalPointerOverflows(wp);
+		
 		deltaSend = daqTotalAfter - daqTotal;
 		if (err.overwritten == 0 && wasCorrupted) {
 			err.corrupted = 1;
