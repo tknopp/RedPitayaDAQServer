@@ -160,11 +160,6 @@ function performanceData(rp::RedPitaya)
   return readPerformanceData(rp)
 end
 
-function performanceData(rp::RedPitaya, wpRead)
-  (adc, dac) = performanceData(rp)
-  return PerformanceData(wpRead, adc, dac)
-end
-
 function readPerformanceData(rp::RedPitaya)
   adc = readADCPerformanceData(rp)
   dac = readDACPerformanceData(rp)
@@ -213,6 +208,16 @@ function readDetailedSamples_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
   command = string("RP:ADC:DATA:DETAILED? ",Int64(reqWP),",",Int64(numSamples))
   send(rp, command)
   return readSamplesChunk_(rp, reqWP, numSamples)
+end
+
+function readSamplesOld_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
+  data = readSamples_(rp, reqWP, numSamples)
+  overwritten = wasOverwritten(rp)
+  corrupted = wasCorrupted(rp)
+  status = RPStatus(overwritten, corrupted, false, true, true)
+  (adc, dac) = performanceData(rp)
+  perf = PerformanceData(UInt64(reqWP), adc, dac, status)
+  return (data, perf)
 end
 
 function startPipelinedData(rp::RedPitaya, reqWP::Int64, numSamples::Int64, chunkSize::Int64)

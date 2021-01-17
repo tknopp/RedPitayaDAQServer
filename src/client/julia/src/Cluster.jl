@@ -228,7 +228,7 @@ function collectSamples!(rpc::RedPitayaCluster, wpRead::Int64, chunk::Int64, raw
   done = zeros(Bool, length(rpc.rp))
   iterationDone = Condition()
   timeoutHappened = false
-  collectFunction = readDetailedSamples_
+  collectFunction = readSamplesOld_
   if pipelined
     collectFunction = readSamplesChunk_
   end
@@ -296,7 +296,7 @@ function readFrames(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverag
   numOfRequestedSamples = numFrames * numSampPerFrame
 
   # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
-  rawSamples = readPipelinedSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
+  rawSamples = readSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
   
   # Reshape/Avg Data
   temp = reshape(rawSamples, numChan(rpc), numSampPerPeriod, numPeriods, numFrames)
