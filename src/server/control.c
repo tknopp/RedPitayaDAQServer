@@ -29,6 +29,7 @@
 static uint64_t wp;
 static uint64_t wpPDMStart;
 static uint64_t currentSlowDACStepTotal;
+static uint64_t currentSetSlowDACStepTotal; //Up to which step are the values already set
 static uint64_t currentSlowDACStep;
 static uint64_t currentRotationTotal;
 static uint64_t oldSlowDACStepTotal;
@@ -97,7 +98,8 @@ static void initSlowDAC() {
 	rotationRampUpStarted = currentRotationTotal + 1;
 	int64_t numSlowDACStepsUntilEnd = numSlowDACStepsPerRotation - currentSlowDACStep;
 	slowDACStepRampUpStarted = currentSlowDACStepTotal + numSlowDACStepsUntilEnd;
-	
+	currentSetSlowDACStepTotal = 0;
+
 	// Enable and acknowledge SlowDAC
 	enableSlowDACLocal = true;
 	rotationSlowDACEnabled = currentRotationTotal + rampingTotalRotations + 1;
@@ -120,10 +122,23 @@ static void initSlowDAC() {
 }
 
 static void setNextLUTValues() {
+	uint64_t nextSetStep = 0;
+	uint64_t baseStep = currentSlowDACStepTotal - slowDACStepRampUpStarted;
+	int64_t nonRedundantSteps = baseStep + lookahead - 1 - currentSetSlowDACStepTotal; //upcoming nextSetStep - currentSetStep
+	int start = 0;
+	//if (nonRedundantSteps > lookahead - lookprehead) {
+	//	start = 5;
+	//}
+	//else {
+	//	start = lookahead - nonRedundantSteps;
+	//}
+	start = MAX(lookprehead, MAX(0, lookahead - nonRedundantSteps));
+	//printf("%i\n", start);
+
 	for (int i=0; i< numSlowDACChan; i++) {
 		//lookahead
-		for(int y=lookprehead; y<lookahead; y++) {
-			uint64_t localStep = (currentSlowDACStepTotal - slowDACStepRampUpStarted + y); 
+		for(int y=start; y<lookahead; y++) {
+			uint64_t localStep = (baseStep + y); 
 			uint64_t currPDMIndex = (wpPDMStart + localStep) % PDM_BUFF_SIZE;
 			float val = getSlowDACVal(localStep, i); 
 
@@ -143,8 +158,13 @@ static void setNextLUTValues() {
 				}
 				setEnableDAC(val, i, currPDMIndex);
 			}
+
+			if (localStep > nextSetStep) {
+				nextSetStep = localStep;
+			}
 		}
 	}
+	currentSetSlowDACStepTotal = nextSetStep;
 }
 
 static void handleLostSlowDACSteps(uint64_t oldSlowDACStep, uint64_t currentSlowDACStep) {
@@ -168,6 +188,10 @@ void* controlThread(void* ch) {
 	int64_t deltaSet = 0;
 	float alpha = 0.7;
 
+	//Sleep
+	int baseSleep = 20;
+	int sleep;
+
 	LOG_INFO("Starting control thread");
 	getprio(pthread_self());
 
@@ -179,6 +203,7 @@ void* controlThread(void* ch) {
 			LOG_INFO("SLOW_DAQ: Start sending...");
 			oldSlowDACStepTotal = 0;
 			err.lostSteps = 0;
+			sleep = baseSleep;
 
 			while(rxEnabled) {
 				wp = getTotalWritePointer();
@@ -203,6 +228,7 @@ void* controlThread(void* ch) {
 						avgDeltaSet = 0;
 						minDeltaControl = 0xFF;
 						maxDeltaSet = 0x00;
+						sleep = baseSleep;
 					}
 					
 					// Handle local-enableSlowDAC
@@ -245,9 +271,11 @@ void* controlThread(void* ch) {
 						}
 
 					}
+				} else {
+					sleep += baseSleep;
 				}
 				oldSlowDACStepTotal = currentSlowDACStepTotal;
-				usleep(20);
+				usleep(sleep);
 			}
 		}
 		// Wait for the acquisition to start
