@@ -289,17 +289,18 @@ void sendDataToClient(uint64_t wpTotal, uint64_t numSamples, bool clearFlagsAndP
 	if(wp+numSamples <= ADC_BUFF_SIZE) {
 
 		bool wasCorrupted = false;
-		//sendBufferedSamplesToClient(wpTotal, numSamples); New
+		//New
+		wasCorrupted = sendBufferedSamplesToClient(wpTotal, numSamples);
 
 		// Old
-		writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, numSamples*sizeof(uint32_t));	
+		//writeDataChunked(newdatasockfd, ram + sizeof(uint32_t)*wp, numSamples*sizeof(uint32_t));	
 		uint64_t daqTotalAfter = getTotalWritePointer();
-		wasCorrupted = daqTotalAfter >= wpTotal && getInternalWritePointer(daqTotalAfter) > wp && getInternalPointerOverflows(daqTotalAfter) > getInternalPointerOverflows(wp);
+		//wasCorrupted = daqTotalAfter >= wpTotal && getInternalWritePointer(daqTotalAfter) > wp && getInternalPointerOverflows(daqTotalAfter) > getInternalPointerOverflows(wp);
 		
 		deltaSend = daqTotalAfter - daqTotal;
 		if (err.overwritten == 0 && wasCorrupted) {
 			err.corrupted = 1;
-			LOG_WARN("%lli Sent data was corrupted", wpTotal);	
+			//LOG_WARN("%lli Sent data was corrupted", wpTotal);	
 		}
 
 		perf.deltaSend += deltaSend;

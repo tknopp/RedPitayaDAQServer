@@ -19,6 +19,7 @@
 #include <pthread.h>
 #include <sched.h>
 #include <errno.h>
+#include <netinet/tcp.h>
 
 #include "scpi/scpi.h"
 
@@ -1085,7 +1086,7 @@ static scpi_result_t RP_GetCorruptedStatus(scpi_t * context) {
 
 
 static scpi_result_t RP_GetStatus(scpi_t * context) {
-	SCPI_ResultBool(context, getStatus());
+	sendStatusToClient();
 	return SCPI_RES_OK;
 }
 

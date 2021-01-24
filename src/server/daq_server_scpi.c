@@ -163,7 +163,7 @@ void createThreads() {
 	scheduleControl.sched_priority = 5; //SCHED_RR goes from 1 -99
 	pthread_attr_init(&attrControl);
 	pthread_attr_setinheritsched(&attrControl, PTHREAD_EXPLICIT_SCHED);
-	pthread_attr_setschedpolicy(&attrControl, SCHED_RR);
+	pthread_attr_setschedpolicy(&attrControl, SCHED_FIFO);
 	if( pthread_attr_setschedparam(&attrControl, &scheduleControl) != 0)
 		LOG_INFO("Failed to set sched param on control thread");
 	pthread_create(&pControl, &attrControl, controlThread, NULL);
@@ -175,7 +175,7 @@ void createThreads() {
 	scheduleComm.sched_priority = 5; //SCHED_RR goes from 1 -99
 	pthread_attr_init(&attrComm);
 	pthread_attr_setinheritsched(&attrComm, PTHREAD_EXPLICIT_SCHED);
-	pthread_attr_setschedpolicy(&attrComm, SCHED_RR);
+	pthread_attr_setschedpolicy(&attrComm, SCHED_FIFO);
 	if( pthread_attr_setschedparam(&attrComm, &scheduleComm) != 0) 
 		LOG_INFO("Failed to set sched param on communication thread");
 	pthread_create(&pComm, &attrComm, communicationThread, (void*)clifd);
