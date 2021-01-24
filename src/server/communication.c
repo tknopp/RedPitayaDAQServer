@@ -395,6 +395,8 @@ void sendDACPerformanceDataToClient() {
 	if (n < 0) {
 		LOG_WARN("Error while sending DAC performance data");
 	}
+	minDeltaControl = 0xFF; //Race condition
+	maxDeltaSet = 0x00; 
 }
 
 void sendStatusToClient() {
