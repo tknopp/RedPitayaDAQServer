@@ -155,6 +155,21 @@ stopADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQSTATUS OFF")
 wasOverwritten(rp::RedPitaya) = query(rp, "RP:STATus:OVERwritten?", Bool)
 wasCorrupted(rp::RedPitaya) = query(rp, "RP:STATus:CORRupted?", Bool)
 
+function serverStatus(rp::RedPitaya) 
+  send(rp, "RP:STATus?")
+  return readServerStatus(rp)
+end
+
+function readServerStatus(rp::RedPitaya)
+  statusRaw = read!(rp.dataSocket, Array{Int8}(undef, 1))[1]
+  status = RPStatus((statusRaw & 1) != 0, # overwritten
+   (statusRaw & (1 << 1)) != 0, # corrupted
+   (statusRaw & (1 << 2)) != 0, # stepsLost
+   (statusRaw & (1 << 3)) != 0, # adcEnabled
+   (statusRaw & (1 << 4)) != 0) # dacEnabled
+  return status
+end
+
 function performanceData(rp::RedPitaya)
   send(rp, "RP:PERF?")
   return readPerformanceData(rp)
@@ -169,16 +184,6 @@ end
 function readADCPerformanceData(rp::RedPitaya)
   perf = read!(rp.dataSocket, Array{UInt64}(undef, 2))
   return ADCPerformanceData(perf[1], perf[2])
-end
-
-function readServerStatus(rp::RedPitaya)
-  statusRaw = read!(rp.dataSocket, Array{Int8}(undef, 1))[1]
-  status = RPStatus((statusRaw & 1) != 0, # overwritten
-   (statusRaw & (1 << 1)) != 0, # corrupted
-   (statusRaw & (1 << 2)) != 0, # stepsLost
-   (statusRaw & (1 << 3)) != 0, # adcEnabled
-   (statusRaw & (1 << 4)) != 0) # dacEnabled
-  return status
 end
 
 # Low level read. One has to take care that the numFrames are available
@@ -208,6 +213,15 @@ function readDetailedSamples_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
   command = string("RP:ADC:DATA:DETAILED? ",Int64(reqWP),",",Int64(numSamples))
   send(rp, command)
   return readSamplesChunk_(rp, reqWP, numSamples)
+end
+
+
+function readSamplesIntermediate_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
+  data = readSamples_(rp, reqWP, numSamples)
+  status = serverStatus(rp)
+  (adc, dac) = performanceData(rp)
+  perf = PerformanceData(UInt64(reqWP), adc, dac, status)
+  return (data, perf)
 end
 
 function readSamplesOld_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
