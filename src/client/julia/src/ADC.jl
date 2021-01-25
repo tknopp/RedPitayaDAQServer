@@ -87,6 +87,7 @@ function samplesPerPeriod(rp::RedPitaya)
 end
 function samplesPerPeriod(rp::RedPitaya, value)
   rp.samplesPerPeriod = value
+  samplesPerSlowDACStep(rp, value)
 end
 
 function periodsPerFrame(rp::RedPitaya) 
@@ -94,6 +95,7 @@ function periodsPerFrame(rp::RedPitaya)
 end
 function periodsPerFrame(rp::RedPitaya, value)
   rp.periodsPerFrame = value
+  slowDACStepsPerRotation(rp, value)
 end
 
 samplesPerSlowDACStep(rp::RedPitaya) = query(rp,"RP:ADC:SlowDAC:SamplesPerStep?", Int64)
