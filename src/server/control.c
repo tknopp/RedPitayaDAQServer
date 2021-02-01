@@ -68,6 +68,8 @@ static float getSlowDACVal(int step, int i) {
 
 			val = slowDACLUT[ (stepAfterRampUp % numSlowDACStepsPerRotation) *numSlowDACChan+i] *
 				(0.9640+tanh(-2.0 + (currRampUpStep / ((float)rampingSteps-1))*4.0))/1.92806;
+		} else {
+			val = slowDACLUT[(step % numSlowDACStepsPerRotation)*numSlowDACChan+i];
 		}
 	}
 	
@@ -84,8 +86,12 @@ static float getSlowDACVal(int step, int i) {
 
 			val = slowDACLUT[ (currRampDownStep % numSlowDACStepsPerRotation) *numSlowDACChan+i] *
 				(0.9640+tanh(-2.0 + ((rampingSteps-currRampDownStep-1) / ((float)rampingSteps-1))*4.0))/1.92806;
+		} else {
+			val = slowDACLUT[(step % numSlowDACStepsPerRotation)*numSlowDACChan+i];
 		}
 	}
+
+
 	return val;
 }
 
