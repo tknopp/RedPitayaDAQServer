@@ -1,7 +1,7 @@
 export decimation, masterTrigger, currentFrame, ramWriterMode, connectADC, startADC, stopADC, readData, samplesPerPeriod, periodsPerFrame, 
      numSlowDACChan, setSlowDACLUT, enableSlowDAC, slowDACStepsPerRotation, samplesPerSlowDACStep, prepareSlowDAC,
      currentWP, slowDACInterpolation, numSlowADCChan, numLostStepsSlowADC, bufferSize, keepAliveReset, triggerMode,
-     slowDACPeriodsPerFrame, enableDACLUT, ADCPerformanceData, RPPerformance, RPStatus, RPInfo, startPipelinedData
+     slowDACPeriodsPerFrame, enableDACLUT, ADCPerformanceData, RPPerformance, RPStatus, RPInfo, startPipelinedData, PerformanceData
 
 struct ADCPerformanceData
   deltaRead::UInt64
@@ -200,9 +200,12 @@ function readSamples_(rp::RedPitaya, reqWP, numSamples)
 end
 
 # Low level read, reads samples, error and perf. Values need to be already requested
-function readSamplesChunk_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
+function readSamplesChunk_(rp::RedPitaya, reqWP::Int64, numSamples::Int64, into=nothing)
   @debug "read samples chunk ..."
-  data = read!(rp.dataSocket, Array{Int16}(undef, 2 * Int64(numSamples)))
+  if into === nothing
+    into = Array{Int16}(undef, 2 * Int64(numSamples))
+  end
+  data = read!(rp.dataSocket, into)
   status = readServerStatus(rp)
   (adc, dac) = readPerformanceData(rp)
   @debug "read samples chunk ..."

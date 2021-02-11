@@ -1,4 +1,4 @@
-export RedPitayaCluster, master, readDataPeriods, numChan, readDataSlow, readFrames, readPeriods
+export RedPitayaCluster, master, readDataPeriods, numChan, readDataSlow, readFrames, readPeriods, readPipelinedSamples, startPipelinedData, collectSamples!
 
 import Base: length
 
@@ -181,23 +181,6 @@ function startPipelinedData(rpc::RedPitayaCluster, reqWP::Int64, numSamples::Int
   end
 end
 
-function readPipelinedSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
-  numOfReceivedSamples = 0
-  index = 1
-  rawData = zeros(Int16, numChan(rpc), numOfRequestedSamples)
-
-  startPipelinedData(rpc, wpStart, numOfRequestedSamples, chunkSize)
-  while numOfReceivedSamples < numOfRequestedSamples
-    wpRead = wpStart + numOfReceivedSamples
-    chunk = min(numOfRequestedSamples - numOfReceivedSamples, chunkSize)
-    collectSamples!(rpc, wpRead, chunk, rawData, index, pipelined=true, rpInfo=rpInfo)
-    index += chunk
-    numOfReceivedSamples += chunk
-  end
-  return rawData
-
-end
-
 function readSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
   numOfReceivedSamples = 0
   index = 1
@@ -222,17 +205,33 @@ function readSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSample
   return rawData
 end
 
-function collectSamples!(rpc::RedPitayaCluster, wpRead::Int64, chunk::Int64, rawData, index; pipelined=false, rpInfo=nothing)
+function readPipelinedSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
+  numOfReceivedSamples = 0
+  index = 1
+  rawData = zeros(Int16, numChan(rpc), numOfRequestedSamples)
+  chunkBuffer = zeros(Int16, chunkSize * 2, length(rpc))
+
+  startPipelinedData(rpc, wpStart, numOfRequestedSamples, chunkSize)
+  while numOfReceivedSamples < numOfRequestedSamples
+    wpRead = wpStart + numOfReceivedSamples
+    chunk = min(numOfRequestedSamples - numOfReceivedSamples, chunkSize)
+    collectSamples!(rpc, wpRead, chunk, rawData, chunkBuffer,index, rpInfo=rpInfo)
+    index += chunk
+    numOfReceivedSamples += chunk
+  end
+  return rawData
+
+end
+
+function collectSamples!(rpc::RedPitayaCluster, wpRead::Int64, chunk::Int64, rawData, chunkBuffer, index; rpInfo=nothing)
   done = zeros(Bool, length(rpc.rp))
   iterationDone = Condition()
   timeoutHappened = false
-  collectFunction = readDetailedSamples_
-  if pipelined
-    collectFunction = readSamplesChunk_
-  end
+
   for (d, rp) in enumerate(rpc.rp)
     @async begin
-      (u, perf) = collectFunction(rp, Int64(wpRead), Int64(chunk))
+      buffer = view(chunkBuffer, 1:(2 * chunk), d)
+      (u, perf) = readSamplesChunk_(rp, Int64(wpRead), Int64(chunk), buffer)
       samples = reshape(u, 2, chunk)
       rawData[2*d-1, index:(index + chunk - 1)] = samples[1, :]
       rawData[2*d, index:(index + chunk - 1)] = samples[2, :] 
@@ -297,16 +296,20 @@ function readFrames(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverag
   rawSamples = readPipelinedSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
   
   # Reshape/Avg Data
-  temp = reshape(rawSamples, numChan(rpc), numSampPerPeriod, numPeriods, numFrames)
-  for (d, rp) in enumerate(rpc.rp)
+  convertSamplesToFrames!(rawSamples, data, numChan(rpc), numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages, numPeriodsPerPatch)
+
+  return data
+end
+
+function convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages=1, numPeriodsPerPatch=1)
+  temp = reshape(samples, numChan, numSampPerPeriod, numPeriods, numFrames)
+  for d = 1:Int64(numChan/2)
     u = temp[2*d-1:2*d, :, :, :]
     utmp1 = reshape(u,2,numTrueSampPerPeriod,numBlockAverages, size(u,3)*numPeriodsPerPatch,size(u,4))
     utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
-    data[:,2*d-1,:,:] = utmp2[1,:,1,:,:]
-    data[:,2*d,:,:] = utmp2[2,:,1,:,:]
+    frames[:,2*d-1,:,:] = utmp2[1,:,1,:,:]
+    frames[:,2*d,:,:] = utmp2[2,:,1,:,:]
   end
-
-  return data
 end
 
 function readPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAverages=1; rpInfo=nothing, chunkSize = 50000)
@@ -328,7 +331,7 @@ function readPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAve
   # Reshape/Avg Data
   temp = reshape(rawSamples, numChan(rpc), numSampPerPeriod, numPeriods)
   for (d, rp) in enumerate(rpc.rp)
-    u = temp[2*d-1:2*d, :, :, :]
+    u = temp[2*d-1:2*d, :, :, :] #TODO ONE COLUMN TOO MANY 
     utmp1 = reshape(u,2,numAveragedSampPerPeriod,numBlockAverages, size(u,3))
     utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
     data[:,2*d-1,:] = utmp2[1,:,1,:]
