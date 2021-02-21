@@ -56,7 +56,7 @@ static float getSlowDACVal(int step, int i) {
 	}
 	
 	// Ramp up phase
-	if(rotationRampUpStarted <= rotation < rotationSlowDACEnabled) {
+	else if(rotationRampUpStarted <= rotation < rotationSlowDACEnabled) {
 		int64_t currRampUpStep = step;
 		int64_t totalStepsInRampUpRotations = numSlowDACStepsPerRotation*rampingTotalRotations;
 		int64_t stepAfterRampUp = totalStepsInRampUpRotations -  
@@ -74,7 +74,7 @@ static float getSlowDACVal(int step, int i) {
 	}
 	
 	// Ramp down phase
-	if(rotation >= rotationSlowDACEnabled + numSlowDACRotationsEnabled) {
+	else if(rotation >= rotationSlowDACEnabled + numSlowDACRotationsEnabled) {
 		int64_t totalStepsFromRampUp = numSlowDACStepsPerRotation *
 			(rampingTotalRotations+numSlowDACRotationsEnabled);
 		int64_t currRampDownStep = step - totalStepsFromRampUp;
