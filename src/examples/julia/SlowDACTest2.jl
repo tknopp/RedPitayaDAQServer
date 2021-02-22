@@ -13,6 +13,7 @@ periods_per_frame = div(20, periods_per_step) # about 0.5 s frame length
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
 periodsPerFrame(rp, periods_per_frame)
+slowDACStepsPerRotation(rp, periods_per_frame)
 passPDMToFastDAC(master(rp), true)
 numSlowDACChan(master(rp), 1)
 lut = collect(range(0,0.7,length=periods_per_frame))
@@ -28,7 +29,7 @@ ramWriterMode(rp, "TRIGGERED")
 triggerMode(rp, "INTERNAL")
 
 numTrials = 10
-rpInfo = RPInfo()
+rpInfo = RPInfo(rp)
 
 signals = zeros(samples_per_period*periods_per_frame * 4, 2, numTrials)
 for i=1:numTrials
@@ -36,9 +37,9 @@ for i=1:numTrials
     masterTrigger(rp, false)
     startADC(rp)
     masterTrigger(rp, true)
-    local currFr = enableSlowDAC(rp, true, 1, 0.5, 1.0)
-    data = readFrames(rp, currFr - 2, 4, rpInfo = rpInfo)
-    #data = readData(rp, currFr - 2, 4)
+    local currFr = enableSlowDAC(rp, true, 1, 0.000000768, 0.5)
+    data = readFrames(rp, currFr -2, 4, rpInfo = rpInfo)
+    #data = readData(rp, currFr - 2, 4, rpInfo = rpInfo)
     signals[:,1,i] .= vec(data[:,1,:,:])
     signals[:,2,i] .= vec(data[:,2,:,:])
     stopADC(rp)
