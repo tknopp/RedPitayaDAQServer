@@ -39,11 +39,21 @@ jobs:
             ${{ runner.os }}-test-
             ${{ runner.os }}-
       - uses: julia-actions/julia-buildpkg@v1
-      - uses: julia-actions/julia-runtest@v1
-      - uses: julia-actions/julia-processcoverage@v1
-      - uses: codecov/codecov-action@v1
-        with:
-          file: lcov.info
+      - run: |
+          julia --project=test -e '
+            using Pkg
+            Pkg.develop(PackageSpec(path=pwd(),subdir="src/client/julia"))
+            Pkg.instantiate()'
+      - run: |
+          julia --project=test -e '
+            using Pkg
+            using RedPitayaDAQServer
+            Pkg.test("RedPitayaDAQServer")' 
+#      - uses: julia-actions/julia-runtest@v1
+#      - uses: julia-actions/julia-processcoverage@v1
+#      - uses: codecov/codecov-action@v1
+#        with:
+#          file: lcov.info
   docs:
     name: Documentation
     runs-on: ubuntu-latest
