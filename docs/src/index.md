@@ -11,9 +11,8 @@ This project contains software to be used with the STEMlab 125-14 device from Re
 * SCPI Server for accessing the functionality over TCP/IP
 * SCPI Clients to access the server
 
-The code is distributed into two different repositories:
-* [RedPitayaDAQServer](https://github.com/tknopp/RedPitayaDAQServer) contains the main part of the project including the FPGA code, the client library, the server, and a client implemented in Python.
-* [RedPitayaDAQServer.jl](https://github.com/tknopp/RedPitayaDAQServer.jl) is a client library implemented in the programming language Julia. This is the reference client library that is used by the developers of this project.
+The code repositories is contained in this [repository](https://github.com/tknopp/RedPitayaDAQServer).
+
 
 ## License / Terms of Usage
 

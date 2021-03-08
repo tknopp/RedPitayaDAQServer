@@ -29,3 +29,28 @@ Then cd into RedPitayaDAQServer
 cd /root/apps/RedPitayaDAQServer
 ```
 and enter `make`. This will compile the library, the server, and some example applications. After you restart the RedPitaya the DAQ server will automatically run and you can access it via TCP.
+
+
+## Setting Up the Client
+
+Depending on the client library you are using you need to install them differently
+
+### Julia
+
+For the Julia client library you need to install RedPitayaDAQServer within Julia. To this end
+download Julia 1.5 or later and go into the package manager mode by intering ]. Then there are three
+options to install the client library.
+
+ * add RedPitayaDAQServer:src/client/julia
+ * dev RedPitayaDAQServer:src/client/julia
+
+The first is installing the currently published version. The second is installing in development mode and put the files to `~/dev/RedPitayaDAQServer/` where you can the also modify the files, which is handy when trying out the examples. Right now we recommend to `dev` the package. You need to `git pull` from `~/dev/RedPitayaDAQServer/` if you want to get updates, i.e. Julia will not update 
+developed packages automatically.
+
+### Matlab
+
+TODO
+
+### Python
+
+TODO

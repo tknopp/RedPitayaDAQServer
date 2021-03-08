@@ -31,7 +31,7 @@ println(" frequency = $(frequencyDAC(rp,1,1))")
 
 signalTypeDAC(rp, 1 , "SINE")
 
-amplitudeDAC(rp, 1, 1, 2000)
+amplitudeDAC(rp, 1, 1, 0.5)
 offsetDAC(rp, 1, 0)
 phaseDAC(rp, 1, 1, 0.0 )
 
