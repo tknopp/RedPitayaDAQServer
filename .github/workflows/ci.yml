@@ -55,7 +55,7 @@ jobs:
       - run: |
           julia --project=docs -e '
             using Pkg
-            Pkg.develop(PackageSpec(path=pwd()))
+            Pkg.develop(PackageSpec(path=pwd(),subdir="src/client/julia"))
             Pkg.instantiate()'
       - run: |
           julia --project=docs -e '
