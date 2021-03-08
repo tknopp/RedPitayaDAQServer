@@ -61,7 +61,7 @@ jobs:
           julia --project=docs -e '
             using Documenter: doctest
             using RedPitayaDAQServer
-            doctest(RedPitayaDAQServer)' # change MYPACKAGE to the name of your package
+            doctest(RedPitayaDAQServer, manual=false)' # change MYPACKAGE to the name of your package
       - run: julia --project=docs docs/make.jl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
