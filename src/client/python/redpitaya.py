@@ -211,15 +211,17 @@ class RedPitaya:
         return Decimal(data)
     
     def setAmplitude(self, channel, component, amplitude):
-        self.send('RP:DAC:CHannel%d:COMPonent%d:AMPlitude %d' % (channel, component, amplitude))
+        if amplitude > 1.0:
+            raise TypeError("Amplitude value is larger than 1.0V!")    # should really check amplitude+offset<1V
+        self.send('RP:DAC:CHannel%d:COMPonent%d:AMPlitude %f' % (channel, component, amplitude))
 		
     def getOffset(self, channel):
         data = self.query('RP:DAC:CHannel%d:OFFset?' % (channel))
         return Decimal(data)
     
     def setOffset(self, channel, offset):
-        if offset > 8191:
-            raise TypeError("Offset value is larger than 8191!")
+        if offset > 1.0:
+            raise TypeError("Offset value is larger than 1.0V!")    # should really check amplitude+offset<1V
         self.send('RP:DAC:CHannel%d:OFFset %d' % (channel, offset))
     
     def getFrequency(self, channel, component):
@@ -234,7 +236,7 @@ class RedPitaya:
         return Decimal(data)
     
     def setPhase(self, channel, component, phase):
-        self.send('RP:DAC:CHannel%d:COMPonent%d:PHAse %d' % (channel, component, phase))
+        self.send('RP:DAC:CHannel%d:COMPonent%d:PHAse %f' % (channel, component, phase))
 		
     def getSignalType(self, channel):
         data = self.query('RP:DAC:CHannel%d:SIGnaltype?' % (channel))
@@ -410,7 +412,7 @@ class RedPitaya:
         self.send('RP:PDM:CHannel%d:NextValue %d' % (channel, nextValue))
 		
     def setPDMNextValueVolt(self, channel, nextValueVolt):
-        self.send('RP:PDM:CHannel%d:NextValueVolt %d' % (channel, nextValueVolt))
+        self.send('RP:PDM:CHannel%d:NextValueVolt %f' % (channel, nextValueVolt))
     
     def getXADCValueVolt(self, channel):
         data = self.query('RP:XADC:CHannel%d?' % channel)
@@ -576,3 +578,38 @@ class RedPitaya:
         else:
             return False
     
+    def isValidPin(self, pin):
+        if pin in ["DIO7_P", "DIO7_N", "DIO6_P", "DIO6_N", "DIO5_N","DIO4_N","DIO3_N","DIO2_N"]:
+            return True
+        else:
+            return False
+
+    def DIODirection(self, pin, val):
+        if not self.isValidPin(pin):
+            raise ValueError('RP pin is not available')
+            return
+
+        if (val != "IN" and val != "OUT"):
+            error("value needs to be IN or OUT!")
+            return
+
+        command = "RP:DIO:DIR "+pin+","+ val
+        self.send(command)
+    
+    def setDIO(self, pin, val):
+        if not self.isValidPin(pin):
+            raise ValueError('RP pin is not available')
+            return
+
+        self.DIODirection(pin, "OUT")
+        command = "RP:DIO "+pin+","+val
+        self.send(command)
+            
+    def getDIO(self,pin):
+        if not self.isValidPin(pin):
+            raise ValueError('RP pin is not available')
+            return
+
+        self.DIODirection(pin, "IN")
+        command = "RP:DIO? "+pin
+        return ( self.query(command))
