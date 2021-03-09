@@ -222,7 +222,7 @@ class RedPitaya:
     def setOffset(self, channel, offset):
         if offset > 1.0:
             raise TypeError("Offset value is larger than 1.0V!")    # should really check amplitude+offset<1V
-        self.send('RP:DAC:CHannel%d:OFFset %d' % (channel, offset))
+        self.send('RP:DAC:CHannel%d:OFFset %f' % (channel, offset))
     
     def getFrequency(self, channel, component):
         data = self.query('RP:DAC:CHannel%d:COMPonent%d:FREQuency?' % (channel, component))
