@@ -1,4 +1,4 @@
-# Simple Example
+# Waveforms Example
 
 In this example we generate different signals with a base frequency of 10 kHz on fast DAC
 channel 1 and receive the same signals on the fast ADC. To run this example connect
