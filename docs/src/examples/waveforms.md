@@ -1,7 +1,7 @@
 # Simple Example
 
-In the first example we generate a sinus signal of frequency 10 kHz on fast DAC
-channel 1 and receive the same signal on the fast ADC. To run this example connect
+In this example we generate different signals with a base frequency of 10 kHz on fast DAC
+channel 1 and receive the same signals on the fast ADC. To run this example connect
 the RedPitaya in the following way.
 
 ![Cluster](../assets/simpleExample.png)
@@ -15,9 +15,9 @@ This and all other examples are located in the ```examples``` [directory](https:
 using Markdown
 Markdown.parse("""
 ```julia
-$(open(f->read(f, String), "../../../src/examples/julia/simple.jl"))
+$(open(f->read(f, String), "../../../src/examples/julia/waveforms.jl"))
 ```
 """)
 ````
 
-![Simple Example Results](../assets/simple.png)
+![Simple Example Results](../assets/waveforms.png)
