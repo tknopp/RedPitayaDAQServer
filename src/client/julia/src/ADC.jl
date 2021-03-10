@@ -287,7 +287,7 @@ function readData(rp::RedPitaya, startFrame, numFrames, numBlockAverages=1, numP
     reqWP = wpRead * numSampPerFrame
     numSamples = chunk * numSampPerFrame
     t = readSamples_(rp, Int64(reqWP), Int64(numSamples))
-    u = reshape(t, 2, rp.samplesPerPeriod, numPeriods, numFrames)
+    u = reshape(t, 2, rp.samplesPerPeriod, numPeriods, chunk)
     utmp1 = reshape(u,2,numTrueSampPerPeriod,numBlockAverages,size(u,3)*numPeriodsPerPatch,size(u,4))
     utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
     data[:,1,:,l:(l+chunk-1)] = utmp2[1,:,1,:,:]
