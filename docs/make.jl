@@ -13,6 +13,7 @@ makedocs(
         "Cluster" => "cluster.md",
         "Client" => "client.md",
         "Examples" => Any["Simple" => "examples/simple.md",
+                          "Waveforms" => "examples/waveforms.md",
                           "SlowADC" => "examples/slowADC.md"],
         "SCPI Interface" => "scpi.md",
         "FPGA Development" => "fpga.md",
