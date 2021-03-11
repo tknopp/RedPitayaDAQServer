@@ -3,7 +3,7 @@ using PyPlot
 using ProgressMeter
 
 #rp = RedPitayaCluster(["rp-f04972.local","rp-f044d6.local"])
-rp = RedPitayaCluster(["rp-f04972.local"])
+rp = RedPitayaCluster(["192.168.20.39"])
 
 dec = 64
 modulus = 4800
@@ -15,7 +15,7 @@ periods_per_frame = div(13000, periods_per_step) # about 0.5 s frame length
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
 periodsPerFrame(rp, periods_per_frame)
-slowDACPeriodsPerFrame(rp, periods_per_frame)
+slowDACStepsPerRotation(rp, periods_per_frame)
 numSlowDACChan(master(rp), 2)
 lut = collect(range(0,1,length=periods_per_frame))
 setSlowDACLUT(master(rp), collect(repeat(lut,1,2)'))

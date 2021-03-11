@@ -2,7 +2,7 @@ using RedPitayaDAQServer
 using PyPlot
 
 #rp = RedPitaya("rp-f04972.local")
-rp = RedPitaya("192.168.178.46")
+rp = RedPitayaCluster(["192.168.20.39"])
 
 dec = 32
 modulus = 12500
@@ -19,8 +19,8 @@ modeDAC(rp, "STANDARD")
 
 frequencyDAC(rp,1,1, base_frequency / modulus)
 
-amplitudeDAC(rp, 1, 1, 2000)
-offsetDAC(rp, 1, 2000)
+amplitudeDAC(rp, 1, 1, 0.5)
+offsetDAC(master(rp), 1, 0.5)
 
 phaseDAC(rp, 1, 1, 0.0 )
 
