@@ -1,7 +1,7 @@
 export decimation, masterTrigger, currentFrame, ramWriterMode, connectADC, startADC, stopADC, readData, samplesPerPeriod, periodsPerFrame, 
      numSlowDACChan, setSlowDACLUT, enableSlowDAC, slowDACStepsPerRotation, samplesPerSlowDACStep, prepareSlowDAC,
      currentWP, slowDACInterpolation, numSlowADCChan, numLostStepsSlowADC, bufferSize, keepAliveReset, triggerMode,
-     slowDACPeriodsPerFrame, enableDACLUT, ADCPerformanceData, RPPerformance, RPStatus, RPInfo, startPipelinedData, PerformanceData
+     slowDACStepsPerFrame, enableDACLUT, ADCPerformanceData, RPPerformance, RPStatus, RPInfo, startPipelinedData, PerformanceData
 
 struct ADCPerformanceData
   deltaRead::UInt64
@@ -112,6 +112,13 @@ function prepareSlowDAC(rp::RedPitaya, samplesPerStep, stepsPerRotation, numOfCh
   numSlowDACChan(rp, numOfChan)
   samplesPerSlowDACStep(rp, samplesPerStep)
   slowDACStepsPerRotation(rp, stepsPerRotation)
+end
+
+function slowDACStepsPerFrame(rp::RedPitaya, stepsPerFrame)
+  samplesPerFrame = rp.periodsPerFrame * rp.samplesPerPeriod
+  samplesPerStep = div(samplesPerFrame, stepsPerFrame)
+  samplesPerSlowDACStep(rp, samplesPerStep)
+  slowDACStepsPerRotation(rp, stepsPerFrame) # Sets PDMClockDivider
 end
 
 function currentFrame(rp::RedPitaya)

@@ -14,24 +14,22 @@ samples_per_period = div(modulus, dec)#*periods_per_step
 periods_per_frame = 100 # about 0.5 s frame length
 frame_period = dec*samples_per_period*periods_per_frame / base_frequency
 
-slow_dac_steps_per_rotation = div(periods_per_frame, periods_per_step)
-samples_per_step = (samples_per_period * periods_per_frame) / slow_dac_steps_per_rotation
+slow_dac_steps_per_frame = div(periods_per_frame, periods_per_step)
 
-@info samples_per_period, periods_per_frame, slow_dac_steps_per_rotation
+@info samples_per_period, periods_per_frame, slow_dac_steps_per_frame
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
 periodsPerFrame(rp, periods_per_frame)
 passPDMToFastDAC(master(rp), true)
-samplesPerSlowDACStep(rp, samples_per_step)
-slowDACStepsPerRotation(rp, slow_dac_steps_per_rotation)
+slowDACStepsPerFrame(master(rp), slow_dac_steps_per_frame)
 
 numSlowDACChan(master(rp), 2)
-lutA = collect(range(0,0.3,length=slow_dac_steps_per_rotation))
-lutB = collect(ones(slow_dac_steps_per_rotation))
+lutA = collect(range(0,0.3,length=slow_dac_steps_per_frame))
+lutB = collect(ones(slow_dac_steps_per_frame))
 
-lutEnableDACA = ones(Bool, slow_dac_steps_per_rotation)
+lutEnableDACA = ones(Bool, slow_dac_steps_per_frame)
 lutEnableDACA[1:2:end] .= false
-lutEnableDACB = ones(Bool, slow_dac_steps_per_rotation)
+lutEnableDACB = ones(Bool, slow_dac_steps_per_frame)
 lutEnableDACB[2:2:end] .= false
 
 modeDAC(rp, "STANDARD")
