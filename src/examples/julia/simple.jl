@@ -4,7 +4,7 @@ using PyPlot
 # obtain the URL of the RedPitaya
 include("config.jl")
 
-rp = RedPitaya(URLs[1])
+rp = RedPitayaCluster([URLs[1]])
 
 dec = 32
 modulus = 4800
@@ -31,12 +31,12 @@ triggerMode(rp, "INTERNAL")
 masterTrigger(rp, false)
 startADC(rp)
 masterTrigger(rp, true)
-uFirstFrame = readFrames(rp, 0, 1)
+uFirstPeriod = readFrames(rp, 0, 1)
 sleep(0.1)
 fr = currentFrame(rp)
 @show fr
 
-uCurrentFrame = readFrames(rp, fr, 1)
+uCurrentPeriod = readFrames(rp, fr, 1)
 
 figure(1)
 clf()

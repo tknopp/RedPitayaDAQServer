@@ -4,7 +4,7 @@ using PyPlot
 # obtain the URL of the RedPitaya
 include("config.jl")
 
-rp = RedPitaya(URLs[1])
+rp = RedPitayaCluster([URLs[1]])
 
 dec = 8
 modulus = 4800
