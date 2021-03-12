@@ -1,7 +1,10 @@
 using RedPitayaDAQServer
 using PyPlot
 
-rp = RedPitayaCluster(["192.168.20.39"])
+# obtain the URL of the RedPitaya
+include("config.jl")
+
+rp = RedPitaya(URLs[1])
 
 dec = 32
 modulus = 4800
@@ -19,7 +22,6 @@ frequencyDAC(rp, 1, 1, base_frequency / modulus)
 println(" frequency = $(frequencyDAC(rp,1,1))")
 
 signalTypeDAC(rp, 1 , "SINE")
-
 amplitudeDAC(rp, 1, 1, 0.5)
 offsetDAC(master(rp), 1, 0)
 phaseDAC(rp, 1, 1, 0.0 )
@@ -38,6 +40,7 @@ uCurrentFrame = readFrames(rp, fr, 1)
 
 figure(1)
 clf()
-plot(vec(uFirstFrame[:,1,:,:]))
-plot(vec(uCurrentFrame[:,1,:,:]))
-legend(("first frame", "current frame"))
+plot(vec(uFirstPeriod[:,1,:,:]))
+plot(vec(uCurrentPeriod[:,1,:,:]))
+legend(("first period", "current period"))
+savefig("images/simple.png")

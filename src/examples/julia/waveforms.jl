@@ -1,8 +1,10 @@
 using RedPitayaDAQServer
 using PyPlot
 
-#rp = RedPitaya("rp-f04972.local")
-rp = RedPitayaCluster(["192.168.20.39"])
+# obtain the URL of the RedPitaya
+include("config.jl")
+
+rp = RedPitaya(URLs[1])
 
 dec = 32
 modulus = 12500
@@ -20,7 +22,7 @@ modeDAC(rp, "STANDARD")
 frequencyDAC(rp,1,1, base_frequency / modulus)
 
 amplitudeDAC(rp, 1, 1, 0.5)
-offsetDAC(master(rp), 1, 0.5)
+offsetDAC(rp, 1, 0.1)
 
 phaseDAC(rp, 1, 1, 0.0 )
 
@@ -48,4 +50,4 @@ for (i,name) in enumerate(["SINE", "SQUARE", "TRIANGLE", "SAWTOOTH"])
   title(name)
 end
 subplots_adjust(left=0.08, bottom=0.05, right=0.98, top=0.95, wspace=0.3, hspace=0.35)
-savefig("waveforms.png")
+savefig("images/waveforms.png")

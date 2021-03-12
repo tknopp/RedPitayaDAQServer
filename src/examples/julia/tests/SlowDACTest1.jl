@@ -2,8 +2,10 @@ using RedPitayaDAQServer
 using PyPlot
 using ProgressMeter
 
-#rp = RedPitayaCluster(["rp-f04972.local","rp-f044d6.local"])
-rp = RedPitayaCluster(["192.168.20.39"])
+# obtain the URL of the RedPitaya
+include("../config.jl")
+
+rp = RedPitayaCluster([URLs[1]])
 
 dec = 64
 modulus = 4800
