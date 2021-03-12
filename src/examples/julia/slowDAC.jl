@@ -1,8 +1,10 @@
 using RedPitayaDAQServer
 using PyPlot
 
-rp = RedPitaya("rp-f04972.local")
-#rp = RedPitaya("192.168.178.46")
+# obtain the URL of the RedPitaya
+include("config.jl")
+
+rp = RedPitaya(URLs[1])
 
 dec = 64
 modulus = 4800
@@ -49,4 +51,8 @@ plot(vec(uCurrentFrame[:,1,:,:]))
 plot(vec(uCurrentFrame[:,2,:,:]))
 legend(("Rx1", "Rx2"))
 
+savefig("images/slowDAC.png")
+
 stopADC(rp)
+
+

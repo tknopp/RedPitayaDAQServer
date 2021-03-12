@@ -1,7 +1,10 @@
 using RedPitayaDAQServer
 using PyPlot
 
-rp = RedPitayaCluster(["rp-f04972.local","rp-f044d6.local"])
+# obtain the URL of the RedPitaya
+include("config.jl")
+
+rp = RedPitayaCluster([URLs[1], URLs[2]])
 
 dec = 64
 modulus = 4800
