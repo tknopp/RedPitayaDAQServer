@@ -1,20 +1,44 @@
-export decimation, samplesPerPeriod, periodsPerFrame, masterTrigger, currentFrame,
-     currentPeriod, ramWriterMode, connectADC, startADC, stopADC, readData,
-     numSlowDACChan, setSlowDACLUT, enableSlowDAC, currentWP, slowDACInterpolation,
-     numSlowADCChan, numLostStepsSlowADC, bufferSize, keepAliveReset, triggerMode,
-     slowDACPeriodsPerFrame, enableDACLUT
+export decimation, masterTrigger, currentFrame, ramWriterMode, connectADC, startADC, stopADC, readData, samplesPerPeriod, periodsPerFrame, 
+     numSlowDACChan, setSlowDACLUT, enableSlowDAC, slowDACStepsPerRotation, samplesPerSlowDACStep, prepareSlowDAC,
+     currentWP, slowDACInterpolation, numSlowADCChan, numLostStepsSlowADC, bufferSize, keepAliveReset, triggerMode,
+     slowDACStepsPerFrame, enableDACLUT, ADCPerformanceData, RPPerformance, RPStatus, RPInfo, startPipelinedData, PerformanceData
 
+struct ADCPerformanceData
+  deltaRead::UInt64
+  deltaSend::UInt64
+end
+
+struct RPStatus
+  overwritten::Bool
+  corrupted::Bool
+  stepsLost::Bool
+  adcEnabled::Bool
+  dacEnabled::Bool
+end
+
+struct PerformanceData
+  wpRead::UInt64
+  adc::ADCPerformanceData
+  dac::DACPerformanceData
+  status::RPStatus
+end
+
+struct RPPerformance
+  data::Vector{PerformanceData}
+end
+
+struct RPInfo
+  performances::Vector{RPPerformance}
+end
+
+function RPInfo()
+  return RPInfo([RPPerformance([])])
+end
 
 decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
 function decimation(rp::RedPitaya, dec)
   rp.decimation = Int64(dec)
   send(rp, string("RP:ADC:DECimation ", rp.decimation))
-end
-
-samplesPerPeriod(rp::RedPitaya) = query(rp,"RP:ADC:PERiod?", Int64)
-function samplesPerPeriod(rp::RedPitaya, value)
-  rp.samplesPerPeriod = Int64(value)
-  send(rp, string("RP:ADC:PERiod ", rp.samplesPerPeriod))
 end
 
 numSlowDACChan(rp::RedPitaya) = query(rp,"RP:ADC:SlowDAC?", Int64)
@@ -58,19 +82,53 @@ end
 
 numLostStepsSlowADC(rp::RedPitaya) = query(rp,"RP:ADC:SlowDACLostSteps?", Int64)
 
-periodsPerFrame(rp::RedPitaya) = query(rp,"RP:ADC:FRAme?", Int64)
+function samplesPerPeriod(rp::RedPitaya) 
+  return rp.samplesPerPeriod
+end
+function samplesPerPeriod(rp::RedPitaya, value)
+  rp.samplesPerPeriod = value
+  samplesPerSlowDACStep(rp, value)
+end
+
+function periodsPerFrame(rp::RedPitaya) 
+  return rp.periodsPerFrame
+end
 function periodsPerFrame(rp::RedPitaya, value)
-  rp.periodsPerFrame = Int64(value)
-  send(rp, string("RP:ADC:FRAme ", rp.periodsPerFrame))
+  rp.periodsPerFrame = value
+  slowDACStepsPerRotation(rp, value)
 end
 
-slowDACPeriodsPerFrame(rp::RedPitaya) = query(rp,"RP:ADC:SlowDACPeriodsPerFrame?", Int64)
-function slowDACPeriodsPerFrame(rp::RedPitaya, value)
-  send(rp, string("RP:ADC:SlowDACPeriodsPerFrame ", value))
+samplesPerSlowDACStep(rp::RedPitaya) = query(rp,"RP:ADC:SlowDAC:SamplesPerStep?", Int64)
+function samplesPerSlowDACStep(rp::RedPitaya, value)
+  send(rp, string("RP:ADC:SlowDAC:SamplesPerStep ", value))
 end
 
-currentFrame(rp::RedPitaya) = query(rp,"RP:ADC:FRAMES:CURRENT?", Int64)
-currentPeriod(rp::RedPitaya) = query(rp,"RP:ADC:PERIODS:CURRENT?", Int64)
+slowDACStepsPerRotation(rp::RedPitaya) = query(rp,"RP:ADC:SlowDAC:StepsPerRotation?", Int64)
+function slowDACStepsPerRotation(rp::RedPitaya, value)
+  send(rp, string("RP:ADC:SlowDAC:StepsPerRotation ", value))
+end
+
+function prepareSlowDAC(rp::RedPitaya, samplesPerStep, stepsPerRotation, numOfChan)
+  numSlowDACChan(rp, numOfChan)
+  samplesPerSlowDACStep(rp, samplesPerStep)
+  slowDACStepsPerRotation(rp, stepsPerRotation)
+end
+
+function slowDACStepsPerFrame(rp::RedPitaya, stepsPerFrame)
+  samplesPerFrame = rp.periodsPerFrame * rp.samplesPerPeriod
+  samplesPerStep = div(samplesPerFrame, stepsPerFrame)
+  samplesPerSlowDACStep(rp, samplesPerStep)
+  slowDACStepsPerRotation(rp, stepsPerFrame) # Sets PDMClockDivider
+end
+
+function currentFrame(rp::RedPitaya)
+  return Int64(floor(currentWP(rp) / (rp.samplesPerPeriod * rp.periodsPerFrame)))
+end
+
+function currentPeriod(rp::RedPitaya) 
+  return Int64(floor(currentWP(rp) / (rp.samplesPerPeriod)))
+end
+
 currentWP(rp::RedPitaya) = query(rp,"RP:ADC:WP:CURRENT?", Int64)
 bufferSize(rp::RedPitaya) = query(rp,"RP:ADC:BUFFER:SIZE?", Int64)
 
@@ -98,33 +156,99 @@ function triggerMode(rp::RedPitaya, mode::String)
 end
 
 connectADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQCONNect")
-startADC(rp::RedPitaya, wp::Integer = currentWP(rp)) = send(rp, "RP:ADC:ACQSTATUS ON,$wp")
-stopADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQSTATUS OFF,0")
+function startADC(rp::RedPitaya)
+  send(rp, "RP:ADC:ACQSTATUS ON")
+end
+stopADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQSTATUS OFF")
 
-# Low level read. One has to take care that the numFrames are available
-function readData_(rp::RedPitaya, startFrame, numFrames)
-  numSampPerPeriod = rp.samplesPerPeriod
-  numPeriods = rp.periodsPerFrame
-  numSampPerFrame = numSampPerPeriod * numPeriods
+wasOverwritten(rp::RedPitaya) = query(rp, "RP:STATus:OVERwritten?", Bool)
+wasCorrupted(rp::RedPitaya) = query(rp, "RP:STATus:CORRupted?", Bool)
 
-  command = string("RP:ADC:FRAMES:DATA ",Int64(startFrame),",",Int64(numFrames))
-  send(rp, command)
+function serverStatus(rp::RedPitaya) 
+  send(rp, "RP:STATus?")
+  return readServerStatus(rp)
+end
 
-  @debug "read data ..."
-  u = read!(rp.dataSocket, Array{Int16}(undef, 2 * numFrames * numSampPerFrame))
-  @debug "read data!"
-  return reshape(u, 2, rp.samplesPerPeriod, numPeriods, numFrames)
+function readServerStatus(rp::RedPitaya)
+  statusRaw = read!(rp.dataSocket, Array{Int8}(undef, 1))[1]
+  status = RPStatus((statusRaw & 1) != 0, # overwritten
+   (statusRaw & (1 << 1)) != 0, # corrupted
+   (statusRaw & (1 << 2)) != 0, # stepsLost
+   (statusRaw & (1 << 3)) != 0, # adcEnabled
+   (statusRaw & (1 << 4)) != 0) # dacEnabled
+  return status
+end
+
+function performanceData(rp::RedPitaya)
+  send(rp, "RP:PERF?")
+  return readPerformanceData(rp)
+end
+
+function readPerformanceData(rp::RedPitaya)
+  adc = readADCPerformanceData(rp)
+  dac = readDACPerformanceData(rp)
+  return (adc, dac)
+end
+
+function readADCPerformanceData(rp::RedPitaya)
+  perf = read!(rp.dataSocket, Array{UInt64}(undef, 2))
+  return ADCPerformanceData(perf[1], perf[2])
 end
 
 # Low level read. One has to take care that the numFrames are available
-function readDataPeriods_(rp::RedPitaya, startPeriod, numPeriods)
-  command = string("RP:ADC:PERiods:DATa ",Int64(startPeriod),",",Int64(numPeriods))
+function readSamples_(rp::RedPitaya, reqWP, numSamples)
+  command = string("RP:ADC:DATA? ",Int64(reqWP),",",Int64(numSamples))
   send(rp, command)
 
   @debug "read data ..."
-  u = read!(rp.dataSocket, Array{Int16}(undef, 2 * numPeriods * rp.samplesPerPeriod))
+  u = read!(rp.dataSocket, Array{Int16}(undef, 2 * Int64(numSamples)))
   @debug "read data!"
-  return reshape(u, 2, rp.samplesPerPeriod, numPeriods)
+  return u
+end
+
+# Low level read, reads samples, error and perf. Values need to be already requested
+function readSamplesChunk_(rp::RedPitaya, reqWP::Int64, numSamples::Int64, into=nothing)
+  @debug "read samples chunk ..."
+  if into === nothing
+    into = Array{Int16}(undef, 2 * Int64(numSamples))
+  end
+  data = read!(rp.dataSocket, into)
+  status = readServerStatus(rp)
+  (adc, dac) = readPerformanceData(rp)
+  @debug "read samples chunk ..."
+  perf = PerformanceData(UInt64(reqWP), adc, dac, status)
+  return (data, perf)
+end
+
+# Low level read, that includes performance and error data
+function readDetailedSamples_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
+  command = string("RP:ADC:DATA:DETAILED? ",Int64(reqWP),",",Int64(numSamples))
+  send(rp, command)
+  return readSamplesChunk_(rp, reqWP, numSamples)
+end
+
+
+function readSamplesIntermediate_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
+  data = readSamples_(rp, reqWP, numSamples)
+  status = serverStatus(rp)
+  (adc, dac) = performanceData(rp)
+  perf = PerformanceData(UInt64(reqWP), adc, dac, status)
+  return (data, perf)
+end
+
+function readSamplesOld_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
+  data = readSamples_(rp, reqWP, numSamples)
+  overwritten = wasOverwritten(rp)
+  corrupted = wasCorrupted(rp)
+  status = RPStatus(overwritten, corrupted, false, true, true)
+  (adc, dac) = performanceData(rp)
+  perf = PerformanceData(UInt64(reqWP), adc, dac, status)
+  return (data, perf)
+end
+
+function startPipelinedData(rp::RedPitaya, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
+  command = string("RP:ADC:DATA:PIPELINED? ", reqWP, ",", numSamples, ",", chunkSize)
+  send(rp, command)
 end
 
 # High level read. numFrames can adress a future frame. Data is read in
@@ -132,7 +256,7 @@ end
 function readData(rp::RedPitaya, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1)
   dec = rp.decimation
   numSampPerPeriod = rp.samplesPerPeriod
-  numSamp = numSampPerPeriod * numFrames
+  numSamp = numSampPerPeriod * numFrames # ??
   numPeriods = rp.periodsPerFrame
   numSampPerFrame = numSampPerPeriod * numPeriods
 
@@ -165,19 +289,23 @@ function readData(rp::RedPitaya, startFrame, numFrames, numBlockAverages=1, numP
       chunk = numFrames - l + 1
     end
 
-    if wpWrite - numFramesInMemoryBuffer > wpRead
-      @error "WARNING: We have lost data !!!!!!!!!!"
-    end
-
     @debug "Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)"
-
-
-    u = readData_(rp, Int64(wpRead), Int64(chunk))
+    # Compute Server WP 
+    reqWP = wpRead * numSampPerFrame
+    numSamples = chunk * numSampPerFrame
+    t = readSamples_(rp, Int64(reqWP), Int64(numSamples))
+    u = reshape(t, 2, rp.samplesPerPeriod, numPeriods, chunk)
     utmp1 = reshape(u,2,numTrueSampPerPeriod,numBlockAverages,size(u,3)*numPeriodsPerPatch,size(u,4))
     utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
-
     data[:,1,:,l:(l+chunk-1)] = utmp2[1,:,1,:,:]
     data[:,2,:,l:(l+chunk-1)] = utmp2[2,:,1,:,:]
+
+    if wasOverwritten(rp)
+      @error "Requested data from $wpRead until $(wpRead+chunk) was overwritten"
+    end
+    if wasCorrupted(rp)
+      @error "Requested data from $wpRead until $(wpRead+chunk) might have been corrupted"
+    end
 
     l += chunk
     wpRead += chunk

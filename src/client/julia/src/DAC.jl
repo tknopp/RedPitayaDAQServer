@@ -1,7 +1,14 @@
 export amplitudeDAC, frequencyDAC, phaseDAC, modeDAC, amplitudeDACNext,
        DCSignDAC, signalTypeDAC, offsetDAC, jumpSharpnessDAC, passPDMToFastDAC,
-       waveforms
+       waveforms, DACPerformanceData
 
+struct DACPerformanceData
+  uDeltaControl::UInt8
+  uDeltaSet::UInt8
+  minDeltaControl::UInt8
+  maxDeltaSet::UInt8
+end
+      
 function passPDMToFastDAC(rp::RedPitaya, val::Bool)
   valStr = val ? "ON" : "OFF"
   send(rp, string("RP:PassPDMToFastDAC ", valStr))
@@ -120,4 +127,9 @@ function DCSignDAC(rp::RedPitaya, channel, sign::Integer)
   command = string("RP:DAC:CH", Int(channel)-1, ":SIGn ",
              sign > 0 ? "POSITIVE" : "NEGATIVE")
   return send(rp, command)
+end
+
+function readDACPerformanceData(rp::RedPitaya)
+  perf = read!(rp.dataSocket, Array{UInt8}(undef, 4))
+  return DACPerformanceData(perf[1], perf[2], perf[3], perf[4])
 end

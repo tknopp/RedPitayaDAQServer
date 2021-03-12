@@ -39,26 +39,26 @@ static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
 // Init stuff
 
 void loadBitstream() {
-    if(!access("/tmp/bitstreamLoaded", F_OK )){
-      printf("Bitfile already loaded\n");
-    } else {
-      printf("Load Bitfile\n");
-      int catResult = 0;
-      printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/master.bit\n"); 
-      catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");		
-      if(catResult <= -1) {
-        printf("Error while writing the image to the FPGA.\n");
-      }
+	if(!access("/tmp/bitstreamLoaded", F_OK )){
+		printf("Bitfile already loaded\n");
+	} else {
+		printf("Load Bitfile\n");
+		int catResult = 0;
+		printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/master.bit\n"); 
+		catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");		
+		if(catResult <= -1) {
+			printf("Error while writing the image to the FPGA.\n");
+		}
 
-      FILE* fp = fopen("/tmp/bitstreamLoaded" ,"a");
-      int writeResult = fprintf(fp, "loaded \n");
+		FILE* fp = fopen("/tmp/bitstreamLoaded" ,"a");
+		int writeResult = fprintf(fp, "loaded \n");
 
-      if(writeResult <= -1) {
-        printf("Error while writing to the status file.\n");
-      }
+		if(writeResult <= -1) {
+			printf("Error while writing to the status file.\n");
+		}
 
-      fclose(fp);
-    }
+		fclose(fp);
+	}
 
 }
 
@@ -66,7 +66,7 @@ int init() {
 	loadBitstream();
 
 	// Open memory
-	if((mmapfd = open("/dev/mem", O_RDWR)) < 0) {
+	if((mmapfd = open("/dev/mem", O_RDWR|O_SYNC)) < 0) {
 		perror("open");
 		return 1;
 	}
@@ -82,7 +82,7 @@ int init() {
 	dio_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40006000);
 	cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40004000);
 	ram = mmap(NULL, sizeof(int32_t)*ADC_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, ADC_BUFF_MEM_ADDRESS); 
-        xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
+	xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
 
 	// Set HP0 bus width to 64 bits
 	slcr[2] = 0xDF0D;
@@ -98,18 +98,18 @@ int init() {
 	setRAMWriterMode(ADC_MODE_CONTINUOUS);
 	setMasterTrigger(OFF);
 	setInstantResetMode(OFF);
-        setPassPDMToFastDAC(OFF);
+	setPassPDMToFastDAC(OFF);
 
 	stopTx();
 
 	/*setFrequency(25000, 0, 0);
-	setFrequency(25000, 0, 1);
-	setFrequency(25000, 0, 2);
-	setFrequency(25000, 0, 3);
-	setFrequency(25000, 1, 0);
-	setFrequency(25000, 1, 1);
-	setFrequency(25000, 1, 2);
-	setFrequency(25000, 1, 3);*/
+	  setFrequency(25000, 0, 1);
+	  setFrequency(25000, 0, 2);
+	  setFrequency(25000, 0, 3);
+	  setFrequency(25000, 1, 0);
+	  setFrequency(25000, 1, 1);
+	  setFrequency(25000, 1, 2);
+	  setFrequency(25000, 1, 3);*/
 
 	setPhase(0, 0, 0);
 	setPhase(0, 0, 1);
@@ -129,10 +129,10 @@ int init() {
 	setAmplitude(0, 1, 2);
 	setAmplitude(0, 1, 3);
 
-        setEnableDACAll(1, 0);
-        setEnableDACAll(1, 1);
-        setEnableDACAll(1, 2);
-        setEnableDACAll(1, 3);
+	setEnableDACAll(1, 0);
+	setEnableDACAll(1, 1);
+	setEnableDACAll(1, 2);
+	setEnableDACAll(1, 3);
 
 	return 0;
 }
@@ -199,243 +199,247 @@ int setOffset(int16_t offset, int channel) {
 
 
 double getFrequency(int channel, int component) {
-    if(channel < 0 || channel > 1) {
-        return -3;
-    }
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
 
-    if(component < 0 || component > 3) {
-        return -4;
-    }
+	if(component < 0 || component > 3) {
+		return -4;
+	}
 
-    uint64_t mask = 0x0000ffffffffffff;
-    uint64_t register_value = *((uint64_t *)(dac_cfg + 12 + 14*component + 66*channel)) & mask;
-    double frequency = -1;
-    if(getDACMode() == DAC_MODE_STANDARD) {
-        // Calculate frequency from phase increment
-        frequency = register_value*((double)BASE_FREQUENCY)/pow(2, 48);
-    } else {
-      // TODO AWG
-    }
+	uint64_t mask = 0x0000ffffffffffff;
+	uint64_t register_value = *((uint64_t *)(dac_cfg + 12 + 14*component + 66*channel)) & mask;
+	double frequency = -1;
+	if(getDACMode() == DAC_MODE_STANDARD) {
+		// Calculate frequency from phase increment
+		frequency = register_value*((double)BASE_FREQUENCY)/pow(2, 48);
+	} else {
+		// TODO AWG
+	}
 
-    return frequency;
+	return frequency;
 }
 
 int setFrequency(double frequency, int channel, int component)
 {
-    if(frequency < 0.03 || frequency >= ((double)BASE_FREQUENCY)) {
-        return -2;
-    }
-
-    if(channel < 0 || channel > 1) {
-        return -3;
-    }
-
-    if(component < 0 || component > 3) {
-        return -4;
-    }
-
-    if(getDACMode() == DAC_MODE_STANDARD) {
-        // Calculate phase increment
-        uint64_t phase_increment = (uint64_t)round(frequency*pow(2, 48)/((double)BASE_FREQUENCY));
-		
-	if(verbose) {
-           printf("Phase_increment for frequency %f Hz is %08llx.\n", frequency, phase_increment);
+	if(frequency < 0.03 || frequency >= ((double)BASE_FREQUENCY)) {
+		return -2;
 	}
 
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
 
-        uint64_t mask = 0x0000ffffffffffff;
-        uint64_t register_value = *((uint64_t *)(dac_cfg + 12 + 14*component + 66*channel));
-        
-	*((uint64_t *)(dac_cfg + 12 + 14*component + 66*channel)) = 
-		(register_value & ~mask) | (phase_increment & mask);
+	if(component < 0 || component > 3) {
+		return -4;
+	}
 
-    } else {
-      // TODO AWG
-    }
+	if(getDACMode() == DAC_MODE_STANDARD) {
+		// Calculate phase increment
+		uint64_t phase_increment = (uint64_t)round(frequency*pow(2, 48)/((double)BASE_FREQUENCY));
 
-    return 0;
+		if(verbose) {
+			printf("Phase_increment for frequency %f Hz is %08llx.\n", frequency, phase_increment);
+		}
+
+
+		uint64_t mask = 0x0000ffffffffffff;
+		uint64_t register_value = *((uint64_t *)(dac_cfg + 12 + 14*component + 66*channel));
+
+		*((uint64_t *)(dac_cfg + 12 + 14*component + 66*channel)) = 
+			(register_value & ~mask) | (phase_increment & mask);
+
+	} else {
+		// TODO AWG
+	}
+
+	return 0;
 }
 
 double getPhase(int channel, int component)
 {
-    if(channel < 0 || channel > 1) {
-        return -3;
-    }
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
 
-    if(component < 0 || component > 3) {
-        return -4;
-    }
+	if(component < 0 || component > 3) {
+		return -4;
+	}
 
-    // Get register value
-    uint64_t mask = 0x0000ffffffffffff;
-    uint64_t register_value = *((uint64_t *)(dac_cfg + 18 + 14*component + 66*channel)) & mask;
-    double phase_factor = -1;
-    if(getDACMode() == DAC_MODE_STANDARD) {
-        // Calculate phase factor from phase offset
-        phase_factor = register_value/pow(2, 48);
-    } else {
-      // TODO AWG
-    }
+	// Get register value
+	uint64_t mask = 0x0000ffffffffffff;
+	uint64_t register_value = *((uint64_t *)(dac_cfg + 18 + 14*component + 66*channel)) & mask;
+	double phase_factor = -1;
+	if(getDACMode() == DAC_MODE_STANDARD) {
+		// Calculate phase factor from phase offset
+		phase_factor = register_value/pow(2, 48);
+	} else {
+		// TODO AWG
+	}
 
-    return phase_factor*2*M_PI;
+	return phase_factor*2*M_PI;
 }
 
 int setPhase(double phase, int channel, int component)
 {   
-    phase = fmod(phase, 2*M_PI);
-    phase = (phase < 0) ? phase+2*M_PI : phase;
+	phase = fmod(phase, 2*M_PI);
+	phase = (phase < 0) ? phase+2*M_PI : phase;
 
-    double phase_factor = phase / (2*M_PI);
+	double phase_factor = phase / (2*M_PI);
 
-    if(channel < 0 || channel > 1) {
-        return -3;
-    }
-
-    if(component < 0 || component > 3) {
-        return -4;
-    }
-
-    if(getDACMode() == DAC_MODE_STANDARD) {
-        // Calculate phase offset
-        uint64_t phase_offset = (uint64_t)floor(phase_factor*pow(2, 48));
-		
-	if(verbose) {
-		printf("phase_offset for %f*2*pi rad is %08llx.\n", phase_factor, phase_offset);
+	if(channel < 0 || channel > 1) {
+		return -3;
 	}
 
-	uint64_t mask = 0x0000ffffffffffff;
-        uint64_t register_value = *((uint64_t *)(dac_cfg + 18 + 14*component + 66*channel));
-        
-	*((uint64_t *)(dac_cfg + 18 + 14*component + 66*channel)) = 
-		(register_value & ~mask) | (phase_offset & mask);
+	if(component < 0 || component > 3) {
+		return -4;
+	}
 
-    } else {
-       // TODO AWG 
-    }
+	if(getDACMode() == DAC_MODE_STANDARD) {
+		// Calculate phase offset
+		uint64_t phase_offset = (uint64_t)floor(phase_factor*pow(2, 48));
 
-    return 0;
+		if(verbose) {
+			printf("phase_offset for %f*2*pi rad is %08llx.\n", phase_factor, phase_offset);
+		}
+
+		uint64_t mask = 0x0000ffffffffffff;
+		uint64_t register_value = *((uint64_t *)(dac_cfg + 18 + 14*component + 66*channel));
+
+		*((uint64_t *)(dac_cfg + 18 + 14*component + 66*channel)) = 
+			(register_value & ~mask) | (phase_offset & mask);
+
+	} else {
+		// TODO AWG 
+	}
+
+	return 0;
 }
 
 int setDACMode(int mode) {
-    //if(mode == DAC_MODE_STANDARD) {
-    //    *((uint32_t *)(cfg + 0)) &= ~8;
-    //} else if(mode == DAC_MODE_AWG) {
+	//if(mode == DAC_MODE_STANDARD) {
+	//    *((uint32_t *)(cfg + 0)) &= ~8;
+	//} else if(mode == DAC_MODE_AWG) {
 	// TODO AWG
-        //*((uint32_t *)(cfg + 0)) |= 8;
-    //} else {
-    //    return -1;
-    //}
-    
-    return 0;
+	//*((uint32_t *)(cfg + 0)) |= 8;
+	//} else {
+	//    return -1;
+	//}
+
+	return 0;
 }
 
 int getDACMode() {
-   return DAC_MODE_STANDARD;
-    //uint32_t register_value = *((uint32_t *)(cfg + 0));
-    //return ((register_value & 0x00000008) >> 3);
+	return DAC_MODE_STANDARD;
+	//uint32_t register_value = *((uint32_t *)(cfg + 0));
+	//return ((register_value & 0x00000008) >> 3);
 }
 
 int setSignalType(int channel, int signal_type) {
-    if(channel < 0 || channel > 1) {
-        return -3;
-    }
-	
-    if((signal_type != SIGNAL_TYPE_SINE)
-		&& (signal_type != SIGNAL_TYPE_SQUARE)
-		&& (signal_type != SIGNAL_TYPE_TRIANGLE)
-		&& (signal_type != SIGNAL_TYPE_SAWTOOTH)) {
-        return -2;
-    }
-   *((int16_t *)(dac_cfg + 2 + 66*channel)) = signal_type; 
-    
-    return 0;
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
+
+	if((signal_type != SIGNAL_TYPE_SINE)
+			&& (signal_type != SIGNAL_TYPE_SQUARE)
+			&& (signal_type != SIGNAL_TYPE_TRIANGLE)
+			&& (signal_type != SIGNAL_TYPE_SAWTOOTH)) {
+		return -2;
+	}
+	*((int16_t *)(dac_cfg + 2 + 66*channel)) = signal_type; 
+
+	return 0;
 }
 
 int getSignalType(int channel) {
-    if(channel < 0 || channel > 1) {
-        return -3;
-    }
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
 
-    int value = (int) (*((int16_t *)( dac_cfg + 2 + 66*channel)));
-    return value;
+	int value = (int) (*((int16_t *)( dac_cfg + 2 + 66*channel)));
+	return value;
 }
 
 
 
 int setJumpSharpness(int channel, float percentage) {
-    if(channel < 0 || channel > 1) {
-        return -3;
-    }
-   int16_t A = (int16_t) (8191*percentage);
-   *((int16_t *)(dac_cfg + 4 + 66*channel)) = A; 
-   *((int16_t *)(dac_cfg + 6 + 66*channel)) = (int16_t) (8191/A); 
-    
-    return 0;
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
+	int16_t A = (int16_t) (8191*percentage);
+	*((int16_t *)(dac_cfg + 4 + 66*channel)) = A; 
+	*((int16_t *)(dac_cfg + 6 + 66*channel)) = (int16_t) (8191/A); 
+
+	return 0;
 }
 
 float getJumpSharpness(int channel) {
-    if(channel < 0 || channel > 1) {
-        return -3;
-    }
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
 
-    int16_t value = (*((int16_t *)( dac_cfg + 4 + 66*channel)));
-    return ((float)value)/8191.0;
+	int16_t value = (*((int16_t *)( dac_cfg + 4 + 66*channel)));
+	return ((float)value)/8191.0;
 }
 
 
 // Fast ADC
 
 int setDecimation(uint16_t decimation) {
-    if(decimation < 8 || decimation > 8192) {
-        return -1;
-    }
+	if(decimation < 8 || decimation > 8192) {
+		return -1;
+	}
 
-    *((uint16_t *)(cfg + 2)) = decimation;
-    return 0;
+	*((uint16_t *)(cfg + 2)) = decimation;
+	return 0;
 }
 
 
 uint16_t getDecimation() {
-    uint16_t value = *((uint16_t *)(cfg + 2));
-    return value;
+	uint16_t value = *((uint16_t *)(cfg + 2));
+	return value;
 }
 
 
 #define BIT_MASK(__TYPE__, __ONE_COUNT__) \
-    ((__TYPE__) (-((__ONE_COUNT__) != 0))) \
-    & (((__TYPE__) -1) >> ((sizeof(__TYPE__) * CHAR_BIT) - (__ONE_COUNT__)))
+	((__TYPE__) (-((__ONE_COUNT__) != 0))) \
+	& (((__TYPE__) -1) >> ((sizeof(__TYPE__) * CHAR_BIT) - (__ONE_COUNT__)))
 
 uint32_t getWritePointer() {
-    uint32_t val = (*((uint32_t *)(adc_sts + 0)));
-    uint32_t mask = BIT_MASK(uint64_t, ADC_BUFF_NUM_BITS); // Extract lower bits
-    return 2*(val&mask);
+	uint32_t val = (*((uint32_t *)(adc_sts + 0)));
+	uint32_t mask = BIT_MASK(uint64_t, ADC_BUFF_NUM_BITS); // Extract lower bits
+	return 2*(val&mask);
 }
 
 uint32_t getInternalWritePointer(uint64_t wp) {
-    uint32_t mask = BIT_MASK(uint64_t, ADC_BUFF_NUM_BITS+1); // Extract lower bits
-    return wp&mask;
+	uint32_t mask = BIT_MASK(uint64_t, ADC_BUFF_NUM_BITS+1); // Extract lower bits
+	return wp&mask;
+}
+
+uint32_t getInternalPointerOverflows(uint64_t wp) {
+	return wp >> (ADC_BUFF_NUM_BITS + 1);
 }
 
 uint32_t getWritePointerOverflows() {
-    return (*(((uint64_t *)(adc_sts + 0)))) >> ADC_BUFF_NUM_BITS; // Extract upper bits
+	return (*(((uint64_t *)(adc_sts + 0)))) >> ADC_BUFF_NUM_BITS; // Extract upper bits
 }
 
 uint64_t getTotalWritePointer() {
-    return getWritePointer() + (getWritePointerOverflows() << (ADC_BUFF_NUM_BITS+1));
+	return 2*(*(((uint64_t *)(adc_sts + 0))));
 }
 
 uint32_t getWritePointerDistance(uint32_t start_pos, uint32_t end_pos) {
-    end_pos   = end_pos   % ADC_BUFF_SIZE;
-    start_pos = start_pos % ADC_BUFF_SIZE;
-    if (end_pos < start_pos)
-        end_pos += ADC_BUFF_SIZE;
-    return end_pos - start_pos + 1;
+	end_pos   = end_pos   % ADC_BUFF_SIZE;
+	start_pos = start_pos % ADC_BUFF_SIZE;
+	if (end_pos < start_pos)
+		end_pos += ADC_BUFF_SIZE;
+	return end_pos - start_pos + 1;
 }
 
 void readADCData(uint32_t wp, uint32_t size, uint32_t* buffer) {
 	if(wp+size <= ADC_BUFF_SIZE) {
 
-    	memcpy(buffer, ram + sizeof(uint32_t)*wp, size*sizeof(uint32_t));
+		memcpy(buffer, ram + sizeof(uint32_t)*wp, size*sizeof(uint32_t));
 
 	} else {
 		uint32_t size1 = ADC_BUFF_SIZE - wp;
@@ -448,252 +452,248 @@ void readADCData(uint32_t wp, uint32_t size, uint32_t* buffer) {
 
 // Slow IO
 int setEnableDACAll(int8_t value, int channel) {
-    for(int i=0; i<PDM_BUFF_SIZE; i++)
-    {
-      setEnableDAC(value,channel,i);
-    }
-    return 0;
+	for(int i=0; i<PDM_BUFF_SIZE; i++) {
+		setEnableDAC(value,channel,i);
+	}
+	return 0;
 }
 
 int setEnableDAC(int8_t value, int channel, int index) {
-    
-    if(value < 0 || value >= 2) {
-        return -1;
-    }
-    
-    if(channel < 0 || channel >= 4) {
-        return -2;
-    }
-   
-    int bitpos = 12 + channel;
 
-    // The enable bits are in the 4-th slowDAC channel
-    // clear the bit
-    *((int16_t *)(pdm_cfg + 2*(3+4*index))) &= ~(1u << bitpos);
-    // set the bit
-    *((int16_t *)(pdm_cfg + 2*(3+4*index))) |= (value << bitpos);
+	if(value < 0 || value >= 2) {
+		return -1;
+	}
 
-    return 0;
+	if(channel < 0 || channel >= 4) {
+		return -2;
+	}
+
+	int bitpos = 12 + channel;
+
+	// The enable bits are in the 4-th slowDAC channel
+	// clear the bit
+	*((int16_t *)(pdm_cfg + 2*(3+4*index))) &= ~(1u << bitpos);
+	// set the bit
+	*((int16_t *)(pdm_cfg + 2*(3+4*index))) |= (value << bitpos);
+
+	return 0;
 }
 
 
 
 
 int setPDMRegisterValue(uint64_t value, int index) {
-    //printf("setPDMRegisterValue: value=%llu index=%d \n", value, index);
-    *(((uint64_t *)(pdm_cfg))+index) = value;
-    return 0;
+	//printf("setPDMRegisterValue: value=%llu index=%d \n", value, index);
+	*(((uint64_t *)(pdm_cfg))+index) = value;
+	return 0;
 }
 
 int setPDMRegisterAllValues(uint64_t value) {
-    for(int i=0; i<PDM_BUFF_SIZE; i++)
-    {
-      setPDMRegisterValue(value,i);
-    }
-    return 0;
+	for(int i=0; i<PDM_BUFF_SIZE; i++) {
+		setPDMRegisterValue(value,i);
+	}
+	return 0;
 }
 
 int setPDMValue(int16_t value, int channel, int index) {
-    //printf("setPDMValue: value=%d channel=%d index=%d \n", value, channel, index);
-    
-    //if(value < 0 || value >= 2048) {
-    /*if( value >= 8192) {
-        return -1;
-    }*/
-    
-    if(channel < 0 || channel >= 4) {
-        return -2;
-    }
-    
-    //printf("%p   %p   %d \n", (void*)pdm_cfg, (void*)((uint16_t *)(pdm_cfg+2*(channel+4*index))), 2*(channel+4*index) );
-    *((int16_t *)(pdm_cfg + 2*(channel+4*index))) = value;
-    
-    return 0;
+	//printf("setPDMValue: value=%d channel=%d index=%d \n", value, channel, index);
+
+	//if(value < 0 || value >= 2048) {
+	/*if( value >= 8192) {
+	  return -1;
+	  }*/
+
+	if(channel < 0 || channel >= 4) {
+		return -2;
+	}
+
+	//printf("%p   %p   %d \n", (void*)pdm_cfg, (void*)((uint16_t *)(pdm_cfg+2*(channel+4*index))), 2*(channel+4*index) );
+	*((int16_t *)(pdm_cfg + 2*(channel+4*index))) = value;
+
+	return 0;
 }
 
 int setPDMAllValues(int16_t value, int channel) {
-    for(int i=0; i<PDM_BUFF_SIZE; i++)
-    {
-      setPDMValue(value, channel, i);
-    }
-    return 0;
+	for(int i=0; i<PDM_BUFF_SIZE; i++) {
+		setPDMValue(value, channel, i);
+	}
+	return 0;
 }
 
 int setPDMValueVolt(float voltage, int channel, int index) {
-//    uint16_t val = (uint16_t) (((value - ANALOG_OUT_MIN_VAL) / (ANALOG_OUT_MAX_VAL - ANALOG_OUT_MIN_VAL)) * ANALOG_OUT_MAX_VAL_INTEGER);
-  //int n;
-  /// Not sure what is correct here: might be helpful https://forum.redpitaya.com/viewtopic.php?f=9&t=614
-  
-  //n = (voltage / 1.8) * 2496.;
-  //uint16_t val = ((n / 16) << 16) + (0xffff >> (16 - (n % 16)));
-  
-  int16_t val;
+	//    uint16_t val = (uint16_t) (((value - ANALOG_OUT_MIN_VAL) / (ANALOG_OUT_MAX_VAL - ANALOG_OUT_MIN_VAL)) * ANALOG_OUT_MAX_VAL_INTEGER);
+	//int n;
+	/// Not sure what is correct here: might be helpful https://forum.redpitaya.com/viewtopic.php?f=9&t=614
 
-  if( !getPassPDMToFastDAC() || channel >= 2 ) {
-    if (voltage > 1.8) voltage = 1.8;
-    if (voltage < 0) voltage = 0;
-    val = (voltage / 1.8) * 2038.;
-  } else {
-    if (voltage > 1) voltage = 1;
-    if (voltage < -1) voltage = -1;
-    val = voltage * 8192.;
-  }
+	//n = (voltage / 1.8) * 2496.;
+	//uint16_t val = ((n / 16) << 16) + (0xffff >> (16 - (n % 16)));
 
-  //printf("set val %04x.\n", val);
-  return setPDMValue(val, channel, index);
+	int16_t val;
+
+	if( !getPassPDMToFastDAC() || channel >= 2 ) {
+		if (voltage > 1.8) voltage = 1.8;
+		if (voltage < 0) voltage = 0;
+		val = (voltage / 1.8) * 2038.;
+	} else {
+		if (voltage > 1) voltage = 1;
+		if (voltage < -1) voltage = -1;
+		val = voltage * 8192.;
+	}
+
+	//printf("set val %04x.\n", val);
+	return setPDMValue(val, channel, index);
 }
 
 int setPDMAllValuesVolt(float voltage, int channel) {
-    for(int i=0; i<PDM_BUFF_SIZE; i++)
-    {
-      setPDMValueVolt(voltage, channel, i);
-    }
-    return 0;
+	for(int i=0; i<PDM_BUFF_SIZE; i++) {
+		setPDMValueVolt(voltage, channel, i);
+	}
+	return 0;
 }
 
 
 int getPDMClockDivider() {
-    int32_t value = *((int32_t *)(cfg + 4));
-    return value*2;
+	int32_t value = *((int32_t *)(cfg + 4));
+	return value*2;
 }
 
 int setPDMClockDivider(int divider) {
-    printf("SetPDMClockDivider to %d\n", divider);
+	printf("SetPDMClockDivider to %d\n", divider);
 
-    *((int32_t *)(cfg + 4)) = divider/2;
+	*((int32_t *)(cfg + 4)) = divider/2;
 
-    return 0;
+	return 0;
 }
 
 uint64_t getPDMRegisterValue() {
-    uint64_t value = *((uint64_t *)(pdm_cfg));
-    return value;
+	uint64_t value = *((uint64_t *)(pdm_cfg));
+	return value;
 }
 
 uint64_t getPDMTotalWritePointer() {
-    uint64_t value = *((uint64_t *)(pdm_sts));
-    return value;
+	uint64_t value = *((uint64_t *)(pdm_sts));
+	return value;
 }
 
 
 uint64_t getPDMWritePointer() {
-    uint64_t value = *((uint64_t *)(pdm_sts));
-    return value % PDM_BUFF_SIZE;
+	uint64_t value = *((uint64_t *)(pdm_sts));
+	return value % PDM_BUFF_SIZE;
 }
 
 int* getPDMNextValues() {
-    uint64_t register_value = getPDMRegisterValue();
-    static int channel_values[4];
-    channel_values[0] = (register_value & 0x000000000000FFFF);
-    channel_values[1] = (register_value & 0x00000000FFFF0000) >> 16;
-    channel_values[2] = (register_value & 0x0000FFFF00000000) >> 32;
-    channel_values[3] = (register_value & 0xFFFF000000000000) >> 48;
-    
-    return channel_values;
+	uint64_t register_value = getPDMRegisterValue();
+	static int channel_values[4];
+	channel_values[0] = (register_value & 0x000000000000FFFF);
+	channel_values[1] = (register_value & 0x00000000FFFF0000) >> 16;
+	channel_values[2] = (register_value & 0x0000FFFF00000000) >> 32;
+	channel_values[3] = (register_value & 0xFFFF000000000000) >> 48;
+
+	return channel_values;
 }
 
 int getPDMNextValue(int channel) {
-    if(channel < 0 || channel >= 4) {
-        return -2;
-    }
-    
-    int value = (int)(*((uint16_t *)(pdm_cfg + 2*channel)));
-    
-    return value;
+	if(channel < 0 || channel >= 4) {
+		return -2;
+	}
+
+	int value = (int)(*((uint16_t *)(pdm_cfg + 2*channel)));
+
+	return value;
 }
 
 
 // Slow Analog Inputs
 
 uint32_t getXADCValue(int channel) {
-    uint32_t value;
-    switch (channel) {
-        case 0:  value = xadc[152] >> 4; break;
-        case 1:  value = xadc[144] >> 4; break;
-        case 2:  value = xadc[145] >> 4; break;
-        case 3:  value = xadc[153] >> 4; break;
-        default:
-            return 1;
-    }
-    return value;
+	uint32_t value;
+	switch (channel) {
+		case 0:  value = xadc[152] >> 4; break;
+		case 1:  value = xadc[144] >> 4; break;
+		case 2:  value = xadc[145] >> 4; break;
+		case 3:  value = xadc[153] >> 4; break;
+		default:
+			 return 1;
+	}
+	return value;
 }
 
 
 float getXADCValueVolt(int channel) {
-    uint32_t value_raw = getXADCValue(channel);
-    return (((float)value_raw / ANALOG_IN_MAX_VAL_INTEGER) * (ANALOG_IN_MAX_VAL - ANALOG_IN_MIN_VAL)) + ANALOG_IN_MIN_VAL;
+	uint32_t value_raw = getXADCValue(channel);
+	return (((float)value_raw / ANALOG_IN_MAX_VAL_INTEGER) * (ANALOG_IN_MAX_VAL - ANALOG_IN_MIN_VAL)) + ANALOG_IN_MIN_VAL;
 }
 
 int getWatchdogMode() {
 	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x02) >> 1);
-	
+
 	if(value == 0) {
 		return OFF;
 	} else if(value == 1) {
 		return ON;
 	}
-	
+
 	return -1;
 }
 
 int setWatchdogMode(int mode) {
-    if(mode == OFF) {
-        *((uint8_t *)(cfg + 1)) &= ~2;
-    } else if(mode == ON) {
-        *((uint8_t *)(cfg + 1)) |= 2;
-    } else {
-        return -1;
-    }
-    
-    return 0;
+	if(mode == OFF) {
+		*((uint8_t *)(cfg + 1)) &= ~2;
+	} else if(mode == ON) {
+		*((uint8_t *)(cfg + 1)) |= 2;
+	} else {
+		return -1;
+	}
+
+	return 0;
 }
 
 int getRAMWriterMode() {
 	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x01) >> 0);
-	
+
 	if(value == 0) {
 		return ADC_MODE_CONTINUOUS;
 	} else if(value == 1) {
 		return ADC_MODE_TRIGGERED;
 	}
-	
+
 	return -1;
 }
 
 int setRAMWriterMode(int mode) {
-    if(mode == ADC_MODE_CONTINUOUS) {
-        *((uint8_t *)(cfg + 1)) &= ~1;
-    } else if(mode == ADC_MODE_TRIGGERED) {
-        *((uint8_t *)(cfg + 1)) |= 1;
-    } else {
-        return -1;
-    }
-    
-    return 0;
+	if(mode == ADC_MODE_CONTINUOUS) {
+		*((uint8_t *)(cfg + 1)) &= ~1;
+	} else if(mode == ADC_MODE_TRIGGERED) {
+		*((uint8_t *)(cfg + 1)) |= 1;
+	} else {
+		return -1;
+	}
+
+	return 0;
 }
 
 int getTriggerMode() {
 	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x10) >> 4);
-	
+
 	if(value == 0) {
 		return TRIGGER_MODE_INTERNAL;
 	} else if(value == 1) {
 		return TRIGGER_MODE_EXTERNAL;
 	}
-	
+
 	return -1;
 }
 
 int setTriggerMode(int mode) {
-    if(mode == TRIGGER_MODE_INTERNAL) {
-        *((uint8_t *)(cfg + 1)) &= ~16;
-    } else if(mode == TRIGGER_MODE_EXTERNAL) {
-        *((uint8_t *)(cfg + 1)) |= 16;
-    } else {
-        return -1;
-    }
-    
-    return 0;
+	if(mode == TRIGGER_MODE_INTERNAL) {
+		*((uint8_t *)(cfg + 1)) &= ~16;
+	} else if(mode == TRIGGER_MODE_EXTERNAL) {
+		*((uint8_t *)(cfg + 1)) |= 16;
+	} else {
+		return -1;
+	}
+
+	return 0;
 }
 
 
@@ -701,8 +701,7 @@ int setTriggerMode(int mode) {
 int getMasterTrigger() {
 	int value;
 
-	if(getTriggerMode() == TRIGGER_MODE_INTERNAL)
-	{
+	if(getTriggerMode() == TRIGGER_MODE_INTERNAL) {
 		value = (((int)(*((uint8_t *)(cfg + 1))) & 0x20) >> 5);
 	} else {
 		value = (((int)(*((uint8_t *)(cfg + 1))) & 0x04) >> 2);
@@ -713,245 +712,243 @@ int getMasterTrigger() {
 	} else if(value == 1) {
 		return ON;
 	}
-	
+
 	return -1;
 }
 
 int setMasterTrigger(int mode) {
-    if(mode == OFF) {
-        setKeepAliveReset(ON);
-	double waitTime = getPDMClockDivider() / 125e6;
-	usleep( 10*waitTime * 1000000);
-	if(getTriggerMode() == TRIGGER_MODE_INTERNAL)
-	{
-          *((uint8_t *)(cfg + 1)) &= ~32;
+	if(mode == OFF) {
+		setKeepAliveReset(ON);
+		double waitTime = getPDMClockDivider() / 125e6;
+		usleep( 10*waitTime * 1000000);
+		if(getTriggerMode() == TRIGGER_MODE_INTERNAL) {
+			*((uint8_t *)(cfg + 1)) &= ~32;
+		} else {
+			*((uint8_t *)(cfg + 1)) &= ~4;
+		}
+		usleep( 10*waitTime * 1000000);
+		setRAMWriterMode(ADC_MODE_TRIGGERED);
+		setKeepAliveReset(OFF);
+	} else if(mode == ON) {
+		if(getTriggerMode() == TRIGGER_MODE_INTERNAL) {
+			*((uint8_t *)(cfg + 1)) |= 32;
+		} else {
+			*((uint8_t *)(cfg + 1)) |= 4;
+		}
 	} else {
-          *((uint8_t *)(cfg + 1)) &= ~4;
+		return -1;
 	}
-	usleep( 10*waitTime * 1000000);
-        setRAMWriterMode(ADC_MODE_TRIGGERED);
-        setKeepAliveReset(OFF);
-    } else if(mode == ON) {
-	if(getTriggerMode() == TRIGGER_MODE_INTERNAL)
-	{
-          *((uint8_t *)(cfg + 1)) |= 32;
-	} else {
-          *((uint8_t *)(cfg + 1)) |= 4;
-	}
-    } else {
-        return -1;
-    }
-    
-    return 0;
+
+	return 0;
 }
 
 int getInstantResetMode() {
-    int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x08) >> 3);
-	
+	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x08) >> 3);
+
 	if(value == 0) {
 		return OFF;
 	} else if(value == 1) {
 		return ON;
 	}
-	
+
 	return -1;
 }
 
 int setInstantResetMode(int mode) {
-    if(mode == OFF) {
-        *((uint8_t *)(cfg + 1)) &= ~8;
-    } else if(mode == ON) {
-        *((uint8_t *)(cfg + 1)) |= 8;
-    } else {
-        return -1;
-    }
-    
-    return 0;
+	if(mode == OFF) {
+		*((uint8_t *)(cfg + 1)) &= ~8;
+	} else if(mode == ON) {
+		*((uint8_t *)(cfg + 1)) |= 8;
+	} else {
+		return -1;
+	}
+
+	return 0;
 }
 
 int getPassPDMToFastDAC() {
-    int value = (((int)(*((uint8_t *)(cfg))) & 0x08) >> 3);
-	
+	int value = (((int)(*((uint8_t *)(cfg))) & 0x08) >> 3);
+
 	if(value == 0) {
 		return OFF;
 	} else if(value == 1) {
 		return ON;
 	}
-	
+
 	return -1;
 }
 
 int setPassPDMToFastDAC(int mode) {
-    if(mode == OFF) {
-        *((uint8_t *)(cfg)) &= ~8;
-    } else if(mode == ON) {
-        *((uint8_t *)(cfg)) |= 8;
-    } else {
-        return -1;
-    }
-    
-    return 0;
+	if(mode == OFF) {
+		*((uint8_t *)(cfg)) &= ~8;
+	} else if(mode == ON) {
+		*((uint8_t *)(cfg)) |= 8;
+	} else {
+		return -1;
+	}
+
+	return 0;
 }
 
 
 
 
 int getKeepAliveReset() {
-    int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x40) );
-	
+	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x40) );
+
 	if(value == 0) {
 		return OFF;
 	} else if(value == 1) {
 		return ON;
 	}
-	
+
 	return -1;
 }
 
 int setKeepAliveReset(int mode) {
-    if(mode == OFF) {
-      if(getMasterTrigger() == OFF) { // we only disable the Ram Writer if the trigger is off
-        uint32_t wp, wp_old, size;
-	wp_old = getWritePointer();
-	do {
-	  usleep(100);
-	  wp = getWritePointer();
-	  size = getWritePointerDistance(wp_old, wp) - 1;
-	  wp_old = wp;
-	  printf("setRamWriterEnabled: wp %d  wp_old %d  size  %d \n", wp, wp_old, size);
-	} while(size > 0);
-        *((uint8_t *)(cfg + 1)) &= ~64;
-      }
-    } else if(mode == ON) {
-        *((uint8_t *)(cfg + 1)) |= 64;
-    } else {
-        return -1;
-    }
-    
-    return 0;
+	if(mode == OFF) {
+		if(getMasterTrigger() == OFF) { // we only disable the Ram Writer if the trigger is off
+			uint32_t wp, wp_old, size;
+			wp_old = getWritePointer();
+			do {
+				usleep(100);
+				wp = getWritePointer();
+				size = getWritePointerDistance(wp_old, wp) - 1;
+				wp_old = wp;
+				printf("setRamWriterEnabled: wp %d  wp_old %d  size  %d \n", wp, wp_old, size);
+			} while(size > 0);
+			*((uint8_t *)(cfg + 1)) &= ~64;
+		}
+	} else if(mode == ON) {
+		*((uint8_t *)(cfg + 1)) |= 64;
+	} else {
+		return -1;
+	}
+
+	return 0;
 }
 
 int getPeripheralAResetN() {
-    int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x01) >> 0);
-    
-    return value;
+	int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x01) >> 0);
+
+	return value;
 }
 
 int getFourierSynthAResetN() {
-    int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x02) >> 1);
-    
-    return value;
+	int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x02) >> 1);
+
+	return value;
 }
 
 int getPDMAResetN() {
-    int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x04) >> 2);
-    
-    return value;
+	int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x04) >> 2);
+
+	return value;
 }
 
 int getWriteToRAMAResetN() {
-    int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x08) >> 3);
-    
-    return value;
+	int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x08) >> 3);
+
+	return value;
 }
 
 int getXADCAResetN() {
-    int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x10) >> 4);
-    
-    return value;
+	int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x10) >> 4);
+
+	return value;
 }
 
 int getTriggerStatus() {
-    int value;
+	int value;
 
-    if(getTriggerMode() == TRIGGER_MODE_INTERNAL)
-    {
-       value = (((int)(*((uint8_t *)(cfg + 1))) & 0x20) >> 5);
-    } else {
-       value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x20) >> 5);
-    }
-    return value;
+	if(getTriggerMode() == TRIGGER_MODE_INTERNAL)
+	{
+		value = (((int)(*((uint8_t *)(cfg + 1))) & 0x20) >> 5);
+	} else {
+		value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x20) >> 5);
+	}
+	return value;
 }
 
 int getWatchdogStatus() {
-    int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x40) >> 6);
-    
-    return value;
+	int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x40) >> 6);
+
+	return value;
 }
 
 int getInstantResetStatus() {
-    int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x80) >> 7);
-    
-    return value;
+	int value = (((int)(*((uint8_t *)(reset_sts + 0))) & 0x80) >> 7);
+
+	return value;
 }
 
 int getInternalPINNumber(const char* pin) {
-  if(strncmp(pin, "DIO7_P", 6) == 0) {
-    return 0;
-  } else if(strncmp(pin, "DIO7_N", 6) == 0) {
-    return 1;
-  } else if(strncmp(pin, "DIO6_P", 6) == 0) {
-    return 2;
-  } else if(strncmp(pin, "DIO6_N", 6) == 0) {
-    return 3;
-  } else if(strncmp(pin, "DIO5_N", 6) == 0) {
-    return 4;
-  } else if(strncmp(pin, "DIO4_N", 6) == 0) {
-    return 5;
-  } else if(strncmp(pin, "DIO3_N", 6) == 0) {
-    return 6;
-  } else if(strncmp(pin, "DIO2_N", 6) == 0) {
-    return 7;
-  } else {
+	if(strncmp(pin, "DIO7_P", 6) == 0) {
+		return 0;
+	} else if(strncmp(pin, "DIO7_N", 6) == 0) {
+		return 1;
+	} else if(strncmp(pin, "DIO6_P", 6) == 0) {
+		return 2;
+	} else if(strncmp(pin, "DIO6_N", 6) == 0) {
+		return 3;
+	} else if(strncmp(pin, "DIO5_N", 6) == 0) {
+		return 4;
+	} else if(strncmp(pin, "DIO4_N", 6) == 0) {
+		return 5;
+	} else if(strncmp(pin, "DIO3_N", 6) == 0) {
+		return 6;
+	} else if(strncmp(pin, "DIO2_N", 6) == 0) {
+		return 7;
+	} else {
 
-    return -1;
-  }	  
+		return -1;
+	}	  
 }
 
 int setDIODirection(const char* pin, int value) {
-    int pinInternal = getInternalPINNumber(pin);
-    if(pinInternal < 0) {
-        return -3;
-    }
+	int pinInternal = getInternalPINNumber(pin);
+	if(pinInternal < 0) {
+		return -3;
+	}
 
-    if(value == OUT) {
-            *((uint8_t *)(cfg + 9)) &= ~(0x1 << (pinInternal));
-    } else if(value == IN) {
-            *((uint8_t *)(cfg + 9)) |= (0x1 << (pinInternal));
-    } else {
-        return -1;
-    }
+	if(value == OUT) {
+		*((uint8_t *)(cfg + 9)) &= ~(0x1 << (pinInternal));
+	} else if(value == IN) {
+		*((uint8_t *)(cfg + 9)) |= (0x1 << (pinInternal));
+	} else {
+		return -1;
+	}
 
-    return 0;
+	return 0;
 }
 
 
 
 int setDIO(const char* pin, int value) {
-    int pinInternal = getInternalPINNumber(pin);
-    if(pinInternal < 0) {
-        return -3;
-    }
+	int pinInternal = getInternalPINNumber(pin);
+	if(pinInternal < 0) {
+		return -3;
+	}
 
-    if(value == OFF) {
-            *((uint8_t *)(cfg + 8)) &= ~(0x1 << (pinInternal));
-    } else if(value == ON) {
-            *((uint8_t *)(cfg + 8)) |= (0x1 << (pinInternal));
-    } else {
-        return -1;
-    }
+	if(value == OFF) {
+		*((uint8_t *)(cfg + 8)) &= ~(0x1 << (pinInternal));
+	} else if(value == ON) {
+		*((uint8_t *)(cfg + 8)) |= (0x1 << (pinInternal));
+	} else {
+		return -1;
+	}
 
-    return 0;
+	return 0;
 }
 
 int getDIO(const char* pin) {
-    int pinInternal = getInternalPINNumber(pin);
-    if(pinInternal < 0) {
-        return -3;
-    }
+	int pinInternal = getInternalPINNumber(pin);
+	if(pinInternal < 0) {
+		return -3;
+	}
 
-    uint32_t register_value = *((uint8_t *)(dio_sts));
-    return ((register_value & (0x1 << (pinInternal))) >> (pinInternal));
+	uint32_t register_value = *((uint8_t *)(dio_sts));
+	return ((register_value & (0x1 << (pinInternal))) >> (pinInternal));
 }
 
 void stopTx() {
@@ -970,7 +967,7 @@ void stopTx() {
 	setPDMAllValuesVolt(0.0, 3);
 
 
-        for(int d=0; d<4; d++) {
-	  setEnableDACAll(1,d);
+	for(int d=0; d<4; d++) {
+		setEnableDACAll(1,d);
 	}
 }

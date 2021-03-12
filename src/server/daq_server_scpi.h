@@ -8,7 +8,8 @@
 #include <sys/ioctl.h>
 #include <sys/param.h>
 #include <inttypes.h>
-
+#include <sys/stat.h>
+#include <sys/sendfile.h>
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
@@ -22,9 +23,8 @@
 #include <pthread.h>
 #include <sched.h>
 #include <errno.h>
-
+#include <sched.h>
 #include <scpi/scpi.h>
-
 #include "../lib/rp-daq-lib.h"
 
 #define SCPI_INPUT_BUFFER_LENGTH 25600
@@ -37,18 +37,16 @@
 #define ACQUISITION_OFF 0
 #define ACQUISITION_ON 1
 
-extern int numSamplesPerPeriod;
-extern int numPeriodsPerFrame;
-extern int numSlowDACPeriodsPerFrame;
+extern int numSamplesPerSlowDACStep;
+extern int numSlowDACStepsPerRotation;
 extern int numSlowDACChan;
 extern int numSlowADCChan;
 extern int enableSlowDAC;
 extern int enableSlowDACAck;
-extern int numSlowDACFramesEnabled;
+extern int numSlowDACRotationsEnabled;
 extern int numSlowDACLostSteps;
-extern int64_t frameSlowDACEnabled;
+extern uint64_t rotationSlowDACEnabled;
 
-extern int64_t startWP;
 extern int64_t channel;
 
 extern uint32_t *buffer;
@@ -93,11 +91,6 @@ extern char scpi_input_buffer[SCPI_INPUT_BUFFER_LENGTH];
 extern scpi_error_t scpi_error_queue_data[SCPI_ERROR_QUEUE_SIZE];
 extern scpi_t scpi_context;
 
-extern uint64_t getCurrentFrameTotal();
-extern uint64_t getCurrentPeriodTotal();
-extern uint64_t getNumSamplesPerFrame();
-extern uint64_t getNumSamplesPerSlowDACPeriod();
-
 extern int createServer(int);
 extern int waitServer(int);
 
@@ -105,9 +98,45 @@ extern void* communicationThread(void*);
 extern void* controlThread(void*);
 extern void joinControlThread();
 
-extern void sendFramesToHost(int64_t, int64_t);
-extern void sendPeriodsToHost(int64_t, int64_t);
+// data loss
+struct status {
+	uint8_t overwritten :1;
+	uint8_t corrupted :1;
+	uint8_t lostSteps :1;
+};
+struct status err;
+extern uint8_t getStatus();
+extern uint8_t getErrorStatus();
+extern uint8_t getOverwrittenStatus();
+extern void clearOverwrittenStatus();
+extern uint8_t getCorruptedStatus();
+extern void clearCorruptedStatus();
+extern uint8_t getLostStepsStatus();
+extern void clearLostStepsStatus();
+extern FILE* getLogFile();
+
+// performance data
+// ADC Performance
+struct performance {
+	uint64_t deltaRead;
+	uint64_t deltaSend;
+};
+struct performance perf;
+// DAC/Control performance
+uint8_t avgDeltaControl;
+uint8_t avgDeltaSet;
+uint8_t minDeltaControl;
+uint8_t maxDeltaSet;
+
+// Client communication
+extern void sendPerformanceDataToClient();
+extern void sendADCPerformanceDataToClient();
+extern void sendDACPerformanceDataToClient();
+extern void sendDataToClient(uint64_t, uint64_t, bool);
+extern void sendPipelinedDataToClient(uint64_t, uint64_t, uint64_t);
 extern void sendSlowFramesToHost(int64_t, int64_t);
+extern void sendFileToClient(FILE*);
+extern void sendStatusToClient();
 
 #endif /* __DAQ_SERVER_SCPI_H_ */
 
