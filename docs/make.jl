@@ -17,6 +17,7 @@ makedocs(
                           "SlowADC" => "examples/slowADC.md"],
         "SCPI Interface" => "scpi.md",
         "FPGA Development" => "fpga.md",
+        "Development Tips" => "devtips.md",
         #"Getting Started" => "overview.md",
     ]
 #    html_prettyurls = false, #!("local" in ARGS),
