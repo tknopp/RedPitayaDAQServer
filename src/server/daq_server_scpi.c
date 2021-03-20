@@ -53,6 +53,7 @@
 #include <sched.h>
 #include <sched.h>
 #include <errno.h>
+#include <signal.h>
 #include "logger.h"
 
 #include <scpi/scpi.h>
@@ -233,6 +234,10 @@ int main(int argc, char** argv) {
 		LOG_INFO("Unsuccessful in setting thread realtime prio.\n");
 		return 1;     
 	}
+
+	// Ignore SIGPIPE signal to ensure that process is not silently terminated
+	sigaction(SIGPIPE, &(struct sigaction){SIG_IGN}, NULL);
+
 
 	getprio(pthread_self());
 

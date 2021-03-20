@@ -325,7 +325,7 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 	uint64_t chunk = 0;
 	bool clearFlagsAndPerf = true;
 
-	while (sendSamplesTotal < numSamples && chunkSize > 0 ) {
+	while (sendSamplesTotal < numSamples && chunkSize > 0 && commThreadRunning) {
 		chunk = MIN(numSamples - sendSamplesTotal, chunkSize); // Client and Server can compute same chunk value
 		
 		// Send chunk
@@ -340,7 +340,7 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 				usleep(30);
 			}
 			samplesToSend = MIN(writeWP - readWP, chunk - sendSamples);
-
+			
 			sendDataToClient(readWP, samplesToSend, clearFlagsAndPerf);
 			sendSamples += samplesToSend;
 			clearFlagsAndPerf = false; // Only the first sendData each iteration clears the flags

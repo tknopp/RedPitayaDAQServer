@@ -8,9 +8,11 @@ src/client/python/.pydevproject
 src/client/python/.project
 src/examples/python/.pydevproject
 src/examples/python/.project
+src/examples/julia/images
 core
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
 docs/build/
 Manifest.toml
+vivado*

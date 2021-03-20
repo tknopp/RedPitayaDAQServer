@@ -129,6 +129,14 @@ static void initSlowDAC() {
 	err.lostSteps = 0;
 }
 
+static void cleanUpSlowDAC() {
+	enableSlowDAC = false;
+	stopTx();
+	rotationSlowDACEnabled = -1;
+	rotationRampUpStarted = -1;
+	slowDACStepRampUpStarted = -1;
+}
+
 static void setNextLUTValues() {
 	uint64_t nextSetStep = 0;
 	uint64_t baseStep = currentSlowDACStepTotal - slowDACStepRampUpStarted;
@@ -229,6 +237,7 @@ void* controlThread(void* ch) {
 					//TODO currentSlowDACStep > numSlowDACSteps - lookprehead -1, behaviour for numSlowDACStepsPerRotation < 6?
 					else if(enableSlowDAC && !enableSlowDACAck && (( currentSlowDACStep > numSlowDACStepsPerRotation-lookprehead-1 ) || (numSlowDACStepsPerRotation == 1)) ) {
 						// we are now lookprehead subperiods or less before the next rotation
+						printf("INIT CONTROL\n");
 						initSlowDAC();
 						deltaControl = 0;
 						deltaSet = 0;
@@ -249,11 +258,7 @@ void* controlThread(void* ch) {
 						if(numSlowDACRotationsEnabled > 0 && rotationSlowDACEnabled > 0 
 								&& (currentRotationTotal >= numSlowDACRotationsEnabled + rotationSlowDACEnabled + rampingTotalRotations)) {
 							// We now have measured enough rotations and switch of the slow DAC
-							enableSlowDAC = false;
-							stopTx();
-							rotationSlowDACEnabled = -1;
-							rotationRampUpStarted = -1;
-							slowDACStepRampUpStarted = -1;
+                                                        cleanUpSlowDAC();
 						}
 						else {
 							setNextLUTValues();
@@ -289,6 +294,9 @@ void* controlThread(void* ch) {
 		// Wait for the acquisition to start
 		usleep(40);
 	}
+
+	// clean up 
+        cleanUpSlowDAC();
 
 	printf("Control thread finished\n");
 }
