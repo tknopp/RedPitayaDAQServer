@@ -95,7 +95,6 @@ function periodsPerFrame(rp::RedPitaya)
 end
 function periodsPerFrame(rp::RedPitaya, value)
   rp.periodsPerFrame = value
-  slowDACStepsPerRotation(rp, value)
 end
 
 samplesPerSlowDACStep(rp::RedPitaya) = query(rp,"RP:ADC:SlowDAC:SamplesPerStep?", Int64)

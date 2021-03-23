@@ -47,7 +47,7 @@ function currentWP(rpc::RedPitayaCluster)
 end
 
 for op in [:periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset,
-           :triggerMode, :slowDACStepsPerRotation, :samplesPerSlowDACStep]
+           :triggerMode, :slowDACStepsPerRotation, :samplesPerSlowDACStep, :slowDACStepsPerFrame]
   @eval $op(rpc::RedPitayaCluster) = $op(master(rpc))
   @eval begin
     function $op(rpc::RedPitayaCluster, value)
@@ -185,6 +185,8 @@ function readSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSample
   numOfReceivedSamples = 0
   index = 1
   rawData = zeros(Int16, numChan(rpc), numOfRequestedSamples)
+  chunkBuffer = zeros(Int16, chunkSize * 2, length(rpc))
+  
   while numOfReceivedSamples < numOfRequestedSamples
     wpRead = wpStart + numOfReceivedSamples
     wpWrite = currentWP(rpc)
@@ -198,7 +200,7 @@ function readSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSample
     end
 
     # Collect data
-    collectSamples!(rpc, wpRead, chunk, rawData, index, rpInfo=rpInfo)
+    collectSamples!(rpc, wpRead, chunk, rawData, chunkBuffer, index, rpInfo=rpInfo)
     index += chunk
     numOfReceivedSamples += chunk
   end
@@ -215,7 +217,7 @@ function readPipelinedSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfReques
   while numOfReceivedSamples < numOfRequestedSamples
     wpRead = wpStart + numOfReceivedSamples
     chunk = min(numOfRequestedSamples - numOfReceivedSamples, chunkSize)
-    collectSamples!(rpc, wpRead, chunk, rawData, chunkBuffer,index, rpInfo=rpInfo)
+    collectSamples!(rpc, wpRead, chunk, rawData, chunkBuffer, index, rpInfo=rpInfo)
     index += chunk
     numOfReceivedSamples += chunk
   end
@@ -303,7 +305,7 @@ end
 
 function convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages=1, numPeriodsPerPatch=1)
   temp = reshape(samples, numChan, numSampPerPeriod, numPeriods, numFrames)
-  for d = 1:Int64(numChan/2)
+  for d = 1:div(numChan,2)
     u = temp[2*d-1:2*d, :, :, :]
     utmp1 = reshape(u,2,numTrueSampPerPeriod,numBlockAverages, size(u,3)*numPeriodsPerPatch,size(u,4))
     utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
@@ -318,27 +320,31 @@ function readPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAve
   if rem(numSampPerPeriod,numBlockAverages) != 0
     error("block averages has to be a divider of numSampPerPeriod")
   end
-
+ 
   numAveragedSampPerPeriod = div(numSampPerPeriod,numBlockAverages)
 
   data = zeros(Float32, numAveragedSampPerPeriod, numChan(rpc), numPeriods)
   wpStart = startPeriod * numSampPerPeriod
-  numOfRequestedSamples = numPeriods * numSampPerPeriod
+  numOfRequestedSamples = numPeriods * numSampPerPeriod 
 
   # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
-  rawSamples = readSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
-
-  # Reshape/Avg Data
-  temp = reshape(rawSamples, numChan(rpc), numSampPerPeriod, numPeriods)
-  for (d, rp) in enumerate(rpc.rp)
-    u = temp[2*d-1:2*d, :, :, :] #TODO ONE COLUMN TOO MANY 
-    utmp1 = reshape(u,2,numAveragedSampPerPeriod,numBlockAverages, size(u,3))
-    utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
-    data[:,2*d-1,:] = utmp2[1,:,1,:]
-    data[:,2*d,:] = utmp2[2,:,1,:]
-  end
+  rawSamples = readPipelinedSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
   
+  # Reshape/Avg Data
+  convertSamplesToPeriods!(rawSamples, data, numChan(rpc), numSampPerPeriod, numPeriods, numBlockAverages)
+
   return data
+end
+
+function convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages=1)
+  temp = reshape(samples, numChan, numSampPerPeriod, numPeriods)
+  for d = 1:div(numChan,2)
+    u = temp[2*d-1:2*d, :, :]
+    utmp1 = reshape(u,2,div(numSampPerPeriod,numBlockAverages), numBlockAverages, size(u,3))
+    utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
+    periods[:,2*d-1,:] = utmp2[1,:,1,:]
+    periods[:,2*d,:] = utmp2[2,:,1,:]
+  end
 end
 
 
