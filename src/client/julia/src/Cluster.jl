@@ -1,4 +1,4 @@
-export RedPitayaCluster, master, readDataPeriods, numChan, readDataSlow, readFrames, readPeriods, readPipelinedSamples, startPipelinedData, collectSamples!
+export RedPitayaCluster, master, readDataPeriods, numChan, readDataSlow, readFrames, readPeriods, readPipelinedSamples, startPipelinedData, collectSamples!, readData, readDataPeriods
 
 import Base: length, iterate, getindex, firstindex, lastindex
 
@@ -33,7 +33,7 @@ lastindex(rpc::RedPitayaCluster) = length(rpc)
 # Iterable Interface
 start_(rpc::RedPitayaCluster) = 1
 next_(rpc::RedPitayaCluster,state) = (rpc[state],state+1)
-done_(rpc::RedPitayaCluster,state) = state > length(rpc.rp)
+done_(rpc::RedPitayaCluster,state) = state > length(rpc)
 iterate(rpc::RedPitayaCluster, s=start_(rpc)) = done_(rpc, s) ? nothing : next_(rpc, s)
 
 
@@ -181,7 +181,7 @@ function enableSlowDAC(rpc::RedPitayaCluster, enable::Bool, numFrames::Int64=0,
   # We just use the first rp currently
   #res = [enableSlowDAC(rp, enable) for rp in rpc.rp]
   #return maximum(res)
-  return enableSlowDAC(rpc.rp[1], enable, numFrames, ffRampUpTime, ffRampUpFraction)
+  return enableSlowDAC(rpc[1], enable, numFrames, ffRampUpTime, ffRampUpFraction)
 end
 
 function slowDACInterpolation(rpc::RedPitayaCluster, enable::Bool)
@@ -196,43 +196,43 @@ function startPipelinedData(rpc::RedPitayaCluster, reqWP::Int64, numSamples::Int
   end
 end
 
-function readSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
+function readSamples(rpu::Union{RedPitaya,RedPitayaCluster}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
   numOfReceivedSamples = 0
   index = 1
-  rawData = zeros(Int16, numChan(rpc), numOfRequestedSamples)
-  chunkBuffer = zeros(Int16, chunkSize * 2, length(rpc))
+  rawData = zeros(Int16, numChan(rpu), numOfRequestedSamples)
+  chunkBuffer = zeros(Int16, chunkSize * 2, length(rpu))
   
   while numOfReceivedSamples < numOfRequestedSamples
     wpRead = wpStart + numOfReceivedSamples
-    wpWrite = currentWP(rpc)
+    wpWrite = currentWP(rpu)
     chunk = min(numOfRequestedSamples - numOfReceivedSamples, chunkSize)
 
     
     # Wait for data to be written
     while wpRead + chunk >= wpWrite
-      wpWrite = currentWP(rpc)
+      wpWrite = currentWP(rpu)
       @debug wpWrite
     end
 
     # Collect data
-    collectSamples!(rpc, wpRead, chunk, rawData, chunkBuffer, index, rpInfo=rpInfo)
+    collectSamples!(rpu, wpRead, chunk, rawData, chunkBuffer, index, rpInfo=rpInfo)
     index += chunk
     numOfReceivedSamples += chunk
   end
   return rawData
 end
 
-function readPipelinedSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
+function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
   numOfReceivedSamples = 0
   index = 1
-  rawData = zeros(Int16, numChan(rpc), numOfRequestedSamples)
-  chunkBuffer = zeros(Int16, chunkSize * 2, length(rpc))
+  rawData = zeros(Int16, numChan(rpu), numOfRequestedSamples)
+  chunkBuffer = zeros(Int16, chunkSize * 2, length(rpu))
 
-  startPipelinedData(rpc, wpStart, numOfRequestedSamples, chunkSize)
+  startPipelinedData(rpu, wpStart, numOfRequestedSamples, chunkSize)
   while numOfReceivedSamples < numOfRequestedSamples
     wpRead = wpStart + numOfReceivedSamples
     chunk = min(numOfRequestedSamples - numOfReceivedSamples, chunkSize)
-    collectSamples!(rpc, wpRead, chunk, rawData, chunkBuffer, index, rpInfo=rpInfo)
+    collectSamples!(rpu, wpRead, chunk, rawData, chunkBuffer, index, rpInfo=rpInfo)
     index += chunk
     numOfReceivedSamples += chunk
   end
@@ -240,12 +240,12 @@ function readPipelinedSamples(rpc::RedPitayaCluster, wpStart::Int64, numOfReques
 
 end
 
-function collectSamples!(rpc::RedPitayaCluster, wpRead::Int64, chunk::Int64, rawData, chunkBuffer, index; rpInfo=nothing)
-  done = zeros(Bool, length(rpc.rp))
+function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster}, wpRead::Int64, chunk::Int64, rawData, chunkBuffer, index; rpInfo=nothing)
+  done = zeros(Bool, length(rpu))
   iterationDone = Condition()
   timeoutHappened = false
 
-  for (d, rp) in enumerate(rpc.rp)
+  for (d, rp) in enumerate(rpu)
     @async begin
       buffer = view(chunkBuffer, 1:(2 * chunk), d)
       (u, perf) = readSamplesChunk_(rp, Int64(wpRead), Int64(chunk), buffer)
@@ -293,10 +293,10 @@ end
 
 # High level read. numFrames can adress a future frame. Data is read in
 # chunks
-function readFrames(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; rpInfo=nothing, chunkSize = 50000)
-  numSampPerPeriod = master(rpc).samplesPerPeriod
+function readFrames(rpu::Union{RedPitaya,RedPitayaCluster}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; rpInfo=nothing, chunkSize = 50000)
+  numSampPerPeriod = samplesPerPeriod(rpu)
   numSamp = numSampPerPeriod * numFrames
-  numPeriods = master(rpc).periodsPerFrame
+  numPeriods = periodsPerFrame(rpu)
   numSampPerFrame = numSampPerPeriod * numPeriods
 
   if rem(numSampPerPeriod,numBlockAverages) != 0
@@ -305,15 +305,15 @@ function readFrames(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverag
 
   numTrueSampPerPeriod = div(numSampPerPeriod,numBlockAverages*numPeriodsPerPatch)
 
-  data = zeros(Float32, numTrueSampPerPeriod, numChan(rpc), numPeriods*numPeriodsPerPatch, numFrames)
+  data = zeros(Float32, numTrueSampPerPeriod, numChan(rpu), numPeriods*numPeriodsPerPatch, numFrames)
   wpStart = startFrame * numSampPerFrame
   numOfRequestedSamples = numFrames * numSampPerFrame
 
   # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
-  rawSamples = readPipelinedSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
+  rawSamples = readPipelinedSamples(rpu, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
   
   # Reshape/Avg Data
-  convertSamplesToFrames!(rawSamples, data, numChan(rpc), numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages, numPeriodsPerPatch)
+  convertSamplesToFrames!(rawSamples, data, numChan(rpu), numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages, numPeriodsPerPatch)
 
   return data
 end
@@ -329,8 +329,8 @@ function convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, num
   end
 end
 
-function readPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAverages=1; rpInfo=nothing, chunkSize = 50000)
-  numSampPerPeriod = master(rpc).samplesPerPeriod
+function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster}, startPeriod, numPeriods, numBlockAverages=1; rpInfo=nothing, chunkSize = 50000)
+  numSampPerPeriod = samplesPerPeriod(rpu)
 
   if rem(numSampPerPeriod,numBlockAverages) != 0
     error("block averages has to be a divider of numSampPerPeriod")
@@ -338,15 +338,15 @@ function readPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAve
  
   numAveragedSampPerPeriod = div(numSampPerPeriod,numBlockAverages)
 
-  data = zeros(Float32, numAveragedSampPerPeriod, numChan(rpc), numPeriods)
+  data = zeros(Float32, numAveragedSampPerPeriod, numChan(rpu), numPeriods)
   wpStart = startPeriod * numSampPerPeriod
   numOfRequestedSamples = numPeriods * numSampPerPeriod 
 
   # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
-  rawSamples = readPipelinedSamples(rpc, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
+  rawSamples = readPipelinedSamples(rpu, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
   
   # Reshape/Avg Data
-  convertSamplesToPeriods!(rawSamples, data, numChan(rpc), numSampPerPeriod, numPeriods, numBlockAverages)
+  convertSamplesToPeriods!(rawSamples, data, numChan(rpu), numSampPerPeriod, numPeriods, numBlockAverages)
 
   return data
 end
@@ -363,12 +363,12 @@ function convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, n
 end
 
 
-function readData(rpc::RedPitayaCluster, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; chunkSize = 50000)
+function readData(rpc::Union{RedPitaya,RedPitayaCluster}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; chunkSize = 50000)
   data = readFrames(rpc, startFrame, numFrames, numBlockAverages, numPeriodsPerPatch, chunkSize = chunkSize)
   return data
 end
 
-function readDataPeriods(rpc::RedPitayaCluster, startPeriod, numPeriods, numBlockAverages=1; chunkSize = 50000)
+function readDataPeriods(rpc::Union{RedPitaya,RedPitayaCluster}, startPeriod, numPeriods, numBlockAverages=1; chunkSize = 50000)
   data = readPeriods(rpc, startPeriod, numPeriods, numBlockAverages, chunkSize = chunkSize)
   return data
 end
@@ -402,7 +402,7 @@ function readDataSlow(rpc::RedPitayaCluster, startFrame, numFrames)
     @debug "Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)"
 
     p = 1
-    for (d,rp) in enumerate(rpc.rp)
+    for (d,rp) in enumerate(rpc)
       u = readDataSlow_(rp, Int64(wpRead), Int64(chunk))
       numChan = size(u,1)
 
