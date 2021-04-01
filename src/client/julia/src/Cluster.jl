@@ -1,6 +1,6 @@
 export RedPitayaCluster, master, readDataPeriods, numChan, readDataSlow, readFrames, readPeriods, readPipelinedSamples, startPipelinedData, collectSamples!
 
-import Base: length
+import Base: length, iterate, getindex, firstindex, lastindex
 
 struct RedPitayaCluster
   rp::Vector{RedPitaya}
@@ -22,6 +22,21 @@ length(rpc::RedPitayaCluster) = length(rpc.rp)
 numChan(rpc::RedPitayaCluster) = 2*length(rpc)
 master(rpc::RedPitayaCluster) = rpc.rp[1]
 
+# Indexing Interface
+function getindex(rpc::RedPitayaCluster, index::Integer)
+  1 <= index <= length(rpc) || throw(BoundsError(rpc.rp, index))
+  return rpc.rp[index]
+end
+firstindex(rpc::RedPitayaCluster) = start_(rpc)
+lastindex(rpc::RedPitayaCluster) = length(rpc)
+
+# Iterable Interface
+start_(rpc::RedPitayaCluster) = 1
+next_(rpc::RedPitayaCluster,state) = (rpc[state],state+1)
+done_(rpc::RedPitayaCluster,state) = state > length(rpc.rp)
+iterate(rpc::RedPitayaCluster, s=start_(rpc)) = done_(rpc, s) ? nothing : next_(rpc, s)
+
+
 function RPInfo(rpc::RedPitayaCluster)
   return RPInfo([RPPerformance([]) for i = 1:length(rpc)])
 end
@@ -29,14 +44,14 @@ end
 const _currentFrame = Ref(0)
 
 function currentFrame(rpc::RedPitayaCluster)
-  _currentFrame[] = currentFrame(rpc.rp[1]) #[ currentFrame(rp) for rp in rpc.rp ]
+  _currentFrame[] = currentFrame(rpc[1]) #[ currentFrame(rp) for rp in rpc.rp ]
   @debug "Current frame: $(_currentFrame[])"
   #return minimum(currentFrames)
   return _currentFrame[]
 end
 
 function currentPeriod(rpc::RedPitayaCluster)
-  currentPeriods = currentPeriod(rpc.rp[1])  #[ currentPeriod(rp) for rp in rpc.rp ]
+  currentPeriods = currentPeriod(rpc[1])  #[ currentPeriod(rp) for rp in rpc.rp ]
   @debug "Current period: $currentPeriods"
   #return minimum(currentPeriods)
   return currentPeriods
@@ -51,7 +66,7 @@ for op in [:periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset,
   @eval $op(rpc::RedPitayaCluster) = $op(master(rpc))
   @eval begin
     function $op(rpc::RedPitayaCluster, value)
-      for rp in rpc.rp
+      for rp in rpc
         $op(rp, value)
       end
     end
@@ -61,7 +76,7 @@ end
 for op in [:connectADC, :stopADC, :disconnect, :connect]
   @eval begin
     function $op(rpc::RedPitayaCluster)
-      for rp in rpc.rp
+      for rp in rpc
         $op(rp)
       end
     end
@@ -69,7 +84,7 @@ for op in [:connectADC, :stopADC, :disconnect, :connect]
 end
 
 function startADC(rpc::RedPitayaCluster)
-  for rp in rpc.rp
+  for rp in rpc
     startADC(rp)
   end
 end
@@ -88,7 +103,7 @@ bufferSize(rpc::RedPitayaCluster) = bufferSize(master(rpc))
 
 # "TRIGGERED" or "CONTINUOUS"
 function ramWriterMode(rpc::RedPitayaCluster, mode::String)
-  for rp in rpc.rp
+  for rp in rpc
     ramWriterMode(rp, mode)
   end
 end
@@ -97,12 +112,12 @@ for op in [:amplitudeDAC, :amplitudeDACNext, :frequencyDAC, :phaseDAC, :modulusF
   @eval function $op(rpc::RedPitayaCluster, chan::Integer, component::Integer)
     idxRP = div(chan-1, 2) + 1
     chanRP = mod1(chan, 2)
-    return $op(rpc.rp[idxRP], chanRP, component)
+    return $op(rpc[idxRP], chanRP, component)
   end
   @eval function $op(rpc::RedPitayaCluster, chan::Integer, component::Integer, value)
     idxRP = div(chan-1, 2) + 1
     chanRP = mod1(chan, 2)
-    return $op(rpc.rp[idxRP], chanRP, component, value)
+    return $op(rpc[idxRP], chanRP, component, value)
   end
 end
 
@@ -110,53 +125,53 @@ for op in [:signalTypeDAC,  :DCSignDAC, :jumpSharpnessDAC]
   @eval function $op(rpc::RedPitayaCluster, chan::Integer)
     idxRP = div(chan-1, 2) + 1
     chanRP = mod1(chan, 2)
-    return $op(rpc.rp[idxRP], chanRP)
+    return $op(rpc[idxRP], chanRP)
   end
   @eval function $op(rpc::RedPitayaCluster, chan::Integer, value)
     idxRP = div(chan-1, 2) + 1
     chanRP = mod1(chan, 2)
-    return $op(rpc.rp[idxRP], chanRP, value)
+    return $op(rpc[idxRP], chanRP, value)
   end
 end
 
 function setSlowDAC(rpc::RedPitayaCluster, chan, value)
   idxRP = div(chan-1, 2) + 1
   chanRP = mod(chan-1, 2)
-  setSlowDAC(rpc.rp[idxRP], chanRP, value)
+  setSlowDAC(rpc[idxRP], chanRP, value)
 end
 
 function getSlowADC(rpc::RedPitayaCluster, chan::Integer)
   idxRP = div(chan-1, 2) + 1
   chanRP = mod(chan-1, 2)
-  getSlowADC(rpc.rp[idxRP], chanRP)
+  getSlowADC(rpc[idxRP], chanRP)
 end
 
 function numSlowADCChan(rpc::RedPitayaCluster)
-  tmp = [ numSlowADCChan(rp) for rp in rpc.rp]
+  tmp = [ numSlowADCChan(rp) for rp in rpc]
   return sum(tmp)
 end
 
 function numSlowADCChan(rpc::RedPitayaCluster, num)
-  for rp in rpc.rp
+  for rp in rpc
     numSlowADCChan(rp, num)
   end
   return
 end
 
 function passPDMToFastDAC(rpc::RedPitayaCluster, val::Vector{Bool})
-  for (d,rp) in enumerate(rpc.rp)
+  for (d,rp) in enumerate(rpc)
     passPDMToFastDAC(rp, val[d])
   end
 end
 
 function passPDMToFastDAC(rpc::RedPitayaCluster)
-  return [ passPDMToFastDAC(rp) for rp in rpc.rp]
+  return [ passPDMToFastDAC(rp) for rp in rpc]
 end
 
 modeDAC(rpc::RedPitayaCluster) = modeDAC(master(rpc))
 
 function modeDAC(rpc::RedPitayaCluster, mode::String)
-  for rp in rpc.rp
+  for rp in rpc
     modeDAC(rp, mode)
   end
 end
@@ -170,13 +185,13 @@ function enableSlowDAC(rpc::RedPitayaCluster, enable::Bool, numFrames::Int64=0,
 end
 
 function slowDACInterpolation(rpc::RedPitayaCluster, enable::Bool)
-  for rp in rpc.rp
+  for rp in rpc
     slowDACInterpolation(rp, enable)
   end
 end
 
 function startPipelinedData(rpc::RedPitayaCluster, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
-  for rp in rpc.rp
+  for rp in rpc
     startPipelinedData(rp, reqWP, numSamples, chunkSize)
   end
 end
