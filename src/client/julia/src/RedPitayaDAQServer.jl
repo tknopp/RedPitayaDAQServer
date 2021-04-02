@@ -56,13 +56,30 @@ function query(rp::RedPitaya,cmd::String,T::Type)
   return parse(T,a)
 end
 
+# connect with timeout implementation
+function Sockets.connect(host, port::Integer, timeout::Number)
+  s = TCPSocket()
+  t = Timer(_ -> close(s), timeout)
+  try
+    connect(s, host, port)
+  catch e
+    error("Could not connect to $(host) on port $(port) 
+            since the operations was timed out after $(timeout) seconds!")
+  finally
+    close(t)
+  end
+  return s
+end
+
+const _timeout = 1.0
+
 function connect(rp::RedPitaya)
   if !rp.isConnected
     begin
-    rp.socket = connect(rp.host, 5025)
+    rp.socket = connect(rp.host, 5025, _timeout)
     send(rp, string("RP:Init"))
     connectADC(rp)
-    rp.dataSocket = connect(rp.host, 5026)
+    rp.dataSocket = connect(rp.host, 5026, _timeout)
     rp.isConnected = true
     decimation(rp)
     end

@@ -80,6 +80,7 @@ function masterTrigger(rpc::RedPitayaCluster, val::Bool)
     else
         keepAliveReset(rpc, true)
         masterTrigger(master(rpc), false)
+        ramWriterMode(rpc, "TRIGGERED")
         keepAliveReset(rpc, false)
     end
 end
