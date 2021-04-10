@@ -10,17 +10,17 @@ dec = 64
 modulus = 4800
 base_frequency = 125000000
 periods_per_step = 5
-samples_per_period = div(modulus, dec)*periods_per_step
-periods_per_frame = div(50, periods_per_step) # about 0.5 s frame length
+samples_per_period = div(modulus, dec)
+periods_per_frame = 50 # about 0.5 s frame length
 frame_period = dec*samples_per_period*periods_per_frame / base_frequency
-slow_dac_periods_per_frame = periods_per_frame
+slow_dac_periods_per_frame = div(50, periods_per_step)
 
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
 periodsPerFrame(rp, periods_per_frame)
 passPDMToFastDAC(master(rp), true)
 
-slowDACStepsPerRotation(rp, slow_dac_periods_per_frame) # Overwrites value set in periodsPerFrame
+slowDACStepsPerFrame(rp, slow_dac_periods_per_frame)
 numSlowDACChan(master(rp), 1)
 lut = collect(range(0,0.7,length=slow_dac_periods_per_frame))
 setSlowDACLUT(master(rp), lut)
