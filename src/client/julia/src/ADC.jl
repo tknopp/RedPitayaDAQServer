@@ -1,7 +1,7 @@
-export decimation, masterTrigger, currentFrame, ramWriterMode, connectADC, startADC, stopADC, readData, samplesPerPeriod, periodsPerFrame, 
+export decimation, masterTrigger, currentFrame, ramWriterMode, connectADC, startADC, stopADC, samplesPerPeriod, periodsPerFrame, 
      numSlowDACChan, setSlowDACLUT, enableSlowDAC, slowDACStepsPerRotation, samplesPerSlowDACStep, prepareSlowDAC,
      currentWP, slowDACInterpolation, numSlowADCChan, numLostStepsSlowADC, bufferSize, keepAliveReset, triggerMode,
-     slowDACStepsPerFrame, enableDACLUT, ADCPerformanceData, RPPerformance, RPStatus, RPInfo, startPipelinedData, PerformanceData
+     slowDACStepsPerFrame, enableDACLUT, ADCPerformanceData, RPPerformance, RPStatus, RPInfo, startPipelinedData, PerformanceData, numChan
 
 struct ADCPerformanceData
   deltaRead::UInt64
@@ -40,6 +40,8 @@ function decimation(rp::RedPitaya, dec)
   rp.decimation = Int64(dec)
   send(rp, string("RP:ADC:DECimation ", rp.decimation))
 end
+
+numChan(rp::RedPitaya) = 2
 
 numSlowDACChan(rp::RedPitaya) = query(rp,"RP:ADC:SlowDAC?", Int64)
 function numSlowDACChan(rp::RedPitaya, value)
@@ -248,69 +250,6 @@ end
 function startPipelinedData(rp::RedPitaya, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
   command = string("RP:ADC:DATA:PIPELINED? ", reqWP, ",", numSamples, ",", chunkSize)
   send(rp, command)
-end
-
-# High level read. numFrames can adress a future frame. Data is read in
-# chunks
-function readData(rp::RedPitaya, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1)
-  dec = rp.decimation
-  numSampPerPeriod = rp.samplesPerPeriod
-  numSamp = numSampPerPeriod * numFrames # ??
-  numPeriods = rp.periodsPerFrame
-  numSampPerFrame = numSampPerPeriod * numPeriods
-
-  if rem(numSampPerPeriod,numBlockAverages) != 0
-    error("block averages has to be a divider of numSampPerPeriod")
-  end
-
-  numTrueSampPerPeriod = div(numSampPerPeriod,numBlockAverages*numPeriodsPerPatch)
-
-
-  data = zeros(Float32, numTrueSampPerPeriod, 2, numPeriods*numPeriodsPerPatch, numFrames)
-  wpRead = startFrame
-  l=1
-
-  numFramesInMemoryBuffer = bufferSize(rp) / numSampPerFrame
-  @debug "numFramesInMemoryBuffer = $numFramesInMemoryBuffer"
-
-  # This is a wild guess for a good chunk size
-  chunkSize = max(1,  round(Int, 1000000 / numSampPerFrame)  )
-  @debug "chunkSize = $chunkSize"
-  while l<=numFrames
-    wpWrite = currentFrame(rp)
-    while wpRead >= wpWrite # Wait that startFrame is reached
-      wpWrite = currentFrame(rp)
-      @debug wpWrite
-    end
-    chunk = min(wpWrite-wpRead,chunkSize) # Determine how many frames to read
-    @debug chunk
-    if l+chunk > numFrames
-      chunk = numFrames - l + 1
-    end
-
-    @debug "Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)"
-    # Compute Server WP 
-    reqWP = wpRead * numSampPerFrame
-    numSamples = chunk * numSampPerFrame
-    t = readSamples_(rp, Int64(reqWP), Int64(numSamples))
-    u = reshape(t, 2, rp.samplesPerPeriod, numPeriods, chunk)
-    utmp1 = reshape(u,2,numTrueSampPerPeriod,numBlockAverages,size(u,3)*numPeriodsPerPatch,size(u,4))
-    utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=3) : utmp1
-    data[:,1,:,l:(l+chunk-1)] = utmp2[1,:,1,:,:]
-    data[:,2,:,l:(l+chunk-1)] = utmp2[2,:,1,:,:]
-
-    if wasOverwritten(rp)
-      @error "Requested data from $wpRead until $(wpRead+chunk) was overwritten"
-    end
-    if wasCorrupted(rp)
-      @error "Requested data from $wpRead until $(wpRead+chunk) might have been corrupted"
-    end
-
-    l += chunk
-    wpRead += chunk
-  end
-
-  return data
 end
 
 

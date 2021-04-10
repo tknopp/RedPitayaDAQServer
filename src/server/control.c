@@ -48,15 +48,14 @@ static int lookprehead=5;
 static float getSlowDACVal(int step, int i) {
 	float val = 0.0;
 
-	int rotation = step / numSlowDACStepsPerRotation + rotationRampUpStarted;
-	
+	int64_t rotation = step / numSlowDACStepsPerRotation + rotationRampUpStarted;
 	// Within regular LUT
-	if(rotationSlowDACEnabled <= rotation < rotationSlowDACEnabled + numSlowDACRotationsEnabled) {
+	if(rotationSlowDACEnabled <= rotation && rotation < rotationSlowDACEnabled + numSlowDACRotationsEnabled) {
 		val = slowDACLUT[(step % numSlowDACStepsPerRotation)*numSlowDACChan+i];
 	}
 	
 	// Ramp up phase
-	else if(rotationRampUpStarted <= rotation < rotationSlowDACEnabled) {
+	else if(rotationRampUpStarted <= rotation && rotation < rotationSlowDACEnabled) {
 		int64_t currRampUpStep = step;
 		int64_t totalStepsInRampUpRotations = numSlowDACStepsPerRotation*rampingTotalRotations;
 		int64_t stepAfterRampUp = totalStepsInRampUpRotations -  
@@ -64,10 +63,9 @@ static float getSlowDACVal(int step, int i) {
 		if( currRampUpStep < totalStepsInRampUpRotations - rampingTotalSteps ) { // Before ramp up
 			val = 0.0;
 		} else if ( currRampUpStep < stepAfterRampUp ) { // Within ramp up
-			int64_t currRampUpStep = currRampUpStep - (totalStepsInRampUpRotations - rampingTotalSteps);
-
-			val = slowDACLUT[ (stepAfterRampUp % numSlowDACStepsPerRotation) *numSlowDACChan+i] *
-				(0.9640+tanh(-2.0 + (currRampUpStep / ((float)rampingSteps-1))*4.0))/1.92806;
+			int64_t currRampUpStep_ = currRampUpStep - (totalStepsInRampUpRotations - rampingTotalSteps);
+			val = slowDACLUT[ (step % numSlowDACStepsPerRotation) *numSlowDACChan+i] *
+				(0.9640+tanh(-2.0 + (currRampUpStep_ / ((float)rampingSteps-1))*4.0))/1.92806;
 		} else {
 			val = slowDACLUT[(step % numSlowDACStepsPerRotation)*numSlowDACChan+i];
 		}
@@ -82,10 +80,10 @@ static float getSlowDACVal(int step, int i) {
 		if( currRampDownStep > rampingTotalSteps ) { // After ramp down
 			val = 0.0;
 		} else if ( currRampDownStep > (rampingTotalSteps - rampingSteps) ) { // Within ramp down
-			int64_t currRampDownStep = currRampDownStep - (rampingTotalSteps - rampingSteps);
+			int64_t currRampDownStep_ = currRampDownStep - (rampingTotalSteps - rampingSteps);
 
-			val = slowDACLUT[ (currRampDownStep % numSlowDACStepsPerRotation) *numSlowDACChan+i] *
-				(0.9640+tanh(-2.0 + ((rampingSteps-currRampDownStep-1) / ((float)rampingSteps-1))*4.0))/1.92806;
+			val = slowDACLUT[ (step % numSlowDACStepsPerRotation) *numSlowDACChan+i] *
+				(0.9640+tanh(-2.0 + ((rampingSteps-currRampDownStep_-1) / ((float)rampingSteps-1))*4.0))/1.92806;
 		} else {
 			val = slowDACLUT[(step % numSlowDACStepsPerRotation)*numSlowDACChan+i];
 		}
@@ -108,12 +106,16 @@ static void initSlowDAC() {
 	slowDACStepRampUpStarted = currentSlowDACStepTotal + numSlowDACStepsUntilEnd;
 	currentSetSlowDACStepTotal = 0;
 
+
 	// Enable and acknowledge SlowDAC
 	enableSlowDACLocal = true;
 	rotationSlowDACEnabled = currentRotationTotal + rampingTotalRotations + 1;
 	enableSlowDACAck = true;	
 	// 3 in the following line is a magic number
 	wpPDMStart = ((currentSlowDACStepTotal + numSlowDACStepsUntilEnd) % PDM_BUFF_SIZE);
+        
+	//printf(" rampingTotalRotations=%d, rotationRampUpStarted=%lld, rotationSlowDACEnabled=%lld \n", 
+	//		rampingTotalRotations, rotationRampUpStarted, rotationSlowDACEnabled);
 
 	for(int d=0; d<2; d++) {
 		for(int c=0; c<4; c++) {

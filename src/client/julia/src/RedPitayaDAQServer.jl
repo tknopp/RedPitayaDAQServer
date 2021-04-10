@@ -8,7 +8,7 @@ import Sockets: send, connect
 using Statistics
 using LinearAlgebra
 
-import Base: reset
+import Base: reset, iterate, length
 
 export RedPitaya, receive, query, start, stop, disconnect, getLog
 
@@ -24,6 +24,11 @@ mutable struct RedPitaya
   isMaster::Bool
   destroyed::Bool
 end
+
+# Iterable Interface
+
+length(rp::RedPitaya) = 1
+iterate(rp::RedPitaya, state=1) = state > 1 ? nothing : (rp, state + 1)
 
 """
 Send a command to the RedPitaya
