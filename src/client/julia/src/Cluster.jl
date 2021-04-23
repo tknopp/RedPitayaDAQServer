@@ -137,14 +137,26 @@ end
 
 function setSlowDAC(rpc::RedPitayaCluster, chan, value)
   idxRP = div(chan-1, 2) + 1
-  chanRP = mod(chan-1, 2)
+  chanRP = mod1(chan, 2)
   setSlowDAC(rpc[idxRP], chanRP, value)
 end
 
 function getSlowADC(rpc::RedPitayaCluster, chan::Integer)
   idxRP = div(chan-1, 2) + 1
-  chanRP = mod(chan-1, 2)
+  chanRP = mod1(chan, 2)
   getSlowADC(rpc[idxRP], chanRP)
+end
+
+function offsetDAC(rpc::RedPitayaCluster, chan, value)
+  idxRP = div(chan-1, 2) + 1
+  chanRP = mod1(chan, 2)
+  offsetDAC(rpc[idxRP], chanRP, value)
+end
+
+function offsetDAC(rpc::RedPitayaCluster, chan::Integer)
+  idxRP = div(chan-1, 2) + 1
+  chanRP = mod1(chan, 2)
+  offsetDAC(rpc[idxRP], chanRP)
 end
 
 function numSlowADCChan(rpc::RedPitayaCluster)
