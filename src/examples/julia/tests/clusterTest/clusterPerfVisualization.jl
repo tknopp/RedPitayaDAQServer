@@ -78,3 +78,40 @@ function visualizeWaitAndSend(testName, clusterSize, decimations=[64, 32, 16, 8]
     savefig(joinpath(@__DIR__, resultFile))
     println("Created ", resultFile)
 end
+
+function visualizeDataRate(testName, start, clusterSize, decimations=[64, 32, 16, 8]) 
+    figure(1)
+    clf()
+    plotIndex = 1
+    for rps = start:clusterSize
+        for dec in decimations
+            fileName = string(testName, "_detailed_rpc_$rps", "_dec_$dec")
+            fullName = joinpath(@__DIR__, string(fileName, ".csv"))
+            try 
+                df = DataFrame(CSV.File(fullName))
+                adcBufferSize  = (1 << 25)
+                subplot(length(start:clusterSize), length(decimations), plotIndex)
+                for i = 1:rps
+                    perf = @from r in df begin
+                    @where r.rp == i
+                    @select {r.deltaSend, r.chunkSize}
+                    @collect DataFrame
+                    end
+                    plot(dataRate.(perf.chunkSize, perf.deltaSend, dec))
+                end
+                plotIndex += 1
+            catch e
+                if !isa(e, ArgumentError)
+                    throw(e)
+                else 
+                    println("$fullName does not exist")
+                end
+            end
+        end
+    end
+    subplots_adjust(left=0.08, bottom=0.05, right=0.98, top=0.95, wspace=0.3, hspace=0.35)
+    resultFile = string(testName, "_dataRate.png")
+    savefig(joinpath(@__DIR__, resultFile))
+    println("Created ", resultFile)
+end
+
