@@ -1,11 +1,12 @@
 export decimation, masterTrigger, currentFrame, ramWriterMode, connectADC, startADC, stopADC, samplesPerPeriod, periodsPerFrame, 
      numSlowDACChan, setSlowDACLUT, enableSlowDAC, slowDACStepsPerRotation, samplesPerSlowDACStep, prepareSlowDAC,
      currentWP, slowDACInterpolation, numSlowADCChan, numLostStepsSlowADC, bufferSize, keepAliveReset, triggerMode,
-     slowDACStepsPerFrame, enableDACLUT, ADCPerformanceData, RPPerformance, RPStatus, RPInfo, startPipelinedData, PerformanceData, numChan
+     slowDACStepsPerFrame, enableDACLUT, ADCPerformanceData, RPPerformance, RPStatus, RPInfo, startPipelinedData, PerformanceData, numChan, dataRate
 
 struct ADCPerformanceData
   deltaRead::UInt64
   deltaSend::UInt64
+  chunkSize::UInt64
 end
 
 struct RPStatus
@@ -33,6 +34,18 @@ end
 
 function RPInfo()
   return RPInfo([RPPerformance([])])
+end
+
+function dataRate(chunkSize, deltaSend, decimation; unit="Mbits")
+  bitsPerSample = (chunkSize * 4 * 8) / deltaSend # 4 bytes per samples
+  freq = div(125e6, decimation)
+  bitsPerSec = bitsPerSample * freq 
+  return bitsPerSec/1e6 #TODO unit conversion
+end
+
+
+function dataRate(adc::ADCPerformanceData, decimation; unit ="Mbits")
+  return dataRate(adc.chunkSize, adc.deltaSend, decimation)
 end
 
 decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
@@ -180,20 +193,20 @@ function readServerStatus(rp::RedPitaya)
   return status
 end
 
-function performanceData(rp::RedPitaya)
+function performanceData(rp::RedPitaya, numSamples = 0)
   send(rp, "RP:PERF?")
-  return readPerformanceData(rp)
+  return readPerformanceData(rp, numSamples)
 end
 
-function readPerformanceData(rp::RedPitaya)
-  adc = readADCPerformanceData(rp)
+function readPerformanceData(rp::RedPitaya, numSamples = 0)
+  adc = readADCPerformanceData(rp, numSamples)
   dac = readDACPerformanceData(rp)
   return (adc, dac)
 end
 
-function readADCPerformanceData(rp::RedPitaya)
+function readADCPerformanceData(rp::RedPitaya, numSamples = 0)
   perf = read!(rp.dataSocket, Array{UInt64}(undef, 2))
-  return ADCPerformanceData(perf[1], perf[2])
+  return ADCPerformanceData(perf[1], perf[2], numSamples)
 end
 
 # Low level read. One has to take care that the numFrames are available
@@ -215,7 +228,7 @@ function readSamplesChunk_(rp::RedPitaya, reqWP::Int64, numSamples::Int64, into=
   end
   data = read!(rp.dataSocket, into)
   status = readServerStatus(rp)
-  (adc, dac) = readPerformanceData(rp)
+  (adc, dac) = readPerformanceData(rp, numSamples)
   @debug "read samples chunk ..."
   perf = PerformanceData(UInt64(reqWP), adc, dac, status)
   return (data, perf)
