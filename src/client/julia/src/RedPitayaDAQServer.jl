@@ -42,15 +42,23 @@ end
 Receive a String from the RedPitaya
 """
 function receive(rp::RedPitaya)
-  readline(rp.socket)[1:end] #-2
+  return readline(rp.socket)[1:end] 
 end
 
 """
 Perform a query with the RedPitaya. Return String
 """
-function query(rp::RedPitaya,cmd::String)
+function query(rp::RedPitaya, cmd::String, timeout::Number=2.0,  N=100)
   send(rp,cmd)
-  return receive(rp)
+  t = @async receive(rp)
+  for i=1:N
+    if istaskdone(t)
+      return fetch(t)
+    end
+    sleep(timeout / N )
+  end
+  @async Base.throwto(t, EOFError())
+  error("Receive run into timeout on RP $(rp.host) on command $(cmd)!")
 end
 
 """
