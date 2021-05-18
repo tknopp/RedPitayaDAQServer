@@ -24,16 +24,16 @@ void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *dio_sts;
 char *pdm_cfg, *dac_cfg;
 volatile int32_t *xadc;
 
-static const uint32_t ANALOG_OUT_MASK            = 0xFF;
-static const uint32_t ANALOG_OUT_BITS            = 16;
-static const uint32_t ANALOG_IN_MASK             = 0xFFF;
+// static const uint32_t ANALOG_OUT_MASK            = 0xFF;
+// static const uint32_t ANALOG_OUT_BITS            = 16;
+// static const uint32_t ANALOG_IN_MASK             = 0xFFF;
 
-static const float    ANALOG_IN_MAX_VAL          = 7.0;
-static const float    ANALOG_IN_MIN_VAL          = 0.0;
-static const uint32_t ANALOG_IN_MAX_VAL_INTEGER  = 0xFFF;
-static const float    ANALOG_OUT_MAX_VAL         = 1.8;
-static const float    ANALOG_OUT_MIN_VAL         = 0.0;
-static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
+// static const float    ANALOG_IN_MAX_VAL          = 7.0;
+// static const float    ANALOG_IN_MIN_VAL          = 0.0;
+// static const uint32_t ANALOG_IN_MAX_VAL_INTEGER  = 0xFFF;
+// static const float    ANALOG_OUT_MAX_VAL         = 1.8;
+// static const float    ANALOG_OUT_MIN_VAL         = 0.0;
+// static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
 
 // Init stuff
 
@@ -954,44 +954,7 @@ void stopTx() {
 
 // Calibration 
 
-// From https://github.com/RedPitaya/RedPitaya/blob/e7f4f6b161a9cbbbb3f661228a6e8c5b8f34f661/api/include/redpitaya/rp_Z20_125.h#L264
-/**
- * Calibration parameters, stored in the EEPROM device
- */
-typedef struct {
-    uint32_t fe_ch1_fs_g_hi;    //!< High gain front end full scale voltage, channel A
-    uint32_t fe_ch2_fs_g_hi;    //!< High gain front end full scale voltage, channel B
-    uint32_t fe_ch1_fs_g_lo;    //!< Low gain front end full scale voltage, channel A
-    uint32_t fe_ch2_fs_g_lo;    //!< Low gain front end full scale voltage, channel B
-    int32_t  fe_ch1_lo_offs;    //!< Front end DC offset, channel A
-    int32_t  fe_ch2_lo_offs;    //!< Front end DC offset, channel B
-    uint32_t be_ch1_fs;         //!< Back end full scale voltage, channel A
-    uint32_t be_ch2_fs;         //!< Back end full scale voltage, channel B
-    int32_t  be_ch1_dc_offs;    //!< Back end DC offset, channel A
-    int32_t  be_ch2_dc_offs;    //!< Back end DC offset, on channel B
-	uint32_t magic;			    //!
-    int32_t  fe_ch1_hi_offs;    //!< Front end DC offset, channel A
-    int32_t  fe_ch2_hi_offs;    //!< Front end DC offset, channel B
-    uint32_t low_filter_aa_ch1;  //!< Filter equalization coefficients AA for Low mode, channel A
-    uint32_t low_filter_bb_ch1;  //!< Filter equalization coefficients BB for Low mode, channel A
-    uint32_t low_filter_pp_ch1;  //!< Filter equalization coefficients PP for Low mode, channel A
-    uint32_t low_filter_kk_ch1;  //!< Filter equalization coefficients KK for Low mode, channel A
-    uint32_t low_filter_aa_ch2;  //!< Filter equalization coefficients AA for Low mode, channel B
-    uint32_t low_filter_bb_ch2;  //!< Filter equalization coefficients BB for Low mode, channel B
-    uint32_t low_filter_pp_ch2;  //!< Filter equalization coefficients PP for Low mode, channel B
-    uint32_t low_filter_kk_ch2;  //!< Filter equalization coefficients KK for Low mode, channel B
-    uint32_t  hi_filter_aa_ch1;  //!< Filter equalization coefficients AA for High mode, channel A
-    uint32_t  hi_filter_bb_ch1;  //!< Filter equalization coefficients BB for High mode, channel A
-    uint32_t  hi_filter_pp_ch1;  //!< Filter equalization coefficients PP for High mode, channel A
-    uint32_t  hi_filter_kk_ch1;  //!< Filter equalization coefficients KK for High mode, channel A
-    uint32_t  hi_filter_aa_ch2;  //!< Filter equalization coefficients AA for High mode, channel B
-    uint32_t  hi_filter_bb_ch2;  //!< Filter equalization coefficients BB for High mode, channel B
-    uint32_t  hi_filter_pp_ch2;  //!< Filter equalization coefficients PP for High mode, channel B
-    uint32_t  hi_filter_kk_ch2;  //!< Filter equalization coefficients KK for High mode, channel B   
-
-} rp_calib_params_t;
-
-//from https://github.com/RedPitaya/RedPitaya/blob/e7f4f6b161a9cbbbb3f661228a6e8c5b8f34f661/api/src/calib.c
+// From https://github.com/RedPitaya/RedPitaya/blob/e7f4f6b161a9cbbbb3f661228a6e8c5b8f34f661/api/src/calib.c
 
 #define CALIB_MAGIC 0xAABBCCDD
 #define CALIB_MAGIC_FILTER 0xDDCCBBAA 
