@@ -28,9 +28,9 @@ volatile int32_t *xadc;
 // static const uint32_t ANALOG_OUT_BITS            = 16;
 // static const uint32_t ANALOG_IN_MASK             = 0xFFF;
 
-// static const float    ANALOG_IN_MAX_VAL          = 7.0;
-// static const float    ANALOG_IN_MIN_VAL          = 0.0;
-// static const uint32_t ANALOG_IN_MAX_VAL_INTEGER  = 0xFFF;
+static const float    ANALOG_IN_MAX_VAL          = 7.0;
+static const float    ANALOG_IN_MIN_VAL          = 0.0;
+static const uint32_t ANALOG_IN_MAX_VAL_INTEGER  = 0xFFF;
 // static const float    ANALOG_OUT_MAX_VAL         = 1.8;
 // static const float    ANALOG_OUT_MIN_VAL         = 0.0;
 // static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;

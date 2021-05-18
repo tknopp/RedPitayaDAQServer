@@ -180,6 +180,6 @@ extern int calib_SetParams(rp_calib_params_t calib_params);
 extern void calib_SetToZero();
 extern int calib_LoadFromFactoryZone();
 
-uint32_t cmn_CalibFullScaleFromVoltage(float voltageScale)
+uint32_t cmn_CalibFullScaleFromVoltage(float voltageScale);
 
 #endif /* RP_DAQ_LIB_H */
