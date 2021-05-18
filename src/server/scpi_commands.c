@@ -1111,73 +1111,80 @@ static scpi_result_t RP_GetPerformance(scpi_t * context) {
 
 static scpi_result_t RP_GetCalibration(scpi_t * context) {
 	rp_calib_params_t calib_params = calib_GetParams();
-	char result[4096];
 
-	sprintf(result, "fe_ch1_fs_g_hi=%u;"
-									"fe_ch2_fs_g_hi=%u;"
-									"fe_ch1_fs_g_lo=%u;"
-									"fe_ch2_fs_g_lo=%u;"
-									"fe_ch1_lo_offs=%d;"
-									"fe_ch2_lo_offs=%d;"
-									"be_ch1_fs=%u;"
-									"be_ch2_fs=%u;"
-									"be_ch1_dc_offs=%d;"
-									"be_ch2_dc_offs=%d;"
-									"magic=%u;"
-									"fe_ch1_hi_offs=%d;"
-									"fe_ch2_hi_offs=%d;"
-									"low_filter_aa_ch1=%u;"
-									"low_filter_bb_ch1=%u;"
-									"low_filter_pp_ch1=%u;"
-									"low_filter_kk_ch1=%u;"
-									"low_filter_aa_ch2=%u;"
-									"low_filter_bb_ch2=%u;"
-									"low_filter_pp_ch2=%u;"
-									"low_filter_kk_ch2=%u;"
-									"hi_filter_aa_ch1=%u;"
-									"hi_filter_bb_ch1=%u;"
-									"hi_filter_pp_ch1=%u;"
-									"hi_filter_kk_ch1=%u;"
-									"hi_filter_aa_ch2=%u;"
-									"hi_filter_bb_ch2=%u;"
-									"hi_filter_pp_ch2=%u;"
-									"hi_filter_kk_ch2=%u",
-									calib_params.fe_ch1_fs_g_hi,
-									calib_params.fe_ch2_fs_g_hi,
-									calib_params.fe_ch1_fs_g_lo,
-									calib_params.fe_ch2_fs_g_lo,
-									calib_params.fe_ch1_lo_offs,
-									calib_params.fe_ch2_lo_offs,
-									calib_params.be_ch1_fs,
-									calib_params.be_ch2_fs,
-									calib_params.be_ch1_dc_offs,
-									calib_params.be_ch2_dc_offs,
-									calib_params.magic,
-									calib_params.fe_ch1_hi_offs,
-									calib_params.fe_ch2_hi_offs,
-									calib_params.low_filter_aa_ch1,
-									calib_params.low_filter_bb_ch1,
-									calib_params.low_filter_pp_ch1,
-									calib_params.low_filter_kk_ch1,
-									calib_params.low_filter_aa_ch2,
-									calib_params.low_filter_bb_ch2,
-									calib_params.low_filter_pp_ch2,
-									calib_params.low_filter_kk_ch2,
-									calib_params.hi_filter_aa_ch1,
-									calib_params.hi_filter_bb_ch1,
-									calib_params.hi_filter_pp_ch1,
-									calib_params.hi_filter_kk_ch1,
-									calib_params.hi_filter_aa_ch2,
-									calib_params.hi_filter_bb_ch2,
-									calib_params.hi_filter_pp_ch2,
-									calib_params.hi_filter_kk_ch2);
+	const char* field;
+	size_t len;
+	if (!SCPI_ParamCharacters(context, &field, &len, TRUE)) {
+		return SCPI_RES_ERR;
+	}
 
-	SCPI_ResultText(context, result);
+	if (strcmp(field, "fe_ch1_fs_g_hi")) {
+		SCPI_ResultUInt32(context, calib_params.fe_ch1_fs_g_hi);
+	} else if (strcmp(field, "fe_ch2_fs_g_hi")) {
+		SCPI_ResultUInt32(context, calib_params.fe_ch2_fs_g_hi);
+	} else if (strcmp(field, "fe_ch1_fs_g_lo")) {
+		SCPI_ResultUInt32(context, calib_params.fe_ch1_fs_g_lo);
+	} else if (strcmp(field, "fe_ch2_fs_g_lo")) {
+		SCPI_ResultUInt32(context, calib_params.fe_ch2_fs_g_lo);
+	} else if (strcmp(field, "fe_ch1_lo_offs")) {
+		SCPI_ResultInt32(context, calib_params.fe_ch1_lo_offs);
+	} else if (strcmp(field, "fe_ch2_lo_offs")) {
+		SCPI_ResultInt32(context, calib_params.fe_ch2_lo_offs);
+	} else if (strcmp(field, "be_ch1_fs")) {
+		SCPI_ResultUInt32(context, calib_params.be_ch1_fs);
+	} else if (strcmp(field, "be_ch2_fs")) {
+		SCPI_ResultUInt32(context, calib_params.be_ch2_fs);
+	} else if (strcmp(field, "be_ch1_dc_offs")) {
+		SCPI_ResultInt32(context, calib_params.be_ch1_dc_offs);
+	} else if (strcmp(field, "be_ch2_dc_offs")) {
+		SCPI_ResultInt32(context, calib_params.be_ch2_dc_offs);
+	// } else if (strcmp(field, "magic")) {
+	// 	SCPI_ResultUInt32(context, calib_params.magic);
+	} else if (strcmp(field, "fe_ch1_hi_offs")) {
+		SCPI_ResultInt32(context, calib_params.fe_ch1_hi_offs);
+	} else if (strcmp(field, "fe_ch2_hi_offs")) {
+		SCPI_ResultInt32(context, calib_params.fe_ch2_hi_offs);
+	} else if (strcmp(field, "low_filter_aa_ch1")) {
+		SCPI_ResultUInt32(context, calib_params.low_filter_aa_ch1);
+	} else if (strcmp(field, "low_filter_bb_ch1")) {
+		SCPI_ResultUInt32(context, calib_params.low_filter_bb_ch1);
+	} else if (strcmp(field, "low_filter_pp_ch1")) {
+		SCPI_ResultUInt32(context, calib_params.low_filter_pp_ch1);
+	} else if (strcmp(field, "low_filter_kk_ch1")) {
+		SCPI_ResultUInt32(context, calib_params.low_filter_kk_ch1);
+	} else if (strcmp(field, "low_filter_aa_ch2")) {
+		SCPI_ResultUInt32(context, calib_params.low_filter_aa_ch2);
+	} else if (strcmp(field, "low_filter_bb_ch2")) {
+		SCPI_ResultUInt32(context, calib_params.low_filter_bb_ch2);
+	} else if (strcmp(field, "low_filter_pp_ch2")) {
+		SCPI_ResultUInt32(context, calib_params.low_filter_pp_ch2);
+	} else if (strcmp(field, "low_filter_kk_ch2")) {
+		SCPI_ResultUInt32(context, calib_params.low_filter_kk_ch2);
+	} else if (strcmp(field, "hi_filter_aa_ch1")) {
+		SCPI_ResultUInt32(context, calib_params.hi_filter_aa_ch1);
+	} else if (strcmp(field, "hi_filter_bb_ch1")) {
+		SCPI_ResultUInt32(context, calib_params.hi_filter_bb_ch1);
+	} else if (strcmp(field, "hi_filter_pp_ch1")) {
+		SCPI_ResultUInt32(context, calib_params.hi_filter_pp_ch1);
+	} else if (strcmp(field, "hi_filter_kk_ch1")) {
+		SCPI_ResultUInt32(context, calib_params.hi_filter_kk_ch1);
+	} else if (strcmp(field, "hi_filter_aa_ch2")) {
+		SCPI_ResultUInt32(context, calib_params.hi_filter_aa_ch2);
+	} else if (strcmp(field, "hi_filter_bb_ch2")) {
+		SCPI_ResultUInt32(context, calib_params.hi_filter_bb_ch2);
+	} else if (strcmp(field, "hi_filter_pp_ch2")) {
+		SCPI_ResultUInt32(context, calib_params.hi_filter_pp_ch2);
+	} else if (strcmp(field, "hi_filter_kk_ch2")) {
+		SCPI_ResultUInt32(context, calib_params.hi_filter_kk_ch2);
+	} else {
+		return SCPI_RES_ERR;
+	}
+
 	return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_SetCalibration(scpi_t * context) {
-	rp_calib_params_t calib_params;
+	rp_calib_params_t calib_params = calib_GetParams();
 
 	const char* paramsIn;
 	size_t len;
@@ -1185,66 +1192,84 @@ static scpi_result_t RP_SetCalibration(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 
-	sscanf(paramsIn,"fe_ch1_fs_g_hi=%u\n"
-									"fe_ch2_fs_g_hi=%u;"
-									"fe_ch1_fs_g_lo=%u;"
-									"fe_ch2_fs_g_lo=%u;"
-									"fe_ch1_lo_offs=%d;"
-									"fe_ch2_lo_offs=%d;"
-									"be_ch1_fs=%u;"
-									"be_ch2_fs=%u;"
-									"be_ch1_dc_offs=%d;"
-									"be_ch2_dc_offs=%d;"
-									"magic=%u;"
-									"fe_ch1_hi_offs=%d;"
-									"fe_ch2_hi_offs=%d;"
-									"low_filter_aa_ch1=%u;"
-									"low_filter_bb_ch1=%u;"
-									"low_filter_pp_ch1=%u;"
-									"low_filter_kk_ch1=%u;"
-									"low_filter_aa_ch2=%u;"
-									"low_filter_bb_ch2=%u;"
-									"low_filter_pp_ch2=%u;"
-									"low_filter_kk_ch2=%u;"
-									"hi_filter_aa_ch1=%u;"
-									"hi_filter_bb_ch1=%u;"
-									"hi_filter_pp_ch1=%u;"
-									"hi_filter_kk_ch1=%u;"
-									"hi_filter_aa_ch2=%u;"
-									"hi_filter_bb_ch2=%u;"
-									"hi_filter_pp_ch2=%u;"
-									"hi_filter_kk_ch2=%u",
-									&calib_params.fe_ch1_fs_g_hi,
-									&calib_params.fe_ch2_fs_g_hi,
-									&calib_params.fe_ch1_fs_g_lo,
-									&calib_params.fe_ch2_fs_g_lo,
-									&calib_params.fe_ch1_lo_offs,
-									&calib_params.fe_ch2_lo_offs,
-									&calib_params.be_ch1_fs,
-									&calib_params.be_ch2_fs,
-									&calib_params.be_ch1_dc_offs,
-									&calib_params.be_ch2_dc_offs,
-									&calib_params.magic,
-									&calib_params.fe_ch1_hi_offs,
-									&calib_params.fe_ch2_hi_offs,
-									&calib_params.low_filter_aa_ch1,
-									&calib_params.low_filter_bb_ch1,
-									&calib_params.low_filter_pp_ch1,
-									&calib_params.low_filter_kk_ch1,
-									&calib_params.low_filter_aa_ch2,
-									&calib_params.low_filter_bb_ch2,
-									&calib_params.low_filter_pp_ch2,
-									&calib_params.low_filter_kk_ch2,
-									&calib_params.hi_filter_aa_ch1,
-									&calib_params.hi_filter_bb_ch1,
-									&calib_params.hi_filter_pp_ch1,
-									&calib_params.hi_filter_kk_ch1,
-									&calib_params.hi_filter_aa_ch2,
-									&calib_params.hi_filter_bb_ch2,
-									&calib_params.hi_filter_pp_ch2,
-									&calib_params.hi_filter_kk_ch2);
+	bool offsetTest = strcmp(field, "fe_ch1_lo_offs");
+	offsetTest = offsetTest || strcmp(field, "fe_ch2_lo_offs");
+	offsetTest = offsetTest || strcmp(field, "be_ch1_dc_offs");
+	offsetTest = offsetTest || strcmp(field, "be_ch2_dc_offs");
+	offsetTest = offsetTest || strcmp(field, "fe_ch1_hi_offs");
+	offsetTest = offsetTest || strcmp(field, "fe_ch2_hi_offs");
 
-	calib_WriteParams(calib_params,false);	
+
+	if (offsetTest) { // Check if we need to have a signed or unsigned integer
+		int32_t val;
+		if (!SCPI_ParamInt32(context, &val, TRUE)) {
+			return SCPI_RES_ERR;
+		}
+
+		if (strcmp(field, "fe_ch1_lo_offs")) {
+			calib_params.fe_ch1_lo_offs = val;
+		} else if (strcmp(field, "fe_ch2_lo_offs")) {
+			calib_params.fe_ch2_lo_offs = val;
+		} else if (strcmp(field, "be_ch1_dc_offs")) {
+			calib_params.be_ch1_dc_offs = val;
+		} else if (strcmp(field, "be_ch2_dc_offs")) {
+			calib_params.be_ch2_dc_offs = val;
+		} else if (strcmp(field, "fe_ch1_hi_offs")) {
+			calib_params.fe_ch1_hi_offs = val;
+		} else if (strcmp(field, "fe_ch2_hi_offs")) {
+			calib_params.fe_ch2_hi_offs = val;
+		}
+	} else {
+		if (strcmp(field, "fe_ch1_fs_g_hi")) {
+			calib_params.fe_ch1_fs_g_hi = val;
+		} else if (strcmp(field, "fe_ch2_fs_g_hi")) {
+			calib_params.fe_ch2_fs_g_hi = val;
+		} else if (strcmp(field, "fe_ch1_fs_g_lo")) {
+			calib_params.fe_ch1_fs_g_lo = val;
+		} else if (strcmp(field, "fe_ch2_fs_g_lo")) {
+			calib_params.fe_ch2_fs_g_lo = val;
+		} else if (strcmp(field, "be_ch1_fs")) {
+			calib_params.be_ch1_fs = val;
+		} else if (strcmp(field, "be_ch2_fs")) {
+			calib_params.be_ch2_fs = val;
+		} else if (strcmp(field, "low_filter_aa_ch1")) {
+			calib_params.low_filter_aa_ch1 = val;
+		} else if (strcmp(field, "low_filter_bb_ch1")) {
+			calib_params.low_filter_bb_ch1 = val;
+		} else if (strcmp(field, "low_filter_pp_ch1")) {
+			calib_params.low_filter_pp_ch1 = val;
+		} else if (strcmp(field, "low_filter_kk_ch1")) {
+			calib_params.low_filter_kk_ch1 = val;
+		} else if (strcmp(field, "low_filter_aa_ch2")) {
+			calib_params.low_filter_aa_ch2 = val;
+		} else if (strcmp(field, "low_filter_bb_ch2")) {
+			calib_params.low_filter_bb_ch2 = val;
+		} else if (strcmp(field, "low_filter_pp_ch2")) {
+			calib_params.low_filter_pp_ch2 = val;
+		} else if (strcmp(field, "low_filter_kk_ch2")) {
+			calib_params.low_filter_kk_ch2 = val;
+		} else if (strcmp(field, "hi_filter_aa_ch1")) {
+			calib_params.hi_filter_aa_ch1 = val;
+		} else if (strcmp(field, "hi_filter_bb_ch1")) {
+			calib_params.hi_filter_bb_ch1 = val;
+		} else if (strcmp(field, "hi_filter_pp_ch1")) {
+			calib_params.hi_filter_pp_ch1 = val;
+		} else if (strcmp(field, "hi_filter_kk_ch1")) {
+			calib_params.hi_filter_kk_ch1 = val;
+		} else if (strcmp(field, "hi_filter_aa_ch2")) {
+			calib_params.hi_filter_aa_ch2 = val;
+		} else if (strcmp(field, "hi_filter_bb_ch2")) {
+			calib_params.hi_filter_bb_ch2 = val;
+		} else if (strcmp(field, "hi_filter_pp_ch2")) {
+			calib_params.hi_filter_pp_ch2 = val;
+		} else if (strcmp(field, "hi_filter_kk_ch2")) {
+			calib_params.hi_filter_kk_ch2 = val;
+		} else {
+			return SCPI_RES_ERR;
+		}
+	}
+
+	calib_WriteParams(calib_params, false);	
 	return SCPI_RES_OK;
 }
 
