@@ -766,8 +766,6 @@ static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
-
-
 scpi_choice_def_t onoff_modes[] = {
 	{"OFF", OFF},
 	{"ON", ON},
@@ -1109,6 +1107,147 @@ static scpi_result_t RP_GetPerformance(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+// Calibration
+
+static scpi_result_t RP_GetCalibration(scpi_t * context) {
+	rp_calib_params_t calib_params = calib_GetParams();
+	char result[4096];
+
+	sprintf(result, "fe_ch1_fs_g_hi=%d\n"
+									"fe_ch2_fs_g_hi=%d\n"
+									"fe_ch1_fs_g_lo=%d\n"
+									"fe_ch2_fs_g_lo=%d\n"
+									"fe_ch1_lo_offs=%d\n"
+									"fe_ch2_lo_offs=%d\n"
+									"be_ch1_fs=%d\n"
+									"be_ch2_fs=%d\n"
+									"be_ch1_dc_offs=%d\n"
+									"be_ch2_dc_offs=%d"
+									"magic=%d\n"
+									"fe_ch1_hi_offs=%d\n"
+									"fe_ch2_hi_offs=%d\n"
+									"low_filter_aa_ch1=%d\n"
+									"low_filter_bb_ch1=%d\n"
+									"low_filter_pp_ch1=%d\n"
+									"low_filter_kk_ch1=%d\n"
+									"low_filter_aa_ch2=%d\n"
+									"low_filter_bb_ch2=%d\n"
+									"low_filter_pp_ch2=%d\n"
+									"low_filter_kk_ch2=%d\n"
+									"hi_filter_aa_ch1=%d\n"
+									"hi_filter_bb_ch1=%d\n"
+									"hi_filter_pp_ch1=%d\n"
+									"hi_filter_kk_ch1=%d\n"
+									"hi_filter_aa_ch2=%d\n"
+									"hi_filter_bb_ch2=%d\n"
+									"hi_filter_pp_ch2=%d\n"
+									"hi_filter_kk_ch2=%d",
+									calib_params.fe_ch1_fs_g_hi,
+									calib_params.fe_ch2_fs_g_hi,
+									calib_params.fe_ch1_fs_g_lo,
+									calib_params.fe_ch2_fs_g_lo,
+									calib_params.fe_ch1_lo_offs,
+									calib_params.fe_ch2_lo_offs,
+									calib_params.be_ch1_fs,
+									calib_params.be_ch2_fs,
+									calib_params.be_ch1_dc_offs,
+									calib_params.be_ch2_dc_offs
+									calib_params.magic,
+									calib_params.fe_ch1_hi_offs,
+									calib_params.fe_ch2_hi_offs,
+									calib_params.low_filter_aa_ch1,
+									calib_params.low_filter_bb_ch1,
+									calib_params.low_filter_pp_ch1,
+									calib_params.low_filter_kk_ch1,
+									calib_params.low_filter_aa_ch2,
+									calib_params.low_filter_bb_ch2,
+									calib_params.low_filter_pp_ch2,
+									calib_params.low_filter_kk_ch2,
+									calib_params.hi_filter_aa_ch1,
+									calib_params.hi_filter_bb_ch1,
+									calib_params.hi_filter_pp_ch1,
+									calib_params.hi_filter_kk_ch1,
+									calib_params.hi_filter_aa_ch2,
+									calib_params.hi_filter_bb_ch2,
+									calib_params.hi_filter_pp_ch2,
+									calib_params.hi_filter_kk_ch2);
+
+	SCPI_ResultText(context, &result)
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_SetCalibration(scpi_t * context) {
+	rp_calib_params_t calib_params;
+
+	const char* paramsIn;
+	size_t len;
+	if (!SCPI_ParamCharacters(context, &paramsIn, &len, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+	sscanf(paramsIn,"fe_ch1_fs_g_hi=%d\n"
+									"fe_ch2_fs_g_hi=%d\n"
+									"fe_ch1_fs_g_lo=%d\n"
+									"fe_ch2_fs_g_lo=%d\n"
+									"fe_ch1_lo_offs=%d\n"
+									"fe_ch2_lo_offs=%d\n"
+									"be_ch1_fs=%d\n"
+									"be_ch2_fs=%d\n"
+									"be_ch1_dc_offs=%d\n"
+									"be_ch2_dc_offs=%d"
+									"magic=%d\n"
+									"fe_ch1_hi_offs=%d\n"
+									"fe_ch2_hi_offs=%d\n"
+									"low_filter_aa_ch1=%d\n"
+									"low_filter_bb_ch1=%d\n"
+									"low_filter_pp_ch1=%d\n"
+									"low_filter_kk_ch1=%d\n"
+									"low_filter_aa_ch2=%d\n"
+									"low_filter_bb_ch2=%d\n"
+									"low_filter_pp_ch2=%d\n"
+									"low_filter_kk_ch2=%d\n"
+									"hi_filter_aa_ch1=%d\n"
+									"hi_filter_bb_ch1=%d\n"
+									"hi_filter_pp_ch1=%d\n"
+									"hi_filter_kk_ch1=%d\n"
+									"hi_filter_aa_ch2=%d\n"
+									"hi_filter_bb_ch2=%d\n"
+									"hi_filter_pp_ch2=%d\n"
+									"hi_filter_kk_ch2=%d",
+									calib_params.fe_ch1_fs_g_hi,
+									calib_params.fe_ch2_fs_g_hi,
+									calib_params.fe_ch1_fs_g_lo,
+									calib_params.fe_ch2_fs_g_lo,
+									calib_params.fe_ch1_lo_offs,
+									calib_params.fe_ch2_lo_offs,
+									calib_params.be_ch1_fs,
+									calib_params.be_ch2_fs,
+									calib_params.be_ch1_dc_offs,
+									calib_params.be_ch2_dc_offs
+									calib_params.magic,
+									calib_params.fe_ch1_hi_offs,
+									calib_params.fe_ch2_hi_offs,
+									calib_params.low_filter_aa_ch1,
+									calib_params.low_filter_bb_ch1,
+									calib_params.low_filter_pp_ch1,
+									calib_params.low_filter_kk_ch1,
+									calib_params.low_filter_aa_ch2,
+									calib_params.low_filter_bb_ch2,
+									calib_params.low_filter_pp_ch2,
+									calib_params.low_filter_kk_ch2,
+									calib_params.hi_filter_aa_ch1,
+									calib_params.hi_filter_bb_ch1,
+									calib_params.hi_filter_pp_ch1,
+									calib_params.hi_filter_kk_ch1,
+									calib_params.hi_filter_aa_ch2,
+									calib_params.hi_filter_bb_ch2,
+									calib_params.hi_filter_pp_ch2,
+									calib_params.hi_filter_kk_ch2);
+
+	SCPI_ResultText(context, &result)
+	return SCPI_RES_OK;
+}
+
 const scpi_command_t scpi_commands[] = {
 	/* IEEE Mandated Commands (SCPI std V1999.0 4.1.1) */
 	{ .pattern = "*CLS", .callback = SCPI_CoreCls,},
@@ -1223,6 +1362,10 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:STATus:LOSTSteps?", .callback = RP_GetLostStatus,},
 	{.pattern = "RP:LOG?", .callback = RP_GetLog,},
 	{.pattern = "RP:PERF?", .callback = RP_GetPerformance,},	
+
+	/* Calibration */
+	{.pattern = "RP:CALib?", .callback = RP_GetCalibration,},
+	{.pattern = "RP:CALib", .callback = RP_SetCalibration,},
 
 	SCPI_CMD_LIST_END
 };

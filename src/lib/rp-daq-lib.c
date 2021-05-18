@@ -15,7 +15,6 @@
 #include <time.h> 
 #include <limits.h>
 #include "rp-daq-lib.h"
-#include "rp-config.h"
 
 bool verbose = false;
 
@@ -63,6 +62,7 @@ void loadBitstream() {
 }
 
 int init() {
+	calib_Init(); // Load calibration from EEPROM
 	loadBitstream();
 
 	// Open memory
@@ -171,7 +171,6 @@ int setAmplitude(uint16_t amplitude, int channel, int component) {
 	return 0;
 }
 
-
 int16_t getOffset(int channel) {
 	if(channel < 0 || channel > 1) {
 		return -3;
@@ -195,8 +194,6 @@ int setOffset(int16_t offset, int channel) {
 
 	return 0;
 }
-
-
 
 double getFrequency(int channel, int component) {
 	if(channel < 0 || channel > 1) {
@@ -360,8 +357,6 @@ int getSignalType(int channel) {
 	return value;
 }
 
-
-
 int setJumpSharpness(int channel, float percentage) {
 	if(channel < 0 || channel > 1) {
 		return -3;
@@ -394,12 +389,10 @@ int setDecimation(uint16_t decimation) {
 	return 0;
 }
 
-
 uint16_t getDecimation() {
 	uint16_t value = *((uint16_t *)(cfg + 2));
 	return value;
 }
-
 
 #define BIT_MASK(__TYPE__, __ONE_COUNT__) \
 	((__TYPE__) (-((__ONE_COUNT__) != 0))) \
@@ -479,9 +472,6 @@ int setEnableDAC(int8_t value, int channel, int index) {
 	return 0;
 }
 
-
-
-
 int setPDMRegisterValue(uint64_t value, int index) {
 	//printf("setPDMRegisterValue: value=%llu index=%d \n", value, index);
 	*(((uint64_t *)(pdm_cfg))+index) = value;
@@ -551,7 +541,6 @@ int setPDMAllValuesVolt(float voltage, int channel) {
 	return 0;
 }
 
-
 int getPDMClockDivider() {
 	int32_t value = *((int32_t *)(cfg + 4));
 	return value*2;
@@ -574,7 +563,6 @@ uint64_t getPDMTotalWritePointer() {
 	uint64_t value = *((uint64_t *)(pdm_sts));
 	return value;
 }
-
 
 uint64_t getPDMWritePointer() {
 	uint64_t value = *((uint64_t *)(pdm_sts));
@@ -617,7 +605,6 @@ uint32_t getXADCValue(int channel) {
 	}
 	return value;
 }
-
 
 float getXADCValueVolt(int channel) {
 	uint32_t value_raw = getXADCValue(channel);
@@ -695,8 +682,6 @@ int setTriggerMode(int mode) {
 
 	return 0;
 }
-
-
 
 int getMasterTrigger() {
 	int value;
@@ -789,9 +774,6 @@ int setPassPDMToFastDAC(int mode) {
 
 	return 0;
 }
-
-
-
 
 int getKeepAliveReset() {
 	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x40) );
@@ -922,8 +904,6 @@ int setDIODirection(const char* pin, int value) {
 	return 0;
 }
 
-
-
 int setDIO(const char* pin, int value) {
 	int pinInternal = getInternalPINNumber(pin);
 	if(pinInternal < 0) {
@@ -970,4 +950,267 @@ void stopTx() {
 	for(int d=0; d<4; d++) {
 		setEnableDACAll(1,d);
 	}
+}
+
+// Calibration 
+
+// From https://github.com/RedPitaya/RedPitaya/blob/e7f4f6b161a9cbbbb3f661228a6e8c5b8f34f661/api/include/redpitaya/rp_Z20_125.h#L264
+/**
+ * Calibration parameters, stored in the EEPROM device
+ */
+typedef struct {
+    uint32_t fe_ch1_fs_g_hi;    //!< High gain front end full scale voltage, channel A
+    uint32_t fe_ch2_fs_g_hi;    //!< High gain front end full scale voltage, channel B
+    uint32_t fe_ch1_fs_g_lo;    //!< Low gain front end full scale voltage, channel A
+    uint32_t fe_ch2_fs_g_lo;    //!< Low gain front end full scale voltage, channel B
+    int32_t  fe_ch1_lo_offs;    //!< Front end DC offset, channel A
+    int32_t  fe_ch2_lo_offs;    //!< Front end DC offset, channel B
+    uint32_t be_ch1_fs;         //!< Back end full scale voltage, channel A
+    uint32_t be_ch2_fs;         //!< Back end full scale voltage, channel B
+    int32_t  be_ch1_dc_offs;    //!< Back end DC offset, channel A
+    int32_t  be_ch2_dc_offs;    //!< Back end DC offset, on channel B
+	uint32_t magic;			    //!
+    int32_t  fe_ch1_hi_offs;    //!< Front end DC offset, channel A
+    int32_t  fe_ch2_hi_offs;    //!< Front end DC offset, channel B
+    uint32_t low_filter_aa_ch1;  //!< Filter equalization coefficients AA for Low mode, channel A
+    uint32_t low_filter_bb_ch1;  //!< Filter equalization coefficients BB for Low mode, channel A
+    uint32_t low_filter_pp_ch1;  //!< Filter equalization coefficients PP for Low mode, channel A
+    uint32_t low_filter_kk_ch1;  //!< Filter equalization coefficients KK for Low mode, channel A
+    uint32_t low_filter_aa_ch2;  //!< Filter equalization coefficients AA for Low mode, channel B
+    uint32_t low_filter_bb_ch2;  //!< Filter equalization coefficients BB for Low mode, channel B
+    uint32_t low_filter_pp_ch2;  //!< Filter equalization coefficients PP for Low mode, channel B
+    uint32_t low_filter_kk_ch2;  //!< Filter equalization coefficients KK for Low mode, channel B
+    uint32_t  hi_filter_aa_ch1;  //!< Filter equalization coefficients AA for High mode, channel A
+    uint32_t  hi_filter_bb_ch1;  //!< Filter equalization coefficients BB for High mode, channel A
+    uint32_t  hi_filter_pp_ch1;  //!< Filter equalization coefficients PP for High mode, channel A
+    uint32_t  hi_filter_kk_ch1;  //!< Filter equalization coefficients KK for High mode, channel A
+    uint32_t  hi_filter_aa_ch2;  //!< Filter equalization coefficients AA for High mode, channel B
+    uint32_t  hi_filter_bb_ch2;  //!< Filter equalization coefficients BB for High mode, channel B
+    uint32_t  hi_filter_pp_ch2;  //!< Filter equalization coefficients PP for High mode, channel B
+    uint32_t  hi_filter_kk_ch2;  //!< Filter equalization coefficients KK for High mode, channel B   
+
+} rp_calib_params_t;
+
+//from https://github.com/RedPitaya/RedPitaya/blob/e7f4f6b161a9cbbbb3f661228a6e8c5b8f34f661/api/src/calib.c
+
+#define CALIB_MAGIC 0xAABBCCDD
+#define CALIB_MAGIC_FILTER 0xDDCCBBAA 
+#define GAIN_LO_FILT_AA 0x7D93
+#define GAIN_LO_FILT_BB 0x437C7
+#define GAIN_LO_FILT_PP 0x2666
+#define GAIN_LO_FILT_KK 0xd9999a
+#define GAIN_HI_FILT_AA 0x4205
+#define GAIN_HI_FILT_BB 0x2F38B
+#define GAIN_HI_FILT_PP 0x2666
+#define GAIN_HI_FILT_KK 0xd9999a
+
+int calib_ReadParams(rp_calib_params_t *calib_params,bool use_factory_zone);
+rp_calib_params_t getDefaultCalib();
+
+static const char eeprom_device[]="/sys/bus/i2c/devices/0-0050/eeprom";
+static const int  eeprom_calib_off=0x0008;
+static const int  eeprom_calib_factory_off = 0x1c08;
+
+// Cached parameter values.
+static rp_calib_params_t calib;
+
+int calib_Init()
+{
+    calib_ReadParams(&calib,false);
+    return 0; // Success
+}
+
+int calib_Release()
+{
+    return 0; // Success
+}
+
+/**
+ * Returns cached parameter values
+ * @return Cached parameters.
+ */
+rp_calib_params_t calib_GetParams()
+{
+    return calib;
+}
+
+rp_calib_params_t calib_GetDefaultCalib(){
+    return getDefaultCalib();
+}
+
+/**
+ * @brief Read calibration parameters from EEPROM device.
+ *
+ * Function reads calibration parameters from EEPROM device and stores them to the
+ * specified buffer. Communication to the EEPROM device is taken place through
+ * appropriate system driver accessed through the file system device
+ * /sys/bus/i2c/devices/0-0050/eeprom.
+ *
+ * @param[out]   calib_params  Pointer to destination buffer.
+ * @retval       0 Success
+ * @retval       >0 Failure
+ *
+ */
+int calib_ReadParams(rp_calib_params_t *calib_params,bool use_factory_zone)
+{
+    FILE   *fp;
+    size_t  size;
+
+    /* sanity check */
+    if(calib_params == NULL) {
+        return 11; // Uninitialized Input Argument
+    }
+
+    /* open EEPROM device */
+    fp = fopen(eeprom_device, "r");
+    if(fp == NULL) {
+        return 1; // Failed to Open EEPROM Device
+    }
+
+    /* ...and seek to the appropriate storage offset */
+    int offset = use_factory_zone ? eeprom_calib_factory_off : eeprom_calib_off;
+    if(fseek(fp, offset, SEEK_SET) < 0) {
+        fclose(fp);
+        return 12; // Failed to Find Calibration Parameters
+    }
+
+    /* read data from EEPROM component and store it to the specified buffer */
+    size = fread(calib_params, sizeof(char), sizeof(rp_calib_params_t), fp);
+    if(size != sizeof(rp_calib_params_t)) {
+        fclose(fp);
+        return 13; // Failed to Read Calibration Parameters
+    }
+    fclose(fp);
+
+//#if defined Z10 || defined Z20_125 (commented out because we only work with STEMLab 125-14)
+    if (calib_params->magic != CALIB_MAGIC && calib_params->magic != CALIB_MAGIC_FILTER) {
+			calib_params->fe_ch1_hi_offs = calib_params->fe_ch1_lo_offs;
+			calib_params->fe_ch2_hi_offs = calib_params->fe_ch2_lo_offs;
+		}
+    else if (calib_params->magic != CALIB_MAGIC_FILTER){
+        calib_params->low_filter_aa_ch1 = GAIN_LO_FILT_AA;
+        calib_params->low_filter_bb_ch1 = GAIN_LO_FILT_BB;
+        calib_params->low_filter_pp_ch1 = GAIN_LO_FILT_PP;
+        calib_params->low_filter_kk_ch1 = GAIN_LO_FILT_KK;
+        calib_params->low_filter_aa_ch2 = GAIN_LO_FILT_AA;
+        calib_params->low_filter_bb_ch2 = GAIN_LO_FILT_BB;
+        calib_params->low_filter_pp_ch2 = GAIN_LO_FILT_PP;
+        calib_params->low_filter_kk_ch2 = GAIN_LO_FILT_KK;
+        
+        calib_params->hi_filter_aa_ch1 = GAIN_HI_FILT_AA;
+        calib_params->hi_filter_bb_ch1 = GAIN_HI_FILT_BB;
+        calib_params->hi_filter_pp_ch1 = GAIN_HI_FILT_PP;
+        calib_params->hi_filter_kk_ch1 = GAIN_HI_FILT_KK;
+        calib_params->hi_filter_aa_ch2 = GAIN_HI_FILT_AA;
+        calib_params->hi_filter_bb_ch2 = GAIN_HI_FILT_BB;
+        calib_params->hi_filter_pp_ch2 = GAIN_HI_FILT_PP;
+        calib_params->hi_filter_kk_ch2 = GAIN_HI_FILT_KK;
+    }
+//#endif
+
+    return 0;
+}
+
+
+int calib_LoadFromFactoryZone(){
+    rp_calib_params_t calib_values;
+    int ret_val = calib_ReadParams(&calib_values,true);
+    if (ret_val != 0)
+        return ret_val;
+
+    ret_val = calib_WriteParams(calib_values,false);
+    if (ret_val != 0)
+        return ret_val;
+
+    return calib_Init();
+}
+
+int calib_WriteParams(rp_calib_params_t calib_params,bool use_factory_zone) {
+    FILE   *fp;
+    size_t  size;
+
+    /* open EEPROM device */
+    fp = fopen(eeprom_device, "w+");
+    if(fp == NULL) {
+        return 1; // Failed to Open EEPROM Device
+    }
+
+    /* ...and seek to the appropriate storage offset */
+    int offset = use_factory_zone ? eeprom_calib_factory_off : eeprom_calib_off;
+    if(fseek(fp, offset, SEEK_SET) < 0) {
+        fclose(fp);
+        return 12; // Failed to Find Calibration Parameters
+    }
+
+    /* write data to EEPROM component */
+    size = fwrite(&calib_params, sizeof(char), sizeof(rp_calib_params_t), fp);
+    if(size != sizeof(rp_calib_params_t)) {
+        fclose(fp);
+        return 13; // Failed to Read Calibration Parameters
+    }
+    fclose(fp);
+
+    return 0; // Success
+}
+
+int calib_SetParams(rp_calib_params_t calib_params){
+    calib = calib_params;
+    return 0; // Success
+}
+
+rp_calib_params_t getDefaultCalib(){
+    rp_calib_params_t calib;
+    calib.magic = CALIB_MAGIC;
+    calib.be_ch1_dc_offs = 0;
+    calib.be_ch2_dc_offs = 0;
+    calib.fe_ch1_lo_offs = 0;
+    calib.fe_ch2_lo_offs = 0;
+    calib.fe_ch1_hi_offs = 0;
+    calib.fe_ch2_hi_offs = 0;
+
+    float coff = 0.5;
+
+    calib.be_ch1_fs      = cmn_CalibFullScaleFromVoltage(1);
+    calib.be_ch2_fs      = cmn_CalibFullScaleFromVoltage(1);
+    calib.fe_ch1_fs_g_lo = cmn_CalibFullScaleFromVoltage(20.0 );
+    calib.fe_ch1_fs_g_hi = cmn_CalibFullScaleFromVoltage(coff );
+    calib.fe_ch2_fs_g_lo = cmn_CalibFullScaleFromVoltage(20.0 );
+    calib.fe_ch2_fs_g_hi = cmn_CalibFullScaleFromVoltage(coff );
+
+//#if defined Z10 || defined Z20_125 (commented out because we only work with STEMLab 125-14)
+    calib.magic = CALIB_MAGIC_FILTER;
+    calib.low_filter_aa_ch1 = GAIN_LO_FILT_AA;
+    calib.low_filter_bb_ch1 = GAIN_LO_FILT_BB;
+    calib.low_filter_pp_ch1 = GAIN_LO_FILT_PP;
+    calib.low_filter_kk_ch1 = GAIN_LO_FILT_KK;
+    calib.low_filter_aa_ch2 = GAIN_LO_FILT_AA;
+    calib.low_filter_bb_ch2 = GAIN_LO_FILT_BB;
+    calib.low_filter_pp_ch2 = GAIN_LO_FILT_PP;
+    calib.low_filter_kk_ch2 = GAIN_LO_FILT_KK;
+    
+    calib.hi_filter_aa_ch1 = GAIN_HI_FILT_AA;
+    calib.hi_filter_bb_ch1 = GAIN_HI_FILT_BB;
+    calib.hi_filter_pp_ch1 = GAIN_HI_FILT_PP;
+    calib.hi_filter_kk_ch1 = GAIN_HI_FILT_KK;
+    calib.hi_filter_aa_ch2 = GAIN_HI_FILT_AA;
+    calib.hi_filter_bb_ch2 = GAIN_HI_FILT_BB;
+    calib.hi_filter_pp_ch2 = GAIN_HI_FILT_PP;
+    calib.hi_filter_kk_ch2 = GAIN_HI_FILT_KK;
+//#endif
+    return calib;
+}
+
+void calib_SetToZero() {
+    calib = getDefaultCalib();
+}
+
+// From https://github.com/RedPitaya/RedPitaya/blob/e7f4f6b161a9cbbbb3f661228a6e8c5b8f34f661/api/src/common.c#L172
+/**
+* @brief Converts scale voltage to calibration Full scale. Result is usually written to EPROM calibration parameters.
+*
+* @param[in] voltageScale Scale value in voltage
+* @retval Scale in volts
+*/
+uint32_t cmn_CalibFullScaleFromVoltage(float voltageScale) {
+    return (uint32_t) (voltageScale / 100.0 * ((uint64_t)1<<32));
 }
