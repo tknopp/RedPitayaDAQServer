@@ -4,7 +4,9 @@ The RedPitayaDAQServer allows to use multiple RedPitayas in a fully synchronized
 
 ## Prerequisites
 
-Unfortunately, the STEMlab 125-4 does not allow cluster synchronization without hardware modifications.   It is therefore necessary to resolder all slaves according to [this](http://redpitaya.readthedocs.io/en/latest/developerGuide/125-14/extADC.html) documentation. The required mode for this project is 'Directly from FPGA'.
+Unfortunately, the STEMlab 125-4 does not allow cluster synchronization without hardware modifications.   It is therefore necessary to resolder all slaves according to [this](http://redpitaya.readthedocs.io/en/latest/developerGuide/125-14/extADC.html) documentation. The required mode for this project is 'Directly from FPGA'. The heatsink has to be removed temporarily in order to unsolder the two resistor below it. In the following image you can see the new position of the 0 Ohm 0402 resistors. Since they get lost easily, make sure you have some in stock.
+
+[![Cluster](./assets/soldering_small.jpg)](./assets/soldering.jpg)
 
 ## Connections
 
