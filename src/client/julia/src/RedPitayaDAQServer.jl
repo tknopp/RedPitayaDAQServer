@@ -128,6 +128,7 @@ include("DAC.jl")
 include("ADC.jl")
 include("Cluster.jl")
 include("SlowIO.jl")
+include("EEPROM.jl")
 
 function destroy(rp::RedPitaya)
   disconnect(rp)
