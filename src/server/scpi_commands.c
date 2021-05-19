@@ -1120,7 +1120,7 @@ static scpi_result_t RP_GetCalibration(scpi_t * context) {
 	
 	// Remove newline that might slip into the string
 	char field[len];
-        strncpy(field, fieldConst, len);
+  strncpy(field, fieldConst, len);
 	field[len] = '\0';
 
 	if (!strcmp(field, "fe_ch1_fs_g_hi")) {
@@ -1200,8 +1200,8 @@ static scpi_result_t RP_SetCalibration(scpi_t * context) {
 
 	// Remove newline that might slip into the string
 	char field[len];
-        strncpy(field, fieldConst, len);
-        field[len] = '\0';
+  strncpy(field, fieldConst, len);
+  field[len] = '\0';
 
 	bool offsetTest = !strcmp(field, "fe_ch1_lo_offs");
 	offsetTest = offsetTest || !strcmp(field, "fe_ch2_lo_offs");
@@ -1231,9 +1231,9 @@ static scpi_result_t RP_SetCalibration(scpi_t * context) {
 		}
 	} else {
 		uint32_t val;
-                if (!SCPI_ParamUInt32(context, &val, TRUE)) {
-                        return SCPI_RES_ERR;
-                }
+		if (!SCPI_ParamUInt32(context, &val, TRUE)) {
+			return SCPI_RES_ERR;
+		}
 
 		if (!strcmp(field, "fe_ch1_fs_g_hi")) {
 			calib_params.fe_ch1_fs_g_hi = val;
