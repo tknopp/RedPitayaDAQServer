@@ -36,7 +36,6 @@ next_(rpc::RedPitayaCluster,state) = (rpc[state],state+1)
 done_(rpc::RedPitayaCluster,state) = state > length(rpc)
 iterate(rpc::RedPitayaCluster, s=start_(rpc)) = done_(rpc, s) ? nothing : next_(rpc, s)
 
-
 function RPInfo(rpc::RedPitayaCluster)
   return RPInfo([RPPerformance([]) for i = 1:length(rpc)])
 end
@@ -203,13 +202,15 @@ function slowDACInterpolation(rpc::RedPitayaCluster, enable::Bool)
   end
 end
 
+include("ClusterView.jl")
+
 function startPipelinedData(rpc::RedPitayaCluster, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
   for rp in rpc
     startPipelinedData(rp, reqWP, numSamples, chunkSize)
   end
 end
 
-function readSamples(rpu::Union{RedPitaya,RedPitayaCluster}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
+function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
   numOfReceivedSamples = 0
   index = 1
   rawData = zeros(Int16, numChan(rpu), numOfRequestedSamples)
@@ -235,7 +236,7 @@ function readSamples(rpu::Union{RedPitaya,RedPitayaCluster}, wpStart::Int64, num
   return rawData
 end
 
-function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
+function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
   numOfReceivedSamples = 0
   index = 1
   rawData = zeros(Int16, numChan(rpu), numOfRequestedSamples)
@@ -253,7 +254,7 @@ function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster}, wpStart::I
 
 end
 
-function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster}, wpRead::Int64, chunk::Int64, rawData, chunkBuffer, index; rpInfo=nothing)
+function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpRead::Int64, chunk::Int64, rawData, chunkBuffer, index; rpInfo=nothing)
   done = zeros(Bool, length(rpu))
   iterationDone = Condition()
   timeoutHappened = false
@@ -306,7 +307,7 @@ end
 
 # High level read. numFrames can adress a future frame. Data is read in
 # chunks
-function readFrames(rpu::Union{RedPitaya,RedPitayaCluster}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; rpInfo=nothing, chunkSize = 50000)
+function readFrames(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; rpInfo=nothing, chunkSize = 50000)
   numSampPerPeriod = samplesPerPeriod(rpu)
   numSamp = numSampPerPeriod * numFrames
   numPeriods = periodsPerFrame(rpu)
@@ -342,7 +343,7 @@ function convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, num
   end
 end
 
-function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster}, startPeriod, numPeriods, numBlockAverages=1; rpInfo=nothing, chunkSize = 50000)
+function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startPeriod, numPeriods, numBlockAverages=1; rpInfo=nothing, chunkSize = 50000)
   numSampPerPeriod = samplesPerPeriod(rpu)
 
   if rem(numSampPerPeriod,numBlockAverages) != 0
@@ -376,12 +377,12 @@ function convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, n
 end
 
 
-function readData(rpc::Union{RedPitaya,RedPitayaCluster}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; chunkSize = 50000)
-  @time data = readFrames(rpc, startFrame, numFrames, numBlockAverages, numPeriodsPerPatch, chunkSize = chunkSize)
+function readData(rpc::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; chunkSize = 50000)
+  data = readFrames(rpc, startFrame, numFrames, numBlockAverages, numPeriodsPerPatch, chunkSize = chunkSize)
   return data
 end
 
-function readDataPeriods(rpc::Union{RedPitaya,RedPitayaCluster}, startPeriod, numPeriods, numBlockAverages=1; chunkSize = 50000)
+function readDataPeriods(rpc::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startPeriod, numPeriods, numBlockAverages=1; chunkSize = 50000)
   data = readPeriods(rpc, startPeriod, numPeriods, numBlockAverages, chunkSize = chunkSize)
   return data
 end
