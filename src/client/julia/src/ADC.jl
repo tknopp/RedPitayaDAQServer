@@ -81,8 +81,10 @@ end
 function enableSlowDAC(rp::RedPitaya, enable::Bool, numFrames::Int64=0,
             ffRampUpTime::Float64=0.4, ffRampUpFraction::Float64=0.8)
   enableI = Int32(enable)
+  timeout = 1/(125e6/rp.decimation) * rp.samplesPerPeriod * rp.periodsPerFrame * 4 # Wait a few frames
+  timeout = max(timeout, 2.0)
   return query(rp, string("RP:ADC:SlowDACEnable ", enableI,
-              ",", numFrames, ",", ffRampUpTime, ",", ffRampUpFraction), Int64)
+              ",", numFrames, ",", ffRampUpTime, ",", ffRampUpFraction), Int64, timeout)
 end
 
 function slowDACInterpolation(rp::RedPitaya, enable::Bool)

@@ -58,14 +58,14 @@ function query(rp::RedPitaya, cmd::String, timeout::Number=2.0,  N=100)
     sleep(timeout / N )
   end
   @async Base.throwto(t, EOFError())
-  error("Receive run into timeout on RP $(rp.host) on command $(cmd)!")
+  error("Receive ran into timeout on RP $(rp.host) on command $(cmd)!")
 end
 
 """
 Perform a query with the RedPitaya. Parse result as type T
 """
-function query(rp::RedPitaya,cmd::String,T::Type)
-  a = query(rp,cmd)
+function query(rp::RedPitaya,cmd::String,T::Type, timeout::Number=2.0, N::Number=100)
+  a = query(rp,cmd, timeout, N)
   return parse(T,a)
 end
 
