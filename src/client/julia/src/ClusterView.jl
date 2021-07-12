@@ -1,14 +1,10 @@
-export RedPitayaClusterView, master, readDataPeriods, numChan, readDataSlow, readFrames, readPeriods, readPipelinedSamples, startPipelinedData, collectSamples!, readData, readDataPeriods, modeDAC
+export RedPitayaClusterView, master, readDataPeriods, numChan, readDataSlow, readFrames, readPeriods, readPipelinedSamples, startPipelinedData, collectSamples!, readData, readDataPeriods, modeDAC, translateViewToClusterChannel
 
 import Base: length, iterate, getindex, firstindex, lastindex
 
 struct RedPitayaClusterView
     rpc::RedPitayaCluster
     view::Vector{Integer}
-end
-
-function RedPitayaClusterView(rpc::RedPitayaCluster, view::Vector{Integer})
-    return RedPitayaClusterView(rpc, sort(view))
 end
 
 function RedPitayaClusterView(rpc::RedPitayaCluster, selection::Vector{Bool})
