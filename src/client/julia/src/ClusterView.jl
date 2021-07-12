@@ -7,6 +7,10 @@ struct RedPitayaClusterView
     view::Vector{Integer}
 end
 
+function RedPitayaClusterView(rpc::RedPitayaCluster, view::Vector{Integer})
+    return RedPitayaClusterView(rpc, sort(view))
+end
+
 function RedPitayaClusterView(rpc::RedPitayaCluster, selection::Vector{Bool})
     length(selection) == length(rpc) || throw(DimensionMismatch("Length of boolean vector must match length of cluster")) 
     view = findall(selection)
@@ -69,6 +73,13 @@ end
 
 slowDACInterpolation(rpcv::RedPitayaClusterView, enable::Bool) = slowDACInterpolation(rpcv.rpc, enable)
 
+# Returns the channel number in the cluster for a given channel number in the view
+function translateViewToClusterChannel(rpcv::RedPitayaClusterView, chan)
+    view = rpcv.view 
+    idxInView = div(chan -1, 2) + 1
+    chanRP = mod1(chan, 2)
+    return 2*(view[idxInView] - 1) + chanRP
+end
 
 # Helper functions for readData functions in Cluster.jl
 function startPipelinedData(rpcv::RedPitayaClusterView, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
