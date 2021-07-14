@@ -49,6 +49,9 @@ void loadBitstream() {
 		if(catResult <= -1) {
 			printf("Error while writing the image to the FPGA.\n");
 		}
+		else {
+			printf("Bitsream loaded\n");
+		}
 
 		FILE* fp = fopen("/tmp/bitstreamLoaded" ,"a");
 		int writeResult = fprintf(fp, "loaded \n");

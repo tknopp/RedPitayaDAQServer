@@ -362,7 +362,7 @@ static scpi_result_t RP_ADC_SetDecimation(scpi_t * context) {
 static scpi_result_t RP_ADC_GetDecimation(scpi_t * context) {
 
 	uint16_t dec = getDecimation();
-
+	
 	SCPI_ResultUInt16(context, dec);
 
 	return SCPI_RES_OK;
@@ -632,15 +632,13 @@ static scpi_result_t RP_ADC_StartAcquisitionConnection(scpi_t * context) {
 	bool connectionEstablished = false;
 
 	printf("RP_ADC_StartAcquisitionConnection\n");
-	while(!connectionEstablished) {
-		newdatasocklen = sizeof (newdatasockaddr);
-		newdatasockfd = accept(datasockfd, (struct sockaddr *) &newdatasockaddr, &newdatasocklen);
+	newdatasocklen = sizeof(newdatasockaddr);
+	newdatasockfd = accept(datasockfd, (struct sockaddr *) &newdatasockaddr, &newdatasocklen);
 
-		if (newdatasockfd < 0) {
-			continue;
-		} else {
-			connectionEstablished = true;
-		}
+	if (newdatasockfd < 0) {
+		printf("Error accepting data socket: %s\n", strerror(errno));
+	} else {
+		connectionEstablished = true;
 	}
 
 	//	SCPI_ResultBool(context, connectionEstablished);
