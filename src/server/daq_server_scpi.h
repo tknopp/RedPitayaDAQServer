@@ -92,7 +92,7 @@ extern scpi_error_t scpi_error_queue_data[SCPI_ERROR_QUEUE_SIZE];
 extern scpi_t scpi_context;
 
 extern int createServer(int);
-extern int waitServer(int);
+extern int setSocketNonBlocking(int);
 
 extern void* communicationThread(void*);
 extern void* controlThread(void*);

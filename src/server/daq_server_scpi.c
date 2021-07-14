@@ -54,6 +54,7 @@
 #include <sched.h>
 #include <errno.h>
 #include <signal.h>
+#include <time.h>
 #include "logger.h"
 
 #include <scpi/scpi.h>
@@ -278,11 +279,6 @@ int main(int argc, char** argv) {
 			createThreads();
 		}
 		
-		if(commThreadRunning) {
-			sleep(5.0);
-		} else {
-			usleep(100000);
-		}
 	}
 
 	// Exit gracefully
