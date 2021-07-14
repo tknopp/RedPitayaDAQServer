@@ -166,7 +166,7 @@ static void writeDataChunked(int fd, const void *buf, size_t count)
 	size_t chunkSize = 200000;
 	size_t ptr = 0;
 	size_t size;
-	while(ptr < count) {
+	while(ptr < count && commThreadRunning) {
 		size = MIN(count-ptr, chunkSize);
 
 		n = write(fd, buf + ptr, size);
@@ -202,7 +202,7 @@ void neoncopy(void *dst, const void *src, int cnt) {
 static size_t copySamplesToBuffer(const void *adc, size_t count) {
 	size_t ptr = 0;
 	size_t size, sizeTemp;
-	while(ptr < count) {
+	while(ptr < count && commThreadRunning) {
 		sizeTemp = MIN(count-ptr, userspaceSizeBytes);
 		//Neon Copy copies 64 Byte in each iteration, size should always be a multiple of 64 or a different copy needs to be used
 		size = sizeTemp - (sizeTemp % 64);
@@ -227,7 +227,7 @@ static bool sendBufferedSamplesToClient(uint64_t wpTotal, uint64_t numSamples) {
 	uint64_t samplesToCopy = 0;
 	size_t copiedBytes = 0;
 
-	while (sendSamples < numSamples) {
+	while (sendSamples < numSamples && commThreadRunning) {
 		//Move samples to userspace
 		samplesToCopy = MIN(numSamples - sendSamples, userspaceSizeSamples);
 		copiedBytes = copySamplesToBuffer(ram + sizeof(uint32_t)*(wp + sendSamples), samplesToCopy*sizeof(uint32_t));
@@ -310,13 +310,13 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 		chunk = MIN(numSamples - sendSamplesTotal, chunkSize); // Client and Server can compute same chunk value
 		
 		// Send chunk
-		while (sendSamples < chunk) {
+		while (sendSamples < chunk && commThreadRunning) {
 			readWP = wpTotal + sendSamplesTotal + sendSamples;
 			writeWP = getTotalWritePointer();
 
 			// Wait for samples to be available
 			samplesToSend = MIN(userspaceSizeSamples, chunk - sendSamples);
-			while (readWP + samplesToSend >= writeWP) {
+			while (readWP + samplesToSend >= writeWP && commThreadRunning) {
 				writeWP = getTotalWritePointer();
 				usleep(30);
 			}
@@ -350,7 +350,7 @@ void sendFileToClient(FILE* file) {
 	int64_t remain = fSize; //To have known size
 	send(newdatasockfd, &remain, sizeof(remain), 0);
 	int64_t n = 0;
-	while (((n = sendfile(newdatasockfd, fd, &offset, remain)) > 0) && remain > 0) {
+	while (((n = sendfile(newdatasockfd, fd, &offset, remain)) > 0) && remain > 0 && commThreadRunning) {
 		remain -= n;
 	}
 }
