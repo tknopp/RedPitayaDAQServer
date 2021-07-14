@@ -288,8 +288,7 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
   end
 
   # Setup Timeout
-  timeout = 10
-  t = Timer(timeout)
+  t = Timer(_timeout)
   @async begin
     wait(t)
     notify(iterationDone)
