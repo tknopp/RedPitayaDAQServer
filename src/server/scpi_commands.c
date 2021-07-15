@@ -483,8 +483,8 @@ static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
 		enableSlowDACAck = false;
 		numSlowDACLostSteps = 0;
 		while(!enableSlowDACAck && commThreadRunning) {
-			sleep(0.1);
-			printf("WAIT FOR SLOW DACAck\n");
+			usleep(10);
+			//printf("WAIT FOR SLOW DACAck\n");
 		}
 		SCPI_ResultInt64(context, rotationSlowDACEnabled);
 	} else {
