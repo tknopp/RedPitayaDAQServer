@@ -482,9 +482,8 @@ static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
 	if(enableSlowDAC && rxEnabled && numSlowDACChan>0) {
 		enableSlowDACAck = false;
 		numSlowDACLostSteps = 0;
-		while(!enableSlowDACAck) {
-			usleep(1.0);
-			//sleep(1.0);
+		while(!enableSlowDACAck && commThreadRunning) {
+			usleep(10);
 			//printf("WAIT FOR SLOW DACAck\n");
 		}
 		SCPI_ResultInt64(context, sequencesSlowDACEnabled);

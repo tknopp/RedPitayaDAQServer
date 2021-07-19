@@ -148,7 +148,7 @@ static int writeAll(int fd, const void *buf, size_t len) {
 	size_t bytesSent = 0;
 	size_t bytesLeft = len;
 	size_t n; 
-	while (bytesSent < len) {
+	while (bytesSent < len && commThreadRunning) {
 		n = write(fd, buf + bytesSent, bytesLeft);
 		if (n == -1) {
 			return n;
