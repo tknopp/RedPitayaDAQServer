@@ -1,30 +1,28 @@
-#include <stdint.h>
-#include <signal.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/ioctl.h>
-#include <sys/param.h>
-#include <inttypes.h>
-
-#include <stdio.h>
-#include <math.h>
-#include <string.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/socket.h>
 #include <arpa/inet.h>
-#include <sys/types.h> 
-#include <sys/select.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <inttypes.h>
+#include <math.h>
 #include <netinet/in.h>
 #include <pthread.h>
 #include <sched.h>
-#include <errno.h>
-#include "logger.h"
-
 #include <scpi/scpi.h>
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <sys/param.h>
+#include <sys/select.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "../lib/rp-daq-lib.h"
-#include "../server/daq_server_scpi.h"	
+#include "../server/daq_server_scpi.h"
+#include "logger.h"
 
 static uint64_t wp;
 static uint64_t wpPDMStart;
@@ -34,279 +32,233 @@ static uint64_t currentSlowDACStep;
 static uint64_t currentSequenceTotal;
 static uint64_t oldSlowDACStepTotal;
 
-static int64_t sequenceRampUpStarted=-1; 
-static int64_t slowDACStepRampUpStarted=-1; 
-static int enableSlowDACLocal=0;
-static int rampingTotalSteps=-1;
-static int rampingSteps=-1;
-static int rampingTotalSequences=-1;
+static int rampingTotalSteps = -1;
+static int rampingSteps = -1;
+static int rampingTotalSequences = -1;
 
 static int lookahead=110;
 static int lookprehead=5;
 
-
-static float getSlowDACVal(int step, int i) {
-	float val = 0.0;
-
-	int64_t sequence = step / numSlowDACStepsPerSequence + sequenceRampUpStarted;
-	// Within regular LUT
-	if(sequencesSlowDACEnabled <= sequence && sequence < sequencesSlowDACEnabled + numSlowDACSequencesEnabled) {
-		val = slowDACLUT[(step % numSlowDACStepsPerSequence)*numSlowDACChan+i];
-	}
-	
-	// Ramp up phase
-	else if(sequenceRampUpStarted <= sequence && sequence < sequencesSlowDACEnabled) {
-		int64_t currRampUpStep = step;
-		int64_t totalStepsInRampUpSequences = numSlowDACStepsPerSequence*rampingTotalSequences;
-		int64_t stepAfterRampUp = totalStepsInRampUpSequences -  
-			(rampingTotalSteps - rampingSteps);
-		if( currRampUpStep < totalStepsInRampUpSequences - rampingTotalSteps ) { // Before ramp up
-			val = 0.0;
-		} else if ( currRampUpStep < stepAfterRampUp ) { // Within ramp up
-			int64_t currRampUpStep_ = currRampUpStep - (totalStepsInRampUpSequences - rampingTotalSteps);
-			val = slowDACLUT[ (step % numSlowDACStepsPerSequence) *numSlowDACChan+i] *
-				(0.9640+tanh(-2.0 + (currRampUpStep_ / ((float)rampingSteps-1))*4.0))/1.92806;
-		} else {
-			val = slowDACLUT[(step % numSlowDACStepsPerSequence)*numSlowDACChan+i];
-		}
-	}
-	
-	// Ramp down phase
-	else if(sequence >= sequencesSlowDACEnabled + numSlowDACSequencesEnabled) {
-		int64_t totalStepsFromRampUp = numSlowDACStepsPerSequence *
-			(rampingTotalSequences+numSlowDACSequencesEnabled);
-		int64_t currRampDownStep = step - totalStepsFromRampUp;
-
-		if( currRampDownStep > rampingTotalSteps ) { // After ramp down
-			val = 0.0;
-		} else if ( currRampDownStep > (rampingTotalSteps - rampingSteps) ) { // Within ramp down
-			int64_t currRampDownStep_ = currRampDownStep - (rampingTotalSteps - rampingSteps);
-
-			val = slowDACLUT[ (step % numSlowDACStepsPerSequence) *numSlowDACChan+i] *
-				(0.9640+tanh(-2.0 + ((rampingSteps-currRampDownStep_-1) / ((float)rampingSteps-1))*4.0))/1.92806;
-		} else {
-			val = slowDACLUT[(step % numSlowDACStepsPerSequence)*numSlowDACChan+i];
-		}
-	}
-
-
-	return val;
+static float getSequenceVal(int step, int channel) {
+	return dacSequence.slowDACLUT[(step % dacSequence.numStepsPerSequence) * dacSequence.numSlowDACChan + channel];
 }
 
+static float getFactor(uint64_t sequence, uint64_t step) {
+	
+	// Within regular LUT
+    if (sequencesSlowDACEnabled <= sequence && sequence < sequencesSlowDACEnabled + numSlowDACSequencesEnabled) {
+        return 1.0;
+    }
+
+    // Ramp up phase
+    else if (sequence < sequencesSlowDACEnabled) {
+        int64_t currRampUpStep = step;
+        int64_t totalStepsInRampUpSequences = dacSequence.numStepsPerSequence * rampingTotalSequences;
+        int64_t stepAfterRampUp = totalStepsInRampUpSequences -
+                                  (rampingTotalSteps - rampingSteps);
+        if (currRampUpStep < totalStepsInRampUpSequences - rampingTotalSteps) { // Before ramp up
+            return 0.0;
+        } else if (currRampUpStep < stepAfterRampUp) { // Within ramp up
+            int64_t currRampUpStep_ = currRampUpStep - (totalStepsInRampUpSequences - rampingTotalSteps);
+			return (0.9640 + tanh(-2.0 + (currRampUpStep_ / ((float)rampingSteps - 1)) * 4.0)) / 1.92806;
+        } else {
+			return 1.0;
+        }
+    }
+
+    // Ramp down phase
+    else if (sequence >= sequencesSlowDACEnabled + numSlowDACSequencesEnabled) {
+        int64_t totalStepsFromRampUp = dacSequence.numStepsPerSequence *
+                                       (rampingTotalSequences + numSlowDACSequencesEnabled);
+        int64_t currRampDownStep = step - totalStepsFromRampUp;
+
+        if (currRampDownStep > rampingTotalSteps) { // After ramp down
+            return 0.0;
+        } else if (currRampDownStep > (rampingTotalSteps - rampingSteps)) { // Within ramp down
+            int64_t currRampDownStep_ = currRampDownStep - (rampingTotalSteps - rampingSteps);
+            return (0.9640 + tanh(-2.0 + ((rampingSteps - currRampDownStep_ - 1) / ((float)rampingSteps - 1)) * 4.0)) / 1.92806;
+        } else {
+            return 1.0;
+        }
+    }
+
+	return 0.0;
+}
+
+static float getSlowDACVal(int step, int i) {
+    uint64_t sequence = step / dacSequence.numStepsPerSequence;
+	float val = getSequenceVal(step, i);
+	float factor = getFactor(sequence, step);
+    return factor * val;
+}
 
 static void initSlowDAC() {
-	// Compute Ramping timing
-	double bandwidth = 125e6 / getDecimation();
-	double period = (numSamplesPerSlowDACStep * numSlowDACStepsPerSequence) / bandwidth;
-	rampingTotalSequences = ceil(slowDACRampUpTime / period);
-	rampingTotalSteps = ceil(slowDACRampUpTime / (numSamplesPerSlowDACStep / bandwidth) );
-	rampingSteps = ceil(slowDACRampUpTime*slowDACFractionRampUp / ( numSamplesPerSlowDACStep / bandwidth) );
-	sequenceRampUpStarted = currentSequenceTotal + 1;
-	int64_t numSlowDACStepsUntilEnd = numSlowDACStepsPerSequence - currentSlowDACStep;
-	slowDACStepRampUpStarted = currentSlowDACStepTotal + numSlowDACStepsUntilEnd;
-	currentSetSlowDACStepTotal = 0;
+    // Compute Ramping timing
+    double bandwidth = 125e6 / getDecimation();
+    double period = (numSamplesPerSlowDACStep * dacSequence.numStepsPerSequence) / bandwidth;
+    rampingTotalSequences = ceil(dacSequence.slowDACRampUpTime / period);
+    rampingTotalSteps = ceil(dacSequence.slowDACRampUpTime / (numSamplesPerSlowDACStep / bandwidth));
+    rampingSteps = ceil(dacSequence.slowDACRampUpTime * dacSequence.slowDACFractionRampUp / (numSamplesPerSlowDACStep / bandwidth));
+    currentSetSlowDACStepTotal = 0;
 
+    for (int d = 0; d < 2; d++) {
+        for (int c = 0; c < 4; c++) {
+            setAmplitude(dacSequence.fastDACAmplitude[c + 4 * d], d, c);
+        }
+    }
 
-	// Enable and acknowledge SlowDAC
-	enableSlowDACLocal = true;
-	sequencesSlowDACEnabled = currentSequenceTotal + rampingTotalSequences + 1;
-	enableSlowDACAck = true;	
-	// 3 in the following line is a magic number
-	wpPDMStart = ((currentSlowDACStepTotal + numSlowDACStepsUntilEnd) % PDM_BUFF_SIZE);
-        
-	//printf(" rampingTotalRotations=%d, rotationRampUpStarted=%lld, rotationSlowDACEnabled=%lld \n", 
-	//		rampingTotalRotations, rotationRampUpStarted, rotationSlowDACEnabled);
+    for (int d = 0; d < dacSequence.numSlowDACChan; d++) {
+        setEnableDACAll(1, d);
+    }
 
-	for(int d=0; d<2; d++) {
-		for(int c=0; c<4; c++) {
-			setAmplitude(fastDACNextAmplitude[c+4*d],d,c);
-		}
-	}
-
-	for(int d=0; d<numSlowDACChan; d++) {
-		setEnableDACAll(1,d);
-	}
-
-	//Reset Lost Steps Flag
-	err.lostSteps = 0;
+    //Reset Lost Steps Flag
+    err.lostSteps = 0;
 }
 
 static void cleanUpSlowDAC() {
-	enableSlowDAC = false;
-	stopTx();
-	sequencesSlowDACEnabled = -1;
-	sequenceRampUpStarted = -1;
-	slowDACStepRampUpStarted = -1;
+    enableSlowDAC = false;
+    stopTx();
 }
 
-static void setNextLUTValues() {
-	uint64_t nextSetStep = 0;
-	uint64_t baseStep = currentSlowDACStepTotal - slowDACStepRampUpStarted;
-	int64_t nonRedundantSteps = baseStep + lookahead - 1 - currentSetSlowDACStepTotal; //upcoming nextSetStep - currentSetStep
-	int start = 0;
-	//if (nonRedundantSteps > lookahead - lookprehead) {
-	//	start = 5;
-	//}
-	//else {
-	//	start = lookahead - nonRedundantSteps;
-	//}
-	start = MAX(lookprehead, MAX(0, lookahead - nonRedundantSteps));
-	//printf("%i\n", start);
+static void setLUTValuesFrom(uint64_t baseStep) {
+    uint64_t nextSetStep = 0;
+    int64_t nonRedundantSteps = baseStep + lookahead - 1 - currentSetSlowDACStepTotal; //upcoming nextSetStep - currentSetStep
+    int start = 0;
+    start = MAX(lookprehead, MAX(0, lookahead - nonRedundantSteps));
+    //printf("%i\n", start);
 
-	for (int i=0; i< numSlowDACChan; i++) {
-		//lookahead
-		for(int y=start; y<lookahead; y++) {
-			uint64_t localStep = (baseStep + y); 
-			uint64_t currPDMIndex = (wpPDMStart + localStep) % PDM_BUFF_SIZE;
-			float val = getSlowDACVal(localStep, i); 
+    for (int i = 0; i < dacSequence.numSlowDACChan; i++) {
+        //lookahead
+        for (int y = start; y < lookahead; y++) {
+            uint64_t localStep = (baseStep + y);
+            uint64_t currPDMIndex = (wpPDMStart + localStep) % PDM_BUFF_SIZE;
+            float val = getSlowDACVal(localStep, i);
 
-			int status = setPDMValueVolt(val, i, currPDMIndex);
+            int status = setPDMValueVolt(val, i, currPDMIndex);
 
-			if (status != 0) {
-				printf("Could not set AO[%d] voltage.\n", i);
-			}
+            if (status != 0) {
+                printf("Could not set AO[%d] voltage.\n", i);
+            }
 
+            if (dacSequence.enableDACLUT != NULL) {
+                int sequence = localStep / dacSequence.numStepsPerSequence;
+                // Within regular LUT
+                bool val = false;
+                if (sequencesSlowDACEnabled <= sequence < sequencesSlowDACEnabled + numSlowDACSequencesEnabled) {
+                    val = dacSequence.enableDACLUT[(localStep % dacSequence.numStepsPerSequence) * dacSequence.numSlowDACChan + i];
+                }
+                setEnableDAC(val, i, currPDMIndex);
+            }
 
-			if (enableDACLUT != NULL) {
-				int sequence = localStep / numSlowDACStepsPerSequence + sequenceRampUpStarted;
-				// Within regular LUT
-				bool val = false;
-				if(sequencesSlowDACEnabled <= sequence < sequencesSlowDACEnabled + numSlowDACSequencesEnabled) {
-					val = enableDACLUT[(localStep % numSlowDACStepsPerSequence)*numSlowDACChan+i];
-				}
-				setEnableDAC(val, i, currPDMIndex);
-			}
-
-			if (localStep > nextSetStep) {
-				nextSetStep = localStep;
-			}
-		}
-	}
-	currentSetSlowDACStepTotal = nextSetStep;
+            if (localStep > nextSetStep) {
+                nextSetStep = localStep;
+            }
+        }
+    }
+    currentSetSlowDACStepTotal = nextSetStep;
 }
 
 static void handleLostSlowDACSteps(uint64_t oldSlowDACStep, uint64_t currentSlowDACStep) {
-	LOG_WARN("WARNING: We lost a slow DAC step! oldSlowDACStep %lld newSlowDACStep %lld size=%lld\n", 
-			oldSlowDACStep, currentSlowDACStep, currentSlowDACStep-oldSlowDACStep);
-	err.lostSteps = 1;
-	numSlowDACLostSteps += 1;
+    LOG_WARN("WARNING: We lost a slow DAC step! oldSlowDACStep %lld newSlowDACStep %lld size=%lld\n",
+             oldSlowDACStep, currentSlowDACStep, currentSlowDACStep - oldSlowDACStep);
+    err.lostSteps = 1;
+    numSlowDACLostSteps += 1;
 }
 
-void* controlThread(void* ch) { 
-	sequenceRampUpStarted=-1; 
-	slowDACStepRampUpStarted=-1; 
-	enableSlowDACLocal=0;
-	rampingTotalSteps=-1;
-	rampingSteps=-1;
-	rampingTotalSequences=-1;
-	lookahead=110;
-	lookprehead=5;
-	//Performance related variables
-	int64_t deltaControl = 0;
-	int64_t deltaSet = 0;
-	float alpha = 0.7;
+static void updatePerformance(float alpha) {
+    int64_t deltaControl = oldSlowDACStepTotal + lookahead - currentSlowDACStepTotal;
+    int64_t deltaSet = (getTotalWritePointer() / numSamplesPerSlowDACStep) - currentSlowDACStepTotal;
 
-	//Sleep
-	int baseSleep = 20;
-	int sleep;
+    deltaSet = (deltaSet > 0xFF) ? 0xFF : deltaSet;
+    deltaControl = (deltaControl < 0) ? 0 : deltaControl;
 
-	LOG_INFO("Starting control thread");
-	getprio(pthread_self());
+    avgDeltaControl = alpha * deltaControl + (1 - alpha) * avgDeltaControl;
+    avgDeltaSet = alpha * deltaSet + (1 - alpha) * avgDeltaSet;
 
-	while(controlThreadRunning) {
-		// Reset everything in order to provide a fresh start
-		// everytime the acquisition is started
-		//TODO Possibly extend this check to see if DAC is properly setup by client, there where some checks later in the code iirc
-		if(rxEnabled && numSlowDACChan > 0) {
-			LOG_INFO("SLOW_DAQ: Start sending...");
-			oldSlowDACStepTotal = 0;
-			err.lostSteps = 0;
-			sleep = baseSleep;
+    if (deltaControl < minDeltaControl) {
+        minDeltaControl = deltaControl;
+    }
+    if (deltaSet > maxDeltaSet) {
+        maxDeltaSet = deltaSet;
+    }
 
-			while(rxEnabled) {
-				wp = getTotalWritePointer();
-				currentSlowDACStepTotal =  wp / numSamplesPerSlowDACStep;
+	//	printf("dc: %lld, udc: %lld, ds: %lld\n", deltaControl, avgDeltaControl, deltaSet);
 
-				if (currentSlowDACStepTotal > oldSlowDACStepTotal) {
-					currentSequenceTotal = wp / (numSamplesPerSlowDACStep * numSlowDACStepsPerSequence);
-					currentSlowDACStep = currentSlowDACStepTotal % numSlowDACStepsPerSequence;
+}
 
-					// Handle global-enableSlowDAC
-					if (!enableSlowDAC) {
-						// TODO Same reset as other case, in an if clause with enableSlowDACLocal == true?
-						enableSlowDACLocal = false;
-					}
-					//TODO currentSlowDACStep > numSlowDACSteps - lookprehead -1, behaviour for numSlowDACStepsPerRotation < 6?
-					else if(enableSlowDAC && !enableSlowDACAck && (( currentSlowDACStep > numSlowDACStepsPerSequence-lookprehead-1 ) || (numSlowDACStepsPerSequence == 1)) ) {
-						// we are now lookprehead subperiods or less before the next rotation
-						printf("INIT CONTROL\n");
-						initSlowDAC();
-						deltaControl = 0;
-						deltaSet = 0;
-						avgDeltaControl = 0;
-						avgDeltaSet = 0;
-						minDeltaControl = 0xFF;
-						maxDeltaSet = 0x00;
-						sleep = baseSleep;
-					}
-					
-					// Handle local-enableSlowDAC
-					if (enableSlowDACLocal) {
+void *controlThread(void *ch) {
+    rampingTotalSteps = -1;
+    rampingSteps = -1;
+    rampingTotalSequences = -1;
+    //Performance related variables
+    float alpha = 0.7;
 
-						if(currentSlowDACStepTotal > oldSlowDACStepTotal + (lookahead-lookprehead) && numSlowDACStepsPerSequence > 1) {
-							handleLostSlowDACSteps(oldSlowDACStepTotal, currentSlowDACStepTotal);
-						}
+	bool prepared = false;
 
-						if(numSlowDACSequencesEnabled > 0 && sequencesSlowDACEnabled > 0 
-								&& (currentSequenceTotal >= numSlowDACSequencesEnabled + sequencesSlowDACEnabled + rampingTotalSequences)) {
-							// We now have measured enough rotations and switch of the slow DAC
-                                                        cleanUpSlowDAC();
-						}
-						else {
-							setNextLUTValues();
-							
-							//Compute Perf. data
-							deltaControl = oldSlowDACStepTotal + lookahead - currentSlowDACStepTotal;
-							deltaSet = (getTotalWritePointer() / numSamplesPerSlowDACStep) - currentSlowDACStepTotal; 
-							
-							deltaSet = (deltaSet > 0xFF) ? 0xFF : deltaSet;
-							deltaControl = (deltaControl < 0) ? 0: deltaControl;
+    //Sleep
+    int baseSleep = 20;
+    int sleep;
 
-							avgDeltaControl = alpha * deltaControl + (1-alpha) * avgDeltaControl;
-							avgDeltaSet = alpha * deltaSet + (1-alpha) * avgDeltaSet;
-							
-							if (deltaControl < minDeltaControl) {
-								minDeltaControl = deltaControl;
-							}
-							if (deltaSet > maxDeltaSet) {
-								maxDeltaSet = deltaSet;
-							}
+    LOG_INFO("Starting control thread");
+    getprio(pthread_self());
 
-						//	printf("dc: %lld, udc: %lld, ds: %lld\n", deltaControl, avgDeltaControl, deltaSet);	
-						}
+    while (controlThreadRunning) {
+        if (getMasterTrigger()) {
+            
+			// Handle sequence
+            wp = getTotalWritePointer();
+            currentSlowDACStepTotal = wp / numSamplesPerSlowDACStep;
 
-					}
-				} else {
-					sleep += baseSleep;
-				}
-				oldSlowDACStepTotal = currentSlowDACStepTotal;
+            if (currentSlowDACStepTotal > oldSlowDACStepTotal) {
+                currentSequenceTotal = wp / (numSamplesPerSlowDACStep * dacSequence.numStepsPerSequence);
+                currentSlowDACStep = currentSlowDACStepTotal % dacSequence.numStepsPerSequence;
+
+                if (currentSlowDACStepTotal > oldSlowDACStepTotal + (lookahead - lookprehead) && dacSequence.numStepsPerSequence > 1) {
+                    handleLostSlowDACSteps(oldSlowDACStepTotal, currentSlowDACStepTotal);
+                }
+
+                if (numSlowDACSequencesEnabled > 0 && sequencesSlowDACEnabled > 0 && (currentSequenceTotal >= numSlowDACSequencesEnabled + sequencesSlowDACEnabled + rampingTotalSequences)) {
+                    // We now have measured enough rotations and switch of the slow DAC
+                    cleanUpSlowDAC();
+                } else {
+                    setLUTValuesFrom(currentSlowDACStep);
+
+					updatePerformance(alpha);
+                }
+            } else {
+                sleep += baseSleep;
+            }
+            oldSlowDACStepTotal = currentSlowDACStepTotal;
+            usleep(sleep);
+
+        } else {
+            if (!prepared && dacSequence.slowDACLUT != NULL) {
+				initSlowDAC();
+            	avgDeltaControl = 0;
+            	avgDeltaSet = 0;
+            	minDeltaControl = 0xFF;
+            	maxDeltaSet = 0x00;
+            	sleep = baseSleep;
+				prepared = true;
+				setLUTValuesFrom(0);
+				printf("Prepared Sequence\n");
+			} else {
 				usleep(sleep);
+				if (!getMasterTrigger()) { // ??????
+					prepared = false;
+				}
 			}
-		}
-		// Wait for the acquisition to start
-		usleep(40);
-	}
+        }
+    }
 
-	// clean up 
-        cleanUpSlowDAC();
+    // clean up
+    cleanUpSlowDAC();
 
-	printf("Control thread finished\n");
+    printf("Control thread finished\n");
 }
 
-void joinControlThread()
-{
-	controlThreadRunning = false;
-	rxEnabled = false;
-	pthread_join(pControl, NULL);
+void joinControlThread() {
+    controlThreadRunning = false;
+    rxEnabled = false;
+    pthread_join(pControl, NULL);
 }
-

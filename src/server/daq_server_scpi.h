@@ -37,15 +37,7 @@
 #define ACQUISITION_OFF 0
 #define ACQUISITION_ON 1
 
-extern int numSamplesPerSlowDACStep;
-extern int numSlowDACStepsPerSequence;
-extern int numSlowDACChan;
 extern int numSlowADCChan;
-extern int enableSlowDAC;
-extern int enableSlowDACAck;
-extern int numSlowDACSequencesEnabled;
-extern int numSlowDACLostSteps;
-extern uint64_t sequencesSlowDACEnabled;
 
 extern int64_t channel;
 
@@ -68,15 +60,6 @@ extern socklen_t newdatasocklen;
 extern const scpi_command_t scpi_commands[];
 extern scpi_t scpi_context;
 
-extern float *slowDACLUT;
-extern bool *enableDACLUT;
-extern bool slowDACInterpolation;
-extern double slowDACRampUpTime;
-extern double slowDACFractionRampUp;
-extern float *slowADCBuffer;
-
-extern float fastDACNextAmplitude[8];
-
 extern void getprio(pthread_t id);
 
 extern size_t SCPI_Write(scpi_t *, const char *, size_t);
@@ -97,6 +80,29 @@ extern int setSocketNonBlocking(int);
 extern void* communicationThread(void*);
 extern void* controlThread(void*);
 extern void joinControlThread();
+
+// sequences
+extern int numSamplesPerSlowDACStep;
+extern int enableSlowDAC;
+extern int enableSlowDACAck;
+extern int numSlowDACLostSteps;
+extern uint64_t sequencesSlowDACEnabled;
+
+extern bool slowDACInterpolation;
+extern float *slowADCBuffer;
+
+typedef struct {
+	int numSlowDACChan;
+	int numStepsPerSequence;
+	float fastDACAmplitude[8];
+	float *slowDACLUT;
+	bool *enableDACLUT;
+	double slowDACRampUpTime;
+	double slowDACFractionRampUp;
+	int numSequencesEnabled;
+} sequence_t;
+
+extern sequence_t dacSequence;
 
 // data loss
 struct status {

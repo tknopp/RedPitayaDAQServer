@@ -56,37 +56,6 @@ end
 
 numChan(rp::RedPitaya) = 2
 
-numSlowDACChan(rp::RedPitaya) = query(rp,"RP:ADC:SlowDAC?", Int64)
-function numSlowDACChan(rp::RedPitaya, value)
-  if value <= 0 || value > 4
-    error("Num slow DAC channels needs to be between 1 and 4!")
-  end
-  send(rp, string("RP:ADC:SlowDAC ", Int64(value)))
-end
-
-function setSlowDACLUT(rp::RedPitaya, lut::Array)
-  lutFloat32 = map(Float32, lut)
-  send(rp, string("RP:ADC:SlowDACLUT"))
-  @debug "Writing slow DAC LUT"
-  write(rp.dataSocket, lutFloat32)
-end
-
-function enableDACLUT(rp::RedPitaya, lut::Array)
-  lutBool = map(Bool, lut)
-  send(rp, string("RP:ADC:EnableDACLUT"))
-  @debug "Writing enable DAC LUT"
-  write(rp.dataSocket, lutBool)
-end
-
-function enableSlowDAC(rp::RedPitaya, enable::Bool, numFrames::Int64=0,
-            ffRampUpTime::Float64=0.4, ffRampUpFraction::Float64=0.8)
-  enableI = Int32(enable)
-  timeout = 1/(125e6/rp.decimation) * rp.samplesPerPeriod * rp.periodsPerFrame * 4 # Wait a few frames
-  timeout = max(timeout, 2.0)
-  return query(rp, string("RP:ADC:SlowDACEnable ", enableI,
-              ",", numFrames, ",", ffRampUpTime, ",", ffRampUpFraction), Int64, timeout)
-end
-
 function slowDACInterpolation(rp::RedPitaya, enable::Bool)
   enableI = Int32(enable)
   send(rp, string("RP:ADC:SlowDACInterpolation ", enableI))
@@ -96,8 +65,6 @@ numSlowADCChan(rp::RedPitaya) = query(rp,"RP:ADC:SlowADC?", Int64)
 function numSlowADCChan(rp::RedPitaya, value)
   send(rp, string("RP:ADC:SlowADC ", Int64(value)))
 end
-
-numLostStepsSlowADC(rp::RedPitaya) = query(rp,"RP:ADC:SlowDACLostSteps?", Int64)
 
 function samplesPerPeriod(rp::RedPitaya) 
   return rp.samplesPerPeriod
@@ -112,29 +79,6 @@ function periodsPerFrame(rp::RedPitaya)
 end
 function periodsPerFrame(rp::RedPitaya, value)
   rp.periodsPerFrame = value
-end
-
-samplesPerSlowDACStep(rp::RedPitaya) = query(rp,"RP:ADC:SlowDAC:SamplesPerStep?", Int64)
-function samplesPerSlowDACStep(rp::RedPitaya, value)
-  send(rp, string("RP:ADC:SlowDAC:SamplesPerStep ", value))
-end
-
-slowDACStepsPerSequence(rp::RedPitaya) = query(rp,"RP:ADC:SlowDAC:StepsPerSequence?", Int64)
-function slowDACStepsPerSequence(rp::RedPitaya, value)
-  send(rp, string("RP:ADC:SlowDAC:StepsPerSequence ", value))
-end
-
-function prepareSlowDAC(rp::RedPitaya, samplesPerStep, stepsPerSequence, numOfChan)
-  numSlowDACChan(rp, numOfChan)
-  samplesPerSlowDACStep(rp, samplesPerStep)
-  slowDACStepsPerSequence(rp, stepsPerSequence)
-end
-
-function slowDACStepsPerFrame(rp::RedPitaya, stepsPerFrame)
-  samplesPerFrame = rp.periodsPerFrame * rp.samplesPerPeriod
-  samplesPerStep = div(samplesPerFrame, stepsPerFrame)
-  samplesPerSlowDACStep(rp, samplesPerStep)
-  slowDACStepsPerSequence(rp, stepsPerFrame) # Sets PDMClockDivider
 end
 
 function currentFrame(rp::RedPitaya)

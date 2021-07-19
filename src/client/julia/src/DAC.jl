@@ -133,3 +133,70 @@ function readDACPerformanceData(rp::RedPitaya)
   perf = read!(rp.dataSocket, Array{UInt8}(undef, 4))
   return DACPerformanceData(perf[1], perf[2], perf[3], perf[4])
 end
+
+numLostStepsSlowADC(rp::RedPitaya) = query(rp,"RP:DAC:SLoW:LostSteps?", Int64) # TODO slowADC vs slowDAC in name and string
+
+numSlowDACChan(rp::RedPitaya) = query(rp,"RP:DAC:SLoW?", Int64)
+function numSlowDACChan(rp::RedPitaya, value)
+  if value <= 0 || value > 4
+    error("Num slow DAC channels needs to be between 1 and 4!")
+  end
+  send(rp, string("RP:DAC:SLoW ", Int64(value)))
+end
+
+function setSlowDACLUT(rp::RedPitaya, lut::Array)
+  lutFloat32 = map(Float32, lut)
+  send(rp, string("RP:DAC:SLoW:LUT"))
+  @debug "Writing slow DAC LUT"
+  write(rp.dataSocket, lutFloat32)
+end
+
+function enableDACLUT(rp::RedPitaya, lut::Array)
+  lutBool = map(Bool, lut)
+  send(rp, string("RP:DAC:SLoW:LUT:ENaBle"))
+  @debug "Writing enable DAC LUT"
+  write(rp.dataSocket, lutBool)
+end
+
+samplesPerSlowDACStep(rp::RedPitaya) = query(rp,"RP:DAC:SLoW:SAMPlesPerStep?", Int64)
+function samplesPerSlowDACStep(rp::RedPitaya, value)
+  send(rp, string("RP:DAC:SLoW:SAMPlesPerStep ", value))
+end
+
+slowDACStepsPerSequence(rp::RedPitaya) = query(rp,"RP:DAC:SLoW:STEPsPerSequence?", Int64)
+function slowDACStepsPerSequence(rp::RedPitaya, value)
+  send(rp, string("RP:DAC:SLoW:STEPsPerSequence ", value))
+end
+
+function prepareSlowDAC(rp::RedPitaya, samplesPerStep, stepsPerSequence, numOfChan)
+  numSlowDACChan(rp, numOfChan)
+  samplesPerSlowDACStep(rp, samplesPerStep)
+  slowDACStepsPerSequence(rp, stepsPerSequence)
+end
+
+function slowDACStepsPerFrame(rp::RedPitaya, stepsPerFrame)
+  samplesPerFrame = rp.periodsPerFrame * rp.samplesPerPeriod
+  samplesPerStep = div(samplesPerFrame, stepsPerFrame)
+  samplesPerSlowDACStep(rp, samplesPerStep)
+  slowDACStepsPerSequence(rp, stepsPerFrame) # Sets PDMClockDivider
+end
+
+function rampUp(rp::RedPitaya, rampUpTime::Float64, rampUpFraction::Float64)
+  send(rp, string("RP:DAC:SLoW:RaMPup ", rampUpTime, ",", rampUpFraction))
+end
+
+rampUpTime(rp::RedPitaya) = query(rp, "RP:DAC:SLoW:RaMPup:TIME?", Float64)
+function rampUpTime(rp::RedPitaya, value::Float64)
+  send(rp, string("RP:DAC:SLoW:RaMPup:TIME ", value))
+end
+
+rampUpFraction(rp::RedPitaya) = query(rp, "RP:DAC:SLoW:RaMPup:FRACtion?", Float64)
+function rampUpFraction(rp::RedPitaya, value::Float64)
+  send(rp, string("RP:DAC:SLoW:RaMPup:FRACtion ", value))
+end
+
+sequencesEnabled(rp::RedPitaya) = query(rp, "RP:DAC:SLoW:SEQuences?", Int32)
+function sequencesEnabled(rp::RedPitaya, value::Int)
+  send(rp, string("RP:DAC:SLoW:SEQuences ", value))
+end
+
