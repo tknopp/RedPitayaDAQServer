@@ -1,5 +1,5 @@
 export decimation, masterTrigger, currentFrame, ramWriterMode, connectADC, startADC, stopADC, samplesPerPeriod, periodsPerFrame, 
-     numSlowDACChan, setSlowDACLUT, enableSlowDAC, slowDACStepsPerRotation, samplesPerSlowDACStep, prepareSlowDAC,
+     numSlowDACChan, setSlowDACLUT, enableSlowDAC, slowDACStepsPerSequence, samplesPerSlowDACStep, prepareSlowDAC,
      currentWP, slowDACInterpolation, numSlowADCChan, numLostStepsSlowADC, bufferSize, keepAliveReset, triggerMode,
      slowDACStepsPerFrame, enableDACLUT, ADCPerformanceData, RPPerformance, RPStatus, RPInfo, startPipelinedData, PerformanceData, numChan, dataRate
 
@@ -119,22 +119,22 @@ function samplesPerSlowDACStep(rp::RedPitaya, value)
   send(rp, string("RP:ADC:SlowDAC:SamplesPerStep ", value))
 end
 
-slowDACStepsPerRotation(rp::RedPitaya) = query(rp,"RP:ADC:SlowDAC:StepsPerRotation?", Int64)
-function slowDACStepsPerRotation(rp::RedPitaya, value)
-  send(rp, string("RP:ADC:SlowDAC:StepsPerRotation ", value))
+slowDACStepsPerSequence(rp::RedPitaya) = query(rp,"RP:ADC:SlowDAC:StepsPerSequence?", Int64)
+function slowDACStepsPerSequence(rp::RedPitaya, value)
+  send(rp, string("RP:ADC:SlowDAC:StepsPerSequence ", value))
 end
 
-function prepareSlowDAC(rp::RedPitaya, samplesPerStep, stepsPerRotation, numOfChan)
+function prepareSlowDAC(rp::RedPitaya, samplesPerStep, stepsPerSequence, numOfChan)
   numSlowDACChan(rp, numOfChan)
   samplesPerSlowDACStep(rp, samplesPerStep)
-  slowDACStepsPerRotation(rp, stepsPerRotation)
+  slowDACStepsPerSequence(rp, stepsPerSequence)
 end
 
 function slowDACStepsPerFrame(rp::RedPitaya, stepsPerFrame)
   samplesPerFrame = rp.periodsPerFrame * rp.samplesPerPeriod
   samplesPerStep = div(samplesPerFrame, stepsPerFrame)
   samplesPerSlowDACStep(rp, samplesPerStep)
-  slowDACStepsPerRotation(rp, stepsPerFrame) # Sets PDMClockDivider
+  slowDACStepsPerSequence(rp, stepsPerFrame) # Sets PDMClockDivider
 end
 
 function currentFrame(rp::RedPitaya)

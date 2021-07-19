@@ -38,14 +38,14 @@
 #define ACQUISITION_ON 1
 
 extern int numSamplesPerSlowDACStep;
-extern int numSlowDACStepsPerRotation;
+extern int numSlowDACStepsPerSequence;
 extern int numSlowDACChan;
 extern int numSlowADCChan;
 extern int enableSlowDAC;
 extern int enableSlowDACAck;
-extern int numSlowDACRotationsEnabled;
+extern int numSlowDACSequencesEnabled;
 extern int numSlowDACLostSteps;
-extern uint64_t rotationSlowDACEnabled;
+extern uint64_t sequencesSlowDACEnabled;
 
 extern int64_t channel;
 

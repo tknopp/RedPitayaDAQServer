@@ -45,7 +45,7 @@ for op in [:currentFrame, :currentPeriod, :currentWP, :connectADC, :startADC, :s
 end
 
 for op in [:periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset,
-    :triggerMode, :slowDACStepsPerRotation, :samplesPerSlowDACStep,
+    :triggerMode, :slowDACStepsPerSequence, :samplesPerSlowDACStep,
     :slowDACStepsPerFrame, :ramWriterMode, :numSlowADCChan, :numSlowDACChan,
     :passPDMToFastDAC, :modeDAC, :masterTrigger]
     @eval $op(rpcv::RedPitayaClusterView) = $op(master(rpcv))

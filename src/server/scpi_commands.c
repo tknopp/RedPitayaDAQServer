@@ -389,14 +389,14 @@ static scpi_result_t RP_ADC_GetSamplesPerSlowDACStep(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_ADC_SetSlowDACStepsPerRotation(scpi_t * context) {
-	// Enforce changing the slowDAC steps per rotation to be only
+static scpi_result_t RP_ADC_SetSlowDACStepsPerSequence(scpi_t * context) {
+	// Enforce changing the slowDAC steps per sequence to be only
 	// possible while not acquiring data
 	if(rxEnabled) {
 		return SCPI_RES_ERR;
 	}
 
-	if (!SCPI_ParamInt32(context, &numSlowDACStepsPerRotation, TRUE)) {
+	if (!SCPI_ParamInt32(context, &numSlowDACStepsPerSequence, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 
@@ -407,8 +407,8 @@ static scpi_result_t RP_ADC_SetSlowDACStepsPerRotation(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_ADC_GetSlowDACStepsPerRotation(scpi_t * context) {
-	SCPI_ResultInt32(context, numSlowDACStepsPerRotation);
+static scpi_result_t RP_ADC_GetSlowDACStepsPerSequence(scpi_t * context) {
+	SCPI_ResultInt32(context, numSlowDACStepsPerSequence);
 
 	return SCPI_RES_OK;
 }
@@ -468,7 +468,7 @@ static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 
-	if (!SCPI_ParamInt32(context, &numSlowDACRotationsEnabled, TRUE)) {
+	if (!SCPI_ParamInt32(context, &numSlowDACSequencesEnabled, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 	if (!SCPI_ParamDouble(context, &slowDACRampUpTime, TRUE)) {
@@ -487,7 +487,7 @@ static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
 			//sleep(1.0);
 			//printf("WAIT FOR SLOW DACAck\n");
 		}
-		SCPI_ResultInt64(context, rotationSlowDACEnabled);
+		SCPI_ResultInt64(context, sequencesSlowDACEnabled);
 	} else {
 		SCPI_ResultInt64(context, 0);
 	}
@@ -1032,15 +1032,15 @@ static int readAll(int fd, void *buf,  size_t len) {
 
 static scpi_result_t RP_ADC_SetSlowDACLUT(scpi_t * context) {
 
-	if(numSlowDACStepsPerRotation > 0 && numSlowDACChan > 0 && !enableSlowDAC) {
+	if(numSlowDACStepsPerSequence > 0 && numSlowDACChan > 0 && !enableSlowDAC) {
 		if(slowDACLUT != NULL) {
 			free(slowDACLUT);
 			slowDACLUT = NULL;
 		}
 		printf("Allocating slowDACLUT\n");
-		slowDACLUT = (float *)malloc(numSlowDACChan * numSlowDACStepsPerRotation * sizeof(float));
+		slowDACLUT = (float *)malloc(numSlowDACChan * numSlowDACStepsPerSequence * sizeof(float));
 
-		int n = readAll(newdatasockfd,slowDACLUT,numSlowDACChan * numSlowDACStepsPerRotation * sizeof(float));
+		int n = readAll(newdatasockfd,slowDACLUT,numSlowDACChan * numSlowDACStepsPerSequence * sizeof(float));
 		if (n < 0) perror("ERROR reading from socket");
 		
 		return SCPI_RES_OK;
@@ -1053,15 +1053,15 @@ static scpi_result_t RP_ADC_SetSlowDACLUT(scpi_t * context) {
 
 static scpi_result_t RP_ADC_SetEnableDACLUT(scpi_t * context) {
 
-	if(numSlowDACStepsPerRotation > 0 && numSlowDACChan > 0 && !enableSlowDAC) {
+	if(numSlowDACStepsPerSequence > 0 && numSlowDACChan > 0 && !enableSlowDAC) {
 		if(enableDACLUT != NULL) {
 			free(enableDACLUT);
 			enableDACLUT = NULL;
 		}
 		printf("Allocating enableDACLUT\n");
-		enableDACLUT = (bool *)malloc(numSlowDACChan * numSlowDACStepsPerRotation * sizeof(bool));
+		enableDACLUT = (bool *)malloc(numSlowDACChan * numSlowDACStepsPerSequence * sizeof(bool));
 
-		int n = readAll(newdatasockfd, enableDACLUT, numSlowDACChan * numSlowDACStepsPerRotation * sizeof(bool));
+		int n = readAll(newdatasockfd, enableDACLUT, numSlowDACChan * numSlowDACStepsPerSequence * sizeof(bool));
 		if (n < 0) perror("ERROR reading from socket");
 		
 		return SCPI_RES_OK;
@@ -1170,8 +1170,8 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:SlowDACEnable", .callback = RP_ADC_EnableSlowDAC,},
 	{.pattern = "RP:ADC:SlowDACInterpolation", .callback = RP_ADC_SlowDACInterpolation,},
 	{.pattern = "RP:ADC:SlowDACLostSteps?", .callback = RP_ADC_GetSlowDACLostSteps,},
-	{.pattern = "RP:ADC:SlowDAC:STEPsPerRotation", .callback = RP_ADC_SetSlowDACStepsPerRotation,},
-	{.pattern = "RP:ADC:SlowDAC:STEPsPerRotation?", .callback = RP_ADC_GetSlowDACStepsPerRotation,},
+	{.pattern = "RP:ADC:SlowDAC:STEPsPerSequence", .callback = RP_ADC_SetSlowDACStepsPerSequence,},
+	{.pattern = "RP:ADC:SlowDAC:STEPsPerSequence?", .callback = RP_ADC_GetSlowDACStepsPerSequence,},
 	{.pattern = "RP:ADC:SlowDAC:SAMPlesPerStep", .callback = RP_ADC_SetSamplesPerSlowDACStep,},
 	{.pattern = "RP:ADC:SlowDAC:SAMPlesPerStep?", .callback = RP_ADC_GetSamplesPerSlowDACStep,},
 	{.pattern = "RP:ADC:WP:CURRent?", .callback = RP_ADC_GetCurrentWP,},
