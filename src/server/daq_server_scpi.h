@@ -83,8 +83,6 @@ extern void joinControlThread();
 
 // sequences
 extern int numSamplesPerSlowDACStep;
-extern int enableSlowDAC;
-extern int enableSlowDACAck;
 extern int numSlowDACLostSteps;
 extern uint64_t sequencesSlowDACEnabled;
 
@@ -99,7 +97,7 @@ typedef struct {
 	bool *enableDACLUT;
 	double slowDACRampUpTime;
 	double slowDACFractionRampUp;
-	int numSequencesEnabled;
+	int numRepetitions;
 } sequence_t;
 
 extern sequence_t dacSequence;

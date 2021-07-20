@@ -62,6 +62,9 @@
 #include "../lib/rp-daq-lib.h"
 #include "../server/daq_server_scpi.h"
 
+
+
+sequence_t dacSequence;
 int numSamplesPerSlowDACStep = 0; 
 int numSlowDACStepsPerSequence = 20;
 int numSlowDACChan = 0;

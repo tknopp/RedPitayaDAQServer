@@ -496,15 +496,15 @@ static scpi_result_t RP_DAC_SetRampUpFraction(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_SetNumSequencesEnabled(scpi_t * context) {
-	if (!SCPI_ParamInt32(context, !dacSequence.numSequencesEnabled, TRUE))
+static scpi_result_t RP_DAC_SetSequenceRepetitions(scpi_t * context) {
+	if (!SCPI_ParamInt32(context, &dacSequence.numRepetitions, TRUE))
 		return SCPI_RES_ERR;
 
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_GetNumSequencesEnabled(scpi_t * context) {
-	SCPI_ResultInt32(context, dacSequence.numSequencesEnabled);
+static scpi_result_t RP_DAC_GetSequenceRepetitions(scpi_t * context) {
+	SCPI_ResultInt32(context, dacSequence.numRepetitions);
 	return SCPI_RES_OK;
 }
 
@@ -1040,7 +1040,7 @@ static int readAll(int fd, void *buf,  size_t len) {
 
 static scpi_result_t RP_DAC_SetSlowDACLUT(scpi_t * context) {
 
-	if(dacSequence.numStepsPerSequence > 0 && dacSequence.numSlowDACChan > 0 && !enableSlowDAC) {
+	if(dacSequence.numStepsPerSequence > 0 && dacSequence.numSlowDACChan > 0) {
 		if(dacSequence.slowDACLUT != NULL) {
 			free(dacSequence.slowDACLUT);
 			dacSequence.slowDACLUT = NULL;
@@ -1061,7 +1061,7 @@ static scpi_result_t RP_DAC_SetSlowDACLUT(scpi_t * context) {
 
 static scpi_result_t RP_DAC_SetEnableDACLUT(scpi_t * context) {
 
-	if(dacSequence.numStepsPerSequence > 0 && dacSequence.numSlowDACChan > 0 && !enableSlowDAC) {
+	if(dacSequence.numStepsPerSequence > 0 && dacSequence.numSlowDACChan > 0) {
 		if(dacSequence.enableDACLUT != NULL) {
 			free(dacSequence.enableDACLUT);
 			dacSequence.enableDACLUT = NULL;
@@ -1183,8 +1183,8 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:SLoW:RaMPup:TIME", .callback = RP_DAC_GetRampUpTime,},
 	{.pattern = "RP:DAC:SLoW:RaMPup:FRACtion", .callback = RP_DAC_SetRampUpFraction,},
 	{.pattern = "RP:DAC:SLoW:RaMPup:FRACtion?", .callback = RP_DAC_GetRampUpFraction,},
-	{.pattern = "RP:DAC:SLoW:SEQuences", .callback = RP_DAC_SetNumSequencesEnabled,},
-	{.pattern = "RP:DAC:SLoW:SEQuences?", .callback = RP_DAC_GetNumSequencesEnabled,},
+	{.pattern = "RP:DAC:SLoW:SEQuences", .callback = RP_DAC_SetSequenceRepetitions,},
+	{.pattern = "RP:DAC:SLoW:SEQuences?", .callback = RP_DAC_GetSequenceRepetitions,},
 	// ADC
 	{.pattern = "RP:ADC:SlowADC", .callback = RP_ADC_SetNumSlowADCChan,},
 	{.pattern = "RP:ADC:SlowADC?", .callback = RP_ADC_GetNumSlowADCChan,},
