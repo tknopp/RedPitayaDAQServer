@@ -73,7 +73,7 @@ int numSlowDACSequencesEnabled = 0;
 int numSlowDACLostSteps = 0;
 int enableSlowDAC = 0;
 int enableSlowDACAck = true;
-uint64_t sequencesSlowDACEnabled = 0;
+uint64_t regularSequenceStart = 0;
 
 int64_t channel;
 

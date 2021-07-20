@@ -84,7 +84,7 @@ extern void joinControlThread();
 // sequences
 extern int numSamplesPerSlowDACStep;
 extern int numSlowDACLostSteps;
-extern uint64_t sequencesSlowDACEnabled;
+extern uint64_t regularSequenceStart;
 
 extern bool slowDACInterpolation;
 extern float *slowADCBuffer;

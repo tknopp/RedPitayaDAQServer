@@ -46,12 +46,12 @@ static float getSequenceVal(int step, int channel) {
 static float getFactor(uint64_t sequence, uint64_t step) {
 
 	// Within regular LUT
-	if (sequencesSlowDACEnabled <= sequence && sequence < sequencesSlowDACEnabled + dacSequence.numRepetitions) {
+	if (regularSequenceStart <= sequence && sequence < regularSequenceStart + dacSequence.numRepetitions) {
 		return 1.0;
 	}
 
 	// Ramp up phase
-	else if (sequence < sequencesSlowDACEnabled) {
+	else if (sequence < regularSequenceStart) {
 		int64_t currRampUpStep = step;
 		int64_t totalStepsInRampUpSequences = dacSequence.numStepsPerSequence * rampingTotalSequences;
 		int64_t stepAfterRampUp = totalStepsInRampUpSequences -
@@ -67,7 +67,7 @@ static float getFactor(uint64_t sequence, uint64_t step) {
 	}
 
 	// Ramp down phase
-	else if (sequence >= sequencesSlowDACEnabled + dacSequence.numRepetitions) {
+	else if (sequence >= regularSequenceStart + dacSequence.numRepetitions) {
 		int64_t totalStepsFromRampUp = dacSequence.numStepsPerSequence *
 			(rampingTotalSequences + dacSequence.numRepetitions);
 		int64_t currRampDownStep = step - totalStepsFromRampUp;
@@ -101,6 +101,7 @@ static void initSlowDAC() {
 	rampingSteps = ceil(dacSequence.slowDACRampUpTime * dacSequence.slowDACFractionRampUp / (numSamplesPerSlowDACStep / bandwidth));
 	currentSetSlowDACStepTotal = 0;
 
+	regularSequenceStart = rampingTotalSequences;
 	for (int d = 0; d < 2; d++) {
 		for (int c = 0; c < 4; c++) {
 			setAmplitude(dacSequence.fastDACAmplitude[c + 4 * d], d, c);
@@ -110,6 +111,8 @@ static void initSlowDAC() {
 	for (int d = 0; d < dacSequence.numSlowDACChan; d++) {
 		setEnableDACAll(1, d);
 	}
+
+	printf("Init sequence: %d step size, %d steps per repetition, %d rampingRepetitions, %lldd regular repetition start\n", numSamplesPerSlowDACStep, dacSequence.numStepsPerSequence, rampingTotalSequences, regularSequenceStart);
 
 	//Reset Lost Steps Flag
 	err.lostSteps = 0;
@@ -143,7 +146,7 @@ static void setLUTValuesFrom(uint64_t baseStep) {
 				int sequence = localStep / dacSequence.numStepsPerSequence;
 				// Within regular LUT
 				bool val = false;
-				if (sequencesSlowDACEnabled <= sequence < sequencesSlowDACEnabled + dacSequence.numRepetitions) {
+				if (regularSequenceStart <= sequence < regularSequenceStart + dacSequence.numRepetitions) {
 					val = dacSequence.enableDACLUT[(localStep % dacSequence.numStepsPerSequence) * dacSequence.numSlowDACChan + i];
 				}
 				setEnableDAC(val, i, currPDMIndex);
@@ -181,8 +184,6 @@ static void updatePerformance(float alpha) {
 		maxDeltaSet = deltaSet;
 	}
 
-	//	printf("dc: %lld, udc: %lld, ds: %lld\n", deltaControl, avgDeltaControl, deltaSet);
-
 }
 
 void *controlThread(void *ch) {
@@ -205,25 +206,16 @@ void *controlThread(void *ch) {
 	}
 
 	printf("Entering control loop\n");
-	/*while (controlThreadRunning) {
-		if (getMasterTrigger()) {
-	 		 printf("Master trigger detected\n");
-	 		 break;
-	 	 }
-		sleep(1);
-	}*/
 
 	while (controlThreadRunning) {
 		if (getMasterTrigger()) {
-			if (!started) {
-				started = true;
-				printf("Started sequence for %d repetitions\n", dacSequence.numRepetitions);
-			}
+			prepared = false; // For next trigger off/on
 			// Handle sequence
 			wp = getTotalWritePointer();
 			currentSlowDACStepTotal = wp / numSamplesPerSlowDACStep;
 
 			if (currentSlowDACStepTotal > oldSlowDACStepTotal) {
+				
 				currentSequenceTotal = wp / (numSamplesPerSlowDACStep * dacSequence.numStepsPerSequence);
 				currentSlowDACStep = currentSlowDACStepTotal % dacSequence.numStepsPerSequence;
 
@@ -231,7 +223,7 @@ void *controlThread(void *ch) {
 					handleLostSlowDACSteps(oldSlowDACStepTotal, currentSlowDACStepTotal);
 				}
 
-				if (dacSequence.numRepetitions > 0 && sequencesSlowDACEnabled > 0 && (currentSequenceTotal >= dacSequence.numRepetitions + sequencesSlowDACEnabled + rampingTotalSequences)) {
+				if (dacSequence.numRepetitions > 0 && (currentSequenceTotal >= dacSequence.numRepetitions + regularSequenceStart + rampingTotalSequences)) {
 					// We now have measured enough rotations and switch of the slow DAC
 					cleanUpSlowDAC();
 				} else {
@@ -239,6 +231,8 @@ void *controlThread(void *ch) {
 
 					updatePerformance(alpha);
 				}
+
+
 			} else {
 				sleepTime += baseSleep;
 			}
