@@ -1051,7 +1051,7 @@ static scpi_result_t RP_DAC_SetSlowDACLUT(scpi_t * context) {
 	
 		printf("Setting LUT\n");
 		dacSequence.slowDACLUT = temp;
-
+		sequencePrepared = false;	
 		return SCPI_RES_OK;
 	}
 	else {

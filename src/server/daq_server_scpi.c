@@ -64,6 +64,7 @@
 
 
 
+bool sequencePrepared = false;
 sequence_t dacSequence;
 int numSamplesPerSlowDACStep = 0; 
 int numSlowDACStepsPerSequence = 20;

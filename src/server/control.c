@@ -111,6 +111,10 @@ static void initSlowDAC() {
 
 static void cleanUpSlowDAC() {
 	stopTx();
+	if (dacSequence.slowDACLUT != NULL) {
+		free(dacSequence.slowDACLUT);
+		dacSequence.slowDACLUT = NULL;
+	}
 }
 
 static void setLUTValuesFrom(uint64_t baseStep) {
@@ -125,7 +129,7 @@ static void setLUTValuesFrom(uint64_t baseStep) {
 			uint64_t currPDMIndex = localStep % PDM_BUFF_SIZE;
 			float val = getSlowDACVal(localStep, i);
 
-			printf("%lld currPDMIndex, %f value\n", currPDMIndex, val);
+			//printf("%lld currPDMIndex, %f value\n", currPDMIndex, val);
 			int status = setPDMValueVolt(val, i, currPDMIndex);
 
 			if (status != 0) {
@@ -148,7 +152,7 @@ static void setLUTValuesFrom(uint64_t baseStep) {
 		}
 	}
 	currentSetSlowDACStepTotal = nextSetStep + 1;
-	printf("%lld nextSetStep\n", nextSetStep);
+	//printf("%lld nextSetStep\n", nextSetStep);
 }
 
 static void handleLostSlowDACSteps(uint64_t oldSlowDACStep, uint64_t currentSlowDACStep) {
@@ -184,7 +188,7 @@ void *controlThread(void *ch) {
 	//Performance related variables
 	float alpha = 0.7;
 
-	bool prepared = false;
+	sequencePrepared = false;
 	bool started = false;
 
 	//Sleep
@@ -200,7 +204,7 @@ void *controlThread(void *ch) {
 
 	while (controlThreadRunning) {
 		if (getMasterTrigger()) {
-			prepared = false; // For next trigger off/on
+			sequencePrepared = false; // For next trigger off/on
 			// Handle sequence
 			wp = getTotalWritePointer();
 			currentSlowDACStepTotal = wp / numSamplesPerSlowDACStep;
@@ -232,7 +236,7 @@ void *controlThread(void *ch) {
 			usleep(sleepTime);
 
 		} else {
-			if (!prepared && dacSequence.slowDACLUT != NULL) {
+			if (!sequencePrepared && dacSequence.slowDACLUT != NULL) {
 				printf("Preparing Sequence\n");
 				initSlowDAC();
 				avgDeltaControl = 0;
@@ -240,7 +244,7 @@ void *controlThread(void *ch) {
 				minDeltaControl = 0xFF;
 				maxDeltaSet = 0x00;
 				sleepTime = baseSleep;
-				prepared = true;
+				sequencePrepared = true;
 				setLUTValuesFrom(0);
 				printf("Prepared Sequence\n");
 			}
