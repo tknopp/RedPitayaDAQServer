@@ -34,15 +34,7 @@ static scpi_result_t RP_Init(scpi_t * context) {
 		initialized = true;
 	}
 
-	if(dacSequence.slowDACLUT != NULL) {
-		free(dacSequence.slowDACLUT);
-		dacSequence.slowDACLUT = NULL;
-	}
-
-	if(dacSequence.enableDACLUT != NULL) {
-		free(dacSequence.enableDACLUT);
-		dacSequence.enableDACLUT = NULL;
-	}
+	cleanUpSequence(&dacSequence.data);
 
 	return SCPI_RES_OK;
 }
@@ -394,7 +386,7 @@ static scpi_result_t RP_DAC_SetSlowDACStepsPerSequence(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 
-	if (!SCPI_ParamInt32(context, &dacSequence.numStepsPerSequence, TRUE)) {
+	if (!SCPI_ParamInt32(context, &dacSequence.data.numStepsPerRepetition, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 
@@ -406,7 +398,7 @@ static scpi_result_t RP_DAC_SetSlowDACStepsPerSequence(scpi_t * context) {
 }
 
 static scpi_result_t RP_DAC_GetSlowDACStepsPerSequence(scpi_t * context) {
-	SCPI_ResultInt32(context, dacSequence.numStepsPerSequence);
+	SCPI_ResultInt32(context, dacSequence.data.numStepsPerRepetition);
 
 	return SCPI_RES_OK;
 }
@@ -441,7 +433,7 @@ static scpi_result_t RP_DAC_SetNumSlowDACChan(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 
-	if (!SCPI_ParamInt32(context, &dacSequence.numSlowDACChan, TRUE)) {
+	if (!SCPI_ParamInt32(context, &dacSequence.data.numSlowDACChan, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 
@@ -449,7 +441,7 @@ static scpi_result_t RP_DAC_SetNumSlowDACChan(scpi_t * context) {
 }
 
 static scpi_result_t RP_DAC_GetNumSlowDACChan(scpi_t * context) {
-	SCPI_ResultInt32(context, dacSequence.numSlowDACChan);
+	SCPI_ResultInt32(context, dacSequence.data.numSlowDACChan);
 
 	return SCPI_RES_OK;
 }
@@ -461,48 +453,48 @@ static scpi_result_t RP_DAC_GetSlowDACLostSteps(scpi_t * context) {
 }
 
 static scpi_result_t RP_DAC_SetRampUp(scpi_t * context) {
-	if(!SCPI_ParamDouble(context, &dacSequence.slowDACRampUpTime, TRUE)) 
+	if(!SCPI_ParamDouble(context, &rampUpTime, TRUE)) 
 		return SCPI_RES_ERR;
 
-	if (!SCPI_ParamDouble(context, &dacSequence.slowDACFractionRampUp, TRUE))
+	if (!SCPI_ParamDouble(context, &rampUpFraction, TRUE))
 		return SCPI_RES_ERR;
 	
 	return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_DAC_GetRampUpTime(scpi_t * context) {
-	SCPI_ResultDouble(context, dacSequence.slowDACRampUpTime);
+	SCPI_ResultDouble(context, rampUpTime);
 	return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_DAC_SetRampUpTime(scpi_t * context) {
-	if(!SCPI_ParamDouble(context, &dacSequence.slowDACRampUpTime, TRUE)) 
+	if(!SCPI_ParamDouble(context, &rampUpTime, TRUE)) 
 		return SCPI_RES_ERR;
 
 	return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_DAC_GetRampUpFraction(scpi_t * context) {
-	SCPI_ResultDouble(context, dacSequence.slowDACFractionRampUp);
+	SCPI_ResultDouble(context, rampUpFraction);
 	return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_DAC_SetRampUpFraction(scpi_t * context) {
-	if(!SCPI_ParamDouble(context, &dacSequence.slowDACFractionRampUp, TRUE)) 
+	if(!SCPI_ParamDouble(context, &rampUpFraction, TRUE)) 
 		return SCPI_RES_ERR;
 
 	return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_DAC_SetSequenceRepetitions(scpi_t * context) {
-	if (!SCPI_ParamInt32(context, &dacSequence.numRepetitions, TRUE))
+	if (!SCPI_ParamInt32(context, &dacSequence.data.numRepetitions, TRUE))
 		return SCPI_RES_ERR;
 
 	return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_DAC_GetSequenceRepetitions(scpi_t * context) {
-	SCPI_ResultInt32(context, dacSequence.numRepetitions);
+	SCPI_ResultInt32(context, dacSequence.data.numRepetitions);
 	return SCPI_RES_OK;
 }
 
@@ -1038,19 +1030,19 @@ static int readAll(int fd, void *buf,  size_t len) {
 
 static scpi_result_t RP_DAC_SetSlowDACLUT(scpi_t * context) {
 
-	if(dacSequence.numStepsPerSequence > 0 && dacSequence.numSlowDACChan > 0) {
-		if(dacSequence.slowDACLUT != NULL) {
-			free(dacSequence.slowDACLUT);
-			dacSequence.slowDACLUT = NULL;
+	if(dacSequence.data.numStepsPerRepetition > 0 && dacSequence.data.numSlowDACChan > 0) {
+		if(dacSequence.data.LUT != NULL) {
+			free(dacSequence.data.LUT);
+			dacSequence.data.LUT = NULL;
 		}
 		printf("Allocating slowDACLUT\n");
-		float * temp  = (float *)malloc(dacSequence.numSlowDACChan * dacSequence.numStepsPerSequence * sizeof(float));
+		float * temp  = (float *)malloc(dacSequence.data.numSlowDACChan * dacSequence.data.numStepsPerRepetition * sizeof(float));
 
-		int n = readAll(newdatasockfd, temp, dacSequence.numSlowDACChan * dacSequence.numStepsPerSequence * sizeof(float));
+		int n = readAll(newdatasockfd, temp, dacSequence.data.numSlowDACChan * dacSequence.data.numStepsPerRepetition * sizeof(float));
 		if (n < 0) perror("ERROR reading from socket");
 	
 		printf("Setting LUT\n");
-		dacSequence.slowDACLUT = temp;
+		dacSequence.data.LUT = temp;
 		sequencePrepared = false;	
 		return SCPI_RES_OK;
 	}
@@ -1062,15 +1054,15 @@ static scpi_result_t RP_DAC_SetSlowDACLUT(scpi_t * context) {
 
 static scpi_result_t RP_DAC_SetEnableDACLUT(scpi_t * context) {
 
-	if(dacSequence.numStepsPerSequence > 0 && dacSequence.numSlowDACChan > 0) {
-		if(dacSequence.enableDACLUT != NULL) {
-			free(dacSequence.enableDACLUT);
-			dacSequence.enableDACLUT = NULL;
+	if(dacSequence.data.numStepsPerRepetition > 0 && dacSequence.data.numSlowDACChan > 0) {
+		if(dacSequence.data.enableLUT != NULL) {
+			free(dacSequence.data.enableLUT);
+			dacSequence.data.enableLUT = NULL;
 		}
 		printf("Allocating enableDACLUT\n");
-		dacSequence.enableDACLUT = (bool *)malloc(dacSequence.numSlowDACChan * dacSequence.numStepsPerSequence * sizeof(bool));
+		dacSequence.data.enableLUT = (bool *)malloc(dacSequence.data.numSlowDACChan * dacSequence.data.numStepsPerRepetition * sizeof(bool));
 
-		int n = readAll(newdatasockfd, dacSequence.enableDACLUT, dacSequence.numSlowDACChan * dacSequence.numStepsPerSequence * sizeof(bool));
+		int n = readAll(newdatasockfd, dacSequence.data.enableLUT, dacSequence.data.numSlowDACChan * dacSequence.data.numStepsPerRepetition * sizeof(bool));
 		if (n < 0) perror("ERROR reading from socket");
 		
 		return SCPI_RES_OK;

@@ -81,7 +81,8 @@ extern void* communicationThread(void*);
 extern void* controlThread(void*);
 extern void joinControlThread();
 
-// sequences
+// Sequences
+// Global settings
 extern int numSamplesPerSlowDACStep;
 extern int numSlowDACLostSteps;
 extern uint64_t regularSequenceStart;
@@ -89,18 +90,40 @@ extern bool sequencePrepared;
 extern bool slowDACInterpolation;
 extern float *slowADCBuffer;
 
+// Types of Sequences
+typedef enum {LOOKUP, CONSTANT, PAUSE, RANGE} sequenceTypes_t;
+extern float getLookupSequenceValue(sequenceData_t*, int, int);
+extern float getConstantSequenceValue(sequenceData_t*, int, int);
+extern float getPauseSequenceValue(sequenceData_t*, int, int);
+extern float getRangeSequenceValue(sequenceData_t*, int, int);
+
 typedef struct {
-	int numSlowDACChan;
-	int numStepsPerSequence;
-	//float fastDACAmplitude[8];
-	float *slowDACLUT;
-	bool *enableDACLUT;
-	double slowDACRampUpTime;
-	double slowDACFractionRampUp;
-	int numRepetitions;
+	int numSlowDACChan; // How many channels are considered
+	int numStepsPerRepetition; // How many steps per repetition
+	float* LUT; // LUT for value function pointer
+	bool * enableLUT;
+	int rampingRepetitions; // How many repetitions for both individually ramp up/down
+	int rampingTotalSteps; // How many steps are in these repetitions
+	int rampingSteps; // How many of those steps have a ramping factor
+	int numRepetitions; // How many regular repetitions are there
+	sequenceTypes_t type; // Sanity check for function pointer
+} sequenceData_t;
+
+typedef struct {
+	sequenceData_t data;
+	float (*getSequenceValue) (sequenceData_t *seqData, int step, int channel);
 } sequence_t;
 
+// Sequence construction
 extern sequence_t dacSequence;
+extern double rampUpTime;
+extern double rampUpFraction;
+
+// Sequence Utility functions
+typedef enum {BEFORE, RAMPUP, REGULAR, RAMPDOWN, AFTER} sequenceIntervall_t;
+extern void setupRampingTiming(sequenceData_t *seqData, double rampUpTime, double rampUpFraction);
+extern void cleanUpSequence(sequenceData_t * seqData);
+extern sequenceIntervall_t computeIntervall(sequenceData_t *seqData, int repetition, int step);
 
 // data loss
 struct status {
