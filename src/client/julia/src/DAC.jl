@@ -1,6 +1,8 @@
 export amplitudeDAC, frequencyDAC, phaseDAC, modeDAC, amplitudeDACNext,
        DCSignDAC, signalTypeDAC, offsetDAC, jumpSharpnessDAC, passPDMToFastDAC,
-       waveforms, DACPerformanceData
+       waveforms, DACPerformanceData, rampUp, rampUpTime, rampUpFraction, sequenceRepetitions,
+       prepareSlowDAC, slowDACStepsPerFrame, slowDACStepsPerSequence, samplesPerSlowDACStep,
+       enableDACLUT, setSlowDACLUT, numSlowDACChan, numLostStepsSlowADC
 
 struct DACPerformanceData
   uDeltaControl::UInt8
@@ -195,8 +197,8 @@ function rampUpFraction(rp::RedPitaya, value::Float64)
   send(rp, string("RP:DAC:SLoW:RaMPup:FRACtion ", value))
 end
 
-sequencesEnabled(rp::RedPitaya) = query(rp, "RP:DAC:SLoW:SEQuences?", Int32)
-function sequencesEnabled(rp::RedPitaya, value::Int)
+sequenceRepetitions(rp::RedPitaya) = query(rp, "RP:DAC:SLoW:SEQuences?", Int32)
+function sequenceRepetitions(rp::RedPitaya, value::Int)
   send(rp, string("RP:DAC:SLoW:SEQuences ", value))
 end
 

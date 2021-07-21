@@ -1,7 +1,6 @@
 export decimation, masterTrigger, currentFrame, ramWriterMode, connectADC, startADC, stopADC, samplesPerPeriod, periodsPerFrame, 
-     numSlowDACChan, setSlowDACLUT, enableSlowDAC, slowDACStepsPerSequence, samplesPerSlowDACStep, prepareSlowDAC,
-     currentWP, slowDACInterpolation, numSlowADCChan, numLostStepsSlowADC, bufferSize, keepAliveReset, triggerMode,
-     slowDACStepsPerFrame, enableDACLUT, ADCPerformanceData, RPPerformance, RPStatus, RPInfo, startPipelinedData, PerformanceData, numChan, dataRate
+     currentWP, slowDACInterpolation, bufferSize, keepAliveReset, triggerMode,
+     ADCPerformanceData, RPPerformance, RPStatus, RPInfo, startPipelinedData, PerformanceData, numChan, dataRate
 
 struct ADCPerformanceData
   deltaRead::UInt64

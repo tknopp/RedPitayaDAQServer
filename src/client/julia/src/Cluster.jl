@@ -60,8 +60,9 @@ function currentWP(rpc::RedPitayaCluster)
   return currentWP(master(rpc))
 end
 
-for op in [:periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset,
-           :triggerMode, :slowDACStepsPerSequence, :samplesPerSlowDACStep, :slowDACStepsPerFrame]
+for op in [:periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset, :sequenceRepetitions,
+           :triggerMode, :slowDACStepsPerSequence, :samplesPerSlowDACStep, :slowDACStepsPerFrame,
+           :rampUpTime, :rampUpFraction]
   @eval $op(rpc::RedPitayaCluster) = $op(master(rpc))
   @eval begin
     function $op(rpc::RedPitayaCluster, value)
