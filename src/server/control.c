@@ -25,7 +25,6 @@
 #include "logger.h"
 
 static uint64_t wp;
-static uint64_t wpPDMStart;
 static uint64_t currentSlowDACStepTotal;
 static uint64_t currentSetSlowDACStepTotal; //Up to which step are the values already set
 static uint64_t currentSlowDACStep;
@@ -37,7 +36,6 @@ static int rampingSteps = -1;
 static int rampingTotalSequences = -1;
 
 static int lookahead=110;
-static int lookprehead=5;
 
 static float getSequenceVal(int step, int channel) {
 	return dacSequence.slowDACLUT[(step % dacSequence.numStepsPerSequence) * dacSequence.numSlowDACChan + channel];
@@ -102,17 +100,10 @@ static void initSlowDAC() {
 	currentSetSlowDACStepTotal = 0;
 
 	regularSequenceStart = rampingTotalSequences;
-	/*for (int d = 0; d < 2; d++) {
-		for (int c = 0; c < 4; c++) {
-			setAmplitude(dacSequence.fastDACAmplitude[c + 4 * d], d, c);
-		}
-	}*/
 
 	for (int d = 0; d < dacSequence.numSlowDACChan; d++) {
 		setEnableDACAll(1, d);
 	}
-
-	printf("Init sequence: %d step size, %d steps per repetition, %d rampingRepetitions, %lldd regular repetition start\n", numSamplesPerSlowDACStep, dacSequence.numStepsPerSequence, rampingTotalSequences, regularSequenceStart);
 
 	//Reset Lost Steps Flag
 	err.lostSteps = 0;
@@ -124,18 +115,17 @@ static void cleanUpSlowDAC() {
 
 static void setLUTValuesFrom(uint64_t baseStep) {
 	uint64_t nextSetStep = 0;
-	int64_t nonRedundantSteps = baseStep + lookahead - 1 - currentSetSlowDACStepTotal; //upcoming nextSetStep - currentSetStep
-	int start = 0;
-	start = MAX(lookprehead, MAX(0, lookahead - nonRedundantSteps));
-	//printf("%i\n", start);
+	int64_t nonRedundantSteps = baseStep + lookahead - currentSetSlowDACStepTotal; //upcoming nextSetStep - currentSetStep
+	int start = MAX(0, lookahead - nonRedundantSteps);
 
 	for (int i = 0; i < dacSequence.numSlowDACChan; i++) {
 		//lookahead
 		for (int y = start; y < lookahead; y++) {
 			uint64_t localStep = (baseStep + y);
-			uint64_t currPDMIndex = (wpPDMStart + localStep) % PDM_BUFF_SIZE;
+			uint64_t currPDMIndex = localStep % PDM_BUFF_SIZE;
 			float val = getSlowDACVal(localStep, i);
 
+			printf("%lld currPDMIndex, %f value\n", currPDMIndex, val);
 			int status = setPDMValueVolt(val, i, currPDMIndex);
 
 			if (status != 0) {
@@ -157,7 +147,8 @@ static void setLUTValuesFrom(uint64_t baseStep) {
 			}
 		}
 	}
-	currentSetSlowDACStepTotal = nextSetStep;
+	currentSetSlowDACStepTotal = nextSetStep + 1;
+	printf("%lld nextSetStep\n", nextSetStep);
 }
 
 static void handleLostSlowDACSteps(uint64_t oldSlowDACStep, uint64_t currentSlowDACStep) {
@@ -219,7 +210,7 @@ void *controlThread(void *ch) {
 				currentSequenceTotal = wp / (numSamplesPerSlowDACStep * dacSequence.numStepsPerSequence);
 				currentSlowDACStep = currentSlowDACStepTotal % dacSequence.numStepsPerSequence;
 
-				if (currentSlowDACStepTotal > oldSlowDACStepTotal + (lookahead - lookprehead) && dacSequence.numStepsPerSequence > 1) {
+				if (currentSlowDACStepTotal > oldSlowDACStepTotal + lookahead && dacSequence.numStepsPerSequence > 1) {
 					handleLostSlowDACSteps(oldSlowDACStepTotal, currentSlowDACStepTotal);
 				}
 
@@ -228,7 +219,6 @@ void *controlThread(void *ch) {
 					cleanUpSlowDAC();
 				} else {
 					setLUTValuesFrom(currentSlowDACStep);
-
 					updatePerformance(alpha);
 				}
 
@@ -236,6 +226,8 @@ void *controlThread(void *ch) {
 			} else {
 				sleepTime += baseSleep;
 			}
+
+			//Iterate
 			oldSlowDACStepTotal = currentSlowDACStepTotal;
 			usleep(sleepTime);
 

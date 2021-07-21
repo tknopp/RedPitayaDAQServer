@@ -1048,7 +1048,8 @@ static scpi_result_t RP_DAC_SetSlowDACLUT(scpi_t * context) {
 
 		int n = readAll(newdatasockfd, temp, dacSequence.numSlowDACChan * dacSequence.numStepsPerSequence * sizeof(float));
 		if (n < 0) perror("ERROR reading from socket");
-		
+	
+		printf("Setting LUT\n");
 		dacSequence.slowDACLUT = temp;
 
 		return SCPI_RES_OK;
