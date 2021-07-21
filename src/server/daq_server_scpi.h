@@ -92,7 +92,7 @@ extern float *slowADCBuffer;
 typedef struct {
 	int numSlowDACChan;
 	int numStepsPerSequence;
-	float fastDACAmplitude[8];
+	//float fastDACAmplitude[8];
 	float *slowDACLUT;
 	bool *enableDACLUT;
 	double slowDACRampUpTime;

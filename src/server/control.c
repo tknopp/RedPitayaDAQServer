@@ -102,11 +102,11 @@ static void initSlowDAC() {
 	currentSetSlowDACStepTotal = 0;
 
 	regularSequenceStart = rampingTotalSequences;
-	for (int d = 0; d < 2; d++) {
+	/*for (int d = 0; d < 2; d++) {
 		for (int c = 0; c < 4; c++) {
 			setAmplitude(dacSequence.fastDACAmplitude[c + 4 * d], d, c);
 		}
-	}
+	}*/
 
 	for (int d = 0; d < dacSequence.numSlowDACChan; d++) {
 		setEnableDACAll(1, d);

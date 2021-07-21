@@ -88,7 +88,7 @@ static scpi_result_t RP_DAC_GetNextAmplitude(scpi_t * context) {
 	int channel = numbers[0];
 	int component = numbers[1];
 
-	SCPI_ResultDouble(context, dacSequence.fastDACAmplitude[component+4*channel]  / 8192.0 );
+	//SCPI_ResultDouble(context, dacSequence.fastDACAmplitude[component+4*channel]  / 8192.0 );
 
 	return SCPI_RES_OK;
 }
@@ -104,7 +104,7 @@ static scpi_result_t RP_DAC_SetNextAmplitude(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 
-	dacSequence.fastDACAmplitude[component+4*channel] = (uint16_t)(amplitude*8192.0); 
+	//dacSequence.fastDACAmplitude[component+4*channel] = (uint16_t)(amplitude*8192.0); 
 
 	printf("SetNextAmpl: channel = %d; component = %d, amplitude = %f\n", channel, component, amplitude);
 
@@ -1154,8 +1154,8 @@ const scpi_command_t scpi_commands[] = {
 	// DAC
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude?", .callback = RP_DAC_GetAmplitude,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude", .callback = RP_DAC_SetAmplitude,},
-	{.pattern = "RP:DAC:CHannel#:COMPonent#:Next:AMPlitude?", .callback = RP_DAC_GetNextAmplitude,},
-	{.pattern = "RP:DAC:CHannel#:COMPonent#:Next:AMPlitude", .callback = RP_DAC_SetNextAmplitude,},
+	//{.pattern = "RP:DAC:CHannel#:COMPonent#:Next:AMPlitude?", .callback = RP_DAC_GetNextAmplitude,},
+	//{.pattern = "RP:DAC:CHannel#:COMPonent#:Next:AMPlitude", .callback = RP_DAC_SetNextAmplitude,},
 	{.pattern = "RP:DAC:CHannel#:OFFset?", .callback = RP_DAC_GetOffset,},
 	{.pattern = "RP:DAC:CHannel#:OFFset", .callback = RP_DAC_SetOffset,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency?", .callback = RP_DAC_GetFrequency,},
