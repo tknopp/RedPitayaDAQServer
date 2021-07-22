@@ -2,7 +2,8 @@ export amplitudeDAC, frequencyDAC, phaseDAC, modeDAC, amplitudeDACNext,
        DCSignDAC, signalTypeDAC, offsetDAC, jumpSharpnessDAC, passPDMToFastDAC,
        waveforms, DACPerformanceData, rampUp, rampUpTime, rampUpFraction, sequenceRepetitions,
        prepareSlowDAC, slowDACStepsPerFrame, slowDACStepsPerSequence, samplesPerSlowDACStep,
-       enableDACLUT, setSlowDACLUT, numSlowDACChan, numLostStepsSlowADC
+       enableDACLUT, setLookupLUT, setConstantLUT, setPauseLUT, setRangeLUT, numSlowDACChan,
+       prepareSequence, numLostStepsSlowADC
 
 struct DACPerformanceData
   uDeltaControl::UInt8
@@ -136,38 +137,56 @@ function readDACPerformanceData(rp::RedPitaya)
   return DACPerformanceData(perf[1], perf[2], perf[3], perf[4])
 end
 
-numLostStepsSlowADC(rp::RedPitaya) = query(rp,"RP:DAC:SLoW:LostSteps?", Int64) # TODO slowADC vs slowDAC in name and string
+numLostStepsSlowADC(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:LostSteps?", Int64) # TODO slowADC vs slowDAC in name and string
 
-numSlowDACChan(rp::RedPitaya) = query(rp,"RP:DAC:SLoW?", Int64)
+numSlowDACChan(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:CHan?", Int64)
 function numSlowDACChan(rp::RedPitaya, value)
   if value <= 0 || value > 4
     error("Num slow DAC channels needs to be between 1 and 4!")
   end
-  send(rp, string("RP:DAC:SLoW ", Int64(value)))
+  send(rp, string("RP:DAC:SEQ:CHan ", Int64(value)))
 end
 
-function setSlowDACLUT(rp::RedPitaya, lut::Array)
+function setLookupLUT(rp::RedPitaya, lut::Array)
   lutFloat32 = map(Float32, lut)
-  send(rp, string("RP:DAC:SLoW:LUT"))
+  send(rp, string("RP:DAC:SEQ:LUT:LOOKUP"))
+  @debug "Writing slow DAC LUT"
+  write(rp.dataSocket, lutFloat32)
+end
+
+function setConstantLUT(rp::RedPitaya, lut::Array)
+  lutFloat32 = map(Float32, lut)
+  send(rp, string("RP:DAC:SEQ:LUT:CONSTANT"))
+  @debug "Writing slow DAC LUT"
+  write(rp.dataSocket, lutFloat32)
+end
+
+function setPauseLUT(rp::RedPitaya)
+  send(rp, string("RP:DAC:SEQ:LUT:PAUSE"))
+end
+
+function setRangeLUT(rp::RedPitaya, lut::Array)
+  lutFloat32 = map(Float32, lut)
+  send(rp, string("RP:DAC:SEQ:LUT:RANGE"))
   @debug "Writing slow DAC LUT"
   write(rp.dataSocket, lutFloat32)
 end
 
 function enableDACLUT(rp::RedPitaya, lut::Array)
   lutBool = map(Bool, lut)
-  send(rp, string("RP:DAC:SLoW:LUT:ENaBle"))
+  send(rp, string("RP:DAC:SEQ:LUT:ENaBle"))
   @debug "Writing enable DAC LUT"
   write(rp.dataSocket, lutBool)
 end
 
-samplesPerSlowDACStep(rp::RedPitaya) = query(rp,"RP:DAC:SLoW:SAMPlesPerStep?", Int64)
+samplesPerSlowDACStep(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:SAMPlesPerStep?", Int64)
 function samplesPerSlowDACStep(rp::RedPitaya, value)
-  send(rp, string("RP:DAC:SLoW:SAMPlesPerStep ", value))
+  send(rp, string("RP:DAC:SEQ:SAMPlesPerStep ", value))
 end
 
-slowDACStepsPerSequence(rp::RedPitaya) = query(rp,"RP:DAC:SLoW:STEPsPerSequence?", Int64)
+slowDACStepsPerSequence(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:STEPsPerSequence?", Int64)
 function slowDACStepsPerSequence(rp::RedPitaya, value)
-  send(rp, string("RP:DAC:SLoW:STEPsPerSequence ", value))
+  send(rp, string("RP:DAC:SEQ:STEPsPerSequence ", value))
 end
 
 function prepareSlowDAC(rp::RedPitaya, samplesPerStep, stepsPerSequence, numOfChan)
@@ -184,21 +203,22 @@ function slowDACStepsPerFrame(rp::RedPitaya, stepsPerFrame)
 end
 
 function rampUp(rp::RedPitaya, rampUpTime::Float64, rampUpFraction::Float64)
-  send(rp, string("RP:DAC:SLoW:RaMPup ", rampUpTime, ",", rampUpFraction))
+  send(rp, string("RP:DAC:SEQ:RaMPing ", rampUpTime, ",", rampUpFraction))
 end
 
-rampUpTime(rp::RedPitaya) = query(rp, "RP:DAC:SLoW:RaMPup:TIME?", Float64)
+rampUpTime(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:TIME?", Float64)
 function rampUpTime(rp::RedPitaya, value::Float64)
-  send(rp, string("RP:DAC:SLoW:RaMPup:TIME ", value))
+  send(rp, string("RP:DAC:SEQ:RaMPing:TIME ", value))
 end
 
-rampUpFraction(rp::RedPitaya) = query(rp, "RP:DAC:SLoW:RaMPup:FRACtion?", Float64)
+rampUpFraction(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:FRACtion?", Float64)
 function rampUpFraction(rp::RedPitaya, value::Float64)
-  send(rp, string("RP:DAC:SLoW:RaMPup:FRACtion ", value))
+  send(rp, string("RP:DAC:SEQ:RaMPing:FRACtion ", value))
 end
 
-sequenceRepetitions(rp::RedPitaya) = query(rp, "RP:DAC:SLoW:SEQuences?", Int32)
+sequenceRepetitions(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:REPetitions?", Int32)
 function sequenceRepetitions(rp::RedPitaya, value::Int)
-  send(rp, string("RP:DAC:SLoW:SEQuences ", value))
+  send(rp, string("RP:DAC:SEQ:REPetitions ", value))
 end
 
+prepareSequence(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:PREPare?", Bool)

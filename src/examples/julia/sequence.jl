@@ -36,11 +36,10 @@ triggerMode(rp, "EXTERNAL")
 slowDACStepsPerFrame(rp, slow_dac_periods_per_frame)
 numSlowDACChan(master(rp), 1)
 lut = collect(range(0,0.7,length=slow_dac_periods_per_frame))
-setSlowDACLUT(master(rp), lut)
+setLookupLUT(master(rp), lut)
 rampUp(master(rp), 0.0, 0.0)
 sequenceRepetitions(master(rp), 2)
-
-sleep(0.2)
+success = prepareSequence(master(rp))
 
 masterTrigger(rp, false)
 startADC(rp)
@@ -58,3 +57,4 @@ clf()
 plot(vec(uCurrentFrame[:,1,:,:]))
 plot(vec(uCurrentFrame[:,2,:,:]))
 legend(("Rx1"))
+fig
