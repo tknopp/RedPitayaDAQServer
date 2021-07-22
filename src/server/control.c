@@ -84,7 +84,7 @@ static float getSequenceVal(sequence_t *sequence, int step, int channel) {
 	return sequence->getSequenceValue(&(sequence->data), step, channel);
 }
 
-sequenceIntervall_t computeIntervall(sequenceData_t *seqData, int localRepetition, int localStep) {
+sequenceInterval_t computeInterval(sequenceData_t *seqData, int localRepetition, int localStep) {
 	
 	int stepInSequence = seqData->numStepsPerRepetition * localRepetition + localStep;
 
@@ -120,15 +120,17 @@ static float rampingFunction(float numerator, float denominator) {
 
 static float getFactor(sequenceData_t *seqData, int localRepetition, int localStep) {
 
-	switch(computeIntervall(seqData, localRepetition, localStep)) {
+	switch(computeInterval(seqData, localRepetition, localStep)) {
 		case REGULAR:
 			return 1;
 		case RAMPUP:
+			; // Empty statement to allow declaration in switch
 			// Step in Ramp up so far = how many steps so far - when does ramp up start
 			int stepInRampUp = (seqData->numStepsPerRepetition * localRepetition + localStep)
 				- (seqData->rampingTotalSteps - seqData->rampingSteps - 1);
 			return rampingFunction((float) stepInRampUp, (float) seqData->rampingSteps - 1);
 		case RAMPDOWN:
+			; // See above
 			int stepsUpToRampDown = seqData->numStepsPerRepetition * (seqData->rampingRepetitions + seqData->numRepetitions);
 			int stepsInRampDown = localStep - stepsUpToRampDown;
 			return rampingFunction((float) (seqData->rampingSteps - stepsInRampDown), (float) seqData->rampingSteps - 1);
@@ -147,7 +149,7 @@ static float getSlowDACVal(int step, int i) {
 	return factor * val;
 }
 
-static void setupRampingTiming(sequenceData_t *seqData, double rampUpTime, double rampUpFraction) {
+void setupRampingTiming(sequenceData_t *seqData, double rampUpTime, double rampUpFraction) {
 	double bandwidth = 125e6 / getDecimation();
 	double period = (numSamplesPerSlowDACStep * dacSequence.data.numStepsPerRepetition) / bandwidth;
 	seqData->rampingRepetitions = ceil(rampUpTime / period);
