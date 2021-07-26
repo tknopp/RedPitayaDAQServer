@@ -444,7 +444,7 @@ static scpi_result_t RP_DAC_SetNumSlowDACChan(scpi_t * context) {
 
 	readyConfigSequence();
 
-	if (!SCPI_ParamInt32(context, numSlowDACChan, TRUE)) {
+	if (!SCPI_ParamInt32(context, &numSlowDACChan, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 

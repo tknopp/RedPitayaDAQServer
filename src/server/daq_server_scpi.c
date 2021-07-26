@@ -64,11 +64,9 @@
 
 
 sequenceState_t seqState;
-sequence_t dacSequence;
 sequenceNode_t *head = NULL; 
 sequenceNode_t *tail = NULL;
-sequenceNode_t *current = NULL;
-int numSlowDACChan = 0;
+sequenceNode_t *configNode = NULL;
 
 double rampUpTime;
 double rampUpFraction;
@@ -87,14 +85,8 @@ bool buffInitialized = false;
 bool controlThreadRunning = false;
 bool commThreadRunning = false;
 
-float *slowDACLUT = NULL;
-bool *enableDACLUT = NULL;
 bool slowDACInterpolation = false;
-double slowDACRampUpTime = 0.4;
-double slowDACFractionRampUp = 0.8;
 float *slowADCBuffer = NULL;
-
-float fastDACNextAmplitude[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
 
 pthread_t pControl;
 pthread_t pComm;

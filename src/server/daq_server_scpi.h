@@ -103,11 +103,12 @@ typedef struct {
 	float (*getSequenceValue) (sequenceData_t *seqData, int step, int channel);
 } sequence_t;
 
-typedef struct {
+typedef struct sequenceNode_s sequenceNode_t;
+struct sequenceNode_s {
 	sequence_t sequence;
 	sequenceNode_t* prev;
 	sequenceNode_t* next;
-} sequenceNode_t;
+};
 
 // Global sequence settings
 int numSlowDACChan; // How many channels are considered
