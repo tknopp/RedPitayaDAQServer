@@ -85,7 +85,7 @@ extern void joinControlThread();
 // Sequence structures
 typedef enum {LOOKUP, CONSTANT, PAUSE, RANGE} sequenceTypes_t;
 typedef enum {CONFIG, PREPARED, RUNNING, FINISHED} sequenceState_t;
-typedef enum {BEFORE, RAMPUP, REGULAR, RAMPDOWN, AFTER} sequenceInterval_t;
+typedef enum {BEFORE, RAMPUP, REGULAR, RAMPDOWN, AFTER, DONE} sequenceInterval_t;
 
 typedef struct {
 	int numSlowDACChan; // How many channels are considered

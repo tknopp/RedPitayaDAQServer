@@ -92,18 +92,15 @@ sequenceInterval_t computeInterval(sequenceData_t *seqData, int localRepetition,
 	//printf("%d stepInSequence ", stepInSequence);
 	//Regular
 	if (seqData->rampingRepetitions <= localRepetition && localRepetition < seqData->rampingRepetitions + seqData->numRepetitions) {
-		//printf("reg ");
 		return REGULAR;
 	} 
 	//RampUp
 	else if (localRepetition < seqData->rampingRepetitions) {
 		// Before the last rampingSteps in rampup intervall
 		if (stepInSequence < seqData->rampingTotalSteps - seqData->rampingSteps) {
-			//printf("bef ");
 			return BEFORE;
 		}
 		else {
-			//printf("up ");
 			return RAMPUP;
 		}
 	}
@@ -111,12 +108,13 @@ sequenceInterval_t computeInterval(sequenceData_t *seqData, int localRepetition,
 	else {
 		int stepsInRampUpandRegular = seqData->numStepsPerRepetition * (seqData->rampingRepetitions + seqData->numRepetitions);
 		if (stepInSequence <= stepsInRampUpandRegular + seqData->rampingSteps) {
-			//printf("dwn ");
 			return RAMPDOWN;
 		}
-		else {
-			//printf("aft ");
+		else if (stepInSequence <= stepsInRampUpandRegular + seqData->rampingTotalSteps)  {
 			return AFTER;
+		}
+		else {
+			return DONE;
 		}
 	}
 }
@@ -139,10 +137,12 @@ static float getFactor(sequenceData_t *seqData, int localRepetition, int localSt
 		case RAMPDOWN:
 			; // See above
 			int stepsUpToRampDown = seqData->numStepsPerRepetition * (seqData->rampingRepetitions + seqData->numRepetitions);
-			int stepsInRampDown = localStep - stepsUpToRampDown;
+			int stepsInRampDown = (seqData->numStepsPerRepetition * localRepetition + localStep) - stepsUpToRampDown;
+			//printf("%d StepsInRampDown\n", stepsInRampDown);
 			return rampingFunction((float) (seqData->rampingSteps - stepsInRampDown), (float) seqData->rampingSteps - 1);
 		case BEFORE:
 		case AFTER:
+		case DONE:
 		default:
 			return 0;
 	}
@@ -153,6 +153,7 @@ static float getSlowDACVal(int step, int channel) {
 	int localStep = step % dacSequence.data.numStepsPerRepetition;
 	float val = getSequenceVal(&dacSequence, localStep, channel);
 	float factor = getFactor(&dacSequence.data, localRepetition, localStep);
+	//printf("%d interval, ", computeInterval(&dacSequence.data, localRepetition, localStep));
 	return factor * val;
 }
 
@@ -303,7 +304,7 @@ void *controlThread(void *ch) {
 					handleLostSlowDACSteps(oldSlowDACStepTotal, currentSlowDACStepTotal);
 				}
 
-				if (dacSequence.data.numRepetitions > 0 && computeInterval(&dacSequence.data, currentSequenceTotal, currentSlowDACStepTotal) == AFTER) {
+				if (dacSequence.data.numRepetitions > 0 && computeInterval(&dacSequence.data, currentSequenceTotal, currentSlowDACStepTotal % dacSequence.data.numStepsPerRepetition) == DONE) {
 					// We now have measured enough rotations and switch of the slow DAC
 					cleanUpSlowDAC();
 					currentSetSlowDACStepTotal = 0;
