@@ -110,6 +110,8 @@ void cleanUpSequenceList() {
 			node = next;
 		}
 	}
+	head = NULL;
+	tail = NULL;
 }
 
 bool isSequenceConfigurable() {
@@ -271,6 +273,7 @@ static void cleanUpSlowDAC() {
 	cleanUpSequenceList();
 	seqState = FINISHED;
 	printf("Seq cleaned/finished\n");
+	printf("%d empty list, %d temp null\n", isSequenceListEmpty(), configNode == NULL); 
 }
 
 static void setLUTValuesFrom(uint64_t baseStep) {
