@@ -82,14 +82,10 @@ extern void* controlThread(void*);
 extern void joinControlThread();
 
 // Sequences
-// Global settings
-extern int numSamplesPerSlowDACStep;
-extern int numSlowDACLostSteps;
-extern bool slowDACInterpolation;
-extern float *slowADCBuffer;
-
 // Sequence structures
 typedef enum {LOOKUP, CONSTANT, PAUSE, RANGE} sequenceTypes_t;
+typedef enum {CONFIG, PREPARED, RUNNING, FINISHED} sequenceState_t;
+typedef enum {BEFORE, RAMPUP, REGULAR, RAMPDOWN, AFTER} sequenceInterval_t;
 
 typedef struct {
 	int numSlowDACChan; // How many channels are considered
@@ -108,6 +104,14 @@ typedef struct {
 	float (*getSequenceValue) (sequenceData_t *seqData, int step, int channel);
 } sequence_t;
 
+// Global sequence settings
+extern int numSamplesPerSlowDACStep;
+extern int numSlowDACLostSteps;
+extern bool slowDACInterpolation;
+extern float *slowADCBuffer;
+extern sequenceState_t seqState;
+
+
 // Function pointers for each sequence type
 extern float getLookupSequenceValue(sequenceData_t*, int, int);
 extern float getConstantSequenceValue(sequenceData_t*, int, int);
@@ -121,10 +125,10 @@ extern double rampUpFraction;
 extern bool prepareSequences();
 
 // Sequence Utility functions
-typedef enum {BEFORE, RAMPUP, REGULAR, RAMPDOWN, AFTER} sequenceInterval_t;
 extern void setupRampingTiming(sequenceData_t *seqData, double rampUpTime, double rampUpFraction);
 extern void cleanUpSequence(sequenceData_t * seqData);
 extern sequenceInterval_t computeIntervall(sequenceData_t *seqData, int repetition, int step);
+extern bool isSequenceConfigurable();
 
 // data loss
 struct status {

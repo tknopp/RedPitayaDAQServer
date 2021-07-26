@@ -65,6 +65,7 @@
 
 
 bool sequencePrepared = false;
+sequenceState_t seqState;
 sequence_t dacSequence;
 double rampUpTime;
 double rampUpFraction;
@@ -74,8 +75,6 @@ int numSlowDACChan = 0;
 int numSlowADCChan = 0;
 int numSlowDACSequencesEnabled = 0;
 int numSlowDACLostSteps = 0;
-int enableSlowDAC = 0;
-int enableSlowDACAck = true;
 
 int64_t channel;
 
@@ -129,7 +128,7 @@ void getprio( pthread_t id ) {
 }
 
 uint8_t getStatus() {
-	return getErrorStatus() | rxEnabled << 3 | enableSlowDAC << 4; 
+	return getErrorStatus() | rxEnabled << 3 | seqState == RUNNING << 4; 
 }
 
 uint8_t getErrorStatus() {
