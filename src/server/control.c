@@ -19,6 +19,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include "../lib/rp-daq-lib.h"
 #include "../server/daq_server_scpi.h"
@@ -27,15 +28,65 @@
 static uint64_t wp;
 static uint64_t currentSlowDACStepTotal;
 static uint64_t currentSetSlowDACStepTotal; //Up to which step are the values already set
-static uint64_t currentSequenceTotal;
+static uint64_t currentSequenceBaseStep;
 static uint64_t oldSlowDACStepTotal;
 static int  sleepTime = 0;
 static int baseSleep = 20;
 
+static sequenceNode_t *current; 
+static int lastStep = INT_MAX;
+
 static int lookahead=110;
 
-bool isSequenceConfigurable() {
-	return !rxEnabled && (seqState == CONFIG || seqState == PREPARED || seqState == FINISHED);
+bool isSequenceListEmpty() {
+	return head == NULL;
+}
+
+sequenceNode_t * newSequenceNode() {
+	sequenceNode_t* node = (sequenceNode_t*) malloc(sizeof(sequenceNode_t));
+	node->next = NULL;
+	node->prev = NULL;
+	return node;
+}
+
+void appendSequenceToList(sequenceNode_t* node) {
+	if (isSequenceListEmpty()) {
+		node->prev = NULL;
+		node->next = NULL;
+		head = node;
+	}
+	else {
+		node->prev = tail;
+		node->next = NULL;
+		tail->next = node;
+	}
+	tail = node;
+}
+
+sequenceNode_t* popSequence() {
+	if (isSequenceListEmpty()) {
+		return NULL;
+	}
+	else if (tail != NULL) {
+		sequenceNode_t * result = tail;
+		tail = tail->prev;
+		if (tail != NULL) {
+			tail->next = NULL;
+		}
+		else {
+			head = NULL;
+		}
+		return result;
+	}
+	// Illegal state
+	printf("Pop error, sequence list is in illegal state");
+	return NULL;
+}
+
+void cleanUpSequenceNode(sequenceNode_t * node) {
+	cleanUpSequence(&(node->sequence).data);
+	free(node);
+	node = NULL;
 }
 
 void cleanUpSequence(sequenceData_t *seqData) {
@@ -48,12 +99,26 @@ void cleanUpSequence(sequenceData_t *seqData) {
 		free(seqData->enableLUT);
 		seqData->enableLUT = NULL;
 	}
+}
 
+void cleanUpSequenceList() {
+	if (!isSequenceListEmpty()) {
+		sequenceNode_t * node = head;
+		while (node != NULL) {
+			sequenceNode_t * next = node->next;
+			cleanUpSequenceNode(node);
+			node = next;
+		}
+	}
+}
+
+bool isSequenceConfigurable() {
+	return !rxEnabled && (seqState == CONFIG || seqState == PREPARED || seqState == FINISHED);
 }
 
 float getLookupSequenceValue(sequenceData_t *seqData, int step, int channel) {
 	if (seqData->type == LOOKUP) {
-		return seqData->LUT[step * seqData->numSlowDACChan + channel];
+		return seqData->LUT[step * numSlowDACChan + channel];
 	}
 	return 0;
 }
@@ -74,8 +139,8 @@ float getPauseSequenceValue(sequenceData_t *seqData, int step, int channel) {
 
 float getRangeSequenceValue(sequenceData_t *seqData, int step, int channel){
 	if (seqData->type == RANGE) {
-		float start = seqData->LUT[0 * seqData->numSlowDACChan + channel];
-		float stepSize = seqData->LUT[1 * seqData->numSlowDACChan + channel];
+		float start = seqData->LUT[0 * numSlowDACChan + channel];
+		float stepSize = seqData->LUT[1 * numSlowDACChan + channel];
 		return start + step * stepSize;
 	}
 	return 0;
@@ -148,18 +213,42 @@ static float getFactor(sequenceData_t *seqData, int localRepetition, int localSt
 	}
 }
 
-static float getSlowDACVal(int step, int channel) {
-	uint64_t localRepetition = step / dacSequence.data.numStepsPerRepetition;
-	int localStep = step % dacSequence.data.numStepsPerRepetition;
-	float val = getSequenceVal(&dacSequence, localStep, channel);
-	float factor = getFactor(&dacSequence.data, localRepetition, localStep);
+static float getSequenceValue(int futureStep, int channel) {
+	if (current == NULL) {
+		return 0.0;
+	}
+
+	// Translate from global timeline to sequence local timeline
+	int localRepetition = (futureStep - currentSequenceBaseStep) / current->sequence.data.numStepsPerRepetition;
+	int localStep = (futureStep - currentSequenceBaseStep) % current->sequence.data.numStepsPerRepetition;
+
+	// Advance to next sequence
+	if (computeInterval(&(current->sequence).data, localRepetition, localStep) == DONE) {
+		current = current->next;
+		currentSequenceBaseStep = futureStep;
+
+		if (current == NULL) {
+			if (futureStep < lastStep) {
+				lastStep = futureStep;
+			}
+			return 0.0;
+		}
+
+		// Recompute with new sequence
+		localRepetition = (futureStep - currentSequenceBaseStep) / current->sequence.data.numStepsPerRepetition;
+		localStep = (futureStep - currentSequenceBaseStep) % current->sequence.data.numStepsPerRepetition;
+
+	} 
+
+	float val = getSequenceVal(&(current->sequence), localStep, channel);
+	float factor = getFactor(&(current->sequence).data, localRepetition, localStep);
 	//printf("%d interval, ", computeInterval(&dacSequence.data, localRepetition, localStep));
 	return factor * val;
 }
 
 void setupRampingTiming(sequenceData_t *seqData, double rampUpTime, double rampUpFraction) {
 	double bandwidth = 125e6 / getDecimation();
-	double period = (numSamplesPerSlowDACStep * dacSequence.data.numStepsPerRepetition) / bandwidth;
+	double period = (numSamplesPerSlowDACStep * seqData->numStepsPerRepetition) / bandwidth;
 	seqData->rampingRepetitions = ceil(rampUpTime / period);
 	seqData->rampingTotalSteps = ceil(rampUpTime / (numSamplesPerSlowDACStep / bandwidth));
 	seqData->rampingSteps = ceil(rampUpTime * rampUpFraction / (numSamplesPerSlowDACStep / bandwidth));
@@ -167,9 +256,9 @@ void setupRampingTiming(sequenceData_t *seqData, double rampUpTime, double rampU
 
 static void initSlowDAC() {
 	// Compute Ramping timing	
-	setupRampingTiming(&dacSequence.data, rampUpTime, rampUpFraction);
+	//setupRampingTiming(&dacSequence.data, rampUpTime, rampUpFraction);
 
-	for (int d = 0; d < dacSequence.data.numSlowDACChan; d++) {
+	for (int d = 0; d < numSlowDACChan; d++) {
 		setEnableDACAll(1, d);
 	}
 
@@ -179,7 +268,7 @@ static void initSlowDAC() {
 
 static void cleanUpSlowDAC() {
 	stopTx();
-	cleanUpSequence(&dacSequence.data);
+	cleanUpSequenceList();
 	seqState = FINISHED;
 	printf("Seq cleaned/finished\n");
 }
@@ -188,33 +277,35 @@ static void setLUTValuesFrom(uint64_t baseStep) {
 	uint64_t nextSetStep = 0;
 	int64_t nonRedundantSteps = baseStep + lookahead - currentSetSlowDACStepTotal; //upcoming nextSetStep - currentSetStep
 	int start = MAX(0, lookahead - nonRedundantSteps);
-	//printf("Set values from base %lld\n", baseStep);
-	for (int i = 0; i < dacSequence.data.numSlowDACChan; i++) {
-		//lookahead
-		for (int y = start; y < lookahead; y++) {
-			uint64_t localStep = (baseStep + y); //Rename to future step or w/e, local refers to something else now
-			uint64_t currPDMIndex = localStep % PDM_BUFF_SIZE;
-			float val = getSlowDACVal(localStep, i);
+	
+	// "Time" in outer loop as getSequenceValue is stateful and advances sequence list
+	for (int y = start; y < lookahead; y++) {
+		for (int chan = 0; chan < numSlowDACChan; chan++) {
+			uint64_t futureStep = (baseStep + y); //Rename to future step or w/e, local refers to something else now
+			uint64_t currPDMIndex = futureStep % PDM_BUFF_SIZE;
+			float val = getSequenceValue(futureStep, chan);
 
 			//printf("%lld future step, %lld currPDMIndex, %f value\n", localStep, currPDMIndex, val);
-			int status = setPDMValueVolt(val, i, currPDMIndex);
+			int status = setPDMValueVolt(val, chan, currPDMIndex);
 
 			if (status != 0) {
-				printf("Could not set AO[%d] voltage.\n", i);
+				printf("Could not set AO[%d] voltage.\n", chan);
 			}
 
+			/* TODO Reimplement
 			if (dacSequence.data.enableLUT != NULL) {
-				int sequence = localStep / dacSequence.data.numStepsPerRepetition;
+				int sequence = futureStep / dacSequence.data.numStepsPerRepetition;
 				// Within regular LUT
 				bool val = false;
-				if (computeInterval(&dacSequence.data, localStep / dacSequence.data.numStepsPerRepetition, localStep % dacSequence.data.numStepsPerRepetition) == REGULAR)  {
-					val = dacSequence.data.enableLUT[(localStep % dacSequence.data.numStepsPerRepetition) * dacSequence.data.numSlowDACChan + i];
+				if (computeInterval(&dacSequence.data, futureStep / dacSequence.data.numStepsPerRepetition, futureStep % dacSequence.data.numStepsPerRepetition) == REGULAR)  {
+					val = dacSequence.data.enableLUT[(futureStep % dacSequence.data.numStepsPerRepetition) * numSlowDACChan + chan];
 				}
-				setEnableDAC(val, i, currPDMIndex);
+				setEnableDAC(val, chan, currPDMIndex);
 			}
+			*/
 
-			if (localStep > nextSetStep) {
-				nextSetStep = localStep;
+			if (futureStep > nextSetStep) {
+				nextSetStep = futureStep;
 			}
 		}
 	}
@@ -225,14 +316,21 @@ static void setLUTValuesFrom(uint64_t baseStep) {
 
 
 bool prepareSequences() {
-	if ((seqState == CONFIG || seqState == PREPARED) && dacSequence.data.LUT != NULL && dacSequence.getSequenceValue != NULL) {
+	if ((seqState == CONFIG || seqState == PREPARED) && !isSequenceListEmpty()) {
 		printf("Preparing Sequence\n");
 		initSlowDAC();
+		// Init Sequence Iteration
+		currentSequenceBaseStep = 0;
+		current = head;
+		lastStep = INT_MAX;
+		// Init Perfomance
 		avgDeltaControl = 0;
 		avgDeltaSet = 0;
 		minDeltaControl = 0xFF;
 		maxDeltaSet = 0x00;
+		// Init Sleep
 		sleepTime = baseSleep;
+		// Set first values
 		setLUTValuesFrom(0);
 		seqState = PREPARED;
 		printf("Prepared Sequence\n");
@@ -298,13 +396,11 @@ void *controlThread(void *ch) {
 
 			if (currentSlowDACStepTotal > oldSlowDACStepTotal) {
 
-				currentSequenceTotal = wp / (numSamplesPerSlowDACStep * dacSequence.data.numStepsPerRepetition);
-
-				if (currentSlowDACStepTotal > oldSlowDACStepTotal + lookahead && dacSequence.data.numStepsPerRepetition > 1) {
+				if (currentSlowDACStepTotal > oldSlowDACStepTotal + lookahead) {
 					handleLostSlowDACSteps(oldSlowDACStepTotal, currentSlowDACStepTotal);
 				}
 
-				if (dacSequence.data.numRepetitions > 0 && computeInterval(&dacSequence.data, currentSequenceTotal, currentSlowDACStepTotal % dacSequence.data.numStepsPerRepetition) == DONE) {
+				if (currentSlowDACStepTotal >= lastStep) {
 					// We now have measured enough rotations and switch of the slow DAC
 					cleanUpSlowDAC();
 					currentSetSlowDACStepTotal = 0;

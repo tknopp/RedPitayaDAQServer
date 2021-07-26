@@ -27,6 +27,12 @@
 #include "../server/daq_server_scpi.h"
 
 
+static void readyConfigSequence() {
+	if (configNode == NULL) {
+		configNode = newSequenceNode();
+	}
+}
+
 static scpi_result_t RP_Init(scpi_t * context) {
 
 	if(!initialized) {
@@ -34,7 +40,7 @@ static scpi_result_t RP_Init(scpi_t * context) {
 		initialized = true;
 	}
 
-	cleanUpSequence(&dacSequence.data);
+	cleanUpSequenceList();
 
 	return SCPI_RES_OK;
 }
@@ -80,7 +86,7 @@ static scpi_result_t RP_DAC_GetNextAmplitude(scpi_t * context) {
 	int channel = numbers[0];
 	int component = numbers[1];
 
-	//SCPI_ResultDouble(context, dacSequence.fastDACAmplitude[component+4*channel]  / 8192.0 );
+	//SCPI_ResultDouble(context, (configNode->sequence).fastDACAmplitude[component+4*channel]  / 8192.0 );
 
 	return SCPI_RES_OK;
 }
@@ -96,7 +102,7 @@ static scpi_result_t RP_DAC_SetNextAmplitude(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 
-	//dacSequence.fastDACAmplitude[component+4*channel] = (uint16_t)(amplitude*8192.0); 
+	//(configNode->sequence).fastDACAmplitude[component+4*channel] = (uint16_t)(amplitude*8192.0); 
 
 	printf("SetNextAmpl: channel = %d; component = %d, amplitude = %f\n", channel, component, amplitude);
 
@@ -387,7 +393,9 @@ static scpi_result_t RP_DAC_SetSlowDACStepsPerSequence(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 
-	if (!SCPI_ParamInt32(context, &dacSequence.data.numStepsPerRepetition, TRUE)) {
+	readyConfigSequence(); 
+
+	if (!SCPI_ParamInt32(context, &(configNode->sequence).data.numStepsPerRepetition, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 
@@ -399,7 +407,7 @@ static scpi_result_t RP_DAC_SetSlowDACStepsPerSequence(scpi_t * context) {
 }
 
 static scpi_result_t RP_DAC_GetSlowDACStepsPerSequence(scpi_t * context) {
-	SCPI_ResultInt32(context, dacSequence.data.numStepsPerRepetition);
+	SCPI_ResultInt32(context, (configNode->sequence).data.numStepsPerRepetition);
 
 	return SCPI_RES_OK;
 }
@@ -434,7 +442,9 @@ static scpi_result_t RP_DAC_SetNumSlowDACChan(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 
-	if (!SCPI_ParamInt32(context, &dacSequence.data.numSlowDACChan, TRUE)) {
+	readyConfigSequence();
+
+	if (!SCPI_ParamInt32(context, numSlowDACChan, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 
@@ -443,7 +453,7 @@ static scpi_result_t RP_DAC_SetNumSlowDACChan(scpi_t * context) {
 }
 
 static scpi_result_t RP_DAC_GetNumSlowDACChan(scpi_t * context) {
-	SCPI_ResultInt32(context, dacSequence.data.numSlowDACChan);
+	SCPI_ResultInt32(context, numSlowDACChan);
 
 	return SCPI_RES_OK;
 }
@@ -504,7 +514,9 @@ static scpi_result_t RP_DAC_SetSequenceRepetitions(scpi_t * context) {
 	if (!isSequenceConfigurable())
 		return SCPI_RES_ERR;
 
-	if (!SCPI_ParamInt32(context, &dacSequence.data.numRepetitions, TRUE))
+	readyConfigSequence();
+
+	if (!SCPI_ParamInt32(context, &(configNode->sequence).data.numRepetitions, TRUE))
 		return SCPI_RES_ERR;
 
 	seqState = CONFIG;
@@ -512,7 +524,7 @@ static scpi_result_t RP_DAC_SetSequenceRepetitions(scpi_t * context) {
 }
 
 static scpi_result_t RP_DAC_GetSequenceRepetitions(scpi_t * context) {
-	SCPI_ResultInt32(context, dacSequence.data.numRepetitions);
+	SCPI_ResultInt32(context, (configNode->sequence).data.numRepetitions);
 	return SCPI_RES_OK;
 }
 
@@ -1053,21 +1065,23 @@ static int readAll(int fd, void *buf,  size_t len) {
 
 static scpi_result_t RP_DAC_SetLookupLUT(scpi_t * context) {
 
-	if(dacSequence.data.numStepsPerRepetition > 0 && dacSequence.data.numSlowDACChan > 0 && isSequenceConfigurable()) {
-		if(dacSequence.data.LUT != NULL) {
-			free(dacSequence.data.LUT);
-			dacSequence.data.LUT = NULL;
+	readyConfigSequence();
+
+	if((configNode->sequence).data.numStepsPerRepetition > 0 && numSlowDACChan > 0 && isSequenceConfigurable()) {
+		if((configNode->sequence).data.LUT != NULL) {
+			free((configNode->sequence).data.LUT);
+			(configNode->sequence).data.LUT = NULL;
 		}
 		printf("Allocating slowDACLUT\n");
-		float * temp  = (float *)malloc(dacSequence.data.numSlowDACChan * dacSequence.data.numStepsPerRepetition * sizeof(float));
+		float * temp  = (float *)malloc(numSlowDACChan * (configNode->sequence).data.numStepsPerRepetition * sizeof(float));
 
-		int n = readAll(newdatasockfd, temp, dacSequence.data.numSlowDACChan * dacSequence.data.numStepsPerRepetition * sizeof(float));
+		int n = readAll(newdatasockfd, temp, numSlowDACChan * (configNode->sequence).data.numStepsPerRepetition * sizeof(float));
 		if (n < 0) perror("ERROR reading from socket");
 	
 		printf("Setting Arbitray LUT\n");
-		dacSequence.getSequenceValue = &getLookupSequenceValue;
-		dacSequence.data.type = LOOKUP;
-		dacSequence.data.LUT = temp;
+		(configNode->sequence).getSequenceValue = &getLookupSequenceValue;
+		(configNode->sequence).data.type = LOOKUP;
+		(configNode->sequence).data.LUT = temp;
 		seqState = CONFIG;
 		return SCPI_RES_OK;
 	}
@@ -1078,21 +1092,21 @@ static scpi_result_t RP_DAC_SetLookupLUT(scpi_t * context) {
 
 static scpi_result_t RP_DAC_SetConstantLUT(scpi_t * context) {
 
-	if(dacSequence.data.numStepsPerRepetition > 0 && dacSequence.data.numSlowDACChan > 0 && isSequenceConfigurable()) {
-		if(dacSequence.data.LUT != NULL) {
-			free(dacSequence.data.LUT);
-			dacSequence.data.LUT = NULL;
+	if((configNode->sequence).data.numStepsPerRepetition > 0 && numSlowDACChan > 0 && isSequenceConfigurable()) {
+		if((configNode->sequence).data.LUT != NULL) {
+			free((configNode->sequence).data.LUT);
+			(configNode->sequence).data.LUT = NULL;
 		}
 		printf("Allocating slowDACLUT\n");
-		float * temp  = (float *)malloc(dacSequence.data.numSlowDACChan * sizeof(float));
+		float * temp  = (float *)malloc(numSlowDACChan * sizeof(float));
 
-		int n = readAll(newdatasockfd, temp, dacSequence.data.numSlowDACChan * sizeof(float));
+		int n = readAll(newdatasockfd, temp, numSlowDACChan * sizeof(float));
 		if (n < 0) perror("ERROR reading from socket");
 	
 		printf("Setting Constant LUT\n");
-		dacSequence.data.LUT = temp;
-		dacSequence.getSequenceValue = &getConstantSequenceValue;
-		dacSequence.data.type = CONSTANT;
+		(configNode->sequence).data.LUT = temp;
+		(configNode->sequence).getSequenceValue = &getConstantSequenceValue;
+		(configNode->sequence).data.type = CONSTANT;
 		seqState = CONFIG;
 		return SCPI_RES_OK;
 	}
@@ -1103,18 +1117,18 @@ static scpi_result_t RP_DAC_SetConstantLUT(scpi_t * context) {
 
 static scpi_result_t RP_DAC_SetPauseLUT(scpi_t * context) {
 
-	if(dacSequence.data.numStepsPerRepetition > 0 && dacSequence.data.numSlowDACChan > 0 && isSequenceConfigurable()) {
-		if(dacSequence.data.LUT != NULL) {
-			free(dacSequence.data.LUT);
-			dacSequence.data.LUT = NULL;
+	if((configNode->sequence).data.numStepsPerRepetition > 0 && numSlowDACChan > 0 && isSequenceConfigurable()) {
+		if((configNode->sequence).data.LUT != NULL) {
+			free((configNode->sequence).data.LUT);
+			(configNode->sequence).data.LUT = NULL;
 		}
 		printf("Allocating slowDACLUT\n");
 		float * temp  = (float *)malloc(1 * sizeof(float)); //Place holder for != NULL
 
 		printf("Setting Pause LUT\n");
-		dacSequence.data.LUT = temp;
-		dacSequence.getSequenceValue = &getPauseSequenceValue;
-		dacSequence.data.type = PAUSE;
+		(configNode->sequence).data.LUT = temp;
+		(configNode->sequence).getSequenceValue = &getPauseSequenceValue;
+		(configNode->sequence).data.type = PAUSE;
 		seqState = CONFIG;
 		return SCPI_RES_OK;
 	}
@@ -1125,21 +1139,21 @@ static scpi_result_t RP_DAC_SetPauseLUT(scpi_t * context) {
 
 static scpi_result_t RP_DAC_SetRangeLUT(scpi_t * context) {
 
-	if(dacSequence.data.numStepsPerRepetition > 0 && dacSequence.data.numSlowDACChan > 0 && isSequenceConfigurable()) {
-		if(dacSequence.data.LUT != NULL) {
-			free(dacSequence.data.LUT);
-			dacSequence.data.LUT = NULL;
+	if((configNode->sequence).data.numStepsPerRepetition > 0 && numSlowDACChan > 0 && isSequenceConfigurable()) {
+		if((configNode->sequence).data.LUT != NULL) {
+			free((configNode->sequence).data.LUT);
+			(configNode->sequence).data.LUT = NULL;
 		}
 		printf("Allocating slowDACLUT\n");
-		float * temp  = (float *)malloc(dacSequence.data.numSlowDACChan * 2  * sizeof(float));
+		float * temp  = (float *)malloc(numSlowDACChan * 2  * sizeof(float));
 
-		int n = readAll(newdatasockfd, temp, dacSequence.data.numSlowDACChan * 2 * sizeof(float));
+		int n = readAll(newdatasockfd, temp, numSlowDACChan * 2 * sizeof(float));
 		if (n < 0) perror("ERROR reading from socket");
 	
 		printf("Setting Range LUT\n");
-		dacSequence.data.LUT = temp;
-		dacSequence.getSequenceValue = &getRangeSequenceValue;
-		dacSequence.data.type = RANGE;
+		(configNode->sequence).data.LUT = temp;
+		(configNode->sequence).getSequenceValue = &getRangeSequenceValue;
+		(configNode->sequence).data.type = RANGE;
 		seqState = CONFIG;
 		return SCPI_RES_OK;
 	}
@@ -1150,15 +1164,15 @@ static scpi_result_t RP_DAC_SetRangeLUT(scpi_t * context) {
 
 static scpi_result_t RP_DAC_SetEnableDACLUT(scpi_t * context) {
 
-	if(dacSequence.data.numStepsPerRepetition > 0 && dacSequence.data.numSlowDACChan > 0 && isSequenceConfigurable()) {
-		if(dacSequence.data.enableLUT != NULL) {
-			free(dacSequence.data.enableLUT);
-			dacSequence.data.enableLUT = NULL;
+	if((configNode->sequence).data.numStepsPerRepetition > 0 && numSlowDACChan > 0 && isSequenceConfigurable()) {
+		if((configNode->sequence).data.enableLUT != NULL) {
+			free((configNode->sequence).data.enableLUT);
+			(configNode->sequence).data.enableLUT = NULL;
 		}
 		printf("Allocating enableDACLUT\n");
-		dacSequence.data.enableLUT = (bool *)malloc(dacSequence.data.numSlowDACChan * dacSequence.data.numStepsPerRepetition * sizeof(bool));
+		(configNode->sequence).data.enableLUT = (bool *)malloc(numSlowDACChan * (configNode->sequence).data.numStepsPerRepetition * sizeof(bool));
 
-		int n = readAll(newdatasockfd, dacSequence.data.enableLUT, dacSequence.data.numSlowDACChan * dacSequence.data.numStepsPerRepetition * sizeof(bool));
+		int n = readAll(newdatasockfd, (configNode->sequence).data.enableLUT, numSlowDACChan * (configNode->sequence).data.numStepsPerRepetition * sizeof(bool));
 		seqState = CONFIG;
 		if (n < 0) perror("ERROR reading from socket");
 		
@@ -1168,6 +1182,39 @@ static scpi_result_t RP_DAC_SetEnableDACLUT(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 }
+
+static scpi_result_t RP_DAC_AppendSequence(scpi_t * context) {
+	if (!isSequenceConfigurable()) {
+		return SCPI_RES_ERR;
+	}
+
+	if (configNode != NULL) {
+		setupRampingTiming(&(configNode->sequence).data, rampUpTime, rampUpFraction);
+		appendSequenceToList(configNode);
+		configNode = NULL;
+	}
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_PopSequence(scpi_t * context) {
+	if (!isSequenceConfigurable()) {
+		return SCPI_RES_ERR;
+	}
+
+	sequenceNode_t * node = popSequence();
+	cleanUpSequenceNode(node);
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_ClearSequences(scpi_t * context) {
+	if (!isSequenceConfigurable()) {
+		cleanUpSequenceList();
+	}
+	return SCPI_RES_OK;
+}
+
 
 static scpi_result_t RP_DAC_PrepareSequences(scpi_t * context) {
 	bool result = false;
@@ -1288,6 +1335,9 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:SEQ:RaMPing:FRACtion?", .callback = RP_DAC_GetRampUpFraction,},
 	{.pattern = "RP:DAC:SEQ:REPetitions", .callback = RP_DAC_SetSequenceRepetitions,},
 	{.pattern = "RP:DAC:SEQ:REPetitions?", .callback = RP_DAC_GetSequenceRepetitions,},
+	{.pattern = "RP:DAC:SEQ:APPend", .callback = RP_DAC_AppendSequence,},
+	{.pattern = "RP:DAC:SEQ:POP", .callback = RP_DAC_PopSequence,},
+	{.pattern = "RP:DAC:SEQ:CLEAR", .callback = RP_DAC_ClearSequences,},
 	{.pattern = "RP:DAC:SEQ:PREPare?", .callback = RP_DAC_PrepareSequences,},
 	// ADC
 	{.pattern = "RP:ADC:SlowADC", .callback = RP_ADC_SetNumSlowADCChan,},

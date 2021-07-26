@@ -88,7 +88,6 @@ typedef enum {CONFIG, PREPARED, RUNNING, FINISHED} sequenceState_t;
 typedef enum {BEFORE, RAMPUP, REGULAR, RAMPDOWN, AFTER, DONE} sequenceInterval_t;
 
 typedef struct {
-	int numSlowDACChan; // How many channels are considered
 	int numStepsPerRepetition; // How many steps per repetition
 	float* LUT; // LUT for value function pointer
 	bool * enableLUT;
@@ -104,13 +103,21 @@ typedef struct {
 	float (*getSequenceValue) (sequenceData_t *seqData, int step, int channel);
 } sequence_t;
 
+typedef struct {
+	sequence_t sequence;
+	sequenceNode_t* prev;
+	sequenceNode_t* next;
+} sequenceNode_t;
+
 // Global sequence settings
+int numSlowDACChan; // How many channels are considered
 extern int numSamplesPerSlowDACStep;
 extern int numSlowDACLostSteps;
 extern bool slowDACInterpolation;
 extern float *slowADCBuffer;
-extern sequenceState_t seqState;
-
+extern sequenceState_t seqState; //State of sequence(s)
+extern sequenceNode_t *head; //always first node
+extern sequenceNode_t *tail; //always last node
 
 // Function pointers for each sequence type
 extern float getLookupSequenceValue(sequenceData_t*, int, int);
@@ -118,17 +125,22 @@ extern float getConstantSequenceValue(sequenceData_t*, int, int);
 extern float getPauseSequenceValue(sequenceData_t*, int, int);
 extern float getRangeSequenceValue(sequenceData_t*, int, int);
 
-// Sequence construction
-extern sequence_t dacSequence;
+// Sequence construction and utility functions
+extern sequenceNode_t *configNode;
 extern double rampUpTime;
 extern double rampUpFraction;
 extern bool prepareSequences();
-
-// Sequence Utility functions
 extern void setupRampingTiming(sequenceData_t *seqData, double rampUpTime, double rampUpFraction);
 extern void cleanUpSequence(sequenceData_t * seqData);
-extern sequenceInterval_t computeIntervall(sequenceData_t *seqData, int repetition, int step);
+extern void cleanUpSequenceList();
+extern sequenceInterval_t computeInterval(sequenceData_t *seqData, int repetition, int step);
 extern bool isSequenceConfigurable();
+extern bool isSequenceListEmpty();
+extern int sequenceListLength();
+extern void appendSequenceToList(sequenceNode_t*);
+extern sequenceNode_t * popSequence();
+extern sequenceNode_t * newSequenceNode();
+extern void cleanUpSequenceNode(sequenceNode_t*);
 
 // data loss
 struct status {

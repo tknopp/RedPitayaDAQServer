@@ -63,10 +63,13 @@
 #include "../server/daq_server_scpi.h"
 
 
-
-bool sequencePrepared = false;
 sequenceState_t seqState;
 sequence_t dacSequence;
+sequenceNode_t *head = NULL; 
+sequenceNode_t *tail = NULL;
+sequenceNode_t *current = NULL;
+int numSlowDACChan = 0;
+
 double rampUpTime;
 double rampUpFraction;
 int numSamplesPerSlowDACStep = 0; 

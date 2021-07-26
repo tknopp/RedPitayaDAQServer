@@ -3,7 +3,7 @@ export amplitudeDAC, frequencyDAC, phaseDAC, modeDAC, amplitudeDACNext,
        waveforms, DACPerformanceData, rampUp, rampUpTime, rampUpFraction, sequenceRepetitions,
        prepareSlowDAC, slowDACStepsPerFrame, slowDACStepsPerSequence, samplesPerSlowDACStep,
        enableDACLUT, setLookupLUT, setConstantLUT, setPauseLUT, setRangeLUT, numSlowDACChan,
-       prepareSequence, numLostStepsSlowADC
+       appendSequence, popSequence, clearSequences, prepareSequence, numLostStepsSlowADC
 
 struct DACPerformanceData
   uDeltaControl::UInt8
@@ -221,4 +221,7 @@ function sequenceRepetitions(rp::RedPitaya, value::Int)
   send(rp, string("RP:DAC:SEQ:REPetitions ", value))
 end
 
+appendSequence(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:APPend")
+popSequence(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:POP")
+clearSequences(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:CLEAR")
 prepareSequence(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:PREPare?", Bool)
