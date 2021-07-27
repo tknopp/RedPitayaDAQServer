@@ -197,7 +197,7 @@ static float getFactor(sequenceData_t *seqData, int localRepetition, int localSt
 
 	switch(computeInterval(seqData, localRepetition, localStep)) {
 		case REGULAR:
-			return 1;
+			return 1.0;
 		case RAMPUP:
 			; // Empty statement to allow declaration in switch
 			// Step in Ramp up so far = how many steps so far - when does ramp up start
@@ -208,47 +208,13 @@ static float getFactor(sequenceData_t *seqData, int localRepetition, int localSt
 			; // See above
 			int stepsUpToRampDown = seqData->numStepsPerRepetition * (seqData->rampingRepetitions + seqData->numRepetitions);
 			int stepsInRampDown = (seqData->numStepsPerRepetition * localRepetition + localStep) - stepsUpToRampDown;
-			//printf("%d StepsInRampDown\n", stepsInRampDown);
 			return rampingFunction((float) (seqData->rampingSteps - stepsInRampDown), (float) seqData->rampingSteps - 1);
 		case BEFORE:
 		case AFTER:
 		case DONE:
 		default:
-			return 0;
-	}
-}
-
-static float getSequenceValue(int futureStep, int channel) {
-	if (current == NULL) {
-		return 0.0;
-	}
-
-	// Translate from global timeline to sequence local timeline
-	int localRepetition = (futureStep - currentSequenceBaseStep) / current->sequence.data.numStepsPerRepetition;
-	int localStep = (futureStep - currentSequenceBaseStep) % current->sequence.data.numStepsPerRepetition;
-
-	// Advance to next sequence
-	if (computeInterval(&(current->sequence).data, localRepetition, localStep) == DONE) {
-		current = current->next;
-		currentSequenceBaseStep = futureStep;
-
-		if (current == NULL) {
-			if (futureStep < lastStep) {
-				lastStep = futureStep;
-			}
 			return 0.0;
-		}
-
-		// Recompute with new sequence
-		localRepetition = (futureStep - currentSequenceBaseStep) / current->sequence.data.numStepsPerRepetition;
-		localStep = (futureStep - currentSequenceBaseStep) % current->sequence.data.numStepsPerRepetition;
-
-	} 
-
-	float val = getSequenceVal(&(current->sequence), localStep, channel);
-	float factor = getFactor(&(current->sequence).data, localRepetition, localStep);
-	//printf("%d interval, ", computeInterval(&dacSequence.data, localRepetition, localStep));
-	return factor * val;
+	}
 }
 
 void setupRampingTiming(sequenceData_t *seqData, double rampUpTime, double rampUpFraction) {
@@ -278,36 +244,66 @@ static void cleanUpSlowDAC() {
 	printf("Seq cleaned/finished\n");
 }
 
+static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
+	if (current == NULL) {
+		setPDMValueVolt(0.0, channel, currPDMIndex);
+		setEnableDAC(false, channel, currPDMIndex);
+		return;
+	}
+
+	// Translate from global timeline to sequence local timeline
+	int localRepetition = (futureStep - currentSequenceBaseStep) / current->sequence.data.numStepsPerRepetition;
+	int localStep = (futureStep - currentSequenceBaseStep) % current->sequence.data.numStepsPerRepetition;
+	sequenceInterval_t interval = computeInterval(&(current->sequence).data, localRepetition, localStep); 
+
+	// Advance to next sequence
+	if (interval  == DONE) {
+		current = current->next;
+		currentSequenceBaseStep = futureStep;
+
+		// Notify end of sequence(s)
+		if (current == NULL) {
+			if (futureStep < lastStep) {
+				lastStep = futureStep;
+			}
+			setPDMValueVolt(0.0, channel, currPDMIndex);
+			setEnableDAC(false, channel, currPDMIndex);
+			return;
+		}
+
+		// Recompute with new sequence
+		localRepetition = (futureStep - currentSequenceBaseStep) / current->sequence.data.numStepsPerRepetition;
+		localStep = (futureStep - currentSequenceBaseStep) % current->sequence.data.numStepsPerRepetition;
+		interval = computeInterval(&(current->sequence).data, localRepetition, localStep); 
+	} 
+
+	// PDM Value
+	float val = getSequenceVal(&(current->sequence), localStep, channel);
+	float factor = getFactor(&(current->sequence).data, localRepetition, localStep);
+	if (setPDMValueVolt(factor * val, channel, currPDMIndex) != 0) {
+		printf("Could not set AO[%d] voltage.\n", channel);	
+	}
+
+	// Enable Value
+	if (current->sequence.data.enableLUT != NULL && interval == REGULAR) {
+		bool temp = current->sequence.data.enableLUT[localStep * numSlowDACChan + channel];
+		setEnableDAC(temp, channel, currPDMIndex);
+		printf("%d enable", temp);
+	}
+}
+
 static void setLUTValuesFrom(uint64_t baseStep) {
 	uint64_t nextSetStep = 0;
 	int64_t nonRedundantSteps = baseStep + lookahead - currentSetSlowDACStepTotal; //upcoming nextSetStep - currentSetStep
 	int start = MAX(0, lookahead - nonRedundantSteps);
 	
-	// "Time" in outer loop as getSequenceValue is stateful and advances sequence list
+	// "Time" in outer loop as setLUTValuesFor is stateful and advances sequence list based on step/time
 	for (int y = start; y < lookahead; y++) {
 		for (int chan = 0; chan < numSlowDACChan; chan++) {
 			uint64_t futureStep = (baseStep + y); 
 			uint64_t currPDMIndex = futureStep % PDM_BUFF_SIZE;
-			float val = getSequenceValue(futureStep, chan);
-
-			//printf("%lld future step, %lld currPDMIndex, %f value\n", futureStep, currPDMIndex, val);
-			int status = setPDMValueVolt(val, chan, currPDMIndex);
-
-			if (status != 0) {
-				printf("Could not set AO[%d] voltage.\n", chan);
-			}
-
-			/* TODO Reimplement
-			if (dacSequence.data.enableLUT != NULL) {
-				int sequence = futureStep / dacSequence.data.numStepsPerRepetition;
-				// Within regular LUT
-				bool val = false;
-				if (computeInterval(&dacSequence.data, futureStep / dacSequence.data.numStepsPerRepetition, futureStep % dacSequence.data.numStepsPerRepetition) == REGULAR)  {
-					val = dacSequence.data.enableLUT[(futureStep % dacSequence.data.numStepsPerRepetition) * numSlowDACChan + chan];
-				}
-				setEnableDAC(val, chan, currPDMIndex);
-			}
-			*/
+			
+			setLUTValuesFor(futureStep, chan, currPDMIndex);
 
 			if (futureStep > nextSetStep) {
 				nextSetStep = futureStep;
@@ -315,7 +311,6 @@ static void setLUTValuesFrom(uint64_t baseStep) {
 		}
 	}
 	currentSetSlowDACStepTotal = nextSetStep + 1;
-	//printf("%lld nextSetStep\n", nextSetStep);
 }
 
 
