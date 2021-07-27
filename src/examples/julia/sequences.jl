@@ -33,25 +33,35 @@ ramWriterMode(rp, "TRIGGERED")
 triggerMode(rp, "EXTERNAL")
 
 # Sequence
-slowDACStepsPerFrame(rp, slow_dac_periods_per_frame)
 numSlowDACChan(master(rp), 1)
-rampUp(master(rp), frame_period * 2, 0.5)
-sequenceRepetitions(master(rp), 1)
 
 fig = figure(1)
 clf()
 
-# Constant Sequence
-amplitudeDAC(rp, 1, 1, 0.1) # Amplitude is set to zero after a sequence
+amplitudeDAC(rp, 1, 1, 0.1) 
+#First sequence
 lut = [0.2]
+rampUp(master(rp), frame_period * 2, 0.5)
+sequenceRepetitions(master(rp), 1)
+slowDACStepsPerFrame(rp, slow_dac_periods_per_frame)
 setConstantLUT(master(rp), lut)
 appendSequence(master(rp))
+
+#Second sequence
+lut = collect(range(0,0.7,length=slow_dac_periods_per_frame))
+rampUp(master(rp), 0.0, 0.0)
+sequenceRepetitions(master(rp), 2)
+slowDACStepsPerFrame(rp, slow_dac_periods_per_frame)
+setLookupLUT(master(rp), lut)
+appendSequence(master(rp))
+
+# Prepare both
 success = prepareSequence(master(rp))
 startADC(rp)
 masterTrigger(rp, true)
 sleep(0.1)
 
-uCurrentFrame = readFrames(rp, 0, 5)
+uCurrentFrame = readFrames(rp, 0, 7)
 stopADC(rp)
 masterTrigger(rp, false)
 

@@ -39,6 +39,7 @@ lut = collect(range(0,0.7,length=slow_dac_periods_per_frame))
 setLookupLUT(master(rp), lut)
 rampUp(master(rp), 0.0, 0.0)
 sequenceRepetitions(master(rp), 2)
+appendSequence(master(rp))
 success = prepareSequence(master(rp))
 
 masterTrigger(rp, false)
@@ -47,7 +48,7 @@ masterTrigger(rp, true)
 
 sleep(0.1)
 
-uCurrentFrame = readFrames(rp, 0, 3)
+uCurrentFrame = readFrames(rp, 0, 5)
 stopADC(rp)
 masterTrigger(rp, false)
 
