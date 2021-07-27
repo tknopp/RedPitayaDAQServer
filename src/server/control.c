@@ -121,8 +121,8 @@ bool isSequenceConfigurable() {
 	return !rxEnabled && (seqState == CONFIG || seqState == PREPARED || seqState == FINISHED);
 }
 
-float getLookupSequenceValue(sequenceData_t *seqData, int step, int channel) {
-	if (seqData->type == LOOKUP) {
+float getArbitrarySequenceValue(sequenceData_t *seqData, int step, int channel) {
+	if (seqData->type == ARBITRARY) {
 		return seqData->LUT[step * numSlowDACChan + channel];
 	}
 	return 0;

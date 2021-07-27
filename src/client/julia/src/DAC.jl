@@ -2,7 +2,7 @@ export amplitudeDAC, frequencyDAC, phaseDAC, modeDAC, amplitudeDACNext,
        DCSignDAC, signalTypeDAC, offsetDAC, jumpSharpnessDAC, passPDMToFastDAC,
        waveforms, DACPerformanceData, rampUp, rampUpTime, rampUpFraction, sequenceRepetitions,
        prepareSlowDAC, slowDACStepsPerFrame, slowDACStepsPerSequence, samplesPerSlowDACStep,
-       enableDACLUT, setLookupLUT, setConstantLUT, setPauseLUT, setRangeLUT, numSlowDACChan,
+       enableDACLUT, setArbitraryLUT, setConstantLUT, setPauseLUT, setRangeLUT, numSlowDACChan,
        appendSequence, popSequence, clearSequences, prepareSequence, numLostStepsSlowADC
 
 struct DACPerformanceData
@@ -147,10 +147,10 @@ function numSlowDACChan(rp::RedPitaya, value)
   send(rp, string("RP:DAC:SEQ:CHan ", Int64(value)))
 end
 
-function setLookupLUT(rp::RedPitaya, lut::Array)
+function setArbitraryLUT(rp::RedPitaya, lut::Array)
   lutFloat32 = map(Float32, lut)
-  send(rp, string("RP:DAC:SEQ:LUT:LOOKUP"))
-  @debug "Writing slow DAC LUT"
+  send(rp, string("RP:DAC:SEQ:LUT:ARBITRARY"))
+  @debug "Writing arbitrary LUT"
   write(rp.dataSocket, lutFloat32)
 end
 

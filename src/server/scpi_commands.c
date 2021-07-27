@@ -1063,7 +1063,7 @@ static int readAll(int fd, void *buf,  size_t len) {
 	return len;
 }
 
-static scpi_result_t RP_DAC_SetLookupLUT(scpi_t * context) {
+static scpi_result_t RP_DAC_SetArbitraryLUT(scpi_t * context) {
 
 	readyConfigSequence();
 
@@ -1079,8 +1079,8 @@ static scpi_result_t RP_DAC_SetLookupLUT(scpi_t * context) {
 		if (n < 0) perror("ERROR reading from socket");
 	
 		printf("Setting Arbitray LUT\n");
-		(configNode->sequence).getSequenceValue = &getLookupSequenceValue;
-		(configNode->sequence).data.type = LOOKUP;
+		(configNode->sequence).getSequenceValue = &getArbitrarySequenceValue;
+		(configNode->sequence).data.type = ARBITRARY;
 		(configNode->sequence).data.LUT = temp;
 		seqState = CONFIG;
 		return SCPI_RES_OK;
@@ -1326,7 +1326,7 @@ const scpi_command_t scpi_commands[] = {
 	// SlowDAC / Sequences
 	{.pattern = "RP:DAC:SEQ:CHan", .callback = RP_DAC_SetNumSlowDACChan,},
 	{.pattern = "RP:DAC:SEQ:CHan?", .callback = RP_DAC_GetNumSlowDACChan,},
-	{.pattern = "RP:DAC:SEQ:LUT:LOOKUP", .callback = RP_DAC_SetLookupLUT,},
+	{.pattern = "RP:DAC:SEQ:LUT:ARBITRARY", .callback = RP_DAC_SetArbitraryLUT,},
 	{.pattern = "RP:DAC:SEQ:LUT:CONSTANT", .callback = RP_DAC_SetConstantLUT,},
 	{.pattern = "RP:DAC:SEQ:LUT:PAUSE", .callback = RP_DAC_SetPauseLUT,},
 	{.pattern = "RP:DAC:SEQ:LUT:RANGE", .callback = RP_DAC_SetRangeLUT,},

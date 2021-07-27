@@ -52,7 +52,7 @@ lut = collect(range(0,0.7,length=slow_dac_periods_per_frame))
 rampUp(master(rp), 0.0, 0.0)
 sequenceRepetitions(master(rp), 2)
 slowDACStepsPerFrame(rp, slow_dac_periods_per_frame)
-setLookupLUT(master(rp), lut)
+setArbitraryLUT(master(rp), lut)
 appendSequence(master(rp))
 
 # Prepare both

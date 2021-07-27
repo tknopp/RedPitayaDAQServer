@@ -83,7 +83,7 @@ extern void joinControlThread();
 
 // Sequences
 // Sequence structures
-typedef enum {LOOKUP, CONSTANT, PAUSE, RANGE} sequenceTypes_t;
+typedef enum {ARBITRARY, CONSTANT, PAUSE, RANGE} sequenceTypes_t;
 typedef enum {CONFIG, PREPARED, RUNNING, FINISHED} sequenceState_t;
 typedef enum {BEFORE, RAMPUP, REGULAR, RAMPDOWN, AFTER, DONE} sequenceInterval_t;
 
@@ -121,7 +121,7 @@ extern sequenceNode_t *head; //always first node
 extern sequenceNode_t *tail; //always last node
 
 // Function pointers for each sequence type
-extern float getLookupSequenceValue(sequenceData_t*, int, int);
+extern float getArbitrarySequenceValue(sequenceData_t*, int, int);
 extern float getConstantSequenceValue(sequenceData_t*, int, int);
 extern float getPauseSequenceValue(sequenceData_t*, int, int);
 extern float getRangeSequenceValue(sequenceData_t*, int, int);
