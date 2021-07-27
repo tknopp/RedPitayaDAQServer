@@ -1092,6 +1092,8 @@ static scpi_result_t RP_DAC_SetLookupLUT(scpi_t * context) {
 
 static scpi_result_t RP_DAC_SetConstantLUT(scpi_t * context) {
 
+	readyConfigSequence();
+	
 	if((configNode->sequence).data.numStepsPerRepetition > 0 && numSlowDACChan > 0 && isSequenceConfigurable()) {
 		if((configNode->sequence).data.LUT != NULL) {
 			free((configNode->sequence).data.LUT);
@@ -1117,6 +1119,8 @@ static scpi_result_t RP_DAC_SetConstantLUT(scpi_t * context) {
 
 static scpi_result_t RP_DAC_SetPauseLUT(scpi_t * context) {
 
+	readyConfigSequence();
+
 	if((configNode->sequence).data.numStepsPerRepetition > 0 && numSlowDACChan > 0 && isSequenceConfigurable()) {
 		if((configNode->sequence).data.LUT != NULL) {
 			free((configNode->sequence).data.LUT);
@@ -1138,6 +1142,8 @@ static scpi_result_t RP_DAC_SetPauseLUT(scpi_t * context) {
 }
 
 static scpi_result_t RP_DAC_SetRangeLUT(scpi_t * context) {
+
+	readyConfigSequence();
 
 	if((configNode->sequence).data.numStepsPerRepetition > 0 && numSlowDACChan > 0 && isSequenceConfigurable()) {
 		if((configNode->sequence).data.LUT != NULL) {
@@ -1163,6 +1169,8 @@ static scpi_result_t RP_DAC_SetRangeLUT(scpi_t * context) {
 }
 
 static scpi_result_t RP_DAC_SetEnableDACLUT(scpi_t * context) {
+
+	readyConfigSequence();
 
 	if((configNode->sequence).data.numStepsPerRepetition > 0 && numSlowDACChan > 0 && isSequenceConfigurable()) {
 		if((configNode->sequence).data.enableLUT != NULL) {
