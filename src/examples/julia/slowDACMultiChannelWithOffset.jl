@@ -40,36 +40,43 @@ println(" frequency = $(freq)")
 jumpSharpnessDAC(rp, 1, 0.01) # controls the sharpness of the jump for the square
 signalTypeDAC(rp, 1 , "SQUARE")
 phaseDAC(rp, 1, 1, 0.0 ) # Phase has to be given in between 0 and 1
-amplitudeDACNext(rp, 1, 1, 0.1) 
 
 ramWriterMode(rp, "TRIGGERED")
-triggerMode(rp, "INTERNAL")
-masterTrigger(rp, false)
+triggerMode(rp, "EXTERNAL")
+
+lut = cat(lutA,lutB*0.1,dims=2)'
+
+amplitudeDAC(rp, 1, 1, 0.1) 
+enableDACLUT(master(rp), collect( cat(lutEnableDACA,lutEnableDACB,dims=2)' ) )
+setArbitraryLUT(master(rp), collect(lut))
+rampUp(master(rp), 0.0, 0.0);
+sequenceRepetitions(master(rp), 1)
+appendSequence(master(rp))
+success = prepareSequence(master(rp))
+
 startADC(rp)
 masterTrigger(rp, true)
 
-sleep(0.1)
-
-
-enableDACLUT(master(rp), collect( cat(lutEnableDACA,lutEnableDACB,dims=2)' ) )
-
-lut = cat(lutA,lutB*0.1,dims=2)'
-setSlowDACLUT(master(rp), collect(lut))
-
-
-currFr = enableSlowDAC(master(rp), true, 1, frame_period, 0.5)
-uCurrentPeriod = readData(rp, currFr, 1)
-
-
-sleep(0.5)
+uCurrentPeriod = readData(rp, 0, 1)
+stopADC(rp)
+masterTrigger(rp, false)
 
 lut = cat(lutA,lutB*0.4,dims=2)'
-setSlowDACLUT(master(rp), collect(lut))
+amplitudeDAC(rp, 1, 1, 0.1) 
+slowDACStepsPerSequence(rp, slow_dac_periods_per_frame)
+enableDACLUT(master(rp), collect( cat(lutEnableDACA,lutEnableDACB,dims=2)' ) )
+setArbitraryLUT(master(rp), collect(lut))
+rampUp(master(rp), 0.0, 0.0);
+sequenceRepetitions(master(rp), 1)
+appendSequence(master(rp))
+success = prepareSequence(master(rp))
 
-currFr = enableSlowDAC(master(rp), true, 1, frame_period, 0.5)
-uCurrentPeriod2 = readData(rp, currFr, 1)
+startADC(rp)
+masterTrigger(rp, true)
 
-figure(1)
+uCurrentPeriod2 = readData(rp, 0, 1)
+
+fig = figure(1)
 clf()
 subplot(2,1,1)
 plot(vec(uCurrentPeriod[:,1,:,:]))
@@ -83,3 +90,4 @@ legend(("Rx1", "Rx2"))
 savefig("images/slowDACMultiChannelWithOffset.png")
 
 stopADC(rp)
+masterTrigger(rp, false)
