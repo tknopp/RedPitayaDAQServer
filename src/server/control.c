@@ -36,14 +36,14 @@ static int baseSleep = 20;
 static sequenceNode_t *current; 
 static int lastStep = INT_MAX;
 
-static int lookahead=110;
+static int lookahead = 110;
 
 bool isSequenceListEmpty() {
 	return head == NULL;
 }
 
 sequenceNode_t * newSequenceNode() {
-	sequenceNode_t* node = (sequenceNode_t*) malloc(sizeof(sequenceNode_t));
+	sequenceNode_t* node = (sequenceNode_t*) calloc(1, sizeof(sequenceNode_t));
 	node->next = NULL;
 	node->prev = NULL;
 	return node;
@@ -84,9 +84,11 @@ sequenceNode_t* popSequence() {
 }
 
 void cleanUpSequenceNode(sequenceNode_t * node) {
-	cleanUpSequence(&(node->sequence).data);
-	free(node);
-	node = NULL;
+	if (node != NULL) {
+		cleanUpSequence(&(node->sequence).data);
+		free(node);
+		node = NULL;
+	}
 }
 
 void cleanUpSequence(sequenceData_t *seqData) {
@@ -94,7 +96,6 @@ void cleanUpSequence(sequenceData_t *seqData) {
 		free(seqData->LUT);
 		seqData->LUT = NULL;
 	}
-
 	if (seqData->enableLUT != NULL) {
 		free(seqData->enableLUT);
 		seqData->enableLUT = NULL;
@@ -102,11 +103,13 @@ void cleanUpSequence(sequenceData_t *seqData) {
 }
 
 void cleanUpSequenceList() {
+	int i = 0;
 	if (!isSequenceListEmpty()) {
 		sequenceNode_t * node = head;
 		while (node != NULL) {
 			sequenceNode_t * next = node->next;
 			cleanUpSequenceNode(node);
+			i++;
 			node = next;
 		}
 	}
@@ -273,7 +276,6 @@ static void cleanUpSlowDAC() {
 	cleanUpSequenceList();
 	seqState = FINISHED;
 	printf("Seq cleaned/finished\n");
-	printf("%d empty list, %d temp null\n", isSequenceListEmpty(), configNode == NULL); 
 }
 
 static void setLUTValuesFrom(uint64_t baseStep) {
@@ -284,11 +286,11 @@ static void setLUTValuesFrom(uint64_t baseStep) {
 	// "Time" in outer loop as getSequenceValue is stateful and advances sequence list
 	for (int y = start; y < lookahead; y++) {
 		for (int chan = 0; chan < numSlowDACChan; chan++) {
-			uint64_t futureStep = (baseStep + y); //Rename to future step or w/e, local refers to something else now
+			uint64_t futureStep = (baseStep + y); 
 			uint64_t currPDMIndex = futureStep % PDM_BUFF_SIZE;
 			float val = getSequenceValue(futureStep, chan);
 
-			//printf("%lld future step, %lld currPDMIndex, %f value\n", localStep, currPDMIndex, val);
+			//printf("%lld future step, %lld currPDMIndex, %f value\n", futureStep, currPDMIndex, val);
 			int status = setPDMValueVolt(val, chan, currPDMIndex);
 
 			if (status != 0) {

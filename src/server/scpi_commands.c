@@ -1073,7 +1073,7 @@ static scpi_result_t RP_DAC_SetLookupLUT(scpi_t * context) {
 			(configNode->sequence).data.LUT = NULL;
 		}
 		printf("Allocating slowDACLUT\n");
-		float * temp  = (float *)malloc(numSlowDACChan * (configNode->sequence).data.numStepsPerRepetition * sizeof(float));
+		float * temp  = (float *)calloc(numSlowDACChan, (configNode->sequence).data.numStepsPerRepetition * sizeof(float));
 
 		int n = readAll(newdatasockfd, temp, numSlowDACChan * (configNode->sequence).data.numStepsPerRepetition * sizeof(float));
 		if (n < 0) perror("ERROR reading from socket");
@@ -1100,7 +1100,7 @@ static scpi_result_t RP_DAC_SetConstantLUT(scpi_t * context) {
 			(configNode->sequence).data.LUT = NULL;
 		}
 		printf("Allocating slowDACLUT\n");
-		float * temp  = (float *)malloc(numSlowDACChan * sizeof(float));
+		float * temp  = (float *)calloc(numSlowDACChan, sizeof(float));
 
 		int n = readAll(newdatasockfd, temp, numSlowDACChan * sizeof(float));
 		if (n < 0) perror("ERROR reading from socket");
@@ -1127,7 +1127,7 @@ static scpi_result_t RP_DAC_SetPauseLUT(scpi_t * context) {
 			(configNode->sequence).data.LUT = NULL;
 		}
 		printf("Allocating slowDACLUT\n");
-		float * temp  = (float *)malloc(1 * sizeof(float)); //Place holder for != NULL
+		float * temp  = (float *)calloc(1, sizeof(float)); //Place holder for != NULL
 
 		printf("Setting Pause LUT\n");
 		(configNode->sequence).data.LUT = temp;
@@ -1151,7 +1151,7 @@ static scpi_result_t RP_DAC_SetRangeLUT(scpi_t * context) {
 			(configNode->sequence).data.LUT = NULL;
 		}
 		printf("Allocating slowDACLUT\n");
-		float * temp  = (float *)malloc(numSlowDACChan * 2  * sizeof(float));
+		float * temp  = (float *)calloc(numSlowDACChan * 2,  sizeof(float));
 
 		int n = readAll(newdatasockfd, temp, numSlowDACChan * 2 * sizeof(float));
 		if (n < 0) perror("ERROR reading from socket");
@@ -1178,7 +1178,7 @@ static scpi_result_t RP_DAC_SetEnableDACLUT(scpi_t * context) {
 			(configNode->sequence).data.enableLUT = NULL;
 		}
 		printf("Allocating enableDACLUT\n");
-		(configNode->sequence).data.enableLUT = (bool *)malloc(numSlowDACChan * (configNode->sequence).data.numStepsPerRepetition * sizeof(bool));
+		(configNode->sequence).data.enableLUT = (bool *)calloc(numSlowDACChan, (configNode->sequence).data.numStepsPerRepetition * sizeof(bool));
 
 		int n = readAll(newdatasockfd, (configNode->sequence).data.enableLUT, numSlowDACChan * (configNode->sequence).data.numStepsPerRepetition * sizeof(bool));
 		seqState = CONFIG;
