@@ -168,7 +168,7 @@ end
 # Low level read, reads samples, error and perf. Values need to be already requested
 function readSamplesChunk_(rp::RedPitaya, reqWP::Int64, numSamples::Int64, into=nothing)
   @debug "read samples chunk ..."
-  if into === nothing
+  if isnothing(into)
     into = Array{Int16}(undef, 2 * Int64(numSamples))
   end
   data = read!(rp.dataSocket, into)

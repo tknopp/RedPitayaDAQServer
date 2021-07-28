@@ -277,7 +277,7 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
       end
 
       # Performance
-      if rpInfo !== nothing
+      if !isnothing(rpInfo)
         push!(rpInfo.performances[d].data, perf)
       end
 
