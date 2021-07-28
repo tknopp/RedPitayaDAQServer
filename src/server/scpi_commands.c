@@ -376,6 +376,8 @@ static scpi_result_t RP_DAC_SetSamplesPerSlowDACStep(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 
+	// Adapt the slowDAC frequency to match the step length
+	setPDMClockDivider(numSamplesPerSlowDACStep * getDecimation());
 	seqState = CONFIG;
 	return SCPI_RES_OK;
 }
@@ -400,8 +402,6 @@ static scpi_result_t RP_DAC_SetSlowDACStepsPerSequence(scpi_t * context) {
 	}
 
 
-	// Adapt the slowDAC frequency to match the step length
-	setPDMClockDivider(numSamplesPerSlowDACStep * getDecimation());
 	seqState = CONFIG;
 	return SCPI_RES_OK;
 }
