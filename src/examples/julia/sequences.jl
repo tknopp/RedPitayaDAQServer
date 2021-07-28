@@ -34,28 +34,23 @@ triggerMode(rp, "EXTERNAL")
 
 # Sequence
 numSlowDACChan(master(rp), 1)
+slowDACStepsPerFrame(rp, slow_dac_periods_per_frame)
 
 fig = figure(1)
 clf()
 
 amplitudeDAC(rp, 1, 1, 0.1) 
 #First sequence
-lut = [0.2]
-rampUp(master(rp), frame_period * 2, 0.5)
-sequenceRepetitions(master(rp), 1)
-slowDACStepsPerFrame(rp, slow_dac_periods_per_frame)
-setConstantLUT(master(rp), lut)
-appendSequence(master(rp))
+lut1 = [0.2]
+seq1 = ConstantSequence(lut, nothing, slow_dac_periods_per_frame, 1, frame_period * 2, 0.5)
 
 #Second sequence
-lut = collect(range(0,0.7,length=slow_dac_periods_per_frame))
-rampUp(master(rp), 0.0, 0.0)
-sequenceRepetitions(master(rp), 2)
-slowDACStepsPerFrame(rp, slow_dac_periods_per_frame)
-setArbitraryLUT(master(rp), lut)
-appendSequence(master(rp))
+lut2 = collect(range(0,0.7,length=slow_dac_periods_per_frame))
+seq2 = ArbitrarySequence(lut2, nothing, slow_dac_periods_per_frame, 2, 0.0, 0.0)
 
 # Prepare both
+appendSequence(master(rp), seq1)
+appendSequence(master(rp), seq2)
 success = prepareSequence(master(rp))
 startADC(rp)
 masterTrigger(rp, true)
@@ -67,5 +62,5 @@ masterTrigger(rp, false)
 
 
 plot(vec(uCurrentFrame[:, 1, :, :]))
-title("Ramping")
+title("Two sequences")
 fig

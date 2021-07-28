@@ -3,7 +3,8 @@ export amplitudeDAC, frequencyDAC, phaseDAC, modeDAC, amplitudeDACNext,
        waveforms, DACPerformanceData, rampUp, rampUpTime, rampUpFraction, sequenceRepetitions,
        prepareSlowDAC, slowDACStepsPerFrame, slowDACStepsPerSequence, samplesPerSlowDACStep,
        enableDACLUT, setArbitraryLUT, setConstantLUT, setPauseLUT, setRangeLUT, numSlowDACChan,
-       appendSequence, popSequence, clearSequences, prepareSequence, numLostStepsSlowADC
+       appendSequence, popSequence, clearSequences, prepareSequence, numLostStepsSlowADC,
+       ArbitrarySequence, ConstantSequence, PauseSequence, RangeSequence
 
 struct DACPerformanceData
   uDeltaControl::UInt8
@@ -137,6 +138,7 @@ function readDACPerformanceData(rp::RedPitaya)
   return DACPerformanceData(perf[1], perf[2], perf[3], perf[4])
 end
 
+
 numLostStepsSlowADC(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:LostSteps?", Int64) # TODO slowADC vs slowDAC in name and string
 
 numSlowDACChan(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:CHan?", Int64)
@@ -147,29 +149,14 @@ function numSlowDACChan(rp::RedPitaya, value)
   send(rp, string("RP:DAC:SEQ:CHan ", Int64(value)))
 end
 
-function setArbitraryLUT(rp::RedPitaya, lut::Array)
-  lutFloat32 = map(Float32, lut)
-  send(rp, string("RP:DAC:SEQ:LUT:ARBITRARY"))
+# TODO Hide public access to SCPI command
+function setValueLUT(rp::RedPitaya, lut::Union{Array, Nothing}, type::String="ARBITRARY")
+  send(rp, string("RP:DAC:SEQ:LUT:", type))
   @debug "Writing arbitrary LUT"
-  write(rp.dataSocket, lutFloat32)
-end
-
-function setConstantLUT(rp::RedPitaya, lut::Array)
-  lutFloat32 = map(Float32, lut)
-  send(rp, string("RP:DAC:SEQ:LUT:CONSTANT"))
-  @debug "Writing slow DAC LUT"
-  write(rp.dataSocket, lutFloat32)
-end
-
-function setPauseLUT(rp::RedPitaya)
-  send(rp, string("RP:DAC:SEQ:LUT:PAUSE"))
-end
-
-function setRangeLUT(rp::RedPitaya, lut::Array)
-  lutFloat32 = map(Float32, lut)
-  send(rp, string("RP:DAC:SEQ:LUT:RANGE"))
-  @debug "Writing slow DAC LUT"
-  write(rp.dataSocket, lutFloat32)
+  if !isnothing(lut)
+    lutFloat32 = map(Float32, lut)
+    write(rp.dataSocket, lutFloat32)
+  end
 end
 
 function enableDACLUT(rp::RedPitaya, lut::Array)
@@ -198,8 +185,8 @@ end
 function slowDACStepsPerFrame(rp::RedPitaya, stepsPerFrame)
   samplesPerFrame = rp.periodsPerFrame * rp.samplesPerPeriod
   samplesPerStep = div(samplesPerFrame, stepsPerFrame)
-  samplesPerSlowDACStep(rp, samplesPerStep)
-  slowDACStepsPerSequence(rp, stepsPerFrame) # Sets PDMClockDivider
+  samplesPerSlowDACStep(rp, samplesPerStep) # Sets PDMClockDivider
+  slowDACStepsPerSequence(rp, stepsPerFrame) 
 end
 
 function rampUp(rp::RedPitaya, rampUpTime::Float64, rampUpFraction::Float64)
@@ -225,3 +212,94 @@ appendSequence(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:APPend")
 popSequence(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:POP")
 clearSequences(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:CLEAR")
 prepareSequence(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:PREPare?", Bool)
+
+# Helper function for sequences
+abstract type AbstractSequence end
+
+mutable struct ArbitrarySequence <: AbstractSequence
+  lut::Array{Float32}
+  enable::Union{Array{Bool}, Nothing}
+  stepsPerRepetition::Int
+  repetitions::Int
+  rampTime::Float64
+  rampFraction::Float64
+end
+
+stepsPerRepetition(seq::ArbitrarySequence) = seq.stepsPerRepetition
+rampTime(seq::ArbitrarySequence) = seq.rampTime
+rampFraction(seq::ArbitrarySequence) = seq.rampFraction
+repetitions(seq::ArbitrarySequence) = seq.repetitions
+enableLUT(seq::ArbitrarySequence) = seq.enable
+
+mutable struct ConstantSequence <: AbstractSequence
+  lut::Array{Float32}
+  enable::Union{Array{Bool}, Nothing}
+  stepsPerRepetition::Int
+  repetitions::Int
+  rampTime::Float64
+  rampFraction::Float64
+end
+
+stepsPerRepetition(seq::ConstantSequence) = seq.stepsPerRepetition
+rampTime(seq::ConstantSequence) = seq.rampTime
+rampFraction(seq::ConstantSequence) = seq.rampFraction
+repetitions(seq::ConstantSequence) = seq.repetitions
+enableLUT(seq::ConstantSequence) = seq.enable
+
+mutable struct PauseSequence <: AbstractSequence
+  enable::Union{Array{Bool}, Nothing}
+  stepsPerRepetition::Int
+  repetitions::Int
+end
+
+stepsPerRepetition(seq::PauseSequence) = seq.stepsPerRepetition
+rampTime(seq::PauseSequence) = 0.0
+rampFraction(seq::PauseSequence) = 0.0
+repetitions(seq::PauseSequence) = seq.repetitions
+enableLUT(seq::PauseSequence) = seq.enable
+
+mutable struct RangeSequence <: AbstractSequence
+  lut::Array{Float32}
+  enable::Union{Array{Bool}, Nothing}
+  stepsPerRepetition::Int
+  repetitions::Int
+  rampTime::Float64
+  rampFraction::Float64
+end
+
+stepsPerRepetition(seq::RangeSequence) = seq.stepsPerRepetition
+rampTime(seq::RangeSequence) = seq.rampTime
+rampFraction(seq::RangeSequence) = seq.rampFraction
+repetitions(seq::RangeSequence) = seq.repetitions
+enableLUT(seq::RangeSequence) = seq.enable
+
+
+setLUT(rp::RedPitaya, seq::AbstractSequence) = error("Sequence did not implement setLUT")
+
+function setLUT(rp::RedPitaya, seq::ArbitrarySequence)
+  setValueLUT(rp, seq.lut, "ARBITRARY")
+end
+
+function setLUT(rp::RedPitaya, seq::ConstantSequence)
+  setValueLUT(rp, seq.lut, "CONSTANT")
+end
+
+function setLUT(rp::RedPitaya, seq::PauseSequence)
+  setValueLUT(rp, nothing, "PAUSE")
+end
+
+function setLUT(rp::RedPitaya, seq::RangeSequence) 
+  setValueLUT(rp, seq.lut, "RANGE")
+end
+
+function appendSequence(rp::RedPitaya, seq::AbstractSequence)
+  slowDACStepsPerSequence(rp, stepsPerRepetition(seq))
+  rampUp(rp, rampTime(seq), rampFraction(seq))
+  sequenceRepetitions(rp, repetitions(seq))
+  setLUT(rp, seq)
+  enable = enableLUT(seq)
+  if !isnothing(enable)
+    enableDACLUT(rp, enable)
+  end
+  appendSequence(rp)
+end

@@ -35,17 +35,14 @@ triggerMode(rp, "EXTERNAL")
 # Sequence
 slowDACStepsPerFrame(rp, slow_dac_periods_per_frame)
 numSlowDACChan(master(rp), 1)
-rampUp(master(rp), frame_period * 2, 0.5)
-sequenceRepetitions(master(rp), 1)
-
 fig = figure(1)
 clf()
 
 # Constant Sequence
 amplitudeDAC(rp, 1, 1, 0.1) # Amplitude is set to zero after a sequence
 lut = [0.2]
-setConstantLUT(master(rp), lut)
-appendSequence(master(rp))
+seq = ConstantSequence(lut, nothing, slow_dac_periods_per_frame, 1, frame_period * 2, 0.5)
+appendSequence(master(rp), seq)
 success = prepareSequence(master(rp))
 startADC(rp)
 masterTrigger(rp, true)

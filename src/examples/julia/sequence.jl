@@ -33,13 +33,13 @@ ramWriterMode(rp, "TRIGGERED")
 triggerMode(rp, "EXTERNAL")
 
 # Sequence
-slowDACStepsPerFrame(rp, slow_dac_periods_per_frame)
+# Global Settings
+slowDACStepsPerFrame(rp, slow_dac_periods_per_frame) # This sets PDMClockDivider, but it can also be set directly and with slowDACStepsPerSequence
 numSlowDACChan(master(rp), 1)
+# Per Sequence settings
 lut = collect(range(0,0.7,length=slow_dac_periods_per_frame))
-setArbitraryLUT(master(rp), lut)
-rampUp(master(rp), 0.0, 0.0)
-sequenceRepetitions(master(rp), 2)
-appendSequence(master(rp))
+seq = ArbitrarySequence(lut, nothing, slow_dac_periods_per_frame, 2, 0.0, 0.0)
+appendSequence(master(rp), seq)
 success = prepareSequence(master(rp))
 
 masterTrigger(rp, false)

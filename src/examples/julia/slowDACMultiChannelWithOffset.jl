@@ -44,14 +44,11 @@ phaseDAC(rp, 1, 1, 0.0 ) # Phase has to be given in between 0 and 1
 ramWriterMode(rp, "TRIGGERED")
 triggerMode(rp, "EXTERNAL")
 
-lut = cat(lutA,lutB*0.1,dims=2)'
-
 amplitudeDAC(rp, 1, 1, 0.1) 
-enableDACLUT(master(rp), collect( cat(lutEnableDACA,lutEnableDACB,dims=2)' ) )
-setArbitraryLUT(master(rp), collect(lut))
-rampUp(master(rp), 0.0, 0.0);
-sequenceRepetitions(master(rp), 1)
-appendSequence(master(rp))
+lut = collect(cat(lutA,lutB*0.1,dims=2)')
+enableLUT = collect( cat(lutEnableDACA,lutEnableDACB,dims=2)' )
+seq = ArbitrarySequence(lut, enableLUT, slow_dac_periods_per_frame, 1, 0.0, 0.0)
+appendSequence(master(rp), seq)
 success = prepareSequence(master(rp))
 
 startADC(rp)
@@ -61,14 +58,12 @@ uCurrentPeriod = readData(rp, 0, 1)
 stopADC(rp)
 masterTrigger(rp, false)
 
-lut = cat(lutA,lutB*0.4,dims=2)'
+lut = collect(cat(lutA,lutB*0.4,dims=2)')
 amplitudeDAC(rp, 1, 1, 0.1) 
-slowDACStepsPerSequence(rp, slow_dac_periods_per_frame)
-enableDACLUT(master(rp), collect( cat(lutEnableDACA,lutEnableDACB,dims=2)' ) )
-setArbitraryLUT(master(rp), collect(lut))
-rampUp(master(rp), 0.0, 0.0);
-sequenceRepetitions(master(rp), 1)
-appendSequence(master(rp))
+lut = collect(cat(lutA,lutB*0.4,dims=2)')
+enableLUT = collect( cat(lutEnableDACA,lutEnableDACB,dims=2)' ) 
+seq = ArbitrarySequence(lut, enableLUT, slow_dac_periods_per_frame, 1, 0.0, 0.0)
+appendSequence(master(rp), seq)
 success = prepareSequence(master(rp))
 
 startADC(rp)
