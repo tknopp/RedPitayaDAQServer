@@ -186,7 +186,7 @@ function slowDACStepsPerFrame(rp::RedPitaya, stepsPerFrame)
   samplesPerFrame = rp.periodsPerFrame * rp.samplesPerPeriod
   samplesPerStep = div(samplesPerFrame, stepsPerFrame)
   samplesPerSlowDACStep(rp, samplesPerStep) # Sets PDMClockDivider
-  slowDACStepsPerSequence(rp, stepsPerFrame) 
+  slowDACStepsPerSequence(rp, stepsPerFrame)  
 end
 
 function rampUp(rp::RedPitaya, rampUpTime::Float64, rampUpFraction::Float64)

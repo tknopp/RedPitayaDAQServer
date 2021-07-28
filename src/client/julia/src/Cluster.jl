@@ -61,7 +61,7 @@ function currentWP(rpc::RedPitayaCluster)
 end
 
 for op in [:periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset, :sequenceRepetitions,
-           :triggerMode, :slowDACStepsPerSequence, :samplesPerSlowDACStep, :slowDACStepsPerFrame,
+           :triggerMode, :samplesPerSlowDACStep, :slowDACStepsPerFrame,
            :rampUpTime, :rampUpFraction]
   @eval $op(rpc::RedPitayaCluster) = $op(master(rpc))
   @eval begin
@@ -73,7 +73,7 @@ for op in [:periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset, :s
   end
 end
 
-for op in [:connectADC, :stopADC, :disconnect, :connect]
+for op in [:connectADC, :stopADC, :disconnect, :connect, :prepareSequence]
   @eval begin
     function $op(rpc::RedPitayaCluster)
       for rp in rpc
@@ -181,20 +181,22 @@ function passPDMToFastDAC(rpc::RedPitayaCluster)
   return [ passPDMToFastDAC(rp) for rp in rpc]
 end
 
+function appendSequence(rpc::RedPitayaCluster, seq::AbstractSequence)
+  for rp in rpc 
+    appendSequence(rp, seq)
+  end
+end
+
+function appendSequence(rpc::RedPitayaCluster, index, seq::AbstractSequence)
+  appendSequence(rpc[index], seq)
+end
+
 modeDAC(rpc::RedPitayaCluster) = modeDAC(master(rpc))
 
 function modeDAC(rpc::RedPitayaCluster, mode::String)
   for rp in rpc
     modeDAC(rp, mode)
   end
-end
-
-function enableSlowDAC(rpc::RedPitayaCluster, enable::Bool, numFrames::Int64=0,
-                       ffRampUpTime::Float64=0.4, ffRampUpFraction::Float64=0.8)
-  # We just use the first rp currently
-  #res = [enableSlowDAC(rp, enable) for rp in rpc.rp]
-  #return maximum(res)
-  return enableSlowDAC(rpc[1], enable, numFrames, ffRampUpTime, ffRampUpFraction)
 end
 
 function slowDACInterpolation(rpc::RedPitayaCluster, enable::Bool)
