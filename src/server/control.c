@@ -288,7 +288,7 @@ static void initSlowDAC() {
 static void cleanUpSlowDAC() {
 	stopTx();
 	//cleanUpSequenceList();
-	seqState = FINISHED;
+	seqState = CONFIG;
 	printf("Seq finished\n");
 }
 
@@ -389,14 +389,14 @@ static void setLUTValuesFrom(uint64_t baseStep) {
 
 
 bool prepareSequences() {
-	if ((seqState == CONFIG || seqState == PREPARED || seqState == FINISHED)) {
+	if ((seqState == CONFIG || seqState == PREPARED)) {
 		if (!isSequenceListEmpty()) {
 			printf("Preparing Sequence\n");
 			initSlowDAC();
 			// Init Sequence Iteration
 			currentSequenceBaseStep = 0;
 			currentSequence = head;
-			if (currentSequence != NULL) // Only set FastDAC when masterTrigger is off
+			if (currentSequence != NULL)
 				configureFastDAC(&currentSequence->sequence.fastConfig);
 			lastStep = INT_MAX;
 			// Init Perfomance
@@ -507,12 +507,6 @@ void *controlThread(void *ch) {
 			if (seqState == RUNNING) {
 				printf("Sequence was stopped before finishing\n");
 				cleanUpSlowDAC();
-			}
-
-			if (seqState == FINISHED) {	
-				currentSetSlowDACStepTotal = 0;
-				printf("Resetting sequence\n");
-				prepareSequences();
 			}
 
 			// Wait for sequence to be prepared and master trigger	

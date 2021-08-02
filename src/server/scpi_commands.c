@@ -1491,17 +1491,6 @@ static scpi_result_t RP_DAC_PrepareSequences(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
-
-static scpi_result_t RP_DAC_SequencesPrepared(scpi_t * context) {
-	bool result = false;
-	if (seqState == PREPARED) {
-		result = true;
-	}
-	SCPI_ResultBool(context, result);
-	return SCPI_RES_OK;
-}
-
-
 static scpi_result_t RP_GetOverwrittenStatus(scpi_t * context) {
 	SCPI_ResultBool(context, getOverwrittenStatus());
 	return SCPI_RES_OK;
@@ -1622,8 +1611,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:SEQ:APPend", .callback = RP_DAC_AppendSequence,},
 	{.pattern = "RP:DAC:SEQ:POP", .callback = RP_DAC_PopSequence,},
 	{.pattern = "RP:DAC:SEQ:CLEAR", .callback = RP_DAC_ClearSequences,},
-	{.pattern = "RP:DAC:SEQ:PREPare", .callback = RP_DAC_PrepareSequences,},
-	{.pattern = "RP:DAC:SEQ:PREPare?", .callback = RP_DAC_SequencesPrepared},
+	{.pattern = "RP:DAC:SEQ:PREPare?", .callback = RP_DAC_PrepareSequences,},
 	// Sequences DAC Config
 	{.pattern = "RP:DAC:SEQ:CHannel#:COMPonent#:AMPlitude", .callback = RP_DAC_SetSequenceAmplitude,},
 	{.pattern = "RP:DAC:SEQ:CHannel#:OFFset", .callback = RP_DAC_SetSequenceOffset,},
