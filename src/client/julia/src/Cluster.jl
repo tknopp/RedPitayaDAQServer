@@ -1,4 +1,4 @@
-export RedPitayaCluster, master, readDataPeriods, numChan, readDataSlow, readFrames, readPeriods, readPipelinedSamples, startPipelinedData, collectSamples!, readData, readDataPeriods
+export RedPitayaCluster, master, readDataPeriods, numChan, readDataSlow, readFrames, readPeriods, readPipelinedSamples, startPipelinedData, collectSamples!, readData, readDataPeriods, convertSamplesToFrames!, convertSamplesToFrames
 
 import Base: length, iterate, getindex, firstindex, lastindex
 
@@ -257,7 +257,8 @@ function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCl
 
 end
 
-function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpRead::Int64, chunk::Int64, rawData, chunkBuffer, index; rpInfo=nothing)
+
+function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpRead::Int64, chunk::Int64, rawData::Matrix{Int16}, chunkBuffer, index; rpInfo=nothing)
   done = zeros(Bool, length(rpu))
   iterationDone = Condition()
   timeoutHappened = false
@@ -306,12 +307,77 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
 
 end
 
+function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64, channel::Channel; chunkSize::Int64 = 25000, rpInfo=nothing)
+  numOfReceivedSamples = 0
+  chunkBuffer = zeros(Int16, chunkSize * 2, length(rpu))
+
+  startPipelinedData(rpu, wpStart, numOfRequestedSamples, chunkSize)
+  while numOfReceivedSamples < numOfRequestedSamples
+    wpRead = wpStart + numOfReceivedSamples
+    chunk = min(numOfRequestedSamples - numOfReceivedSamples, chunkSize)
+    collectSamples!(rpu, wpRead, chunk, channel, chunkBuffer, rpInfo=rpInfo)
+    numOfReceivedSamples += chunk
+  end
+
+end
+
+function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpRead::Int64, chunk::Int64, channel::Channel, chunkBuffer; rpInfo=nothing)
+  done = zeros(Bool, length(rpu))
+  iterationDone = Condition()
+  timeoutHappened = false
+  result = zeros(Int16, numChan(rpu), chunk)
+
+
+  for (d, rp) in enumerate(rpu)
+    @async begin
+      buffer = view(chunkBuffer, 1:(2 * chunk), d)
+      (u, perf) = readSamplesChunk_(rp, Int64(wpRead), Int64(chunk), buffer)
+      samples = reshape(u, 2, chunk)
+      result[2*d-1, :] = samples[1, :]
+      result[2*d, :] = samples[2, :]
+
+      # Status
+      if perf.status.overwritten
+        @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) was overwritten"
+      end
+      if perf.status.corrupted
+        @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) might have been corrupted"
+      end
+
+      # Performance
+      if !isnothing(rpInfo)
+        push!(rpInfo.performances[d].data, perf)
+      end
+
+      done[d] = true
+      if (all(done))
+        notify(iterationDone)
+      end
+    end
+  end
+
+  # Setup Timeout
+  t = Timer(_timeout)
+  @async begin
+    wait(t)
+    notify(iterationDone)
+    timeoutHappened = true 
+  end
+
+  wait(iterationDone)
+  close(t)
+  if timeoutHappened
+    error("Timout reached when reading from sockets")
+  end
+
+  put!(channel, result)
+
+end
 
 # High level read. numFrames can adress a future frame. Data is read in
 # chunks
 function readFrames(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; rpInfo=nothing, chunkSize = 50000)
   numSampPerPeriod = samplesPerPeriod(rpu)
-  numSamp = numSampPerPeriod * numFrames
   numPeriods = periodsPerFrame(rpu)
   numSampPerFrame = numSampPerPeriod * numPeriods
 
@@ -319,9 +385,6 @@ function readFrames(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}
     error("block averages has to be a divider of numSampPerPeriod")
   end
 
-  numTrueSampPerPeriod = div(numSampPerPeriod,numBlockAverages*numPeriodsPerPatch)
-
-  data = zeros(Float32, numTrueSampPerPeriod, numChan(rpu), numPeriods*numPeriodsPerPatch, numFrames)
   wpStart = startFrame * numSampPerFrame
   numOfRequestedSamples = numFrames * numSampPerFrame
 
@@ -329,9 +392,18 @@ function readFrames(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}
   rawSamples = readPipelinedSamples(rpu, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
   
   # Reshape/Avg Data
-  convertSamplesToFrames!(rawSamples, data, numChan(rpu), numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages, numPeriodsPerPatch)
+  data = convertSamplesToFrames(rawSamples, numChan(rpu), numSampPerPeriod, numPeriods, numFrames, numBlockAverages, numPeriodsPerPatch)
 
   return data
+end
+
+function convertSamplesToFrames(samples, numChan, numSampPerPeriod, numPeriods, numFrames, numBlockAverages=1, numPeriodsPerPatch=1)
+  if rem(numSampPerPeriod,numBlockAverages) != 0
+    error("block averages has to be a divider of numSampPerPeriod")
+  end
+  numTrueSampPerPeriod = div(numSampPerPeriod,numBlockAverages*numPeriodsPerPatch)
+  frames = zeros(Float32, numTrueSampPerPeriod, numChan, numPeriods*numPeriodsPerPatch, numFrames)
+  return convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages, numPeriodsPerPatch)
 end
 
 function convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages=1, numPeriodsPerPatch=1)
