@@ -4,7 +4,7 @@ export amplitudeDAC, frequencyDAC, phaseDAC, modeDAC, amplitudeDACNext,
        prepareSlowDAC, slowDACStepsPerFrame, slowDACStepsPerSequence, samplesPerSlowDACStep,
        enableDACLUT, setArbitraryLUT, setConstantLUT, setPauseLUT, setRangeLUT, numSlowDACChan,
        appendSequence, popSequence, clearSequences, prepareSequence, numLostStepsSlowADC,
-       ArbitrarySequence, ConstantSequence, PauseSequence, RangeSequence
+       AbstractSequence, ArbitrarySequence, ConstantSequence, PauseSequence, RangeSequence
 
 struct DACPerformanceData
   uDeltaControl::UInt8
@@ -149,7 +149,6 @@ function numSlowDACChan(rp::RedPitaya, value)
   send(rp, string("RP:DAC:SEQ:CHan ", Int64(value)))
 end
 
-# TODO Hide public access to SCPI command
 function setValueLUT(rp::RedPitaya, lut::Union{Array, Nothing}, type::String="ARBITRARY")
   send(rp, string("RP:DAC:SEQ:LUT:", type))
   @debug "Writing arbitrary LUT"
@@ -189,18 +188,46 @@ function slowDACStepsPerFrame(rp::RedPitaya, stepsPerFrame)
   slowDACStepsPerSequence(rp, stepsPerFrame)  
 end
 
-function rampUp(rp::RedPitaya, rampUpTime::Float64, rampUpFraction::Float64)
-  send(rp, string("RP:DAC:SEQ:RaMPing ", rampUpTime, ",", rampUpFraction))
+function ramping(rp::RedPitaya, rampTime::Float64, rampFraction::Float64)
+  send(rp, string("RP:DAC:SEQ:RaMPing:UP ", rampTime, ",", rampFraction))
 end
 
-rampUpTime(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:TIME?", Float64)
-function rampUpTime(rp::RedPitaya, value::Float64)
+function rampUp(rp::RedPitaya, rampUpTime::Float64, rampUpFraction::Float64)
+  send(rp, string("RP:DAC:SEQ:RaMPing:UP ", rampUpTime, ",", rampUpFraction))
+end
+
+function rampDown(rp::RedPitaya, rampDownTime::Float64, rampDownFraction::Float64)
+  send(rp, string("RP:DAC:SEQ:RaMPing:DOWn ", rampDownTime, ",", rampDownFraction))
+end
+
+rampingTime(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:TIME?", Float64)
+function rampingTime(rp::RedPitaya, value::Float64)
   send(rp, string("RP:DAC:SEQ:RaMPing:TIME ", value))
 end
 
-rampUpFraction(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:FRACtion?", Float64)
-function rampUpFraction(rp::RedPitaya, value::Float64)
+rampingFraction(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:FRACtion?", Float64)
+function rampingFraction(rp::RedPitaya, value::Float64)
   send(rp, string("RP:DAC:SEQ:RaMPing:FRACtion ", value))
+end
+
+rampUpTime(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:UP:TIME?", Float64)
+function rampUpTime(rp::RedPitaya, value::Float64)
+  send(rp, string("RP:DAC:SEQ:RaMPing:UP:TIME ", value))
+end
+
+rampUpFraction(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:UP:FRACtion?", Float64)
+function rampUpFraction(rp::RedPitaya, value::Float64)
+  send(rp, string("RP:DAC:SEQ:RaMPing:UP:FRACtion ", value))
+end
+
+rampDownTime(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:DOWN:TIME?", Float64)
+function rampDownTime(rp::RedPitaya, value::Float64)
+  send(rp, string("RP:DAC:SEQ:RaMPing:DOWN:TIME ", value))
+end
+
+rampDownFraction(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:DOWN:FRACtion?", Float64)
+function rampDownFraction(rp::RedPitaya, value::Float64)
+  send(rp, string("RP:DAC:SEQ:RaMPing:DOWN:FRACtion ", value))
 end
 
 sequenceRepetitions(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:REPetitions?", Int32)
@@ -221,13 +248,19 @@ mutable struct ArbitrarySequence <: AbstractSequence
   enable::Union{Array{Bool}, Nothing}
   stepsPerRepetition::Int
   repetitions::Int
-  rampTime::Float64
-  rampFraction::Float64
+  rampUpTime::Float64
+  rampUpFraction::Float64
+  rampDownTime::Float64
+  rampDownFraction::Float64  
 end
 
+ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, rampingTime, rampingFraction) = ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, rampingTime, rampingFraction, rampingTime, rampingFraction)
+
 stepsPerRepetition(seq::ArbitrarySequence) = seq.stepsPerRepetition
-rampTime(seq::ArbitrarySequence) = seq.rampTime
-rampFraction(seq::ArbitrarySequence) = seq.rampFraction
+rampUpTime(seq::ArbitrarySequence) = seq.rampUpTime
+rampUpFraction(seq::ArbitrarySequence) = seq.rampUpFraction
+rampDownTime(seq::ArbitrarySequence) = seq.rampDownTime
+rampDownFraction(seq::ArbitrarySequence) = seq.rampDownFraction
 repetitions(seq::ArbitrarySequence) = seq.repetitions
 enableLUT(seq::ArbitrarySequence) = seq.enable
 
@@ -236,13 +269,20 @@ mutable struct ConstantSequence <: AbstractSequence
   enable::Union{Array{Bool}, Nothing}
   stepsPerRepetition::Int
   repetitions::Int
-  rampTime::Float64
-  rampFraction::Float64
+  rampUpTime::Float64
+  rampUpFraction::Float64
+  rampDownTime::Float64
+  rampDownFraction::Float64
 end
 
+ConstantSequence(lut, enable, stepsPerRepetition, repetitions, rampingTime, rampingFraction) = ConstantSequence(lut, enable, stepsPerRepetition, repetitions, rampingTime, rampingFraction, rampingTime, rampingFraction)
+
+
 stepsPerRepetition(seq::ConstantSequence) = seq.stepsPerRepetition
-rampTime(seq::ConstantSequence) = seq.rampTime
-rampFraction(seq::ConstantSequence) = seq.rampFraction
+rampUpTime(seq::ConstantSequence) = seq.rampUpTime
+rampUpFraction(seq::ConstantSequence) = seq.rampUpFraction
+rampDownTime(seq::ConstantSequence) = seq.rampDownTime
+rampDownFraction(seq::ConstantSequence) = seq.rampDownFraction
 repetitions(seq::ConstantSequence) = seq.repetitions
 enableLUT(seq::ConstantSequence) = seq.enable
 
@@ -253,8 +293,10 @@ mutable struct PauseSequence <: AbstractSequence
 end
 
 stepsPerRepetition(seq::PauseSequence) = seq.stepsPerRepetition
-rampTime(seq::PauseSequence) = 0.0
-rampFraction(seq::PauseSequence) = 0.0
+rampUpTime(seq::PauseSequence) = 0.0
+rampUpFraction(seq::PauseSequence) = 0.0
+rampDownTime(seq::PauseSequence) = 0.0
+rampDownFraction(seq::PauseSequence) = 0.0
 repetitions(seq::PauseSequence) = seq.repetitions
 enableLUT(seq::PauseSequence) = seq.enable
 
@@ -263,13 +305,19 @@ mutable struct RangeSequence <: AbstractSequence
   enable::Union{Array{Bool}, Nothing}
   stepsPerRepetition::Int
   repetitions::Int
-  rampTime::Float64
-  rampFraction::Float64
+  rampUpTime::Float64
+  rampUpFraction::Float64
+  rampDownTime::Float64
+  rampDownFraction::Float64
 end
 
+RangeSequence(lut, enable, stepsPerRepetition, repetitions, rampingTime, rampingFraction) = RangeSequence(lut, enable, stepsPerRepetition, repetitions, rampingTime, rampingFraction, rampingTime, rampingFraction)
+
 stepsPerRepetition(seq::RangeSequence) = seq.stepsPerRepetition
-rampTime(seq::RangeSequence) = seq.rampTime
-rampFraction(seq::RangeSequence) = seq.rampFraction
+rampUpTime(seq::RangeSequence) = seq.rampUpTime
+rampUpFraction(seq::RangeSequence) = seq.rampUpFraction
+rampDownTime(seq::RangeSequence) = seq.rampDownTime
+rampDownFraction(seq::RangeSequence) = seq.rampDownFraction
 repetitions(seq::RangeSequence) = seq.repetitions
 enableLUT(seq::RangeSequence) = seq.enable
 
@@ -294,7 +342,8 @@ end
 
 function appendSequence(rp::RedPitaya, seq::AbstractSequence)
   slowDACStepsPerSequence(rp, stepsPerRepetition(seq))
-  rampUp(rp, rampTime(seq), rampFraction(seq))
+  rampUp(rp, rampUpTime(seq), rampUpFraction(seq))
+  rampDown(rp, rampDownTime(seq), rampDownFraction(seq))
   sequenceRepetitions(rp, repetitions(seq))
   setLUT(rp, seq)
   enable = enableLUT(seq)
