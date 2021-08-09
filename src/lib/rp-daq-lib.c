@@ -366,7 +366,7 @@ int getSignalType(int channel) {
 
 
 int setJumpSharpness(int channel, float percentage) {
-	if(channel < 0 || channel > 1) {
+	if(channel < 0 || channel > 1 || percentage == 0.0) {
 		return -3;
 	}
 	int16_t A = (int16_t) (8191*percentage);
