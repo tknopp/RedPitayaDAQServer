@@ -1,5 +1,5 @@
 export decimation, masterTrigger, currentFrame, ramWriterMode, connectADC, startADC, stopADC, samplesPerPeriod, periodsPerFrame, 
-     currentWP, slowDACInterpolation, bufferSize, keepAliveReset, triggerMode,
+     currentWP, slowDACInterpolation, bufferSize, keepAliveReset, triggerMode, numSlowADCChan,
      ADCPerformanceData, RPPerformance, RPStatus, RPInfo, startPipelinedData, PerformanceData, numChan, dataRate
 
 struct ADCPerformanceData
