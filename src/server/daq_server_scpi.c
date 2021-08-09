@@ -70,6 +70,8 @@ sequenceNode_t *configNode = NULL;
 
 double rampUpTime;
 double rampUpFraction;
+double rampDownTime;
+double rampDownFraction;
 int numSamplesPerSlowDACStep = 0; 
 int numSlowDACStepsPerSequence = 20;
 int numSlowDACChan = 0;

@@ -85,15 +85,18 @@ extern void joinControlThread();
 // Sequence structures
 typedef enum {ARBITRARY, CONSTANT, PAUSE, RANGE} sequenceTypes_t;
 typedef enum {CONFIG, PREPARED, RUNNING, FINISHED} sequenceState_t;
-typedef enum {BEFORE, RAMPUP, REGULAR, RAMPDOWN, AFTER, DONE} sequenceInterval_t;
+typedef enum {RAMPUP, REGULAR, RAMPDOWN, DONE} sequenceInterval_t;
 
 typedef struct {
 	int numStepsPerRepetition; // How many steps per repetition
 	float* LUT; // LUT for value function pointer
 	bool * enableLUT;
-	int rampingRepetitions; // How many repetitions for both individually ramp up/down
-	int rampingTotalSteps; // How many steps are in these repetitions
-	int rampingSteps; // How many of those steps have a ramping factor
+	int rampUpRepetitions; // How many repetitions for both individually ramp up/down
+	int rampUpTotalSteps; // How many steps are in these repetitions
+	int rampUpSteps; // How many of those steps have a ramping factor
+	int rampDownRepetitions; 
+	int rampDownTotalSteps; 
+	int rampDownSteps;
 	int numRepetitions; // How many regular repetitions are there
 	sequenceTypes_t type; // Sanity check for function pointer
 } sequenceData_t;
@@ -130,8 +133,10 @@ extern float getRangeSequenceValue(sequenceData_t*, int, int);
 extern sequenceNode_t *configNode;
 extern double rampUpTime;
 extern double rampUpFraction;
+extern double rampDownTime;
+extern double rampDownFraction;
 extern bool prepareSequences();
-extern void setupRampingTiming(sequenceData_t *seqData, double rampUpTime, double rampUpFraction);
+extern void setupRampingTiming(sequenceData_t *seqData, double rampUpTime, double rampUpFraction, double rampDownTime, double rampDownFraction);
 extern void cleanUpSequence(sequenceData_t * seqData);
 extern void cleanUpSequenceList();
 extern sequenceInterval_t computeInterval(sequenceData_t *seqData, int repetition, int step);

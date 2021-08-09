@@ -161,27 +161,18 @@ sequenceInterval_t computeInterval(sequenceData_t *seqData, int localRepetition,
 	int stepInSequence = seqData->numStepsPerRepetition * localRepetition + localStep;
 	//printf("%d stepInSequence ", stepInSequence);
 	//Regular
-	if (seqData->rampingRepetitions <= localRepetition && localRepetition < seqData->rampingRepetitions + seqData->numRepetitions) {
+	if (seqData->rampUpSteps <= stepInSequence && stepInSequence < seqData->rampUpTotalSteps + (seqData->numStepsPerRepetition * seqData->numRepetitions) + seqData->rampDownSteps) {
 		return REGULAR;
 	} 
 	//RampUp
-	else if (localRepetition < seqData->rampingRepetitions) {
-		// Before the last rampingSteps in rampup intervall
-		if (stepInSequence < seqData->rampingTotalSteps - seqData->rampingSteps) {
-			return BEFORE;
-		}
-		else {
-			return RAMPUP;
-		}
+	else if (stepInSequence < seqData->rampUpSteps) {
+		return RAMPUP;
 	}
 	//RampDown
 	else {
-		int stepsInRampUpandRegular = seqData->numStepsPerRepetition * (seqData->rampingRepetitions + seqData->numRepetitions);
-		if (stepInSequence <= stepsInRampUpandRegular + seqData->rampingSteps) {
+		int stepsInRampUpandRegular = (seqData->numStepsPerRepetition * seqData->numRepetitions) + seqData->rampUpTotalSteps;
+		if (stepInSequence <= stepsInRampUpandRegular + seqData->rampDownTotalSteps)  {
 			return RAMPDOWN;
-		}
-		else if (stepInSequence <= stepsInRampUpandRegular + seqData->rampingTotalSteps)  {
-			return AFTER;
 		}
 		else {
 			return DONE;
@@ -201,28 +192,26 @@ static float getFactor(sequenceData_t *seqData, int localRepetition, int localSt
 		case RAMPUP:
 			; // Empty statement to allow declaration in switch
 			// Step in Ramp up so far = how many steps so far - when does ramp up start
-			int stepInRampUp = (seqData->numStepsPerRepetition * localRepetition + localStep)
-				- (seqData->rampingTotalSteps - seqData->rampingSteps - 1);
-			return rampingFunction((float) stepInRampUp, (float) seqData->rampingSteps - 1);
+			int stepInRampUp = (seqData->numStepsPerRepetition * localRepetition + localStep) - 0;
+			return rampingFunction((float) stepInRampUp, (float) seqData->rampUpSteps - 1);
 		case RAMPDOWN:
 			; // See above
-			int stepsUpToRampDown = seqData->numStepsPerRepetition * (seqData->rampingRepetitions + seqData->numRepetitions);
+			int stepsUpToRampDown = (seqData->numStepsPerRepetition * seqData->numRepetitions) + seqData->rampUpTotalSteps + (seqData->rampDownTotalSteps - seqData->rampDownSteps);
 			int stepsInRampDown = (seqData->numStepsPerRepetition * localRepetition + localStep) - stepsUpToRampDown;
-			return rampingFunction((float) (seqData->rampingSteps - stepsInRampDown), (float) seqData->rampingSteps - 1);
-		case BEFORE:
-		case AFTER:
+			return rampingFunction((float) (seqData->rampDownSteps - stepsInRampDown), (float) seqData->rampDownSteps - 1);
 		case DONE:
 		default:
 			return 0.0;
 	}
 }
 
-void setupRampingTiming(sequenceData_t *seqData, double rampUpTime, double rampUpFraction) {
+void setupRampingTiming(sequenceData_t *seqData, double rampUpTime, double rampUpFraction, double rampDownTime, double rampDownFraction) {
 	double bandwidth = 125e6 / getDecimation();
 	double period = (numSamplesPerSlowDACStep * seqData->numStepsPerRepetition) / bandwidth;
-	seqData->rampingRepetitions = ceil(rampUpTime / period);
-	seqData->rampingTotalSteps = ceil(rampUpTime / (numSamplesPerSlowDACStep / bandwidth));
-	seqData->rampingSteps = ceil(rampUpTime * rampUpFraction / (numSamplesPerSlowDACStep / bandwidth));
+	seqData->rampUpTotalSteps = ceil(rampUpTime / (numSamplesPerSlowDACStep / bandwidth));
+	seqData->rampUpSteps = ceil(rampUpTime * rampUpFraction / (numSamplesPerSlowDACStep / bandwidth));
+	seqData->rampDownTotalSteps = ceil(rampDownTime / (numSamplesPerSlowDACStep / bandwidth));
+	seqData->rampDownSteps = ceil(rampDownTime * rampDownFraction / (numSamplesPerSlowDACStep / bandwidth));
 }
 
 static void initSlowDAC() {
@@ -280,6 +269,7 @@ static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
 	// PDM Value
 	float val = getSequenceVal(&(current->sequence), localStep, channel);
 	float factor = getFactor(&(current->sequence).data, localRepetition, localStep);
+	//printf("Step %d factor %f\n", futureStep, factor);
 	if (setPDMValueVolt(factor * val, channel, currPDMIndex) != 0) {
 		printf("Could not set AO[%d] voltage.\n", channel);	
 	}

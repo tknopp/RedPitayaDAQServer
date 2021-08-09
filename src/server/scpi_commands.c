@@ -464,6 +464,22 @@ static scpi_result_t RP_DAC_GetSlowDACLostSteps(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_DAC_SetRamping(scpi_t * context) {
+	if (!isSequenceConfigurable())
+		return SCPI_RES_ERR;
+
+	if(!SCPI_ParamDouble(context, &rampUpTime, TRUE)) 
+		return SCPI_RES_ERR;
+
+	if (!SCPI_ParamDouble(context, &rampUpFraction, TRUE))
+		return SCPI_RES_ERR;
+
+	rampDownTime = rampUpTime;
+	rampDownFraction = rampUpFraction;
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_DAC_SetRampUp(scpi_t * context) {
 	if (!isSequenceConfigurable())
 		return SCPI_RES_ERR;
@@ -474,6 +490,44 @@ static scpi_result_t RP_DAC_SetRampUp(scpi_t * context) {
 	if (!SCPI_ParamDouble(context, &rampUpFraction, TRUE))
 		return SCPI_RES_ERR;
 
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetRampDown(scpi_t * context) {
+	if (!isSequenceConfigurable())
+		return SCPI_RES_ERR;
+
+	if(!SCPI_ParamDouble(context, &rampDownTime, TRUE)) 
+		return SCPI_RES_ERR;
+
+	if (!SCPI_ParamDouble(context, &rampDownFraction, TRUE))
+		return SCPI_RES_ERR;
+
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetRampingTime(scpi_t * context) {
+	if (!isSequenceConfigurable())
+		return SCPI_RES_ERR;
+
+	if(!SCPI_ParamDouble(context, &rampUpTime, TRUE)) 
+		return SCPI_RES_ERR;
+
+	rampDownTime = rampUpTime;
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetRampingFraction(scpi_t * context) {
+	if (!isSequenceConfigurable())
+		return SCPI_RES_ERR;
+	
+	if(!SCPI_ParamDouble(context, &rampUpFraction, TRUE)) 
+		return SCPI_RES_ERR;
+
+	rampDownFraction = rampUpFraction;
 	seqState = CONFIG;
 	return SCPI_RES_OK;
 }
@@ -504,6 +558,38 @@ static scpi_result_t RP_DAC_SetRampUpFraction(scpi_t * context) {
 		return SCPI_RES_ERR;
 	
 	if(!SCPI_ParamDouble(context, &rampUpFraction, TRUE)) 
+		return SCPI_RES_ERR;
+
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_GetRampDownTime(scpi_t * context) {
+	SCPI_ResultDouble(context, rampDownTime);
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetRampDownTime(scpi_t * context) {
+	if (!isSequenceConfigurable())
+		return SCPI_RES_ERR;
+
+	if(!SCPI_ParamDouble(context, &rampDownTime, TRUE)) 
+		return SCPI_RES_ERR;
+
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_GetRampDownFraction(scpi_t * context) {
+	SCPI_ResultDouble(context, rampDownFraction);
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetRampDownFraction(scpi_t * context) {
+	if (!isSequenceConfigurable())
+		return SCPI_RES_ERR;
+	
+	if(!SCPI_ParamDouble(context, &rampDownFraction, TRUE)) 
 		return SCPI_RES_ERR;
 
 	seqState = CONFIG;
@@ -1197,7 +1283,7 @@ static scpi_result_t RP_DAC_AppendSequence(scpi_t * context) {
 	}
 
 	if (configNode != NULL) {
-		setupRampingTiming(&(configNode->sequence).data, rampUpTime, rampUpFraction);
+		setupRampingTiming(&(configNode->sequence).data, rampUpTime, rampUpFraction, rampDownTime, rampDownFraction);
 		appendSequenceToList(configNode);
 		configNode = NULL;
 	}
@@ -1309,8 +1395,6 @@ const scpi_command_t scpi_commands[] = {
 	// DAC
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude?", .callback = RP_DAC_GetAmplitude,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude", .callback = RP_DAC_SetAmplitude,},
-	//{.pattern = "RP:DAC:CHannel#:COMPonent#:Next:AMPlitude?", .callback = RP_DAC_GetNextAmplitude,},
-	//{.pattern = "RP:DAC:CHannel#:COMPonent#:Next:AMPlitude", .callback = RP_DAC_SetNextAmplitude,},
 	{.pattern = "RP:DAC:CHannel#:OFFset?", .callback = RP_DAC_GetOffset,},
 	{.pattern = "RP:DAC:CHannel#:OFFset", .callback = RP_DAC_SetOffset,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency?", .callback = RP_DAC_GetFrequency,},
@@ -1336,11 +1420,19 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:SEQ:STEPsPerSequence?", .callback = RP_DAC_GetSlowDACStepsPerSequence,},
 	{.pattern = "RP:DAC:SEQ:SAMPlesperstep", .callback = RP_DAC_SetSamplesPerSlowDACStep,},
 	{.pattern = "RP:DAC:SEQ:SAMPlesperstep?", .callback = RP_DAC_GetSamplesPerSlowDACStep,},
-	{.pattern = "RP:DAC:SEQ:RaMPing", .callback = RP_DAC_SetRampUp,},
-	{.pattern = "RP:DAC:SEQ:RaMPing:TIME?", .callback = RP_DAC_SetRampUpTime,},
-	{.pattern = "RP:DAC:SEQ:RaMPing:TIME", .callback = RP_DAC_GetRampUpTime,},
-	{.pattern = "RP:DAC:SEQ:RaMPing:FRACtion", .callback = RP_DAC_SetRampUpFraction,},
-	{.pattern = "RP:DAC:SEQ:RaMPing:FRACtion?", .callback = RP_DAC_GetRampUpFraction,},
+	{.pattern = "RP:DAC:SEQ:RaMPing", .callback = RP_DAC_SetRamping,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:TIME", .callback = RP_DAC_SetRampingTime,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:FRACtion", .callback = RP_DAC_SetRampingFraction,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:UP", .callback = RP_DAC_SetRampUp,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:UP:TIME", .callback = RP_DAC_SetRampUpTime,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:UP:TIME?", .callback = RP_DAC_GetRampUpTime,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:UP:FRACtion", .callback = RP_DAC_SetRampUpFraction,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:UP:FRACtion?", .callback = RP_DAC_GetRampUpFraction,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN", .callback = RP_DAC_SetRampDown,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN:TIME", .callback = RP_DAC_SetRampDownTime,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN:TIME?", .callback = RP_DAC_GetRampDownTime,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN:FRACtion", .callback = RP_DAC_SetRampDownFraction,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN:FRACtion?", .callback = RP_DAC_GetRampDownFraction,},
 	{.pattern = "RP:DAC:SEQ:REPetitions", .callback = RP_DAC_SetSequenceRepetitions,},
 	{.pattern = "RP:DAC:SEQ:REPetitions?", .callback = RP_DAC_GetSequenceRepetitions,},
 	{.pattern = "RP:DAC:SEQ:APPend", .callback = RP_DAC_AppendSequence,},
