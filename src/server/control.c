@@ -184,6 +184,11 @@ static float rampingFunction(float numerator, float denominator) {
 	return (0.9640 + tanh(-2.0 + (numerator / denominator) * 4.0)) / 1.92806;
 }
 
+static float clamp(double val, double min, double max) {
+	double temp = val < min ? min : val;
+	return temp > max ? max : temp;
+}
+
 static float getFactor(sequenceData_t *seqData, int localRepetition, int localStep) {
 
 	switch(computeInterval(seqData, localRepetition, localStep)) {
@@ -193,12 +198,12 @@ static float getFactor(sequenceData_t *seqData, int localRepetition, int localSt
 			; // Empty statement to allow declaration in switch
 			// Step in Ramp up so far = how many steps so far - when does ramp up start
 			int stepInRampUp = (seqData->numStepsPerRepetition * localRepetition + localStep) - 0;
-			return rampingFunction((float) stepInRampUp, (float) seqData->rampUpSteps - 1);
+			return clamp(rampingFunction((float) stepInRampUp, (float) seqData->rampUpSteps - 1), 0.0, 1.0);
 		case RAMPDOWN:
 			; // See above
 			int stepsUpToRampDown = (seqData->numStepsPerRepetition * seqData->numRepetitions) + seqData->rampUpTotalSteps + (seqData->rampDownTotalSteps - seqData->rampDownSteps);
 			int stepsInRampDown = (seqData->numStepsPerRepetition * localRepetition + localStep) - stepsUpToRampDown;
-			return rampingFunction((float) (seqData->rampDownSteps - stepsInRampDown), (float) seqData->rampDownSteps - 1);
+			return clamp(rampingFunction((float) (seqData->rampDownSteps - stepsInRampDown), (float) seqData->rampDownSteps - 1), 0.0, 1.0);
 		case DONE:
 		default:
 			return 0.0;
