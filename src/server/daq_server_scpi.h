@@ -102,8 +102,24 @@ typedef struct {
 } sequenceData_t;
 
 typedef struct {
+	uint16_t amplitudes[8];
+	bool amplitudesSet[8];
+	int16_t offset[2];
+	bool offsetSet[2];
+	double frequency[8];
+	bool frequencySet[8];
+	double phase[8];
+	bool phaseSet[8];
+	int signalType[2];
+	bool signalTypeSet[2];
+	double jumpSharpness[2];
+	bool jumpSharpnessSet[2];
+} fastDACConfig_t;
+
+typedef struct {
 	sequenceData_t data;
 	float (*getSequenceValue) (sequenceData_t *seqData, int step, int channel);
+	fastDACConfig_t fastConfig;
 } sequence_t;
 
 typedef struct sequenceNode_s sequenceNode_t;
@@ -147,6 +163,18 @@ extern void appendSequenceToList(sequenceNode_t*);
 extern sequenceNode_t * popSequence();
 extern sequenceNode_t * newSequenceNode();
 extern void cleanUpSequenceNode(sequenceNode_t*);
+
+// Sequence Fast DAC Config FIFO Queue
+typedef struct configNode_s configNode_t;
+struct configNode_s {
+	fastDACConfig_t * config;
+	uint64_t startStep;
+	configNode_t* next;
+};
+extern void enqueue(configNode_t** queue, fastDACConfig_t *config, int stepStart);
+extern fastDACConfig_t* dequeue(configNode_t** queue);
+
+
 
 // data loss
 struct status {

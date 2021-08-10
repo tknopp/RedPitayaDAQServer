@@ -33,7 +33,8 @@ static uint64_t oldSlowDACStepTotal;
 static int  sleepTime = 0;
 static int baseSleep = 20;
 
-static sequenceNode_t *current; 
+static sequenceNode_t *currentSequence; 
+static configNode_t *configQueue;
 static int lastStep = INT_MAX;
 
 static int lookahead = 110;
@@ -115,6 +116,58 @@ void cleanUpSequenceList() {
 	}
 	head = NULL;
 	tail = NULL;
+}
+
+void enqueue(configNode_t ** queue, fastDACConfig_t *config, int stepStart) {
+	configNode_t* temp = calloc(1, sizeof(configNode_t));
+	temp->config = config;
+	temp->startStep = stepStart;
+
+	if (*queue == NULL) {
+		*queue = temp;
+		return;
+	}
+
+	configNode_t *current = *queue;
+	while(current->next != NULL) 
+		current = current->next;
+
+	current->next = temp;
+}
+
+fastDACConfig_t* dequeue(configNode_t** queue) {
+	configNode_t* temp = *queue;
+	if (temp == NULL)
+		return NULL;
+	
+	fastDACConfig_t* result = temp->config;
+
+	*queue = temp->next;
+	free(temp);
+	return result;
+}
+
+static void configureFastDAC(fastDACConfig_t * config) {
+	if (config == NULL)
+		return;
+
+	for (int ch = 0; ch < 2; ch ++) {
+		for (int cmp = 0; cmp < 4; cmp++) {
+			int index = ch * 4 + cmp;
+			if (config->amplitudesSet[index])
+				setAmplitude(config->amplitudes[index], ch, cmp);
+			if (config->frequencySet[index])
+				setFrequency(config->frequency[index], ch, cmp);
+			if (config->phaseSet[index])
+				setPhase(config->phase[index], ch, cmp);
+		}
+		if (config->offsetSet[ch])
+			setOffset(config->offset[ch], ch);
+		if (config->signalTypeSet[ch])
+			setSignalType(ch, config->signalType[ch]);
+		if (config->jumpSharpnessSet[ch])
+			setJumpSharpness(ch, config->jumpSharpness[ch]);
+	}
 }
 
 bool isSequenceConfigurable() {
@@ -239,24 +292,24 @@ static void cleanUpSlowDAC() {
 }
 
 static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
-	if (current == NULL) {
+	if (currentSequence == NULL) {
 		setPDMValueVolt(0.0, channel, currPDMIndex);
 		setEnableDAC(false, channel, currPDMIndex);
 		return;
 	}
 
 	// Translate from global timeline to sequence local timeline
-	int localRepetition = (futureStep - currentSequenceBaseStep) / current->sequence.data.numStepsPerRepetition;
-	int localStep = (futureStep - currentSequenceBaseStep) % current->sequence.data.numStepsPerRepetition;
-	sequenceInterval_t interval = computeInterval(&(current->sequence).data, localRepetition, localStep); 
+	int localRepetition = (futureStep - currentSequenceBaseStep) / currentSequence->sequence.data.numStepsPerRepetition;
+	int localStep = (futureStep - currentSequenceBaseStep) % currentSequence->sequence.data.numStepsPerRepetition;
+	sequenceInterval_t interval = computeInterval(&(currentSequence->sequence).data, localRepetition, localStep); 
 
 	// Advance to next sequence
 	if (interval  == DONE) {
-		current = current->next;
+		currentSequence = currentSequence->next;
 		currentSequenceBaseStep = futureStep;
 
 		// Notify end of sequence(s)
-		if (current == NULL) {
+		if (currentSequence == NULL) {
 			if (futureStep < lastStep) {
 				lastStep = futureStep;
 			}
@@ -265,23 +318,26 @@ static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
 			return;
 		}
 
+		// Register Fast DAC Config
+		enqueue(&configQueue, &currentSequence->sequence.fastConfig, currentSequenceBaseStep);
+
 		// Recompute with new sequence
-		localRepetition = (futureStep - currentSequenceBaseStep) / current->sequence.data.numStepsPerRepetition;
-		localStep = (futureStep - currentSequenceBaseStep) % current->sequence.data.numStepsPerRepetition;
-		interval = computeInterval(&(current->sequence).data, localRepetition, localStep); 
+		localRepetition = (futureStep - currentSequenceBaseStep) / currentSequence->sequence.data.numStepsPerRepetition;
+		localStep = (futureStep - currentSequenceBaseStep) % currentSequence->sequence.data.numStepsPerRepetition;
+		interval = computeInterval(&(currentSequence->sequence).data, localRepetition, localStep); 
 	} 
 
 	// PDM Value
-	float val = getSequenceVal(&(current->sequence), localStep, channel);
-	float factor = getFactor(&(current->sequence).data, localRepetition, localStep);
+	float val = getSequenceVal(&(currentSequence->sequence), localStep, channel);
+	float factor = getFactor(&(currentSequence->sequence).data, localRepetition, localStep);
 	//printf("Step %d factor %f\n", futureStep, factor);
 	if (setPDMValueVolt(factor * val, channel, currPDMIndex) != 0) {
 		printf("Could not set AO[%d] voltage.\n", channel);	
 	}
 
 	// Enable Value
-	if (current->sequence.data.enableLUT != NULL && interval == REGULAR) {
-		bool temp = current->sequence.data.enableLUT[localStep * numSlowDACChan + channel];
+	if (currentSequence->sequence.data.enableLUT != NULL && interval == REGULAR) {
+		bool temp = currentSequence->sequence.data.enableLUT[localStep * numSlowDACChan + channel];
 		setEnableDAC(temp, channel, currPDMIndex);
 		printf("%d enable", temp);
 	}
@@ -316,7 +372,9 @@ bool prepareSequences() {
 		initSlowDAC();
 		// Init Sequence Iteration
 		currentSequenceBaseStep = 0;
-		current = head;
+		currentSequence = head;
+		if (currentSequence != NULL)
+			configureFastDAC(&currentSequence->sequence.fastConfig);
 		lastStep = INT_MAX;
 		// Init Perfomance
 		avgDeltaControl = 0;
@@ -393,6 +451,11 @@ void *controlThread(void *ch) {
 
 				if (currentSlowDACStepTotal > oldSlowDACStepTotal + lookahead) {
 					handleLostSlowDACSteps(oldSlowDACStepTotal, currentSlowDACStepTotal);
+				}
+
+				if (configQueue != NULL && currentSlowDACStepTotal >= configQueue->startStep) {
+					configureFastDAC(configQueue->config);
+					dequeue(&configQueue);
 				}
 
 				if (currentSlowDACStepTotal >= lastStep) {
