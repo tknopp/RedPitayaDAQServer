@@ -224,7 +224,7 @@ sequenceInterval_t computeInterval(sequenceData_t *seqData, int localRepetition,
 	//RampDown
 	else {
 		int stepsInRampUpandRegular = (seqData->numStepsPerRepetition * seqData->numRepetitions) + seqData->rampUpTotalSteps;
-		if (stepInSequence <= stepsInRampUpandRegular + seqData->rampDownTotalSteps)  {
+		if (stepInSequence < stepsInRampUpandRegular + seqData->rampDownTotalSteps)  {
 			return RAMPDOWN;
 		}
 		else {
@@ -330,7 +330,7 @@ static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
 	// PDM Value
 	float val = getSequenceVal(&(currentSequence->sequence), localStep, channel);
 	float factor = getFactor(&(currentSequence->sequence).data, localRepetition, localStep);
-	//printf("Step %d factor %f\n", futureStep, factor);
+	printf("Step %d factor %f value %f interval %d \n", futureStep, factor, val, computeInterval(&(currentSequence->sequence).data, localRepetition, localStep));
 	if (setPDMValueVolt(factor * val, channel, currPDMIndex) != 0) {
 		printf("Could not set AO[%d] voltage.\n", channel);	
 	}
