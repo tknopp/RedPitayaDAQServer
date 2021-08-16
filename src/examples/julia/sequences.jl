@@ -42,11 +42,11 @@ clf()
 amplitudeDAC(rp, 1, 1, 0.1) 
 #First sequence
 lut1 = [0.2]
-seq1 = ConstantSequence(lut, nothing, slow_dac_periods_per_frame, 1, frame_period * 2, 0.5)
+seq1 = ConstantSequence(lut1, nothing, slow_dac_periods_per_frame, 2, computeRamping(master(rp), frame_period * 1, 0.5))
 
 #Second sequence
 lut2 = collect(range(0,0.7,length=slow_dac_periods_per_frame))
-seq2 = ArbitrarySequence(lut2, nothing, slow_dac_periods_per_frame, 2, 0.0, 0.0)
+seq2 = ArbitrarySequence(lut2, nothing, slow_dac_periods_per_frame, 2, computeRamping(master(rp), 0.0, 0.0))
 
 # Prepare both
 appendSequence(master(rp), seq1)

@@ -70,7 +70,6 @@ function samplesPerPeriod(rp::RedPitaya)
 end
 function samplesPerPeriod(rp::RedPitaya, value)
   rp.samplesPerPeriod = value
-  samplesPerSlowDACStep(rp, value)
 end
 
 function periodsPerFrame(rp::RedPitaya) 

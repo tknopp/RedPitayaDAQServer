@@ -45,7 +45,7 @@ masterTrigger(rp, false)
 # Lookup Sequence
 amplitudeDAC(rp, 1, 1, 0.1)
 lut = collect(range(0,0.7,length=slow_dac_periods_per_frame))
-seq = ArbitrarySequence(lut, nothing, slow_dac_periods_per_frame, 2, 0.0, 0.0)
+seq = ArbitrarySequence(lut, nothing, slow_dac_periods_per_frame, 2, 0, 0)
 appendSequence(master(rp), seq)
 success = prepareSequence(master(rp))
 startADC(rp)
@@ -63,7 +63,7 @@ sleep(0.1)
 # Constant Sequence
 amplitudeDAC(rp, 1, 1, 0.1) # Amplitude is set to zero after a sequence
 lut = [0.2]
-seq = ConstantSequence(lut, nothing, slow_dac_periods_per_frame, 2, 0.0, 0.0)
+seq = ConstantSequence(lut, nothing, slow_dac_periods_per_frame, 2, 0, 0)
 appendSequence(master(rp), seq)
 success = prepareSequence(master(rp))
 startADC(rp)
@@ -98,7 +98,7 @@ sleep(0.1)
 # Range Sequence
 amplitudeDAC(rp, 1, 1, 0.1)
 lut = [-1.0, 2.0/slow_dac_periods_per_frame]
-seq = RangeSequence(lut, nothing, slow_dac_periods_per_frame, 2, 0.0, 0.0)
+seq = RangeSequence(lut, nothing, slow_dac_periods_per_frame, 2, 0, 0)
 appendSequence(master(rp), seq)
 success = prepareSequence(master(rp))
 startADC(rp)

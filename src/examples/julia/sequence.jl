@@ -1,5 +1,6 @@
 using RedPitayaDAQServer
 using PyPlot
+using ThreadPools
 
 # obtain the URL of the RedPitaya
 include("config.jl")
@@ -38,7 +39,7 @@ slowDACStepsPerFrame(rp, slow_dac_periods_per_frame) # This sets PDMClockDivider
 numSlowDACChan(master(rp), 1)
 # Per Sequence settings
 lut = collect(range(0,0.7,length=slow_dac_periods_per_frame))
-seq = ArbitrarySequence(lut, nothing, slow_dac_periods_per_frame, 2, 0.0, 0.0)
+seq = ArbitrarySequence(lut, nothing, slow_dac_periods_per_frame, 2, 0, 0)
 appendSequence(master(rp), seq)
 success = prepareSequence(master(rp))
 
