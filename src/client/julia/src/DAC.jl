@@ -409,3 +409,11 @@ function appendSequence(rp::RedPitaya, seq::AbstractSequence)
   configureFastDAC(rp, fastDACConfig(seq), forSequence = true)
   appendSequence(rp)
 end
+
+function length(seq::AbstractSequence)
+  return stepsPerRepetition(seq) * repetitions(seq) + rampUpTotalSteps(seq) + rampDownTotalSteps(seq)
+end
+
+function start(seq::AbstractSequence)
+  return rampUpTotalSteps(seq)
+end
