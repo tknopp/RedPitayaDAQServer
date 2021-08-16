@@ -581,14 +581,16 @@ static scpi_result_t RP_DAC_SetRamping(scpi_t * context) {
 	if (!isSequenceConfigurable())
 		return SCPI_RES_ERR;
 
-	if(!SCPI_ParamDouble(context, &rampUpTime, TRUE)) 
+	readyConfigSequence();
+
+	if(!SCPI_ParamInt32(context, &configNode->sequence.data.rampUpSteps, TRUE)) 
 		return SCPI_RES_ERR;
 
-	if (!SCPI_ParamDouble(context, &rampUpFraction, TRUE))
+	if (!SCPI_ParamInt32(context, &configNode->sequence.data.rampUpTotalSteps, TRUE))
 		return SCPI_RES_ERR;
 
-	rampDownTime = rampUpTime;
-	rampDownFraction = rampUpFraction;
+	configNode->sequence.data.rampDownSteps = configNode->sequence.data.rampUpSteps;
+	configNode->sequence.data.rampDownTotalSteps = configNode->sequence.data.rampUpTotalSteps;
 	seqState = CONFIG;
 	return SCPI_RES_OK;
 }
@@ -597,10 +599,12 @@ static scpi_result_t RP_DAC_SetRampUp(scpi_t * context) {
 	if (!isSequenceConfigurable())
 		return SCPI_RES_ERR;
 
-	if(!SCPI_ParamDouble(context, &rampUpTime, TRUE)) 
+	readyConfigSequence();
+
+	if(!SCPI_ParamInt32(context, &configNode->sequence.data.rampUpSteps, TRUE)) 
 		return SCPI_RES_ERR;
 
-	if (!SCPI_ParamDouble(context, &rampUpFraction, TRUE))
+	if (!SCPI_ParamInt32(context, &configNode->sequence.data.rampUpTotalSteps, TRUE))
 		return SCPI_RES_ERR;
 
 	seqState = CONFIG;
@@ -611,98 +615,116 @@ static scpi_result_t RP_DAC_SetRampDown(scpi_t * context) {
 	if (!isSequenceConfigurable())
 		return SCPI_RES_ERR;
 
-	if(!SCPI_ParamDouble(context, &rampDownTime, TRUE)) 
+	readyConfigSequence();
+
+	if(!SCPI_ParamInt32(context, &configNode->sequence.data.rampDownSteps, TRUE)) 
 		return SCPI_RES_ERR;
 
-	if (!SCPI_ParamDouble(context, &rampDownFraction, TRUE))
+	if (!SCPI_ParamInt32(context, &configNode->sequence.data.rampDownTotalSteps, TRUE))
 		return SCPI_RES_ERR;
 
 	seqState = CONFIG;
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_SetRampingTime(scpi_t * context) {
+static scpi_result_t RP_DAC_SetRampingSteps(scpi_t * context) {
 	if (!isSequenceConfigurable())
 		return SCPI_RES_ERR;
 
-	if(!SCPI_ParamDouble(context, &rampUpTime, TRUE)) 
+	readyConfigSequence();
+
+	if(!SCPI_ParamInt32(context, &configNode->sequence.data.rampUpSteps, TRUE)) 
 		return SCPI_RES_ERR;
 
-	rampDownTime = rampUpTime;
+	configNode->sequence.data.rampDownSteps = configNode->sequence.data.rampUpSteps;
 	seqState = CONFIG;
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_SetRampingFraction(scpi_t * context) {
-	if (!isSequenceConfigurable())
-		return SCPI_RES_ERR;
-	
-	if(!SCPI_ParamDouble(context, &rampUpFraction, TRUE)) 
-		return SCPI_RES_ERR;
-
-	rampDownFraction = rampUpFraction;
-	seqState = CONFIG;
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_DAC_GetRampUpTime(scpi_t * context) {
-	SCPI_ResultDouble(context, rampUpTime);
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_DAC_SetRampUpTime(scpi_t * context) {
-	if (!isSequenceConfigurable())
-		return SCPI_RES_ERR;
-
-	if(!SCPI_ParamDouble(context, &rampUpTime, TRUE)) 
-		return SCPI_RES_ERR;
-
-	seqState = CONFIG;
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_DAC_GetRampUpFraction(scpi_t * context) {
-	SCPI_ResultDouble(context, rampUpFraction);
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_DAC_SetRampUpFraction(scpi_t * context) {
+static scpi_result_t RP_DAC_SetRampingTotalSteps(scpi_t * context) {
 	if (!isSequenceConfigurable())
 		return SCPI_RES_ERR;
 	
-	if(!SCPI_ParamDouble(context, &rampUpFraction, TRUE)) 
+	readyConfigSequence();
+
+	if(!SCPI_ParamInt32(context, &configNode->sequence.data.rampUpTotalSteps, TRUE)) 
 		return SCPI_RES_ERR;
 
+	configNode->sequence.data.rampDownTotalSteps = configNode->sequence.data.rampUpTotalSteps;
 	seqState = CONFIG;
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_GetRampDownTime(scpi_t * context) {
-	SCPI_ResultDouble(context, rampDownTime);
+static scpi_result_t RP_DAC_GetRampUpSteps(scpi_t * context) {
+	readyConfigSequence();
+	SCPI_ResultInt32(context, configNode->sequence.data.rampUpSteps);
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_SetRampDownTime(scpi_t * context) {
+static scpi_result_t RP_DAC_SetRampUpSteps(scpi_t * context) {
 	if (!isSequenceConfigurable())
 		return SCPI_RES_ERR;
 
-	if(!SCPI_ParamDouble(context, &rampDownTime, TRUE)) 
+	readyConfigSequence();
+
+	if(!SCPI_ParamInt32(context, &configNode->sequence.data.rampUpSteps, TRUE)) 
 		return SCPI_RES_ERR;
 
 	seqState = CONFIG;
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_GetRampDownFraction(scpi_t * context) {
-	SCPI_ResultDouble(context, rampDownFraction);
+static scpi_result_t RP_DAC_GetRampUpTotalSteps(scpi_t * context) {
+	readyConfigSequence();
+	SCPI_ResultInt32(context, configNode->sequence.data.rampUpTotalSteps);
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_SetRampDownFraction(scpi_t * context) {
+static scpi_result_t RP_DAC_SetRampUpTotalSteps(scpi_t * context) {
+	if (!isSequenceConfigurable())
+		return SCPI_RES_ERR;
+
+	readyConfigSequence();
+
+	if(!SCPI_ParamInt32(context, &configNode->sequence.data.rampUpTotalSteps, TRUE)) 
+		return SCPI_RES_ERR;
+
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_GetRampDownSteps(scpi_t * context) {
+	readyConfigSequence();
+	SCPI_ResultInt32(context, configNode->sequence.data.rampDownSteps);
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetRampDownSteps(scpi_t * context) {
 	if (!isSequenceConfigurable())
 		return SCPI_RES_ERR;
 	
-	if(!SCPI_ParamDouble(context, &rampDownFraction, TRUE)) 
+	readyConfigSequence();
+
+	if(!SCPI_ParamInt32(context, &configNode->sequence.data.rampDownSteps, TRUE)) 
+		return SCPI_RES_ERR;
+
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_GetRampDownTotalSteps(scpi_t * context) {
+	readyConfigSequence();
+	SCPI_ResultInt32(context, configNode->sequence.data.rampDownTotalSteps);
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetRampDownTotalSteps(scpi_t * context) {
+	if (!isSequenceConfigurable())
+		return SCPI_RES_ERR;
+	
+	readyConfigSequence();
+
+	if(!SCPI_ParamInt32(context, &configNode->sequence.data.rampDownTotalSteps, TRUE)) 
 		return SCPI_RES_ERR;
 
 	seqState = CONFIG;
@@ -1396,7 +1418,6 @@ static scpi_result_t RP_DAC_AppendSequence(scpi_t * context) {
 	}
 
 	if (configNode != NULL) {
-		setupRampingTiming(&(configNode->sequence).data, rampUpTime, rampUpFraction, rampDownTime, rampDownFraction);
 		appendSequenceToList(configNode);
 		configNode = NULL;
 	}
@@ -1534,18 +1555,18 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:SEQ:SAMPlesperstep", .callback = RP_DAC_SetSamplesPerSlowDACStep,},
 	{.pattern = "RP:DAC:SEQ:SAMPlesperstep?", .callback = RP_DAC_GetSamplesPerSlowDACStep,},
 	{.pattern = "RP:DAC:SEQ:RaMPing", .callback = RP_DAC_SetRamping,},
-	{.pattern = "RP:DAC:SEQ:RaMPing:TIME", .callback = RP_DAC_SetRampingTime,},
-	{.pattern = "RP:DAC:SEQ:RaMPing:FRACtion", .callback = RP_DAC_SetRampingFraction,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:STEPs", .callback = RP_DAC_SetRampingSteps,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:TOTAL", .callback = RP_DAC_SetRampingTotalSteps,},
 	{.pattern = "RP:DAC:SEQ:RaMPing:UP", .callback = RP_DAC_SetRampUp,},
-	{.pattern = "RP:DAC:SEQ:RaMPing:UP:TIME", .callback = RP_DAC_SetRampUpTime,},
-	{.pattern = "RP:DAC:SEQ:RaMPing:UP:TIME?", .callback = RP_DAC_GetRampUpTime,},
-	{.pattern = "RP:DAC:SEQ:RaMPing:UP:FRACtion", .callback = RP_DAC_SetRampUpFraction,},
-	{.pattern = "RP:DAC:SEQ:RaMPing:UP:FRACtion?", .callback = RP_DAC_GetRampUpFraction,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:UP:STEPs", .callback = RP_DAC_SetRampUpSteps,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:UP:STEPs?", .callback = RP_DAC_GetRampUpSteps,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:UP:TOTAL", .callback = RP_DAC_SetRampUpTotalSteps,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:UP:TOTAL?", .callback = RP_DAC_GetRampUpTotalSteps,},
 	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN", .callback = RP_DAC_SetRampDown,},
-	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN:TIME", .callback = RP_DAC_SetRampDownTime,},
-	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN:TIME?", .callback = RP_DAC_GetRampDownTime,},
-	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN:FRACtion", .callback = RP_DAC_SetRampDownFraction,},
-	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN:FRACtion?", .callback = RP_DAC_GetRampDownFraction,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN:STEPs", .callback = RP_DAC_SetRampDownSteps,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN:STEPs?", .callback = RP_DAC_GetRampDownSteps,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN:TOTAL", .callback = RP_DAC_SetRampDownTotalSteps,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN:TOTAL?", .callback = RP_DAC_GetRampDownTotalSteps,},
 	{.pattern = "RP:DAC:SEQ:REPetitions", .callback = RP_DAC_SetSequenceRepetitions,},
 	{.pattern = "RP:DAC:SEQ:REPetitions?", .callback = RP_DAC_GetSequenceRepetitions,},
 	{.pattern = "RP:DAC:SEQ:APPend", .callback = RP_DAC_AppendSequence,},
