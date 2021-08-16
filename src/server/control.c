@@ -214,7 +214,7 @@ sequenceInterval_t computeInterval(sequenceData_t *seqData, int localRepetition,
 	int stepInSequence = seqData->numStepsPerRepetition * localRepetition + localStep;
 	//printf("%d stepInSequence ", stepInSequence);
 	//Regular
-	if (seqData->rampUpSteps <= stepInSequence && stepInSequence < seqData->rampUpTotalSteps + (seqData->numStepsPerRepetition * seqData->numRepetitions) + seqData->rampDownSteps) {
+	if (seqData->rampUpSteps <= stepInSequence && stepInSequence < seqData->rampUpTotalSteps + (seqData->numStepsPerRepetition * seqData->numRepetitions) + (seqData->rampDownTotalSteps - seqData->rampDownSteps)) {
 		return REGULAR;
 	} 
 	//RampUp
@@ -256,6 +256,7 @@ static float getFactor(sequenceData_t *seqData, int localRepetition, int localSt
 			; // See above
 			int stepsUpToRampDown = (seqData->numStepsPerRepetition * seqData->numRepetitions) + seqData->rampUpTotalSteps + (seqData->rampDownTotalSteps - seqData->rampDownSteps);
 			int stepsInRampDown = (seqData->numStepsPerRepetition * localRepetition + localStep) - stepsUpToRampDown;
+			//printf("stepsUpTo %d, rampDownSteps %d, stepsInRampDown %d\n", stepsUpToRampDown, seqData->rampDownSteps, stepsInRampDown);
 			return clamp(rampingFunction((float) (seqData->rampDownSteps - stepsInRampDown), (float) seqData->rampDownSteps - 1), 0.0, 1.0);
 		case DONE:
 		default:
@@ -305,6 +306,7 @@ static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
 
 	// Advance to next sequence
 	if (interval  == DONE) {
+		printf("Next sequence\n");
 		currentSequence = currentSequence->next;
 		currentSequenceBaseStep = futureStep;
 
@@ -321,6 +323,9 @@ static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
 		// Register Fast DAC Config
 		enqueue(&configQueue, &currentSequence->sequence.fastConfig, currentSequenceBaseStep);
 
+		// Set Reset for step
+		//setResetDAC(1, currPDMIndex);
+
 		// Recompute with new sequence
 		localRepetition = (futureStep - currentSequenceBaseStep) / currentSequence->sequence.data.numStepsPerRepetition;
 		localStep = (futureStep - currentSequenceBaseStep) % currentSequence->sequence.data.numStepsPerRepetition;
@@ -330,7 +335,7 @@ static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
 	// PDM Value
 	float val = getSequenceVal(&(currentSequence->sequence), localStep, channel);
 	float factor = getFactor(&(currentSequence->sequence).data, localRepetition, localStep);
-	printf("Step %d factor %f value %f interval %d \n", futureStep, factor, val, computeInterval(&(currentSequence->sequence).data, localRepetition, localStep));
+	//printf("Step %d factor %f value %f interval %d \n", futureStep, factor, val, computeInterval(&(currentSequence->sequence).data, localRepetition, localStep));
 	if (setPDMValueVolt(factor * val, channel, currPDMIndex) != 0) {
 		printf("Could not set AO[%d] voltage.\n", channel);	
 	}
