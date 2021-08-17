@@ -99,6 +99,7 @@ typedef struct {
 	int rampDownSteps;
 	int numRepetitions; // How many regular repetitions are there
 	sequenceTypes_t type; // Sanity check for function pointer
+	bool resetAfter;
 } sequenceData_t;
 
 typedef struct {

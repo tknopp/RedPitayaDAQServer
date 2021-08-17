@@ -1412,6 +1412,40 @@ static scpi_result_t RP_DAC_SetEnableDACLUT(scpi_t * context) {
 	}
 }
 
+static scpi_result_t RP_DAC_SetSequenceResetAfter(scpi_t * context) {
+	if (!isSequenceConfigurable()) {
+		return SCPI_RES_ERR;
+	}
+
+	readyConfigSequence();
+
+	int32_t reset_after_selection;
+
+	if (!SCPI_ParamChoice(context, onoff_modes, &reset_after_selection, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+	configNode->sequence.data.resetAfter = reset_after_selection;
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_GetSequenceResetAfter(scpi_t * context) {
+	if (!isSequenceConfigurable()) {
+		SCPI_ResultText(context, "OFF");
+		return SCPI_RES_ERR;
+	}
+
+	readyConfigSequence();
+
+	const char * name;
+
+	SCPI_ChoiceToName(onoff_modes, configNode->sequence.data.resetAfter, &name);
+	SCPI_ResultText(context, name);
+
+	return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_DAC_AppendSequence(scpi_t * context) {
 	if (!isSequenceConfigurable()) {
 		return SCPI_RES_ERR;
@@ -1569,6 +1603,8 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN:TOTAL?", .callback = RP_DAC_GetRampDownTotalSteps,},
 	{.pattern = "RP:DAC:SEQ:REPetitions", .callback = RP_DAC_SetSequenceRepetitions,},
 	{.pattern = "RP:DAC:SEQ:REPetitions?", .callback = RP_DAC_GetSequenceRepetitions,},
+	{.pattern = "RP:DAC:SEQ:RESETafter", .callback = RP_DAC_SetSequenceResetAfter,},
+	{.pattern = "RP:DAC:SEQ:RESETafter?", .callback = RP_DAC_GetSequenceResetAfter,},
 	{.pattern = "RP:DAC:SEQ:APPend", .callback = RP_DAC_AppendSequence,},
 	{.pattern = "RP:DAC:SEQ:POP", .callback = RP_DAC_PopSequence,},
 	{.pattern = "RP:DAC:SEQ:CLEAR", .callback = RP_DAC_ClearSequences,},

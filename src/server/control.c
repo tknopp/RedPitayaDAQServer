@@ -299,10 +299,14 @@ static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
 		return;
 	}
 
+	bool setReset = false;
+
+	
 	// Translate from global timeline to sequence local timeline
 	int localRepetition = (futureStep - currentSequenceBaseStep) / currentSequence->sequence.data.numStepsPerRepetition;
 	int localStep = (futureStep - currentSequenceBaseStep) % currentSequence->sequence.data.numStepsPerRepetition;
-	sequenceInterval_t interval = computeInterval(&(currentSequence->sequence).data, localRepetition, localStep); 
+	sequence_t * sequence = &currentSequence->sequence;
+	sequenceInterval_t interval = computeInterval(&sequence->data, localRepetition, localStep); 
 
 	// Advance to next sequence
 	if (interval  == DONE) {
@@ -324,27 +328,41 @@ static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
 		enqueue(&configQueue, &currentSequence->sequence.fastConfig, currentSequenceBaseStep);
 
 		// Set Reset for step
-		//setResetDAC(1, currPDMIndex);
+		if (sequence->data.resetAfter) {
+			setReset = true;
+			currentSequenceBaseStep = currentSequenceBaseStep + 1;	
+		}
+		else {
+			// Recompute with new sequence
+			sequence = &currentSequence->sequence;
+			localRepetition = (futureStep - currentSequenceBaseStep) / currentSequence->sequence.data.numStepsPerRepetition;
+			localStep = (futureStep - currentSequenceBaseStep) % currentSequence->sequence.data.numStepsPerRepetition;
+			interval = computeInterval(&sequence->data, localRepetition, localStep);
+		}
 
-		// Recompute with new sequence
-		localRepetition = (futureStep - currentSequenceBaseStep) / currentSequence->sequence.data.numStepsPerRepetition;
-		localStep = (futureStep - currentSequenceBaseStep) % currentSequence->sequence.data.numStepsPerRepetition;
-		interval = computeInterval(&(currentSequence->sequence).data, localRepetition, localStep); 
+		// Register Fast DAC Config
+		enqueue(&configQueue, &currentSequence->sequence.fastConfig, currentSequenceBaseStep);
+
 	} 
 
 	// PDM Value
-	float val = getSequenceVal(&(currentSequence->sequence), localStep, channel);
-	float factor = getFactor(&(currentSequence->sequence).data, localRepetition, localStep);
+	float val = getSequenceVal(sequence, localStep, channel);
+	float factor = getFactor(&sequence->data, localRepetition, localStep);
 	//printf("Step %d factor %f value %f interval %d \n", futureStep, factor, val, computeInterval(&(currentSequence->sequence).data, localRepetition, localStep));
 	if (setPDMValueVolt(factor * val, channel, currPDMIndex) != 0) {
 		printf("Could not set AO[%d] voltage.\n", channel);	
 	}
 
+	// These set a specific bit, while the value abovie writes a whole 16 bit number. Setting needs to happen afterwards
 	// Enable Value
 	if (currentSequence->sequence.data.enableLUT != NULL && interval == REGULAR) {
 		bool temp = currentSequence->sequence.data.enableLUT[localStep * numSlowDACChan + channel];
 		setEnableDAC(temp, channel, currPDMIndex);
 		printf("%d enable", temp);
+	}
+
+	if (setReset) {
+		setResetDAC(1, currPDMIndex);
 	}
 }
 
