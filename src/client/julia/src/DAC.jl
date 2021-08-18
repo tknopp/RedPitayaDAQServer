@@ -3,7 +3,7 @@ export amplitudeDAC, frequencyDAC, phaseDAC, modeDAC,
        waveforms, DACPerformanceData, computeRamping, rampUp, rampUpSteps, rampUpTotalSteps, sequenceRepetitions,
        prepareSlowDAC, slowDACStepsPerFrame, slowDACStepsPerSequence, samplesPerSlowDACStep,
        enableDACLUT, setArbitraryLUT, setConstantLUT, setPauseLUT, setRangeLUT, numSlowDACChan,
-       appendSequence, popSequence, clearSequences, prepareSequence, numLostStepsSlowADC,
+       appendSequence, popSequence, clearSequences, prepareSequence, resetAfterSequence, numLostStepsSlowADC,
        AbstractSequence, ArbitrarySequence, ConstantSequence, PauseSequence, RangeSequence, fastDACConfig
 
 struct DACPerformanceData
@@ -263,6 +263,12 @@ rampDownSteps(rp::RedPitaya, value::Int32) = send(rp, string("RP:DAC:SEQ:RaMPing
 rampDownTotalSteps(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:DOWN:TOTAL?", Int32)
 rampDownTotalSteps(rp::RedPitaya, value::Int32) = send(rp, string("RP:DAC:SEQ:RaMPing:DOWN:TOTAL ", value))
 
+function resetAfterSequence(rp::RedPitaya, val::Bool)
+  valStr = val ? "ON" : "OFF"
+  send(rp, string("RP:DAC:SEQ:RESETafter ", valStr))
+end
+resetAfterSequence(rp::RedPitaya) = occursin("ON", query(rp,"RP:DAC:SEQ:RESETafter?"))
+
 sequenceRepetitions(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:REPetitions?", Int32)
 function sequenceRepetitions(rp::RedPitaya, value::Int)
   send(rp, string("RP:DAC:SEQ:REPetitions ", value))
@@ -285,12 +291,13 @@ mutable struct ArbitrarySequence <: AbstractSequence
   rampUpTotalSteps::Int32
   rampDownSteps::Int32
   rampDownTotalSteps::Int32
-  fastDAC::DACConfig  
+  fastDAC::DACConfig
+  resetAfter::Bool
 end
-ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, rampDownTotalSteps) = ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, rampDownTotalSteps, DACConfig())
-ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps) = ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps, steps, totalSteps, DACConfig())
-ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, (steps, totalSteps)::Tuple) = ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps, steps, totalSteps, DACConfig())
-ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, (upSteps, upTotalSteps)::Tuple, (downSteps, downTotalSteps)::Tuple) = ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, DACConfig())
+ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, rampDownTotalSteps, reset=false) = ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, rampDownTotalSteps, DACConfig(), reset)
+ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps, reset=false) = ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps, steps, totalSteps, DACConfig(), reset)
+ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, (steps, totalSteps)::Tuple, reset=false) = ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps, steps, totalSteps, DACConfig(), reset)
+ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, (upSteps, upTotalSteps)::Tuple, (downSteps, downTotalSteps)::Tuple, reset=false) = ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, DACConfig(), reset)
 
 
 stepsPerRepetition(seq::ArbitrarySequence) = seq.stepsPerRepetition
@@ -301,6 +308,7 @@ rampDownTotalSteps(seq::ArbitrarySequence) = seq.rampDownTotalSteps
 repetitions(seq::ArbitrarySequence) = seq.repetitions
 enableLUT(seq::ArbitrarySequence) = seq.enable
 fastDACConfig(seq::ArbitrarySequence) = seq.fastDAC
+resetAfterSequence(seq::ArbitrarySequence) = seq.resetAfter
 
 mutable struct ConstantSequence <: AbstractSequence
   lut::Array{Float32}
@@ -311,12 +319,13 @@ mutable struct ConstantSequence <: AbstractSequence
   rampUpTotalSteps::Int32
   rampDownSteps::Int32
   rampDownTotalSteps::Int32
-  fastDAC::DACConfig  
+  fastDAC::DACConfig
+  resetAfter::Bool
 end
-ConstantSequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps) = ConstantSequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, DACConfig())
-ConstantSequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps) = ConstantSequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps, steps, totalSteps, DACConfig())
-ConstantSequence(lut, enable, stepsPerRepetition, repetitions, (steps, totalSteps)::Tuple) = ConstantSequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps, steps, totalSteps, DACConfig())
-ConstantSequence(lut, enable, stepsPerRepetition, repetitions, (upSteps, upTotalSteps)::Tuple, (downSteps, downTotalSteps)::Tuple) = ConstantSequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, DACConfig())
+ConstantSequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, reset=false) = ConstantSequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, DACConfig(), reset)
+ConstantSequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps, reset=false) = ConstantSequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps, steps, totalSteps, DACConfig(), reset)
+ConstantSequence(lut, enable, stepsPerRepetition, repetitions, (steps, totalSteps)::Tuple, reset=false) = ConstantSequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps, steps, totalSteps, DACConfig(), reset)
+ConstantSequence(lut, enable, stepsPerRepetition, repetitions, (upSteps, upTotalSteps)::Tuple, (downSteps, downTotalSteps)::Tuple, reset=false) = ConstantSequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, DACConfig(), reset)
 
 
 stepsPerRepetition(seq::ConstantSequence) = seq.stepsPerRepetition
@@ -327,14 +336,16 @@ rampDownTotalSteps(seq::ConstantSequence) = seq.rampDownTotalSteps
 repetitions(seq::ConstantSequence) = seq.repetitions
 enableLUT(seq::ConstantSequence) = seq.enable
 fastDACConfig(seq::ConstantSequence) = seq.fastDAC
+resetAfterSequence(seq::ConstantSequence) = seq.resetAfter
 
 mutable struct PauseSequence <: AbstractSequence
   enable::Union{Array{Bool}, Nothing}
   stepsPerRepetition::Int
   repetitions::Int
-  fastDAC::DACConfig  
+  fastDAC::DACConfig
+  resetAfter::Bool
 end
-PauseSequence(enable, stepsPerRepetition, repetitions) = PauseSequence(enable, stepsPerRepetition, repetitions, DACConfig())
+PauseSequence(enable, stepsPerRepetition, repetitions, reset=false) = PauseSequence(enable, stepsPerRepetition, repetitions, DACConfig(), reset)
 
 stepsPerRepetition(seq::PauseSequence) = seq.stepsPerRepetition
 rampUpSteps(seq::PauseSequence) = Int32(0)
@@ -344,6 +355,7 @@ rampDownTotalSteps(seq::PauseSequence) = Int32(0)
 repetitions(seq::PauseSequence) = seq.repetitions
 enableLUT(seq::PauseSequence) = seq.enable
 fastDACConfig(seq::PauseSequence) = seq.fastDAC
+resetAfterSequence(seq::PauseSequence) = seq.resetAfter
 
 mutable struct RangeSequence <: AbstractSequence
   lut::Array{Float32}
@@ -354,12 +366,13 @@ mutable struct RangeSequence <: AbstractSequence
   rampUpTotalSteps::Int32
   rampDownSteps::Int32
   rampDownTotalSteps::Int32
-  fastDAC::DACConfig  
+  fastDAC::DACConfig
+  resetAfter::Bool
 end
-RangeSequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps) = RangeSequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, DACConfig())
-RangeSequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps) = RangeSequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps, steps, totalSteps, DACConfig())
-RangeSequence(lut, enable, stepsPerRepetition, repetitions, (steps, totalSteps)::Tuple) = RangeSequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps, steps, totalSteps, DACConfig())
-RangeSequence(lut, enable, stepsPerRepetition, repetitions, (upSteps, upTotalSteps)::Tuple, (downSteps, downTotalSteps)::Tuple) = RangeSequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, DACConfig())
+RangeSequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, reset=false) = RangeSequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, DACConfig(), reset)
+RangeSequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps, reset=false) = RangeSequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps, steps, totalSteps, DACConfig(), reset)
+RangeSequence(lut, enable, stepsPerRepetition, repetitions, (steps, totalSteps)::Tuple, reset=false) = RangeSequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps, steps, totalSteps, DACConfig(), reset)
+RangeSequence(lut, enable, stepsPerRepetition, repetitions, (upSteps, upTotalSteps)::Tuple, (downSteps, downTotalSteps)::Tuple, reset=false) = RangeSequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, DACConfig(), reset)
 
 stepsPerRepetition(seq::RangeSequence) = seq.stepsPerRepetition
 rampUpSteps(seq::RangeSequence) = seq.rampUpSteps
@@ -369,6 +382,7 @@ rampDownTotalSteps(seq::RangeSequence) = seq.rampDownTotalSteps
 repetitions(seq::RangeSequence) = seq.repetitions
 enableLUT(seq::RangeSequence) = seq.enable
 fastDACConfig(seq::RangeSequence) = seq.fastDAC
+resetAfterSequence(seq::RangeSequence) = seq.resetAfter
 
 setLUT(rp::RedPitaya, seq::AbstractSequence) = error("Sequence did not implement setLUT")
 
@@ -407,11 +421,14 @@ function appendSequence(rp::RedPitaya, seq::AbstractSequence)
     enableDACLUT(rp, enable)
   end
   configureFastDAC(rp, fastDACConfig(seq), forSequence = true)
+  resetAfterSequence(rp, resetAfterSequence(seq))
   appendSequence(rp)
 end
 
 function length(seq::AbstractSequence)
-  return stepsPerRepetition(seq) * repetitions(seq) + rampUpTotalSteps(seq) + rampDownTotalSteps(seq)
+  result = stepsPerRepetition(seq) * repetitions(seq) + rampUpTotalSteps(seq) + rampDownTotalSteps(seq)
+  result = resetAfterSequence(seq) ? result + 1 : result
+  return result
 end
 
 function start(seq::AbstractSequence)
