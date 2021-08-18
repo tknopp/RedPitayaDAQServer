@@ -2302,6 +2302,7 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   create_bd_pin -dir I -type rst keep_alive_aresetn
   create_bd_pin -dir O -from 31 -to 0 oa_dac
   create_bd_pin -dir O -from 63 -to 0 pdm_sts
+  create_bd_pin -dir O -from 0 -to 0 seq_reset
 
   # Create instance: c_counter_binary_0, and set properties
   set c_counter_binary_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:c_counter_binary:12.0 c_counter_binary_0 ]
@@ -2406,6 +2407,15 @@ CONFIG.DOUT_WIDTH {1} \
 CONFIG.PDM_DATA_WIDTH {64} \
  ] $pdm_multiplexer_0
 
+  # Create instance: reset_slice, and set properties
+  set reset_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 reset_slice ]
+  set_property -dict [ list \
+CONFIG.DIN_FROM {14} \
+CONFIG.DIN_TO {14} \
+CONFIG.DIN_WIDTH {64} \
+CONFIG.DOUT_WIDTH {1} \
+ ] $reset_slice
+
   # Create instance: util_vector_logic_0, and set properties
   set util_vector_logic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_0 ]
   set_property -dict [ list \
@@ -2464,6 +2474,14 @@ CONFIG.LOGO_FILE {data/sym_notgate.png} \
 CONFIG.C_SIZE {4} \
  ] $util_vector_logic_7
 
+  # Create instance: util_vector_logic_8, and set properties
+  set util_vector_logic_8 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_8 ]
+  set_property -dict [ list \
+CONFIG.C_OPERATION {not} \
+CONFIG.C_SIZE {1} \
+CONFIG.LOGO_FILE {data/sym_notgate.png} \
+ ] $util_vector_logic_8
+
   # Create instance: xlconcat_0, and set properties
   set xlconcat_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_0 ]
   set_property -dict [ list \
@@ -2499,7 +2517,8 @@ CONFIG.DOUT_WIDTH {7} \
   connect_bd_net -net pdm_channel_2_slice_Dout [get_bd_pins pdm_2/din] [get_bd_pins pdm_channel_2_slice/Dout]
   connect_bd_net -net pdm_channel_3_slice_Dout [get_bd_pins pdm_3/din] [get_bd_pins pdm_channel_3_slice/Dout]
   connect_bd_net -net pdm_channel_4_slice_Dout [get_bd_pins pdm_4/din] [get_bd_pins pdm_channel_4_slice/Dout]
-  connect_bd_net -net pdm_multiplexer_v1_0_0_pdm_data_out [get_bd_pins enable_dac/Din] [get_bd_pins enable_dac1/Din] [get_bd_pins offset_dac/Din] [get_bd_pins pdm_channel_1_slice/Din] [get_bd_pins pdm_channel_2_slice/Din] [get_bd_pins pdm_channel_3_slice/Din] [get_bd_pins pdm_channel_4_slice/Din] [get_bd_pins pdm_multiplexer_0/pdm_data_out]
+  connect_bd_net -net pdm_multiplexer_v1_0_0_pdm_data_out [get_bd_pins enable_dac/Din] [get_bd_pins enable_dac1/Din] [get_bd_pins offset_dac/Din] [get_bd_pins pdm_channel_1_slice/Din] [get_bd_pins pdm_channel_2_slice/Din] [get_bd_pins pdm_channel_3_slice/Din] [get_bd_pins pdm_channel_4_slice/Din] [get_bd_pins pdm_multiplexer_0/pdm_data_out] [get_bd_pins reset_slice/Din]
+  connect_bd_net -net reset_slice_Dout [get_bd_pins reset_slice/Dout] [get_bd_pins util_vector_logic_8/Op1]
   connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins pdm_1/aresetn] [get_bd_pins pdm_2/aresetn] [get_bd_pins pdm_3/aresetn] [get_bd_pins pdm_4/aresetn] [get_bd_pins util_vector_logic_0/Op1] [get_bd_pins util_vector_logic_1/Op1]
   connect_bd_net -net util_vector_logic_0_Res [get_bd_pins util_vector_logic_0/Res] [get_bd_pins util_vector_logic_2/Op1]
   connect_bd_net -net util_vector_logic_1_Res [get_bd_pins c_counter_binary_0/SCLR] [get_bd_pins util_vector_logic_1/Res]
@@ -2509,6 +2528,7 @@ CONFIG.DOUT_WIDTH {7} \
   connect_bd_net -net util_vector_logic_5_Res [get_bd_pins util_vector_logic_5/Res] [get_bd_pins xlconcat_0/In0]
   connect_bd_net -net util_vector_logic_6_Res [get_bd_pins c_counter_binary_0/CLK] [get_bd_pins util_vector_logic_6/Res]
   connect_bd_net -net util_vector_logic_7_Res [get_bd_pins dout] [get_bd_pins util_vector_logic_7/Res]
+  connect_bd_net -net util_vector_logic_8_Res [get_bd_pins seq_reset] [get_bd_pins util_vector_logic_8/Res]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins util_vector_logic_7/Op1] [get_bd_pins xlconcat_0/dout]
   connect_bd_net -net xlslice_0_Dout [get_bd_pins pdm_multiplexer_0/sample_select] [get_bd_pins xlslice_0/Dout]
 
@@ -2913,6 +2933,14 @@ CONFIG.C_SIZE {1} \
 CONFIG.LOGO_FILE {data/sym_notgate.png} \
  ] $util_vector_logic_1
 
+  # Create instance: util_vector_logic_2, and set properties
+  set util_vector_logic_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_2 ]
+  set_property -dict [ list \
+CONFIG.C_OPERATION {and} \
+CONFIG.C_SIZE {1} \
+CONFIG.LOGO_FILE {data/sym_andgate.png} \
+ ] $util_vector_logic_2
+
   # Create instance: write_to_ram
   create_hier_cell_write_to_ram [current_bd_instance .] write_to_ram
 
@@ -3071,7 +3099,7 @@ CONFIG.DOUT_WIDTH {1} \
   connect_bd_net -net proc_sys_reset_pdm_peripheral_aresetn [get_bd_pins proc_sys_reset_pdm/peripheral_aresetn] [get_bd_pins sequencer/aresetn]
   connect_bd_net -net proc_sys_reset_write_to_ram_peripheral_aresetn [get_bd_pins proc_sys_reset_write_to_ram/peripheral_aresetn] [get_bd_pins write_to_ram/aresetn]
   connect_bd_net -net proc_sys_reset_xadc_peripheral_aresetn [get_bd_pins proc_sys_reset_xadc/peripheral_aresetn] [get_bd_pins xadc_wiz_0/s_axi_aresetn]
-  connect_bd_net -net reset_manager_0_fourier_synth_aresetn [get_bd_pins proc_sys_reset_fourier_synth/ext_reset_in] [get_bd_pins reset_manager_0/fourier_synth_aresetn]
+  connect_bd_net -net reset_manager_0_fourier_synth_aresetn [get_bd_pins reset_manager_0/fourier_synth_aresetn] [get_bd_pins util_vector_logic_2/Op1]
   connect_bd_net -net reset_manager_0_led [get_bd_ports led_o] [get_bd_pins reset_manager_0/led]
   connect_bd_net -net reset_manager_0_pdm_aresetn [get_bd_pins proc_sys_reset_pdm/ext_reset_in] [get_bd_pins reset_manager_0/pdm_aresetn]
   connect_bd_net -net reset_manager_0_reset_sts [get_bd_pins reset_manager_0/reset_sts] [get_bd_pins system/reset_sts]
@@ -3081,6 +3109,7 @@ CONFIG.DOUT_WIDTH {1} \
   connect_bd_net -net selectio_wiz_1_data_out_to_pins_p [get_bd_ports daisy_p_o] [get_bd_pins selectio_wiz_1/data_out_to_pins_p]
   connect_bd_net -net selectio_wiz_2_clk_out [get_bd_pins clk_wiz_1/clk_in1] [get_bd_pins selectio_wiz_2/clk_out]
   connect_bd_net -net sequencer_enable_dac [get_bd_pins fourier_synth_standard/enable_dac] [get_bd_pins sequencer/enable_dac]
+  connect_bd_net -net sequencer_seq_reset [get_bd_pins sequencer/seq_reset] [get_bd_pins util_vector_logic_2/Op2]
   connect_bd_net -net system_FCLK_RESET0_N [get_bd_pins system/FCLK_RESET0_N] [get_bd_pins util_vector_logic_1/Op1]
   connect_bd_net -net system_cfg_data [get_bd_pins fourier_synth_standard/cfg_data] [get_bd_pins system/dac_cfg]
   connect_bd_net -net system_cfg_data1 [get_bd_pins system/cfg_data] [get_bd_pins xlslice_0/Din] [get_bd_pins xlslice_1/Din] [get_bd_pins xlslice_2/Din] [get_bd_pins xlslice_3/Din] [get_bd_pins xlslice_4/Din] [get_bd_pins xlslice_5/Din]
@@ -3088,6 +3117,7 @@ CONFIG.DOUT_WIDTH {1} \
   connect_bd_net -net util_ds_buf_0_OBUF_DS_N [get_bd_ports adc_enc_n_o] [get_bd_pins util_ds_buf_0/OBUF_DS_N]
   connect_bd_net -net util_ds_buf_0_OBUF_DS_P [get_bd_ports adc_enc_p_o] [get_bd_pins util_ds_buf_0/OBUF_DS_P]
   connect_bd_net -net util_vector_logic_0_Res [get_bd_pins clk_wiz_0/clk_in_sel] [get_bd_pins util_vector_logic_0/Res]
+  connect_bd_net -net util_vector_logic_2_Res [get_bd_pins proc_sys_reset_fourier_synth/ext_reset_in] [get_bd_pins util_vector_logic_2/Res]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins system/adc_sts] [get_bd_pins write_to_ram/sts_data]
   connect_bd_net -net xlconcat_0_dout1 [get_bd_ports dac_pwm_o] [get_bd_pins sequencer/dout]
   connect_bd_net -net xlconcat_0_dout2 [get_bd_pins system/sts_data] [get_bd_pins xlconcat_0/dout]
@@ -3133,4 +3163,6 @@ CONFIG.DOUT_WIDTH {1} \
 
 create_root_design ""
 
+
+common::send_msg_id "BD_TCL-1000" "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
