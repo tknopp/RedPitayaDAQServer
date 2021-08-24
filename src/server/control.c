@@ -358,7 +358,6 @@ static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
 	if (currentSequence->sequence.data.enableLUT != NULL && interval == REGULAR) {
 		bool temp = currentSequence->sequence.data.enableLUT[localStep * numSlowDACChan + channel];
 		setEnableDAC(temp, channel, currPDMIndex);
-		printf("%d enable", temp);
 	}
 
 	if (setReset) {

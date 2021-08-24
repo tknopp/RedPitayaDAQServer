@@ -482,8 +482,20 @@ int setEnableDAC(int8_t value, int channel, int index) {
 	return 0;
 }
 
+int setResetDAC(int8_t value, int index) {
+	if (value < 0 || value >= 2) 
+		return -1;
 
-
+	printf("%d before reset pdm\n", *((int16_t *)(pdm_cfg + 2*(0+4*index)))); 
+	int bitpos = 14;
+	// Reset bit is in the 1-th channel
+	// clear the bit
+	*((int16_t *)(pdm_cfg + 2*(0+4*index))) &= ~(1u << bitpos);
+	// set the bit
+	*((int16_t *)(pdm_cfg + 2*(0+4*index))) |= (value << bitpos);
+	printf("%d reset pdm\n", *((int16_t *)(pdm_cfg + 2*(0+4*index)))); 	
+	return 0;
+}
 
 int setPDMRegisterValue(uint64_t value, int index) {
 	//printf("setPDMRegisterValue: value=%llu index=%d \n", value, index);
