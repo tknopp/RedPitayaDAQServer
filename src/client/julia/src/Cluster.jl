@@ -1,4 +1,4 @@
-export RedPitayaCluster, master, readDataPeriods, numChan, readDataSlow, readFrames, readPeriods, readPipelinedSamples, startPipelinedData, collectSamples!, readData, readDataPeriods, convertSamplesToFrames!, convertSamplesToFrames
+export RedPitayaCluster, master, readDataPeriods, numChan, readDataSlow, readFrames, readPeriods, readPipelinedSamples, startPipelinedData, collectSamples!, readData, readDataPeriods, convertSamplesToFrames!, convertSamplesToFrames, SampleChunk
 
 import Base: length, iterate, getindex, firstindex, lastindex
 
@@ -209,6 +209,11 @@ end
 
 include("ClusterView.jl")
 
+struct SampleChunk
+  samples::Matrix{Int16}
+  performance::Vector{PerformanceData}
+end
+
 function startPipelinedData(rpc::RedPitayaCluster, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
   for rp in rpc
     startPipelinedData(rp, reqWP, numSamples, chunkSize)
@@ -309,7 +314,7 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
 
 end
 
-function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64, channel::Channel; chunkSize::Int64 = 25000, rpInfo=nothing)
+function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64, channel::Channel; chunkSize::Int64 = 25000)
   numOfReceivedSamples = 0
   chunkBuffer = zeros(Int16, chunkSize * 2, length(rpu))
 
@@ -317,17 +322,18 @@ function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCl
   while numOfReceivedSamples < numOfRequestedSamples
     wpRead = wpStart + numOfReceivedSamples
     chunk = min(numOfRequestedSamples - numOfReceivedSamples, chunkSize)
-    collectSamples!(rpu, wpRead, chunk, channel, chunkBuffer, rpInfo=rpInfo)
+    collectSamples!(rpu, wpRead, chunk, channel, chunkBuffer)
     numOfReceivedSamples += chunk
   end
 
 end
 
-function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpRead::Int64, chunk::Int64, channel::Channel, chunkBuffer; rpInfo=nothing)
+function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpRead::Int64, chunk::Int64, channel::Channel, chunkBuffer)
   done = zeros(Bool, length(rpu))
   iterationDone = Condition()
   timeoutHappened = false
   result = zeros(Int16, numChan(rpu), chunk)
+  performances = Vector{PerformanceData}(undef, length(rpu))
 
 
   for (d, rp) in enumerate(rpu)
@@ -337,19 +343,7 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
       samples = reshape(u, 2, chunk)
       result[2*d-1, :] = samples[1, :]
       result[2*d, :] = samples[2, :]
-
-      # Status
-      if perf.status.overwritten
-        @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) was overwritten"
-      end
-      if perf.status.corrupted
-        @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) might have been corrupted"
-      end
-
-      # Performance
-      if !isnothing(rpInfo)
-        push!(rpInfo.performances[d].data, perf)
-      end
+      performances[d] = perf
 
       done[d] = true
       if (all(done))
@@ -372,7 +366,7 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
     error("Timout reached when reading from sockets")
   end
 
-  put!(channel, result)
+  put!(channel, SampleChunk(result, performances))
 
 end
 
