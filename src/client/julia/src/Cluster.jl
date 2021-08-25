@@ -191,6 +191,8 @@ function appendSequence(rpc::RedPitayaCluster, index, seq::AbstractSequence)
   appendSequence(rpc[index], seq)
 end
 
+computeRamping(rpc::RedPitayaCluster, time, fraction) = computeRamping(master(rpc), time, fraction)
+
 modeDAC(rpc::RedPitayaCluster) = modeDAC(master(rpc))
 
 function modeDAC(rpc::RedPitayaCluster, mode::String)
