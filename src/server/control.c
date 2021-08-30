@@ -287,9 +287,9 @@ static void initSlowDAC() {
 
 static void cleanUpSlowDAC() {
 	stopTx();
-	cleanUpSequenceList();
+	//cleanUpSequenceList();
 	seqState = FINISHED;
-	printf("Seq cleaned/finished\n");
+	printf("Seq finished\n");
 }
 
 static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {

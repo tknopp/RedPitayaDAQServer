@@ -40,7 +40,7 @@ static scpi_result_t RP_Init(scpi_t * context) {
 		initialized = true;
 	}
 
-	cleanUpSequenceList();
+	//cleanUpSequenceList();
 
 	return SCPI_RES_OK;
 }
@@ -1472,8 +1472,12 @@ static scpi_result_t RP_DAC_PopSequence(scpi_t * context) {
 
 static scpi_result_t RP_DAC_ClearSequences(scpi_t * context) {
 	if (!isSequenceConfigurable()) {
-		cleanUpSequenceList();
+		return SCPI_RES_ERR;
 	}
+
+	printf("Cleared Sequences\n");
+	cleanUpSequenceList();
+
 	return SCPI_RES_OK;
 }
 
