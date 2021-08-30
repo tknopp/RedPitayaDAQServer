@@ -73,7 +73,7 @@ for op in [:periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset, :s
   end
 end
 
-for op in [:connectADC, :stopADC, :disconnect, :connect, :prepareSequence]
+for op in [:connectADC, :stopADC, :disconnect, :connect, :prepareSequence, :clearSequence]
   @eval begin
     function $op(rpc::RedPitayaCluster)
       for rp in rpc

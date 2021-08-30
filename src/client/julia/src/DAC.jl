@@ -3,7 +3,7 @@ export amplitudeDAC, frequencyDAC, phaseDAC, modeDAC,
        waveforms, DACPerformanceData, computeRamping, rampUp, rampUpSteps, rampUpTotalSteps, sequenceRepetitions,
        prepareSlowDAC, slowDACStepsPerFrame, slowDACStepsPerSequence, samplesPerSlowDACStep,
        enableDACLUT, setArbitraryLUT, setConstantLUT, setPauseLUT, setRangeLUT, numSlowDACChan,
-       appendSequence, popSequence, clearSequences, prepareSequence, resetAfterSequence, numLostStepsSlowADC,
+       appendSequence, popSequence, clearSequence, prepareSequence, resetAfterSequence, numLostStepsSlowADC,
        AbstractSequence, ArbitrarySequence, ConstantSequence, PauseSequence, RangeSequence, fastDACConfig
 
 struct DACPerformanceData
@@ -276,7 +276,7 @@ end
 
 appendSequence(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:APPend")
 popSequence(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:POP")
-clearSequences(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:CLEAR")
+clearSequence(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:CLEAR")
 prepareSequence(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:PREPare?", Bool)
 
 # Helper function for sequences
