@@ -389,26 +389,30 @@ static void setLUTValuesFrom(uint64_t baseStep) {
 
 
 bool prepareSequences() {
-	if ((seqState == CONFIG || seqState == PREPARED) && !isSequenceListEmpty()) {
-		printf("Preparing Sequence\n");
-		initSlowDAC();
-		// Init Sequence Iteration
-		currentSequenceBaseStep = 0;
-		currentSequence = head;
-		if (currentSequence != NULL)
-			configureFastDAC(&currentSequence->sequence.fastConfig);
-		lastStep = INT_MAX;
-		// Init Perfomance
-		avgDeltaControl = 0;
-		avgDeltaSet = 0;
-		minDeltaControl = 0xFF;
-		maxDeltaSet = 0x00;
-		// Init Sleep
-		sleepTime = baseSleep;
-		// Set first values
-		setLUTValuesFrom(0);
-		seqState = PREPARED;
-		printf("Prepared Sequence\n");
+	if ((seqState == CONFIG || seqState == PREPARED)) {
+		if (!isSequenceListEmpty()) {
+			printf("Preparing Sequence\n");
+			initSlowDAC();
+			// Init Sequence Iteration
+			currentSequenceBaseStep = 0;
+			currentSequence = head;
+			if (currentSequence != NULL)
+				configureFastDAC(&currentSequence->sequence.fastConfig);
+			lastStep = INT_MAX;
+			// Init Perfomance
+			avgDeltaControl = 0;
+			avgDeltaSet = 0;
+			minDeltaControl = 0xFF;
+			maxDeltaSet = 0x00;
+			// Init Sleep
+			sleepTime = baseSleep;
+			// Set first values
+			setLUTValuesFrom(0);
+			seqState = PREPARED;
+			printf("Prepared Sequence\n");
+		} else {
+			printf("No sequence to prepare\n");
+		}
 		return true;
 	}
 	return false;
