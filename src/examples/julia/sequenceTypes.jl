@@ -15,6 +15,10 @@ periods_per_frame = 50 # about 0.5 s frame length
 frame_period = dec*samples_per_period*periods_per_frame / base_frequency
 slow_dac_periods_per_frame = div(50, periods_per_step)
 
+stopADC(rp)
+masterTrigger(rp, false)
+clearSequence(rp)
+
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
 periodsPerFrame(rp, periods_per_frame)
@@ -43,6 +47,7 @@ clf()
 masterTrigger(rp, false)
 
 # Lookup Sequence
+clearSequence(rp)
 amplitudeDAC(rp, 1, 1, 0.1)
 lut = collect(range(0,0.7,length=slow_dac_periods_per_frame))
 seq = ArbitrarySequence(lut, nothing, slow_dac_periods_per_frame, 2, 0, 0)
@@ -61,6 +66,7 @@ masterTrigger(rp, false)
 
 sleep(0.1)
 # Constant Sequence
+clearSequence(rp)
 amplitudeDAC(rp, 1, 1, 0.1) # Amplitude is set to zero after a sequence
 lut = [0.2]
 seq = ConstantSequence(lut, nothing, slow_dac_periods_per_frame, 2, 0, 0)
@@ -79,6 +85,7 @@ masterTrigger(rp, false)
 
 sleep(0.1)
 # Pause Sequence
+clearSequence(rp)
 amplitudeDAC(rp, 1, 1, 0.1)
 seq = PauseSequence(nothing, slow_dac_periods_per_frame, 2)
 appendSequence(master(rp), seq)
@@ -96,6 +103,7 @@ masterTrigger(rp, false)
 
 sleep(0.1)
 # Range Sequence
+clearSequence(rp)
 amplitudeDAC(rp, 1, 1, 0.1)
 lut = [-1.0, 2.0/slow_dac_periods_per_frame]
 seq = RangeSequence(lut, nothing, slow_dac_periods_per_frame, 2, 0, 0)
@@ -111,5 +119,6 @@ plot(vec(uCurrentFrame[:, 1, :, :]))
 title("Range")
 stopADC(rp)
 masterTrigger(rp, false)
+clearSequence(rp)
 
 fig

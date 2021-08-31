@@ -12,6 +12,7 @@ base_frequency = 125000000
 samples_per_period = div(modulus, dec)
 periods_per_frame = 5
 
+clearSequence(rp)
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
 periodsPerFrame(rp, periods_per_frame)
@@ -59,6 +60,8 @@ samples5 = readPipelinedSamples(rp, (length(seq1) + length(seq2) + length(seq3) 
 samplesAll = readPipelinedSamples(rp, 0, (length(seq1) + length(seq2) + length(seq3) + length(seq4) + length(seq5)) * div(4800, dec))
 stopADC(rp)
 masterTrigger(rp, false)
+clearSequence(rp)
+
 
 fig = figure(1)
 clf()

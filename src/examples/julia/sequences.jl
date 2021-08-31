@@ -15,6 +15,10 @@ periods_per_frame = 50 # about 0.5 s frame length
 frame_period = dec*samples_per_period*periods_per_frame / base_frequency
 slow_dac_periods_per_frame = div(50, periods_per_step)
 
+stopADC(rp)
+masterTrigger(rp, false)
+clearSequence(rp)
+
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
 periodsPerFrame(rp, periods_per_frame)
@@ -59,7 +63,7 @@ sleep(0.1)
 uCurrentFrame = readFrames(rp, 0, 7)
 stopADC(rp)
 masterTrigger(rp, false)
-
+clearSequence(rp)
 
 plot(vec(uCurrentFrame[:, 1, :, :]))
 title("Two sequences")
