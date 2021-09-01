@@ -1485,7 +1485,6 @@ static scpi_result_t RP_DAC_ClearSequences(scpi_t * context) {
 static scpi_result_t RP_DAC_PrepareSequences(scpi_t * context) {
 	bool result = false;
 	if (!getMasterTrigger() && isSequenceConfigurable() ) {
-		printf("Trying to prepare!\n");
 		result = prepareSequences();
 	}
 	SCPI_ResultBool(context, result);
