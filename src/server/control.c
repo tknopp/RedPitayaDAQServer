@@ -288,7 +288,7 @@ static void initSlowDAC() {
 static void cleanUpSlowDAC() {
 	stopTx();
 	//cleanUpSequenceList();
-	seqState = FINISHED;
+	seqState = CONFIG;
 	printf("Seq finished\n");
 }
 
