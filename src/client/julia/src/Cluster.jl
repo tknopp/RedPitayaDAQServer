@@ -73,7 +73,7 @@ for op in [:periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset, :s
   end
 end
 
-for op in [:connectADC, :stopADC, :disconnect, :connect, :prepareSequence, :clearSequence]
+for op in [:connectADC, :stopADC, :disconnect, :connect, :clearSequence]
   @eval begin
     function $op(rpc::RedPitayaCluster)
       for rp in rpc
@@ -189,6 +189,14 @@ end
 
 function appendSequence(rpc::RedPitayaCluster, index, seq::AbstractSequence)
   appendSequence(rpc[index], seq)
+end
+
+function prepareSequence(rpc::RedPitayaCluster)
+  success = [false for i = 1:length(rpc)]
+  @sync for (i, rp) in enumerate(rpc)
+    @async success[i] = prepareSequence(rp)
+  end
+  all(success)
 end
 
 computeRamping(rpc::RedPitayaCluster, stepsPerSeq, time, fraction) = computeRamping(master(rpc), stepsPerSeq, time, fraction)
