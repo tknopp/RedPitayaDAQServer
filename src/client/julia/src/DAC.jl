@@ -402,13 +402,16 @@ function setLUT(rp::RedPitaya, seq::RangeSequence)
   setValueLUT(rp, seq.lut, "RANGE")
 end
 
-function computeRamping(dec, samplesPerStep, rampTime, rampFraction)
+function computeRamping(dec, samplesPerStep, stepsPerSeq, rampTime, rampFraction)
   bandwidth = 125e6/dec
-  totalSteps = Int32(ceil(rampTime/(samplesPerStep/bandwidth)))
+  samplesPerRotation = samplesPerStep * stepsPerSeq
+  totalRotations = Int32(ceil(rampTime/(samplesPerRotation/bandwidth)))
+  totalSteps = totalRotations * stepsPerSeq
   steps = Int32(ceil(rampTime * rampFraction/(samplesPerStep/bandwidth)))
+  #@show samplesPerRotation totalRotations totalSteps steps rampTime rampFraction
   return (steps, totalSteps)
 end
-computeRamping(rp::RedPitaya, rampTime, rampFraction) = computeRamping(decimation(rp), samplesPerSlowDACStep(rp), rampTime, rampFraction)
+computeRamping(rp::RedPitaya, stepsPerSeq ,rampTime, rampFraction) = computeRamping(decimation(rp), samplesPerSlowDACStep(rp), stepsPerSeq, rampTime, rampFraction)
 
 function appendSequence(rp::RedPitaya, seq::AbstractSequence)
   slowDACStepsPerSequence(rp, stepsPerRepetition(seq))
