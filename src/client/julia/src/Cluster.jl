@@ -11,8 +11,8 @@ function RedPitayaCluster(hosts::Vector{String}, port=5025)
   # the first RP is the master
   rps = RedPitaya[ RedPitaya(host, port, i==1) for (i,host) in enumerate(hosts) ]
 
-  for rp in rps
-    triggerMode(rp, "EXTERNAL")
+  @sync for rp in rps
+    @async triggerMode(rp, "EXTERNAL")
   end
 
   return RedPitayaCluster(rps)
@@ -66,8 +66,8 @@ for op in [:periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset, :s
   @eval $op(rpc::RedPitayaCluster) = $op(master(rpc))
   @eval begin
     function $op(rpc::RedPitayaCluster, value)
-      for rp in rpc
-        $op(rp, value)
+      @sync for rp in rpc
+        @async $op(rp, value)
       end
     end
   end
@@ -76,16 +76,16 @@ end
 for op in [:connectADC, :stopADC, :disconnect, :connect, :clearSequence]
   @eval begin
     function $op(rpc::RedPitayaCluster)
-      for rp in rpc
-        $op(rp)
+      @sync for rp in rpc
+        @async $op(rp)
       end
     end
   end
 end
 
 function startADC(rpc::RedPitayaCluster)
-  for rp in rpc
-    startADC(rp)
+  @sync for rp in rpc
+    @async startADC(rp)
   end
 end
 
@@ -104,8 +104,8 @@ bufferSize(rpc::RedPitayaCluster) = bufferSize(master(rpc))
 
 # "TRIGGERED" or "CONTINUOUS"
 function ramWriterMode(rpc::RedPitayaCluster, mode::String)
-  for rp in rpc
-    ramWriterMode(rp, mode)
+  @sync for rp in rpc
+    @async ramWriterMode(rp, mode)
   end
 end
 
@@ -160,30 +160,37 @@ function offsetDAC(rpc::RedPitayaCluster, chan::Integer)
 end
 
 function numSlowADCChan(rpc::RedPitayaCluster)
-  tmp = [ numSlowADCChan(rp) for rp in rpc]
+  tmp = [0 for rp in rpc]
+  @sync for (d, rp) in enumerate(rpc)
+    @async tmp[d] = numSlowADCChan(rp)
+  end
   return sum(tmp)
 end
 
 function numSlowADCChan(rpc::RedPitayaCluster, num)
-  for rp in rpc
-    numSlowADCChan(rp, num)
+  @sync for rp in rpc
+    @async numSlowADCChan(rp, num)
   end
   return
 end
 
 function passPDMToFastDAC(rpc::RedPitayaCluster, val::Vector{Bool})
-  for (d,rp) in enumerate(rpc)
-    passPDMToFastDAC(rp, val[d])
+  @sync for (d,rp) in enumerate(rpc)
+    @async passPDMToFastDAC(rp, val[d])
   end
 end
 
 function passPDMToFastDAC(rpc::RedPitayaCluster)
-  return [ passPDMToFastDAC(rp) for rp in rpc]
+  result = [false for rp in rpc]
+  @sync for (d, rp) in enumerate(rpc)
+    @async result[d] = passPDMToFastDAC(rp)
+  end
+  return result
 end
 
 function appendSequence(rpc::RedPitayaCluster, seq::AbstractSequence)
-  for rp in rpc 
-    appendSequence(rp, seq)
+  @sync for rp in rpc 
+    @async appendSequence(rp, seq)
   end
 end
 
@@ -192,7 +199,7 @@ function appendSequence(rpc::RedPitayaCluster, index, seq::AbstractSequence)
 end
 
 function prepareSequence(rpc::RedPitayaCluster)
-  success = [false for i = 1:length(rpc)]
+  success = [false for rp in rpc]
   @sync for (i, rp) in enumerate(rpc)
     @async success[i] = prepareSequence(rp)
   end
@@ -204,14 +211,14 @@ computeRamping(rpc::RedPitayaCluster, stepsPerSeq, time, fraction) = computeRamp
 modeDAC(rpc::RedPitayaCluster) = modeDAC(master(rpc))
 
 function modeDAC(rpc::RedPitayaCluster, mode::String)
-  for rp in rpc
-    modeDAC(rp, mode)
+  @sync for rp in rpc
+    @async modeDAC(rp, mode)
   end
 end
 
 function slowDACInterpolation(rpc::RedPitayaCluster, enable::Bool)
-  for rp in rpc
-    slowDACInterpolation(rp, enable)
+  @sync for rp in rpc
+    @async slowDACInterpolation(rp, enable)
   end
 end
 
@@ -223,8 +230,8 @@ struct SampleChunk
 end
 
 function startPipelinedData(rpc::RedPitayaCluster, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
-  for rp in rpc
-    startPipelinedData(rp, reqWP, numSamples, chunkSize)
+  @sync for rp in rpc
+    @async startPipelinedData(rp, reqWP, numSamples, chunkSize)
   end
 end
 

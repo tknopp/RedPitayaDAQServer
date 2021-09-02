@@ -79,7 +79,7 @@ end
 
 # Helper functions for readData functions in Cluster.jl
 function startPipelinedData(rpcv::RedPitayaClusterView, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
-    for rp in rpcv
-        startPipelinedData(rp, reqWP, numSamples, chunkSize)
+    @sync for rp in rpcv
+        @async startPipelinedData(rp, reqWP, numSamples, chunkSize)
     end
 end
