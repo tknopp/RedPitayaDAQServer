@@ -35,7 +35,7 @@ triggerMode(rp, "INTERNAL")
 slowDACStepsPerFrame(rp, slow_dac_periods_per_frame)
 numSlowDACChan(master(rp), 1)
 lut = collect(range(0,0.7,length=slow_dac_periods_per_frame))
-seq = ArbitrarySequence(lut, nothing, slow_dac_periods_per_frame, 2, 0.0, 0.0)
+seq = ArbitrarySequence(lut, nothing, slow_dac_periods_per_frame, 2, computeRamping(master(rp), frame_period * 2, 0.5))
 appendSequence(master(rp), seq)
 prepareSequence(master(rp))
 
@@ -44,10 +44,10 @@ startADC(rp)
 masterTrigger(rp, true)
 
 sleep(0.1)
+samples_per_step = (samples_per_period * periods_per_frame)/slow_dac_periods_per_frame
+uCurrentFrame = readFrames(rp, div(start(seq)*samples_per_step, samples_per_period * periods_per_frame), 2)
 
-uCurrentFrame = readFrames(rp, 0, 2)
-
-figure(1)
+fig = figure(1)
 clf()
 plot(vec(uCurrentFrame[:,1,:,:]))
 plot(vec(uCurrentFrame[:,2,:,:]))
@@ -58,3 +58,4 @@ savefig("images/slowDAC.png")
 stopADC(rp)
 masterTrigger(rp, false)
 
+fig
