@@ -33,7 +33,8 @@ static uint64_t oldSlowDACStepTotal;
 static int  sleepTime = 0;
 static int baseSleep = 20;
 
-static sequenceNode_t *current; 
+static sequenceNode_t *currentSequence; 
+static configNode_t *configQueue;
 static int lastStep = INT_MAX;
 
 static int lookahead = 110;
@@ -117,6 +118,58 @@ void cleanUpSequenceList() {
 	tail = NULL;
 }
 
+void enqueue(configNode_t ** queue, fastDACConfig_t *config, int stepStart) {
+	configNode_t* temp = calloc(1, sizeof(configNode_t));
+	temp->config = config;
+	temp->startStep = stepStart;
+
+	if (*queue == NULL) {
+		*queue = temp;
+		return;
+	}
+
+	configNode_t *current = *queue;
+	while(current->next != NULL) 
+		current = current->next;
+
+	current->next = temp;
+}
+
+fastDACConfig_t* dequeue(configNode_t** queue) {
+	configNode_t* temp = *queue;
+	if (temp == NULL)
+		return NULL;
+	
+	fastDACConfig_t* result = temp->config;
+
+	*queue = temp->next;
+	free(temp);
+	return result;
+}
+
+static void configureFastDAC(fastDACConfig_t * config) {
+	if (config == NULL)
+		return;
+
+	for (int ch = 0; ch < 2; ch ++) {
+		for (int cmp = 0; cmp < 4; cmp++) {
+			int index = ch * 4 + cmp;
+			if (config->amplitudesSet[index])
+				setAmplitude(config->amplitudes[index], ch, cmp);
+			if (config->frequencySet[index])
+				setFrequency(config->frequency[index], ch, cmp);
+			if (config->phaseSet[index])
+				setPhase(config->phase[index], ch, cmp);
+		}
+		if (config->offsetSet[ch])
+			setOffset(config->offset[ch], ch);
+		if (config->signalTypeSet[ch])
+			setSignalType(ch, config->signalType[ch]);
+		if (config->jumpSharpnessSet[ch])
+			setJumpSharpness(ch, config->jumpSharpness[ch]);
+	}
+}
+
 bool isSequenceConfigurable() {
 	return !rxEnabled && (seqState == CONFIG || seqState == PREPARED || seqState == FINISHED);
 }
@@ -161,27 +214,18 @@ sequenceInterval_t computeInterval(sequenceData_t *seqData, int localRepetition,
 	int stepInSequence = seqData->numStepsPerRepetition * localRepetition + localStep;
 	//printf("%d stepInSequence ", stepInSequence);
 	//Regular
-	if (seqData->rampingRepetitions <= localRepetition && localRepetition < seqData->rampingRepetitions + seqData->numRepetitions) {
+	if (seqData->rampUpSteps <= stepInSequence && stepInSequence < seqData->rampUpTotalSteps + (seqData->numStepsPerRepetition * seqData->numRepetitions) + (seqData->rampDownTotalSteps - seqData->rampDownSteps)) {
 		return REGULAR;
 	} 
 	//RampUp
-	else if (localRepetition < seqData->rampingRepetitions) {
-		// Before the last rampingSteps in rampup intervall
-		if (stepInSequence < seqData->rampingTotalSteps - seqData->rampingSteps) {
-			return BEFORE;
-		}
-		else {
-			return RAMPUP;
-		}
+	else if (stepInSequence < seqData->rampUpSteps) {
+		return RAMPUP;
 	}
 	//RampDown
 	else {
-		int stepsInRampUpandRegular = seqData->numStepsPerRepetition * (seqData->rampingRepetitions + seqData->numRepetitions);
-		if (stepInSequence <= stepsInRampUpandRegular + seqData->rampingSteps) {
+		int stepsInRampUpandRegular = (seqData->numStepsPerRepetition * seqData->numRepetitions) + seqData->rampUpTotalSteps;
+		if (stepInSequence < stepsInRampUpandRegular + seqData->rampDownTotalSteps)  {
 			return RAMPDOWN;
-		}
-		else if (stepInSequence <= stepsInRampUpandRegular + seqData->rampingTotalSteps)  {
-			return AFTER;
 		}
 		else {
 			return DONE;
@@ -193,6 +237,11 @@ static float rampingFunction(float numerator, float denominator) {
 	return (0.9640 + tanh(-2.0 + (numerator / denominator) * 4.0)) / 1.92806;
 }
 
+static float clamp(double val, double min, double max) {
+	double temp = val < min ? min : val;
+	return temp > max ? max : temp;
+}
+
 static float getFactor(sequenceData_t *seqData, int localRepetition, int localStep) {
 
 	switch(computeInterval(seqData, localRepetition, localStep)) {
@@ -201,28 +250,27 @@ static float getFactor(sequenceData_t *seqData, int localRepetition, int localSt
 		case RAMPUP:
 			; // Empty statement to allow declaration in switch
 			// Step in Ramp up so far = how many steps so far - when does ramp up start
-			int stepInRampUp = (seqData->numStepsPerRepetition * localRepetition + localStep)
-				- (seqData->rampingTotalSteps - seqData->rampingSteps - 1);
-			return rampingFunction((float) stepInRampUp, (float) seqData->rampingSteps - 1);
+			int stepInRampUp = (seqData->numStepsPerRepetition * localRepetition + localStep) - 0;
+			return clamp(rampingFunction((float) stepInRampUp, (float) seqData->rampUpSteps - 1), 0.0, 1.0);
 		case RAMPDOWN:
 			; // See above
-			int stepsUpToRampDown = seqData->numStepsPerRepetition * (seqData->rampingRepetitions + seqData->numRepetitions);
+			int stepsUpToRampDown = (seqData->numStepsPerRepetition * seqData->numRepetitions) + seqData->rampUpTotalSteps + (seqData->rampDownTotalSteps - seqData->rampDownSteps);
 			int stepsInRampDown = (seqData->numStepsPerRepetition * localRepetition + localStep) - stepsUpToRampDown;
-			return rampingFunction((float) (seqData->rampingSteps - stepsInRampDown), (float) seqData->rampingSteps - 1);
-		case BEFORE:
-		case AFTER:
+			//printf("stepsUpTo %d, rampDownSteps %d, stepsInRampDown %d\n", stepsUpToRampDown, seqData->rampDownSteps, stepsInRampDown);
+			return clamp(rampingFunction((float) (seqData->rampDownSteps - stepsInRampDown), (float) seqData->rampDownSteps - 1), 0.0, 1.0);
 		case DONE:
 		default:
 			return 0.0;
 	}
 }
 
-void setupRampingTiming(sequenceData_t *seqData, double rampUpTime, double rampUpFraction) {
+void setupRampingTiming(sequenceData_t *seqData, double rampUpTime, double rampUpFraction, double rampDownTime, double rampDownFraction) {
 	double bandwidth = 125e6 / getDecimation();
 	double period = (numSamplesPerSlowDACStep * seqData->numStepsPerRepetition) / bandwidth;
-	seqData->rampingRepetitions = ceil(rampUpTime / period);
-	seqData->rampingTotalSteps = ceil(rampUpTime / (numSamplesPerSlowDACStep / bandwidth));
-	seqData->rampingSteps = ceil(rampUpTime * rampUpFraction / (numSamplesPerSlowDACStep / bandwidth));
+	seqData->rampUpTotalSteps = ceil(rampUpTime / (numSamplesPerSlowDACStep / bandwidth));
+	seqData->rampUpSteps = ceil(rampUpTime * rampUpFraction / (numSamplesPerSlowDACStep / bandwidth));
+	seqData->rampDownTotalSteps = ceil(rampDownTime / (numSamplesPerSlowDACStep / bandwidth));
+	seqData->rampDownSteps = ceil(rampDownTime * rampDownFraction / (numSamplesPerSlowDACStep / bandwidth));
 }
 
 static void initSlowDAC() {
@@ -239,30 +287,35 @@ static void initSlowDAC() {
 
 static void cleanUpSlowDAC() {
 	stopTx();
-	cleanUpSequenceList();
-	seqState = FINISHED;
-	printf("Seq cleaned/finished\n");
+	//cleanUpSequenceList();
+	seqState = CONFIG;
+	printf("Seq finished\n");
 }
 
 static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
-	if (current == NULL) {
+	if (currentSequence == NULL) {
 		setPDMValueVolt(0.0, channel, currPDMIndex);
 		setEnableDAC(false, channel, currPDMIndex);
 		return;
 	}
 
+	bool setReset = false;
+
+	
 	// Translate from global timeline to sequence local timeline
-	int localRepetition = (futureStep - currentSequenceBaseStep) / current->sequence.data.numStepsPerRepetition;
-	int localStep = (futureStep - currentSequenceBaseStep) % current->sequence.data.numStepsPerRepetition;
-	sequenceInterval_t interval = computeInterval(&(current->sequence).data, localRepetition, localStep); 
+	int localRepetition = (futureStep - currentSequenceBaseStep) / currentSequence->sequence.data.numStepsPerRepetition;
+	int localStep = (futureStep - currentSequenceBaseStep) % currentSequence->sequence.data.numStepsPerRepetition;
+	sequence_t * sequence = &currentSequence->sequence;
+	sequenceInterval_t interval = computeInterval(&sequence->data, localRepetition, localStep); 
 
 	// Advance to next sequence
 	if (interval  == DONE) {
-		current = current->next;
+		printf("Next sequence\n");
+		currentSequence = currentSequence->next;
 		currentSequenceBaseStep = futureStep;
 
 		// Notify end of sequence(s)
-		if (current == NULL) {
+		if (currentSequence == NULL) {
 			if (futureStep < lastStep) {
 				lastStep = futureStep;
 			}
@@ -271,24 +324,44 @@ static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
 			return;
 		}
 
-		// Recompute with new sequence
-		localRepetition = (futureStep - currentSequenceBaseStep) / current->sequence.data.numStepsPerRepetition;
-		localStep = (futureStep - currentSequenceBaseStep) % current->sequence.data.numStepsPerRepetition;
-		interval = computeInterval(&(current->sequence).data, localRepetition, localStep); 
+		// Register Fast DAC Config
+		enqueue(&configQueue, &currentSequence->sequence.fastConfig, currentSequenceBaseStep);
+
+		// Set Reset for step
+		if (sequence->data.resetAfter) {
+			setReset = true;
+			currentSequenceBaseStep = currentSequenceBaseStep + 1;	
+		}
+		else {
+			// Recompute with new sequence
+			sequence = &currentSequence->sequence;
+			localRepetition = (futureStep - currentSequenceBaseStep) / currentSequence->sequence.data.numStepsPerRepetition;
+			localStep = (futureStep - currentSequenceBaseStep) % currentSequence->sequence.data.numStepsPerRepetition;
+			interval = computeInterval(&sequence->data, localRepetition, localStep);
+		}
+
+		// Register Fast DAC Config
+		enqueue(&configQueue, &currentSequence->sequence.fastConfig, currentSequenceBaseStep);
+
 	} 
 
 	// PDM Value
-	float val = getSequenceVal(&(current->sequence), localStep, channel);
-	float factor = getFactor(&(current->sequence).data, localRepetition, localStep);
+	float val = getSequenceVal(sequence, localStep, channel);
+	float factor = getFactor(&sequence->data, localRepetition, localStep);
+	//printf("Step %d factor %f value %f interval %d \n", futureStep, factor, val, computeInterval(&(currentSequence->sequence).data, localRepetition, localStep));
 	if (setPDMValueVolt(factor * val, channel, currPDMIndex) != 0) {
 		printf("Could not set AO[%d] voltage.\n", channel);	
 	}
 
+	// These set a specific bit, while the value abovie writes a whole 16 bit number. Setting needs to happen afterwards
 	// Enable Value
-	if (current->sequence.data.enableLUT != NULL && interval == REGULAR) {
-		bool temp = current->sequence.data.enableLUT[localStep * numSlowDACChan + channel];
+	if (currentSequence->sequence.data.enableLUT != NULL && interval == REGULAR) {
+		bool temp = currentSequence->sequence.data.enableLUT[localStep * numSlowDACChan + channel];
 		setEnableDAC(temp, channel, currPDMIndex);
-		printf("%d enable", temp);
+	}
+
+	if (setReset) {
+		setResetDAC(1, currPDMIndex);
 	}
 }
 
@@ -316,24 +389,30 @@ static void setLUTValuesFrom(uint64_t baseStep) {
 
 
 bool prepareSequences() {
-	if ((seqState == CONFIG || seqState == PREPARED) && !isSequenceListEmpty()) {
-		printf("Preparing Sequence\n");
-		initSlowDAC();
-		// Init Sequence Iteration
-		currentSequenceBaseStep = 0;
-		current = head;
-		lastStep = INT_MAX;
-		// Init Perfomance
-		avgDeltaControl = 0;
-		avgDeltaSet = 0;
-		minDeltaControl = 0xFF;
-		maxDeltaSet = 0x00;
-		// Init Sleep
-		sleepTime = baseSleep;
-		// Set first values
-		setLUTValuesFrom(0);
-		seqState = PREPARED;
-		printf("Prepared Sequence\n");
+	if ((seqState == CONFIG || seqState == PREPARED)) {
+		if (!isSequenceListEmpty()) {
+			printf("Preparing Sequence\n");
+			initSlowDAC();
+			// Init Sequence Iteration
+			currentSequenceBaseStep = 0;
+			currentSequence = head;
+			if (currentSequence != NULL)
+				configureFastDAC(&currentSequence->sequence.fastConfig);
+			lastStep = INT_MAX;
+			// Init Perfomance
+			avgDeltaControl = 0;
+			avgDeltaSet = 0;
+			minDeltaControl = 0xFF;
+			maxDeltaSet = 0x00;
+			// Init Sleep
+			sleepTime = baseSleep;
+			// Set first values
+			setLUTValuesFrom(0);
+			seqState = PREPARED;
+			printf("Prepared Sequence\n");
+		} else {
+			printf("No sequence to prepare\n");
+		}
 		return true;
 	}
 	return false;
@@ -398,6 +477,11 @@ void *controlThread(void *ch) {
 
 				if (currentSlowDACStepTotal > oldSlowDACStepTotal + lookahead) {
 					handleLostSlowDACSteps(oldSlowDACStepTotal, currentSlowDACStepTotal);
+				}
+
+				if (configQueue != NULL && currentSlowDACStepTotal >= configQueue->startStep) {
+					configureFastDAC(configQueue->config);
+					dequeue(&configQueue);
 				}
 
 				if (currentSlowDACStepTotal >= lastStep) {

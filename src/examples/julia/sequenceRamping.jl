@@ -15,6 +15,10 @@ periods_per_frame = 50 # about 0.5 s frame length
 frame_period = dec*samples_per_period*periods_per_frame / base_frequency
 slow_dac_periods_per_frame = div(50, periods_per_step)
 
+stopADC(rp)
+masterTrigger(rp, false)
+clearSequence(rp)
+
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
 periodsPerFrame(rp, periods_per_frame)
@@ -41,17 +45,17 @@ clf()
 # Constant Sequence
 amplitudeDAC(rp, 1, 1, 0.1) # Amplitude is set to zero after a sequence
 lut = [0.2]
-seq = ConstantSequence(lut, nothing, slow_dac_periods_per_frame, 1, frame_period * 2, 0.5)
+seq = ConstantSequence(lut, nothing, slow_dac_periods_per_frame, 1, computeRamping(master(rp), frame_period * 2, 0.5), computeRamping(master(rp), frame_period * 3, 1.0))
 appendSequence(master(rp), seq)
 success = prepareSequence(master(rp))
 startADC(rp)
 masterTrigger(rp, true)
 sleep(0.1)
 
-uCurrentFrame = readFrames(rp, 0, 5)
+uCurrentFrame = readFrames(rp, 0, 6)
 stopADC(rp)
 masterTrigger(rp, false)
-
+clearSequence(rp)
 
 plot(vec(uCurrentFrame[:, 1, :, :]))
 title("Ramping")

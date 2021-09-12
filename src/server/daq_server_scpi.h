@@ -85,22 +85,42 @@ extern void joinControlThread();
 // Sequence structures
 typedef enum {ARBITRARY, CONSTANT, PAUSE, RANGE} sequenceTypes_t;
 typedef enum {CONFIG, PREPARED, RUNNING, FINISHED} sequenceState_t;
-typedef enum {BEFORE, RAMPUP, REGULAR, RAMPDOWN, AFTER, DONE} sequenceInterval_t;
+typedef enum {RAMPUP, REGULAR, RAMPDOWN, DONE} sequenceInterval_t;
 
 typedef struct {
 	int numStepsPerRepetition; // How many steps per repetition
 	float* LUT; // LUT for value function pointer
 	bool * enableLUT;
-	int rampingRepetitions; // How many repetitions for both individually ramp up/down
-	int rampingTotalSteps; // How many steps are in these repetitions
-	int rampingSteps; // How many of those steps have a ramping factor
+	int rampUpRepetitions; // How many repetitions for both individually ramp up/down
+	int rampUpTotalSteps; // How many steps are in these repetitions
+	int rampUpSteps; // How many of those steps have a ramping factor
+	int rampDownRepetitions; 
+	int rampDownTotalSteps; 
+	int rampDownSteps;
 	int numRepetitions; // How many regular repetitions are there
 	sequenceTypes_t type; // Sanity check for function pointer
+	bool resetAfter;
 } sequenceData_t;
+
+typedef struct {
+	uint16_t amplitudes[8];
+	bool amplitudesSet[8];
+	int16_t offset[2];
+	bool offsetSet[2];
+	double frequency[8];
+	bool frequencySet[8];
+	double phase[8];
+	bool phaseSet[8];
+	int signalType[2];
+	bool signalTypeSet[2];
+	double jumpSharpness[2];
+	bool jumpSharpnessSet[2];
+} fastDACConfig_t;
 
 typedef struct {
 	sequenceData_t data;
 	float (*getSequenceValue) (sequenceData_t *seqData, int step, int channel);
+	fastDACConfig_t fastConfig;
 } sequence_t;
 
 typedef struct sequenceNode_s sequenceNode_t;
@@ -130,8 +150,10 @@ extern float getRangeSequenceValue(sequenceData_t*, int, int);
 extern sequenceNode_t *configNode;
 extern double rampUpTime;
 extern double rampUpFraction;
+extern double rampDownTime;
+extern double rampDownFraction;
 extern bool prepareSequences();
-extern void setupRampingTiming(sequenceData_t *seqData, double rampUpTime, double rampUpFraction);
+extern void setupRampingTiming(sequenceData_t *seqData, double rampUpTime, double rampUpFraction, double rampDownTime, double rampDownFraction);
 extern void cleanUpSequence(sequenceData_t * seqData);
 extern void cleanUpSequenceList();
 extern sequenceInterval_t computeInterval(sequenceData_t *seqData, int repetition, int step);
@@ -142,6 +164,18 @@ extern void appendSequenceToList(sequenceNode_t*);
 extern sequenceNode_t * popSequence();
 extern sequenceNode_t * newSequenceNode();
 extern void cleanUpSequenceNode(sequenceNode_t*);
+
+// Sequence Fast DAC Config FIFO Queue
+typedef struct configNode_s configNode_t;
+struct configNode_s {
+	fastDACConfig_t * config;
+	uint64_t startStep;
+	configNode_t* next;
+};
+extern void enqueue(configNode_t** queue, fastDACConfig_t *config, int stepStart);
+extern fastDACConfig_t* dequeue(configNode_t** queue);
+
+
 
 // data loss
 struct status {

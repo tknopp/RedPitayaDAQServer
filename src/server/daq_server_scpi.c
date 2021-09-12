@@ -70,6 +70,8 @@ sequenceNode_t *configNode = NULL;
 
 double rampUpTime;
 double rampUpFraction;
+double rampDownTime;
+double rampDownFraction;
 int numSamplesPerSlowDACStep = 0; 
 int numSlowDACStepsPerSequence = 20;
 int numSlowDACChan = 0;
@@ -253,6 +255,8 @@ int main(int argc, char** argv) {
 			scpi_error_queue_data, SCPI_ERROR_QUEUE_SIZE);
 
 	listenfd = createServer(5025);
+
+	cleanUpSequenceList();
 
 	while (true) {
 		logger_flush();

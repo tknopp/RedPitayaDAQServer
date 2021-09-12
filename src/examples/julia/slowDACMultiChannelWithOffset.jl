@@ -4,7 +4,7 @@ using PyPlot
 # obtain the URL of the RedPitaya
 include("config.jl")
 
-rp = RedPitayaCluster([URLs[1]])
+rp = RedPitayaCluster(URLs[1:2:3])
 
 dec = 8
 modulus = 4800
@@ -16,12 +16,15 @@ frame_period = dec*samples_per_period*periods_per_frame / base_frequency
 
 slow_dac_steps_per_frame = div(periods_per_frame, periods_per_step)
 
+stopADC(rp)
+masterTrigger(master(rp), false)
+
 @info samples_per_period, periods_per_frame, slow_dac_steps_per_frame
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
 periodsPerFrame(rp, periods_per_frame)
 passPDMToFastDAC(master(rp), true)
-slowDACStepsPerFrame(master(rp), slow_dac_steps_per_frame)
+slowDACStepsPerFrame(rp, slow_dac_steps_per_frame)
 
 numSlowDACChan(master(rp), 2)
 lutA = collect(range(0,0.3,length=slow_dac_steps_per_frame))
@@ -47,7 +50,7 @@ triggerMode(rp, "EXTERNAL")
 amplitudeDAC(rp, 1, 1, 0.1) 
 lut = collect(cat(lutA,lutB*0.1,dims=2)')
 enableLUT = collect( cat(lutEnableDACA,lutEnableDACB,dims=2)' )
-seq = ArbitrarySequence(lut, enableLUT, slow_dac_periods_per_frame, 1, 0.0, 0.0)
+seq = ArbitrarySequence(lut, enableLUT, slow_dac_steps_per_frame, 1, 0.0, 0.0)
 appendSequence(master(rp), seq)
 success = prepareSequence(master(rp))
 
