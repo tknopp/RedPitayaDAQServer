@@ -12,6 +12,8 @@ makedocs(
         "Connections" => "connections.md",
         "Cluster" => "cluster.md",
         "Client" => "client.md",
+        "Data Acquisition" => "acquisition.md",
+        "Signal Generation" => "generation.md",
         "Examples" => Any["Simple" => "examples/simple.md",
                           "Waveforms" => "examples/waveforms.md",
                           "SlowADC" => "examples/slowADC.md"],
