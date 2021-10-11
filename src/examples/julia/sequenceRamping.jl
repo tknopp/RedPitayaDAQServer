@@ -15,6 +15,10 @@ periods_per_frame = 50 # about 0.5 s frame length
 frame_period = dec*samples_per_period*periods_per_frame / base_frequency
 slow_dac_periods_per_frame = div(50, periods_per_step)
 
+stopADC(rp)
+masterTrigger(rp, false)
+clearSequence(rp)
+
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
 periodsPerFrame(rp, periods_per_frame)
@@ -26,36 +30,33 @@ frequencyDAC(rp,1,1, base_frequency / modulus)
 freq = frequencyDAC(rp,1,1)
 println(" frequency = $(freq)")
 signalTypeDAC(rp, 1 , "SINE")
-amplitudeDAC(rp, 1, 1, 0.2)
+amplitudeDAC(rp, 1, 1, 0.1)
 phaseDAC(rp, 1, 1, 0.0 ) # Phase has to be given in between 0 and 1
 
 ramWriterMode(rp, "TRIGGERED")
-triggerMode(rp, "INTERNAL")
+triggerMode(rp, "EXTERNAL")
 
+# Sequence
 slowDACStepsPerFrame(rp, slow_dac_periods_per_frame)
 numSlowDACChan(master(rp), 1)
-lut = collect(range(0,0.7,length=slow_dac_periods_per_frame))
-seq = ArbitrarySequence(lut, nothing, slow_dac_periods_per_frame, 2, computeRamping(master(rp), frame_period * 2, 0.5))
-appendSequence(master(rp), seq)
-prepareSequence(master(rp))
-
-masterTrigger(rp, false)
-startADC(rp)
-masterTrigger(rp, true)
-
-sleep(0.1)
-samples_per_step = (samples_per_period * periods_per_frame)/slow_dac_periods_per_frame
-uCurrentFrame = readFrames(rp, div(start(seq)*samples_per_step, samples_per_period * periods_per_frame), 2)
-
 fig = figure(1)
 clf()
-plot(vec(uCurrentFrame[:,1,:,:]))
-plot(vec(uCurrentFrame[:,2,:,:]))
-legend(("Rx1", "Rx2"))
 
-savefig("images/slowDAC.png")
+# Constant Sequence
+amplitudeDAC(rp, 1, 1, 0.1) # Amplitude is set to zero after a sequence
+lut = [0.2]
+seq = ConstantSequence(lut, nothing, slow_dac_periods_per_frame, 1, computeRamping(master(rp), frame_period * 2, 0.5), computeRamping(master(rp), frame_period * 3, 1.0))
+appendSequence(master(rp), seq)
+success = prepareSequence(master(rp))
+startADC(rp)
+masterTrigger(rp, true)
+sleep(0.1)
 
+uCurrentFrame = readFrames(rp, 0, 6)
 stopADC(rp)
 masterTrigger(rp, false)
+clearSequence(rp)
 
+plot(vec(uCurrentFrame[:, 1, :, :]))
+title("Ramping")
 fig

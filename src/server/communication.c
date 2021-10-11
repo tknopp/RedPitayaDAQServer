@@ -91,6 +91,12 @@ static const size_t userspaceSizeSamples = 64 * 1024;
 static const size_t userspaceSizeBytes = userspaceSizeSamples * sizeof(uint32_t);
 static uint8_t * userspaceBuffer = NULL;
 
+
+int setSocketNonBlocking(int fd) {
+	int flags = fcntl(fd, F_GETFL, 0);
+	return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+}
+
 int createServer(int port) {
 	int fd;
 	int rc;
@@ -118,14 +124,6 @@ int createServer(int port) {
 		exit(-1);
 	}
 
-	/* Set non blocking */
-	rc = ioctl(fd, FIONBIO, (char *) &on);
-	if (rc < 0) {
-		perror("ioctl() failed");
-		close(fd);
-		exit(-1);
-	}
-
 	/* Bind to socket */
 	rc = bind(fd, (struct sockaddr *) &servaddr, sizeof (servaddr));
 	if (rc < 0) {
@@ -145,30 +143,12 @@ int createServer(int port) {
 	return fd;
 }
 
-int waitServer(int fd) {
-	fd_set fds;
-	struct timeval timeout;
-	int rc;
-	int max_fd;
-
-	FD_ZERO(&fds);
-	max_fd = fd;
-	FD_SET(fd, &fds);
-
-	timeout.tv_sec = 0;
-	timeout.tv_usec = 1000;
-
-	rc = select(max_fd + 1, &fds, NULL, NULL, &timeout);
-
-	return rc;
-}
-
 
 static int writeAll(int fd, const void *buf, size_t len) {
 	size_t bytesSent = 0;
 	size_t bytesLeft = len;
 	size_t n; 
-	while (bytesSent < len) {
+	while (bytesSent < len && commThreadRunning) {
 		n = write(fd, buf + bytesSent, bytesLeft);
 		if (n == -1) {
 			return n;
@@ -186,7 +166,7 @@ static void writeDataChunked(int fd, const void *buf, size_t count)
 	size_t chunkSize = 200000;
 	size_t ptr = 0;
 	size_t size;
-	while(ptr < count) {
+	while(ptr < count && commThreadRunning) {
 		size = MIN(count-ptr, chunkSize);
 
 		n = write(fd, buf + ptr, size);
@@ -222,7 +202,7 @@ void neoncopy(void *dst, const void *src, int cnt) {
 static size_t copySamplesToBuffer(const void *adc, size_t count) {
 	size_t ptr = 0;
 	size_t size, sizeTemp;
-	while(ptr < count) {
+	while(ptr < count && commThreadRunning) {
 		sizeTemp = MIN(count-ptr, userspaceSizeBytes);
 		//Neon Copy copies 64 Byte in each iteration, size should always be a multiple of 64 or a different copy needs to be used
 		size = sizeTemp - (sizeTemp % 64);
@@ -247,7 +227,7 @@ static bool sendBufferedSamplesToClient(uint64_t wpTotal, uint64_t numSamples) {
 	uint64_t samplesToCopy = 0;
 	size_t copiedBytes = 0;
 
-	while (sendSamples < numSamples) {
+	while (sendSamples < numSamples && commThreadRunning) {
 		//Move samples to userspace
 		samplesToCopy = MIN(numSamples - sendSamples, userspaceSizeSamples);
 		copiedBytes = copySamplesToBuffer(ram + sizeof(uint32_t)*(wp + sendSamples), samplesToCopy*sizeof(uint32_t));
@@ -324,18 +304,19 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 	uint64_t readWP = 0;
 	uint64_t chunk = 0;
 	bool clearFlagsAndPerf = true;
+	
 
 	while (sendSamplesTotal < numSamples && chunkSize > 0 && commThreadRunning) {
 		chunk = MIN(numSamples - sendSamplesTotal, chunkSize); // Client and Server can compute same chunk value
 		
 		// Send chunk
-		while (sendSamples < chunk) {
+		while (sendSamples < chunk && commThreadRunning) {
 			readWP = wpTotal + sendSamplesTotal + sendSamples;
 			writeWP = getTotalWritePointer();
 
 			// Wait for samples to be available
 			samplesToSend = MIN(userspaceSizeSamples, chunk - sendSamples);
-			while (readWP + samplesToSend >= writeWP) {
+			while (readWP + samplesToSend >= writeWP && commThreadRunning) {
 				writeWP = getTotalWritePointer();
 				usleep(30);
 			}
@@ -353,7 +334,7 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 		sendSamples = 0;
 		clearFlagsAndPerf = true;
 		sendSamplesTotal += chunk;
-		
+
 	}
 }
 
@@ -369,7 +350,7 @@ void sendFileToClient(FILE* file) {
 	int64_t remain = fSize; //To have known size
 	send(newdatasockfd, &remain, sizeof(remain), 0);
 	int64_t n = 0;
-	while (((n = sendfile(newdatasockfd, fd, &offset, remain)) > 0) && remain > 0) {
+	while (((n = sendfile(newdatasockfd, fd, &offset, remain)) > 0) && remain > 0 && commThreadRunning) {
 		remain -= n;
 	}
 }
@@ -413,46 +394,45 @@ void* communicationThread(void* p) {
 	int rc;
 	char smbuffer[20];
 
- 	userspaceBuffer = malloc(userspaceSizeBytes);
+	// Prepare loop
+	userspaceBuffer = malloc(userspaceSizeBytes);
 
-
+	printf("Entering communication loop\n");
 	while(true) {
-		//printf("Comm thread loop\n");
-		if(!commThreadRunning)
-		{
+
+		// Loop exit
+		if(!commThreadRunning) {
 			stopTx();
 			//setMasterTrigger(OFF);
 			joinControlThread();
 			break;
 		}
-		rc = waitServer(clifd);
-		if (rc < 0) { /* failed */
+
+		// Flag used for non-blocking operation s.t. thread can be joined
+		rc = recv(clifd, smbuffer, sizeof (smbuffer), MSG_DONTWAIT);
+		
+		if (rc < 0 && (errno == EWOULDBLOCK || errno == EAGAIN)) { /* timeout */
+			SCPI_Input(&scpi_context, NULL, 0);
+			usleep(1000);
+		}
+		else if (rc < 0) {/* failed */
 			perror("  recv() failed");
 			break;
 		}
-		if (rc == 0) { /* timeout */
-			SCPI_Input(&scpi_context, NULL, 0);
+		else if (rc > 0) { /* something to handle */
+			SCPI_Input(&scpi_context, smbuffer, rc);
 		}
-		if (rc > 0) { /* something to read */
-			rc = recv(clifd, smbuffer, sizeof (smbuffer), 0);
-			if (rc < 0) {
-				if (errno != EWOULDBLOCK) {
-					perror("  recv() failed");
-					break;
-				}
-			} else if (rc == 0) {
-				LOG_INFO("Connection closed");
-				stopTx();
-				//setMasterTrigger(OFF);
-				joinControlThread();
-				commThreadRunning = false;
-				break;
-			} else {
-				SCPI_Input(&scpi_context, smbuffer, rc);
-			}
+		else {
+			/* TODO This was was seen as Connection closed, but rc = 0 could also
+			 * be seen as receiving an empty datagram. It's not always a sign
+			 * that the connection was closed. We don't intentionally send or
+			 * define empty messages for the project.*/
+			LOG_INFO("Connection closed");
+			commThreadRunning = false;
 		}
 		logger_flush();
 	}
+
 	LOG_INFO("Comm almost done");
 
 	free(userspaceBuffer);

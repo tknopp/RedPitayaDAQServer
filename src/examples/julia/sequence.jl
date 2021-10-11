@@ -1,5 +1,6 @@
 using RedPitayaDAQServer
 using PyPlot
+using ThreadPools
 
 # obtain the URL of the RedPitaya
 include("config.jl")
@@ -14,6 +15,11 @@ samples_per_period = div(modulus, dec)
 periods_per_frame = 50 # about 0.5 s frame length
 frame_period = dec*samples_per_period*periods_per_frame / base_frequency
 slow_dac_periods_per_frame = div(50, periods_per_step)
+
+
+stopADC(rp)
+masterTrigger(rp, false)
+clearSequence(rp)
 
 decimation(rp, dec)
 samplesPerPeriod(rp, samples_per_period)
@@ -30,32 +36,33 @@ amplitudeDAC(rp, 1, 1, 0.2)
 phaseDAC(rp, 1, 1, 0.0 ) # Phase has to be given in between 0 and 1
 
 ramWriterMode(rp, "TRIGGERED")
-triggerMode(rp, "INTERNAL")
+triggerMode(rp, "EXTERNAL")
 
-slowDACStepsPerFrame(rp, slow_dac_periods_per_frame)
+# Sequence
+# Global Settings
+slowDACStepsPerFrame(rp, slow_dac_periods_per_frame) # This sets PDMClockDivider, but it can also be set directly and with slowDACStepsPerSequence
 numSlowDACChan(master(rp), 1)
+# Per Sequence settings
 lut = collect(range(0,0.7,length=slow_dac_periods_per_frame))
-seq = ArbitrarySequence(lut, nothing, slow_dac_periods_per_frame, 2, computeRamping(master(rp), frame_period * 2, 0.5))
+seq = ArbitrarySequence(lut, nothing, slow_dac_periods_per_frame, 2, 0, 0)
 appendSequence(master(rp), seq)
-prepareSequence(master(rp))
+success = prepareSequence(master(rp))
 
 masterTrigger(rp, false)
 startADC(rp)
 masterTrigger(rp, true)
 
 sleep(0.1)
-samples_per_step = (samples_per_period * periods_per_frame)/slow_dac_periods_per_frame
-uCurrentFrame = readFrames(rp, div(start(seq)*samples_per_step, samples_per_period * periods_per_frame), 2)
+
+uCurrentFrame = readFrames(rp, 0, 5)
+stopADC(rp)
+masterTrigger(rp, false)
+clearSequence(rp)
+
 
 fig = figure(1)
 clf()
 plot(vec(uCurrentFrame[:,1,:,:]))
 plot(vec(uCurrentFrame[:,2,:,:]))
-legend(("Rx1", "Rx2"))
-
-savefig("images/slowDAC.png")
-
-stopADC(rp)
-masterTrigger(rp, false)
-
+legend(("Rx1"))
 fig

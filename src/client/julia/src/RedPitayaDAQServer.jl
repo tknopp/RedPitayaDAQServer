@@ -2,6 +2,7 @@ module RedPitayaDAQServer
 
 # package code goes here
 
+using Base: UInt16
 using Sockets
 import Sockets: send, connect
 
@@ -38,17 +39,19 @@ function send(rp::RedPitaya,cmd::String)
   write(rp.socket,cmd*rp.delim)
 end
 
+const _timeout = 5.0
+
 """
 Receive a String from the RedPitaya
 """
 function receive(rp::RedPitaya)
-  return readline(rp.socket)[1:end] 
+  return readline(rp.socket)[1:end]
 end
 
 """
 Perform a query with the RedPitaya. Return String
 """
-function query(rp::RedPitaya, cmd::String, timeout::Number=2.0,  N=100)
+function query(rp::RedPitaya, cmd::String, timeout::Number=_timeout,  N=100)
   send(rp,cmd)
   t = @async receive(rp)
   for i=1:N
@@ -64,8 +67,8 @@ end
 """
 Perform a query with the RedPitaya. Parse result as type T
 """
-function query(rp::RedPitaya,cmd::String,T::Type)
-  a = query(rp,cmd)
+function query(rp::RedPitaya,cmd::String,T::Type, timeout::Number=_timeout, N::Number=100)
+  a = query(rp,cmd, timeout, N)
   return parse(T,a)
 end
 
@@ -83,8 +86,6 @@ function Sockets.connect(host, port::Integer, timeout::Number)
   end
   return s
 end
-
-const _timeout = 1.0
 
 function connect(rp::RedPitaya)
   if !rp.isConnected

@@ -54,6 +54,7 @@
 #include <sched.h>
 #include <errno.h>
 #include <signal.h>
+#include <time.h>
 #include "logger.h"
 
 #include <scpi/scpi.h>
@@ -61,15 +62,22 @@
 #include "../lib/rp-daq-lib.h"
 #include "../server/daq_server_scpi.h"
 
+
+sequenceState_t seqState;
+sequenceNode_t *head = NULL; 
+sequenceNode_t *tail = NULL;
+sequenceNode_t *configNode = NULL;
+
+double rampUpTime;
+double rampUpFraction;
+double rampDownTime;
+double rampDownFraction;
 int numSamplesPerSlowDACStep = 0; 
-int numSlowDACStepsPerRotation = 20;
+int numSlowDACStepsPerSequence = 20;
 int numSlowDACChan = 0;
 int numSlowADCChan = 0;
-int numSlowDACRotationsEnabled = 0;
+int numSlowDACSequencesEnabled = 0;
 int numSlowDACLostSteps = 0;
-int enableSlowDAC = 0;
-int enableSlowDACAck = true;
-uint64_t rotationSlowDACEnabled = 0;
 
 int64_t channel;
 
@@ -79,14 +87,8 @@ bool buffInitialized = false;
 bool controlThreadRunning = false;
 bool commThreadRunning = false;
 
-float *slowDACLUT = NULL;
-bool *enableDACLUT = NULL;
 bool slowDACInterpolation = false;
-double slowDACRampUpTime = 0.4;
-double slowDACFractionRampUp = 0.8;
 float *slowADCBuffer = NULL;
-
-float fastDACNextAmplitude[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
 
 pthread_t pControl;
 pthread_t pComm;
@@ -123,7 +125,7 @@ void getprio( pthread_t id ) {
 }
 
 uint8_t getStatus() {
-	return getErrorStatus() | rxEnabled << 3 | enableSlowDAC << 4; 
+	return getErrorStatus() | rxEnabled << 3 | seqState == RUNNING << 4; 
 }
 
 uint8_t getErrorStatus() {
@@ -254,6 +256,8 @@ int main(int argc, char** argv) {
 
 	listenfd = createServer(5025);
 
+	cleanUpSequenceList();
+
 	while (true) {
 		logger_flush();
 		printf("\033[0m");
@@ -274,15 +278,16 @@ int main(int argc, char** argv) {
 			if(controlThreadRunning) {
 				joinControlThread();
 			}
+			
+			if(!initialized) {
+				init();
+				initialized = true;
+			}
 
 			createThreads();
+			printf("Created threads\n");
 		}
 		
-		if(commThreadRunning) {
-			sleep(5.0);
-		} else {
-			usleep(100000);
-		}
 	}
 
 	// Exit gracefully

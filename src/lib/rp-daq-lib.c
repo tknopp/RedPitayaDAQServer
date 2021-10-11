@@ -12,7 +12,7 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h> /* for socket(), connect(), send(), and recv() */
 #include <arpa/inet.h>  /* for sockaddr_in and inet_addr() */
-#include <time.h> 
+#include <time.h>
 #include <limits.h>
 #include "rp-daq-lib.h"
 
@@ -43,10 +43,13 @@ void loadBitstream() {
 	} else {
 		printf("Load Bitfile\n");
 		int catResult = 0;
-		printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/master.bit\n"); 
-		catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");		
+		printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/master.bit\n");
+		catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");
 		if(catResult <= -1) {
 			printf("Error while writing the image to the FPGA.\n");
+		}
+		else {
+			printf("Bitsream loaded\n");
 		}
 
 		FILE* fp = fopen("/tmp/bitstreamLoaded" ,"a");
@@ -81,7 +84,7 @@ int init() {
 	reset_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40005000);
 	dio_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40006000);
 	cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40004000);
-	ram = mmap(NULL, sizeof(int32_t)*ADC_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, ADC_BUFF_MEM_ADDRESS); 
+	ram = mmap(NULL, sizeof(int32_t)*ADC_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, ADC_BUFF_MEM_ADDRESS);
 	xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
 
 	// Set HP0 bus width to 64 bits
@@ -243,7 +246,7 @@ int setFrequency(double frequency, int channel, int component)
 		uint64_t mask = 0x0000ffffffffffff;
 		uint64_t register_value = *((uint64_t *)(dac_cfg + 12 + 14*component + 66*channel));
 
-		*((uint64_t *)(dac_cfg + 12 + 14*component + 66*channel)) = 
+		*((uint64_t *)(dac_cfg + 12 + 14*component + 66*channel)) =
 			(register_value & ~mask) | (phase_increment & mask);
 
 	} else {
@@ -278,7 +281,7 @@ double getPhase(int channel, int component)
 }
 
 int setPhase(double phase, int channel, int component)
-{   
+{
 	phase = fmod(phase, 2*M_PI);
 	phase = (phase < 0) ? phase+2*M_PI : phase;
 
@@ -303,11 +306,11 @@ int setPhase(double phase, int channel, int component)
 		uint64_t mask = 0x0000ffffffffffff;
 		uint64_t register_value = *((uint64_t *)(dac_cfg + 18 + 14*component + 66*channel));
 
-		*((uint64_t *)(dac_cfg + 18 + 14*component + 66*channel)) = 
+		*((uint64_t *)(dac_cfg + 18 + 14*component + 66*channel)) =
 			(register_value & ~mask) | (phase_offset & mask);
 
 	} else {
-		// TODO AWG 
+		// TODO AWG
 	}
 
 	return 0;
@@ -343,7 +346,7 @@ int setSignalType(int channel, int signal_type) {
 			&& (signal_type != SIGNAL_TYPE_SAWTOOTH)) {
 		return -2;
 	}
-	*((int16_t *)(dac_cfg + 2 + 66*channel)) = signal_type; 
+	*((int16_t *)(dac_cfg + 2 + 66*channel)) = signal_type;
 
 	return 0;
 }
@@ -358,12 +361,12 @@ int getSignalType(int channel) {
 }
 
 int setJumpSharpness(int channel, float percentage) {
-	if(channel < 0 || channel > 1) {
+	if(channel < 0 || channel > 1 || percentage == 0.0) {
 		return -3;
 	}
 	int16_t A = (int16_t) (8191*percentage);
-	*((int16_t *)(dac_cfg + 4 + 66*channel)) = A; 
-	*((int16_t *)(dac_cfg + 6 + 66*channel)) = (int16_t) (8191/A); 
+	*((int16_t *)(dac_cfg + 4 + 66*channel)) = A;
+	*((int16_t *)(dac_cfg + 6 + 66*channel)) = (int16_t) (8191/A);
 
 	return 0;
 }
@@ -469,6 +472,21 @@ int setEnableDAC(int8_t value, int channel, int index) {
 	// set the bit
 	*((int16_t *)(pdm_cfg + 2*(3+4*index))) |= (value << bitpos);
 
+	return 0;
+}
+
+int setResetDAC(int8_t value, int index) {
+	if (value < 0 || value >= 2)
+		return -1;
+
+	printf("%d before reset pdm\n", *((int16_t *)(pdm_cfg + 2*(0+4*index))));
+	int bitpos = 14;
+	// Reset bit is in the 1-th channel
+	// clear the bit
+	*((int16_t *)(pdm_cfg + 2*(0+4*index))) &= ~(1u << bitpos);
+	// set the bit
+	*((int16_t *)(pdm_cfg + 2*(0+4*index))) |= (value << bitpos);
+	printf("%d reset pdm\n", *((int16_t *)(pdm_cfg + 2*(0+4*index))));
 	return 0;
 }
 
@@ -884,7 +902,7 @@ int getInternalPINNumber(const char* pin) {
 	} else {
 
 		return -1;
-	}	  
+	}
 }
 
 int setDIODirection(const char* pin, int value) {
@@ -952,12 +970,12 @@ void stopTx() {
 	}
 }
 
-// Calibration 
+// Calibration
 
 // From https://github.com/RedPitaya/RedPitaya/blob/e7f4f6b161a9cbbbb3f661228a6e8c5b8f34f661/api/src/calib.c
 
 #define CALIB_MAGIC 0xAABBCCDD
-#define CALIB_MAGIC_FILTER 0xDDCCBBAA 
+#define CALIB_MAGIC_FILTER 0xDDCCBBAA
 #define GAIN_LO_FILT_AA 0x7D93
 #define GAIN_LO_FILT_BB 0x437C7
 #define GAIN_LO_FILT_PP 0x2666
@@ -1059,7 +1077,7 @@ int calib_ReadParams(rp_calib_params_t *calib_params,bool use_factory_zone)
         calib_params->low_filter_bb_ch2 = GAIN_LO_FILT_BB;
         calib_params->low_filter_pp_ch2 = GAIN_LO_FILT_PP;
         calib_params->low_filter_kk_ch2 = GAIN_LO_FILT_KK;
-        
+
         calib_params->hi_filter_aa_ch1 = GAIN_HI_FILT_AA;
         calib_params->hi_filter_bb_ch1 = GAIN_HI_FILT_BB;
         calib_params->hi_filter_pp_ch1 = GAIN_HI_FILT_PP;
@@ -1150,7 +1168,7 @@ rp_calib_params_t getDefaultCalib(){
     calib.low_filter_bb_ch2 = GAIN_LO_FILT_BB;
     calib.low_filter_pp_ch2 = GAIN_LO_FILT_PP;
     calib.low_filter_kk_ch2 = GAIN_LO_FILT_KK;
-    
+
     calib.hi_filter_aa_ch1 = GAIN_HI_FILT_AA;
     calib.hi_filter_bb_ch1 = GAIN_HI_FILT_BB;
     calib.hi_filter_pp_ch1 = GAIN_HI_FILT_PP;
