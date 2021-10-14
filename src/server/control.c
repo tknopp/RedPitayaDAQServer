@@ -172,10 +172,10 @@ static void configureFastDAC(fastDACConfig_t * config) {
 		}
 		if (config->offsetSet[ch])
 			setOffsetVolt(config->offset[ch], ch);
-		if (config->signalTypeSet[ch])
-			setSignalType(ch, config->signalType[ch]);
-		if (config->jumpSharpnessSet[ch])
-			setJumpSharpness(ch, config->jumpSharpness[ch]);
+		//if (config->signalTypeSet[ch])
+			//setSignalType(ch, config->signalType[ch]);
+		//if (config->jumpSharpnessSet[ch])
+			//setJumpSharpness(ch, config->jumpSharpness[ch]);
 	}
 }
 

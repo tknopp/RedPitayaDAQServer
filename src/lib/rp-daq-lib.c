@@ -340,7 +340,16 @@ double getPhase(int channel, int component)
 
 	// Get register value
 	uint64_t mask = 0x0000ffffffffffff;
-	uint64_t register_value = *((uint64_t *)(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) & mask;
+	printf("Reading phase %d channel, %d comp\n", channel, component); 
+	uint64_t register_value = 0;
+	register_value |= (uint64_t) *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel + 0);
+	register_value |= (uint64_t) *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel + 0) << 1 * 8;
+	register_value |= (uint64_t) *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel + 0) << 2 * 8;
+	register_value |= (uint64_t) *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel + 0) << 3 * 8;
+	register_value |= (uint64_t) *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel + 0) << 4 * 8;
+	register_value |= (uint64_t) *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel + 0) << 5 * 8;
+
+	register_value &= mask;
 	double phase_factor = -1;
 	if(getDACMode() == DAC_MODE_STANDARD) {
 		// Calculate phase factor from phase offset
@@ -377,7 +386,7 @@ int setPhase(double phase, int channel, int component)
 
 		uint64_t mask = 0x0000ffffffffffff;
 		uint64_t register_value = *((uint64_t *)(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel));
-
+		//printf("Test\n");
 		*((uint64_t *)(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) =
 			(register_value & ~mask) | (phase_offset & mask);
 

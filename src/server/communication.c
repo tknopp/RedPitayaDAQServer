@@ -345,6 +345,7 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 		rc = recv(clifd, smbuffer, sizeof (smbuffer), MSG_DONTWAIT);
 		if (rc > 0) {
 			SCPI_Input(&scpi_context, smbuffer, rc);
+			printf("Handled SCPI in loop\n");
 		}
 
 	}
