@@ -360,9 +360,7 @@ static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
 		setEnableDAC(temp, channel, currPDMIndex);
 	}
 
-	if (setReset) {
-		setResetDAC(1, currPDMIndex);
-	}
+	setResetDAC(setReset, currPDMIndex);
 }
 
 static void setLUTValuesFrom(uint64_t baseStep) {
