@@ -1,4 +1,4 @@
-export RedPitayaClusterView, master, readDataPeriods, numChan, readDataSlow, readFrames, readPeriods, readPipelinedSamples, startPipelinedData, collectSamples!, readData, readDataPeriods, modeDAC, translateViewToClusterChannel
+export RedPitayaClusterView, master, readDataPeriods, numChan, readDataSlow, readFrames, readPeriods, readPipelinedSamples, startPipelinedData, collectSamples!, readData, readDataPeriods, modeDAC, viewToCluster, clusterToView
 
 import Base: length, iterate, getindex, firstindex, lastindex
 
@@ -70,16 +70,20 @@ end
 slowDACInterpolation(rpcv::RedPitayaClusterView, enable::Bool) = slowDACInterpolation(rpcv.rpc, enable)
 
 # Returns the channel number in the cluster for a given channel number in the view
-function translateViewToClusterChannel(rpcv::RedPitayaClusterView, chan)
+function viewToCluster(rpcv::RedPitayaClusterView, chan::Integer)
     view = rpcv.view 
     idxInView = div(chan -1, 2) + 1
     chanRP = mod1(chan, 2)
     return 2*(view[idxInView] - 1) + chanRP
 end
 
-# Helper functions for readData functions in Cluster.jl
-function startPipelinedData(rpcv::RedPitayaClusterView, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
-    @sync for rp in rpcv
-        @async startPipelinedData(rp, reqWP, numSamples, chunkSize)
+function clusterToView(rpcv::RedPitayaClusterView, chan::Integer)
+    for (i, v) in enumerate(rpcv.view)
+        if 2*v-1 == chan
+            return i
+        elseif 2*v == chan
+            return i + 1
+        end
     end
+    return nothing
 end
