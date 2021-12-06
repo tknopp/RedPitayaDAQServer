@@ -229,8 +229,8 @@ struct SampleChunk
   performance::Vector{PerformanceData}
 end
 
-function startPipelinedData(rpc::RedPitayaCluster, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
-  @sync for rp in rpc
+function startPipelinedData(rpu::Union{RedPitayaCluster,RedPitayaClusterView}, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
+  @sync for rp in rpu
     @async startPipelinedData(rp, reqWP, numSamples, chunkSize)
   end
 end
