@@ -35,6 +35,9 @@ static const uint32_t ANALOG_IN_MAX_VAL_INTEGER  = 0xFFF;
 // static const float    ANALOG_OUT_MIN_VAL         = 0.0;
 // static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
 
+// Cached parameter values.
+static rp_calib_params_t calib;
+
 // Init stuff
 
 void loadBitstream() {
@@ -202,7 +205,7 @@ int setOffset(int16_t offset, int channel) {
 		return -3;
 	}
 
-	int16_t calibOffset = getCalibOffset(channel);
+	int16_t calibOffset = getCalibDACOffset(channel);
 
 	*((int16_t *)(dac_cfg + 66*channel)) = offset + calibOffset;
 
@@ -1002,9 +1005,6 @@ rp_calib_params_t getDefaultCalib();
 static const char eeprom_device[]="/sys/bus/i2c/devices/0-0050/eeprom";
 static const int  eeprom_calib_off=0x0008;
 static const int  eeprom_calib_factory_off = 0x1c08;
-
-// Cached parameter values.
-static rp_calib_params_t calib;
 
 int calib_Init()
 {
