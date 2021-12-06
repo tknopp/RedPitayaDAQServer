@@ -174,6 +174,15 @@ int setAmplitude(uint16_t amplitude, int channel, int component) {
 	return 0;
 }
 
+int16_t getCalibDACOffset(int channel) {
+	if (channel == 0) 
+		return (int16_t)(calib.dac_ch1_offs*8192.0);
+	else if (channel == 1)
+		return (int16_t)(calib.dac_ch1_offs*8192.0);
+	else
+		return 0;
+}
+
 int16_t getOffset(int channel) {
 	if(channel < 0 || channel > 1) {
 		return -3;
@@ -181,7 +190,7 @@ int16_t getOffset(int channel) {
 
 	int16_t offset = *((int16_t *)(dac_cfg + 66*channel));
 
-	return offset;
+	return offset - getCalibDACOffset(channel);
 }
 
 int setOffset(int16_t offset, int channel) {
@@ -193,7 +202,9 @@ int setOffset(int16_t offset, int channel) {
 		return -3;
 	}
 
-	*((int16_t *)(dac_cfg + 66*channel)) = offset;
+	int16_t calibOffset = getCalibOffset(channel);
+
+	*((int16_t *)(dac_cfg + 66*channel)) = offset + calibOffset;
 
 	return 0;
 }

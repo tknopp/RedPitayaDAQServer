@@ -1553,14 +1553,17 @@ static scpi_result_t RP_Calib_DAC_SetOffset(scpi_t* context) {
 	int channel = numbers[0];
 
 	rp_calib_params_t calib_params = calib_GetParams();
-	float offset;
+	float calibOffset;
+	int16_t offset = 0;
 
-	SCPI_ParamFloat(context, &offset, true);
+	SCPI_ParamFloat(context, &calibOffset, true);
 	if (channel == 0) {
-		calib_params.dac_ch1_offs = offset;
+		offset = getOffset(channel);
+		calib_params.dac_ch1_offs = calibOffset;
 	} 
 	else if (channel == 1) {
-		calib_params.dac_ch2_offs = offset;
+		offset = getOffset(channel);
+		calib_params.dac_ch2_offs = calibOffset;
 	}
 	else {
  		return SCPI_RES_ERR;
@@ -1568,6 +1571,7 @@ static scpi_result_t RP_Calib_DAC_SetOffset(scpi_t* context) {
 
 	calib_WriteParams(calib_params, false);	
 	calib_Init(); // Reload from cache from EEPROM
+	setOffset(offset, channel); // Set offset with new calib
 	return SCPI_RES_OK;
 }
 
