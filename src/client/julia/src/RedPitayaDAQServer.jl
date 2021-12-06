@@ -24,6 +24,7 @@ mutable struct RedPitaya
   isConnected::Bool
   isMaster::Bool
   destroyed::Bool
+  calib::Array{Float32}
 end
 
 # Iterable Interface
@@ -95,7 +96,10 @@ function connect(rp::RedPitaya)
     connectADC(rp)
     rp.dataSocket = connect(rp.host, 5026, _timeout)
     rp.isConnected = true
-    decimation(rp)
+    rp.calib[1, 1] = calibADCScale(rp, 1)
+    rp.calib[2, 1] = calibADCOffset(rp, 1)
+    rp.calib[1, 2] = calibADCScale(rp, 2)
+    rp.calib[2, 2] = calibADCOffset(rp, 2)
     end
   end
 end
@@ -138,7 +142,7 @@ end
 
 function RedPitaya(host, port=5025, isMaster=true)
 
-  rp = RedPitaya(host,"\n", TCPSocket(), TCPSocket(), 1, 1, 1, false, isMaster, false)
+  rp = RedPitaya(host,"\n", TCPSocket(), TCPSocket(), 1, 1, 1, false, isMaster, false, zeros(Float32, 2, 2))
 
   connect(rp)
 
