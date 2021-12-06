@@ -1,11 +1,11 @@
-export eepromField, resetEEPROM, calibDACOffset, calibADCScale, calibADCOffset
+export calibDACOffset, calibADCScale, calibADCOffset
 
-function eepromField(rp::RedPitaya, field::AbstractString, val::Integer)
+#=function eepromField(rp::RedPitaya, field::AbstractString, val::Integer)
   send(rp, "RP:CALib $field,$val")
 end
 eepromField(rp::RedPitaya, field::AbstractString) = query(rp, "RP:CALib? $field", Int64)
 
-resetEEPROM(rp::RedPitaya) = send(rp, "RP:CALib:RESet")
+resetEEPROM(rp::RedPitaya) = send(rp, "RP:CALib:RESet")=#
 
 function calibDACOffset(rp::RedPitaya, channel::Integer, val)
   if val > 1.0

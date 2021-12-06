@@ -135,6 +135,9 @@ int init() {
 	setAmplitude(0, 1, 2);
 	setAmplitude(0, 1, 3);
 
+	setOffset(0, 0);
+	setOffset(0, 1);
+
 	setEnableDACAll(1, 0);
 	setEnableDACAll(1, 1);
 	setEnableDACAll(1, 2);
