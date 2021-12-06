@@ -1063,32 +1063,6 @@ int calib_ReadParams(rp_calib_params_t *calib_params,bool use_factory_zone)
     }
     fclose(fp);
 
-//#if defined Z10 || defined Z20_125 (commented out because we only work with STEMLab 125-14)
-    if (calib_params->magic != CALIB_MAGIC && calib_params->magic != CALIB_MAGIC_FILTER) {
-			calib_params->fe_ch1_hi_offs = calib_params->fe_ch1_lo_offs;
-			calib_params->fe_ch2_hi_offs = calib_params->fe_ch2_lo_offs;
-		}
-    else if (calib_params->magic != CALIB_MAGIC_FILTER){
-        calib_params->low_filter_aa_ch1 = GAIN_LO_FILT_AA;
-        calib_params->low_filter_bb_ch1 = GAIN_LO_FILT_BB;
-        calib_params->low_filter_pp_ch1 = GAIN_LO_FILT_PP;
-        calib_params->low_filter_kk_ch1 = GAIN_LO_FILT_KK;
-        calib_params->low_filter_aa_ch2 = GAIN_LO_FILT_AA;
-        calib_params->low_filter_bb_ch2 = GAIN_LO_FILT_BB;
-        calib_params->low_filter_pp_ch2 = GAIN_LO_FILT_PP;
-        calib_params->low_filter_kk_ch2 = GAIN_LO_FILT_KK;
-
-        calib_params->hi_filter_aa_ch1 = GAIN_HI_FILT_AA;
-        calib_params->hi_filter_bb_ch1 = GAIN_HI_FILT_BB;
-        calib_params->hi_filter_pp_ch1 = GAIN_HI_FILT_PP;
-        calib_params->hi_filter_kk_ch1 = GAIN_HI_FILT_KK;
-        calib_params->hi_filter_aa_ch2 = GAIN_HI_FILT_AA;
-        calib_params->hi_filter_bb_ch2 = GAIN_HI_FILT_BB;
-        calib_params->hi_filter_pp_ch2 = GAIN_HI_FILT_PP;
-        calib_params->hi_filter_kk_ch2 = GAIN_HI_FILT_KK;
-    }
-//#endif
-
     return 0;
 }
 
@@ -1141,43 +1115,12 @@ int calib_SetParams(rp_calib_params_t calib_params){
 
 rp_calib_params_t getDefaultCalib(){
     rp_calib_params_t calib;
-    calib.magic = CALIB_MAGIC;
-    calib.be_ch1_dc_offs = 0;
-    calib.be_ch2_dc_offs = 0;
-    calib.fe_ch1_lo_offs = 0;
-    calib.fe_ch2_lo_offs = 0;
-    calib.fe_ch1_hi_offs = 0;
-    calib.fe_ch2_hi_offs = 0;
-
-    float coff = 0.5;
-
-    calib.be_ch1_fs      = cmn_CalibFullScaleFromVoltage(1);
-    calib.be_ch2_fs      = cmn_CalibFullScaleFromVoltage(1);
-    calib.fe_ch1_fs_g_lo = cmn_CalibFullScaleFromVoltage(20.0 );
-    calib.fe_ch1_fs_g_hi = cmn_CalibFullScaleFromVoltage(coff );
-    calib.fe_ch2_fs_g_lo = cmn_CalibFullScaleFromVoltage(20.0 );
-    calib.fe_ch2_fs_g_hi = cmn_CalibFullScaleFromVoltage(coff );
-
-//#if defined Z10 || defined Z20_125 (commented out because we only work with STEMLab 125-14)
-    calib.magic = CALIB_MAGIC_FILTER;
-    calib.low_filter_aa_ch1 = GAIN_LO_FILT_AA;
-    calib.low_filter_bb_ch1 = GAIN_LO_FILT_BB;
-    calib.low_filter_pp_ch1 = GAIN_LO_FILT_PP;
-    calib.low_filter_kk_ch1 = GAIN_LO_FILT_KK;
-    calib.low_filter_aa_ch2 = GAIN_LO_FILT_AA;
-    calib.low_filter_bb_ch2 = GAIN_LO_FILT_BB;
-    calib.low_filter_pp_ch2 = GAIN_LO_FILT_PP;
-    calib.low_filter_kk_ch2 = GAIN_LO_FILT_KK;
-
-    calib.hi_filter_aa_ch1 = GAIN_HI_FILT_AA;
-    calib.hi_filter_bb_ch1 = GAIN_HI_FILT_BB;
-    calib.hi_filter_pp_ch1 = GAIN_HI_FILT_PP;
-    calib.hi_filter_kk_ch1 = GAIN_HI_FILT_KK;
-    calib.hi_filter_aa_ch2 = GAIN_HI_FILT_AA;
-    calib.hi_filter_bb_ch2 = GAIN_HI_FILT_BB;
-    calib.hi_filter_pp_ch2 = GAIN_HI_FILT_PP;
-    calib.hi_filter_kk_ch2 = GAIN_HI_FILT_KK;
-//#endif
+		calib.dac_ch1_offs = 0.0;
+		calib.dac_ch2_offs = 0.0;
+		calib.adc_ch1_fs = 1.0;
+		calib.adc_ch1_offs = 0.0;
+		calib.adc_ch2_fs = 1.0;
+		calib.adc_ch2_offs = 0.0;
     return calib;
 }
 
