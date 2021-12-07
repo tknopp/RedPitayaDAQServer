@@ -130,4 +130,30 @@ extern int getPassPDMToFastDAC();
 extern int setPassPDMToFastDAC(int);
 extern void stopTx();
 
+// Calibration
+
+/**
+ * Calibration parameters, stored in the EEPROM device
+ */
+typedef struct {
+    float dac_ch1_offs;
+    float dac_ch2_offs;
+    float adc_ch1_fs;
+    float adc_ch1_offs;
+    float adc_ch2_fs;
+    float adc_ch2_offs;
+} rp_calib_params_t;
+
+extern int calib_Init();
+extern int calib_Release();
+
+extern rp_calib_params_t calib_GetParams();
+extern rp_calib_params_t calib_GetDefaultCalib();
+extern int calib_WriteParams(rp_calib_params_t calib_params,bool use_factory_zone);
+extern int calib_SetParams(rp_calib_params_t calib_params);
+extern void calib_SetToZero();
+extern int calib_LoadFromFactoryZone();
+
+uint32_t cmn_CalibFullScaleFromVoltage(float voltageScale);
+
 #endif /* RP_DAQ_LIB_H */
