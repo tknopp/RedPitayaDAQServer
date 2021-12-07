@@ -96,10 +96,7 @@ function connect(rp::RedPitaya)
     connectADC(rp)
     rp.dataSocket = connect(rp.host, 5026, _timeout)
     rp.isConnected = true
-    rp.calib[1, 1] = calibADCScale(rp, 1)
-    rp.calib[2, 1] = calibADCOffset(rp, 1)
-    rp.calib[1, 2] = calibADCScale(rp, 2)
-    rp.calib[2, 2] = calibADCOffset(rp, 2)
+    updateCalib(rp)
     end
   end
 end
