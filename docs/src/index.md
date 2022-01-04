@@ -28,6 +28,7 @@ the [issue tracker](https://github.com/tknopp/RedPitayaDAQServer/issues) to cont
 ## Contributors
 
 * [Tobias Knopp](https://www.tuhh.de/ibi/people/tobias-knopp-head-of-institute.html)
+* [Niklas Hackelberg](https://www.tuhh.de/ibi/people/niklas-hackelberg.html)
 * [Jonas Schumacher](https://www.imt.uni-luebeck.de/institute/staff/jonas-schumacher.html)
 * [Matthias Gräser](https://www.tuhh.de/ibi/people/matthias-graeser.html)
 

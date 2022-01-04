@@ -4,11 +4,11 @@ makedocs(
     format = Documenter.HTML(prettyurls = false),
     modules = [RedPitayaDAQServer],
     sitename = "RP DAQ Server",
-    authors = "Tobias Knopp, Jonas Beuke, Matthias Gräser",
+    authors = "Tobias Knopp, Niklas Hackelberg, Jonas Beuke, Matthias Gräser",
     pages = [
         "Home" => "index.md",
-        "Installation" => "installation.md",
         "Architecture" => "architecture.md",
+        "Installation" => "installation.md",
         "Connections" => "connections.md",
         "Cluster" => "cluster.md",
         "Client" => "client.md",
