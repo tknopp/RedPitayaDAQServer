@@ -53,7 +53,7 @@ end
 Return the decimation of the RedPitaya.
 
 # Examples
-```
+```julia
 julia> rp = RedPitaya("192.168.1.100");
 
 julia> decimation(rp, 8)
@@ -69,7 +69,7 @@ decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
 Set the decimation of the RedPitaya.
 
 # Examples
-```
+```julia
 julia> decimation(rp, 8)
 
 julia> decimation(rp)
@@ -99,7 +99,7 @@ end
 Return the number of samples per period.
 
 # Example
-```
+```julia
 julia> samplesPerPeriod(rp, 256)
 
 julia> samplesPerPeriod(rp)
@@ -116,7 +116,7 @@ end
 Set the number of samples per period.
 
 # Example
-```
+```julia
 julia> samplesPerPeriod(rp, 256)
 
 julia> samplesPerPeriod(rp)
@@ -134,7 +134,7 @@ end
 Return the number of periods per frame.
 
 # Example
-```
+```julia
 julia> periodsPerFrame(rp, 16)
 
 julia> periodsPerFrame(rp)
@@ -151,7 +151,7 @@ end
 Set the number of periods per frame.
 
 # Example
-```
+```julia
 julia> periodsPerFrame(rp, 16)
 
 julia> periodsPerFrame(rp)
@@ -199,7 +199,7 @@ bufferSize(rp::RedPitaya) = query(rp,"RP:ADC:BUFFER:SIZE?", Int64)
 Set the master trigger of the RedPitaya to `val`.
 
 # Example
-```
+```julia
 julia> masterTrigger(rp, true)
 
 julia>masterTrigger(rp)
@@ -215,7 +215,7 @@ end
 
 Determine whether the master trigger is set.
 # Example
-```
+```julia
 julia> masterTrigger(rp, true)
 
 julia>masterTrigger(rp)
@@ -237,6 +237,11 @@ function ramWriterMode(rp::RedPitaya, mode::String)
 end
 
 # "INTERNAL" or "EXTERNAL"
+"""
+    triggerMode(rp::RedPitaya, mode::String)
+
+Set the trigger mode of the RedPitaya. Valid values are `"INTERNAL"` or `"EXTERNAL"`.
+"""
 function triggerMode(rp::RedPitaya, mode::String)
   send(rp, string("RP:Trigger:Mode ", mode))
 end

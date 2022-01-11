@@ -14,7 +14,7 @@ import Base: reset, iterate, length
 export RedPitaya, send, receive, query, start, stop, disconnect, getLog
 
 """
-    RedPitaya(ip, [, port = 5025, isMaster = false])
+    RedPitaya(ip [, port = 5025, isMaster = false])
 
 Create a `RedPitaya` (i.e. a connection to a RedPitayaDAQServer server) which is the central structure of
 the Julia client library.
@@ -24,7 +24,7 @@ is established and the calibration values are loaded from the RedPitayas EEPROM.
 Throws an error if a timeout occurs while attempting to connect.
 
 # Examples
-```
+```julia
 julia> rp = RedPitaya("192.168.1.100");
 
 julia> decimation(rp, 8)
@@ -67,16 +67,20 @@ const _timeout = 5.0
 """
     receive(rp)
 
-Receive a String from the RedPitaya.
-
-Reads until a whole line is received
+Receive a String from the RedPitaya command socket. Reads until a whole line is received
 """
 function receive(rp::RedPitaya)
   return readline(rp.socket)[1:end]
 end
 
 """
-Perform a query with the RedPitaya. Return String
+    query(rp::RedPitaya, cmd [, timeout = 5.0, N = 100])
+
+Send a query to the RedPitaya command socket. Return reply as String.
+
+Waits for `timeout` seconds and checks every `timeout/N` seconds.
+
+See also [receive](@ref).
 """
 function query(rp::RedPitaya, cmd::String, timeout::Number=_timeout,  N=100)
   send(rp,cmd)
@@ -92,7 +96,11 @@ function query(rp::RedPitaya, cmd::String, timeout::Number=_timeout,  N=100)
 end
 
 """
-Perform a query with the RedPitaya. Parse result as type T
+    query(rp::RedPitaya, cmd, T::Type [timeout = 5.0, N = 100])
+
+Send a query to the RedPitaya. Parse reply as `T`.
+
+Waits for `timeout` seconds and checks every `timeout/N` seconds.
 """
 function query(rp::RedPitaya,cmd::String,T::Type, timeout::Number=_timeout, N::Number=100)
   a = query(rp,cmd, timeout, N)
