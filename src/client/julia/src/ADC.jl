@@ -47,7 +47,35 @@ function dataRate(adc::ADCPerformanceData, decimation; unit ="Mbits")
   return dataRate(adc.chunkSize, adc.deltaSend, decimation)
 end
 
+"""
+    decimation(rp::RedPitaya)
+
+Return the decimation of the RedPitaya.
+
+# Examples
+```
+julia> rp = RedPitaya("192.168.1.100");
+
+julia> decimation(rp, 8)
+
+julia> decimation(rp)
+8
+```
+"""
 decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
+"""
+    decimation(rp::RedPitaya, dec)
+
+Set the decimation of the RedPitaya.
+
+# Examples
+```
+julia> decimation(rp, 8)
+
+julia> decimation(rp)
+8
+```
+"""
 function decimation(rp::RedPitaya, dec)
   rp.decimation = Int64(dec)
   send(rp, string("RP:ADC:DECimation ", rp.decimation))
@@ -65,35 +93,135 @@ function numSlowADCChan(rp::RedPitaya, value)
   send(rp, string("RP:ADC:SlowADC ", Int64(value)))
 end
 
+"""
+    samplesPerPeriod(rp::RedPitaya)
+
+Return the number of samples per period.
+
+# Example
+```
+julia> samplesPerPeriod(rp, 256)
+
+julia> samplesPerPeriod(rp)
+256
+
+```
+"""
 function samplesPerPeriod(rp::RedPitaya) 
   return rp.samplesPerPeriod
 end
+"""
+    samplesPerPeriod(rp::RedPitaya, value)
+  
+Set the number of samples per period.
+
+# Example
+```
+julia> samplesPerPeriod(rp, 256)
+
+julia> samplesPerPeriod(rp)
+256
+
+```
+"""
 function samplesPerPeriod(rp::RedPitaya, value)
   rp.samplesPerPeriod = value
 end
 
+"""
+    periodsPerFrame(rp::RedPitaya, value)
+  
+Return the number of periods per frame.
+
+# Example
+```
+julia> periodsPerFrame(rp, 16)
+
+julia> periodsPerFrame(rp)
+16
+
+```
+"""
 function periodsPerFrame(rp::RedPitaya) 
   return rp.periodsPerFrame
 end
+"""
+    periodsPerFrame(rp::RedPitaya, value)
+  
+Set the number of periods per frame.
+
+# Example
+```
+julia> periodsPerFrame(rp, 16)
+
+julia> periodsPerFrame(rp)
+16
+
+```
+"""
 function periodsPerFrame(rp::RedPitaya, value)
   rp.periodsPerFrame = value
 end
 
+"""
+    currentFrame(rp::RedPitaya)
+
+Return the current frame of the RedPitaya based on the current writepointer, samples per period and periods per frame.
+
+See also [`currentWP`](@ref), [`samplesPerPeriod`](@ref), [`periodsPerFrame`](@ref).
+"""
 function currentFrame(rp::RedPitaya)
   return Int64(floor(currentWP(rp) / (rp.samplesPerPeriod * rp.periodsPerFrame)))
 end
 
+"""
+    currentPeriod(rp::RedPitaya)
+
+Return the current period of the RedPitaya based on the current writepointer and samples per period.
+
+See also [`currentWP`](@ref), [`samplesPerPeriod`](@ref).
+"""
 function currentPeriod(rp::RedPitaya) 
   return Int64(floor(currentWP(rp) / (rp.samplesPerPeriod)))
 end
 
+"""
+    currentWP(rp::RedPitaya)
+
+Return the current writepointer of the RedPitaya.
+"""
 currentWP(rp::RedPitaya) = query(rp,"RP:ADC:WP:CURRENT?", Int64)
 bufferSize(rp::RedPitaya) = query(rp,"RP:ADC:BUFFER:SIZE?", Int64)
 
+"""
+    masterTrigger(rp::RedPitaya, val::Bool)
+
+Set the master trigger of the RedPitaya to `val`.
+
+# Example
+```
+julia> masterTrigger(rp, true)
+
+julia>masterTrigger(rp)
+true
+```
+"""
 function masterTrigger(rp::RedPitaya, val::Bool)
   valStr = val ? "ON" : "OFF"
   send(rp, string("RP:MasterTrigger ", valStr))
 end
+"""
+    masterTrigger(rp::RedPitaya)
+
+Determine whether the master trigger is set.
+# Example
+```
+julia> masterTrigger(rp, true)
+
+julia>masterTrigger(rp)
+true
+```
+"""
 masterTrigger(rp::RedPitaya) = occursin("ON", query(rp,"RP:MasterTrigger?"))
 
 function keepAliveReset(rp::RedPitaya, val::Bool)
@@ -204,6 +332,13 @@ function readSamplesOld_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
   return (data, perf)
 end
 
+"""
+    startPipelinedData(rp::RedPitaya, reqWP, numSamples, chunkSize)
+
+Instruct the RedPitaya to send `numSamples` samples from writepointer `reqWP` in chunks of `chunkSize`.
+
+See also [readPipelinedSamples](@ref).
+"""
 function startPipelinedData(rp::RedPitaya, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
   command = string("RP:ADC:DATA:PIPELINED? ", reqWP, ",", numSamples, ",", chunkSize)
   send(rp, command)

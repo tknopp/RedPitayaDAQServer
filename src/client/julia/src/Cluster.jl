@@ -378,6 +378,7 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
   wait(iterationDone)
   close(t)
   if timeoutHappened
+    @show done
     error("Timout reached when reading from sockets")
   end
 

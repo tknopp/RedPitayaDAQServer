@@ -6,7 +6,7 @@ The RedPitayaDAQServer project is implemented as a distributed system in which o
 * Server running on the CPU of the RedPitayas
 * [Client](client.md) Julia reference library 
   
-The FPGA image is responsible for [generating](generation.md) and [acquiring](acqusition.md) sychronized out- and input signals. The server acts as an intermediary to the FPGA over a TCP/IP connection, which allows remote clients to configure the FPGA image and retrieve samples. Furthermore, the server also maintains a thread that takes part in signal generation.
+The FPGA image is responsible for [generating](generation.md) and [acquiring](acquisition.md) sychronized out- and input signals. The server acts as an intermediary to the FPGA over a TCP/IP connection, which allows remote clients to configure the FPGA image and retrieve samples. Furthermore, the server also maintains a thread that takes part in signal generation.
 
 The Julia client library can be used to implement a data acqusition client application, which controls a (cluster of) RedPitaya(s). This Julia library acts as a reference, but in principle it is possible to write clients in any programming language, as the communication is language agnostic.
 

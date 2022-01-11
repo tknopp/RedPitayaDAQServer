@@ -13,6 +13,26 @@ import Base: reset, iterate, length
 
 export RedPitaya, send, receive, query, start, stop, disconnect, getLog
 
+"""
+    RedPitaya(ip, [, port = 5025, isMaster = false])
+
+Create a `RedPitaya` (i.e. a connection to a RedPitayaDAQServer server) which is the central structure of
+the Julia client library.
+
+Used to communicate with the server and manage the connection and metadata. During the construction the connection
+is established and the calibration values are loaded from the RedPitayas EEPROM.
+Throws an error if a timeout occurs while attempting to connect.
+
+# Examples
+```
+julia> rp = RedPitaya("192.168.1.100");
+
+julia> decimation(rp, 8)
+
+julia> decimation(rp)
+8
+```
+"""
 mutable struct RedPitaya
   host::String
   delim::String
@@ -33,6 +53,8 @@ length(rp::RedPitaya) = 1
 iterate(rp::RedPitaya, state=1) = state > 1 ? nothing : (rp, state + 1)
 
 """
+    send(rp, cmd)
+
 Send a command to the RedPitaya
 """
 function send(rp::RedPitaya,cmd::String)
@@ -43,7 +65,11 @@ end
 const _timeout = 5.0
 
 """
-Receive a String from the RedPitaya
+    receive(rp)
+
+Receive a String from the RedPitaya.
+
+Reads until a whole line is received
 """
 function receive(rp::RedPitaya)
   return readline(rp.socket)[1:end]
