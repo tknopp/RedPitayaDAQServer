@@ -38,7 +38,7 @@ Depending on the client library you are using you need to install them different
 ### Julia
 
 For the Julia client library you need to install RedPitayaDAQServer within Julia. To this end
-download Julia 1.5 or later and go into the package manager mode by intering ]. Then there are three
+download Julia 1.5 or later and go into the package manager mode by intering ]. Then there are two
 options to install the client library.
 
  * add RedPitayaDAQServer:src/client/julia
@@ -47,10 +47,4 @@ options to install the client library.
 The first is installing the currently published version. The second is installing in development mode and put the files to `~/dev/RedPitayaDAQServer/` where you can the also modify the files, which is handy when trying out the examples. Right now we recommend to `dev` the package. You need to `git pull` from `~/dev/RedPitayaDAQServer/` if you want to get updates, i.e. Julia will not update 
 developed packages automatically.
 
-### Matlab
-
-TODO
-
-### Python
-
-TODO
+### Custom Clients
