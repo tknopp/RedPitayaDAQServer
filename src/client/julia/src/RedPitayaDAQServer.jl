@@ -160,6 +160,16 @@ function getLog(rp::RedPitaya, log)
   close(log)
 end
 
+function stringToEnum(enumType::Type{T}, value::AbstractString) where {T <: Enum}
+  stringInstances = string.(instances(enumType))
+  # If lowercase is not sufficient one could try Unicode.normalize with casefolding
+  index = findfirst(isequal(lowercase(value)), lowercase.(stringInstances))
+  if isnothing(index)
+    throw(ArgumentError("$value cannot be resolved to an instance of $(typeof(enumType)). Possible instances are: " * join(stringInstances, ", ", " and ")))
+  end
+  return instances(enumType)[index]
+end
+
 include("DAC.jl")
 include("ADC.jl")
 include("Cluster.jl")

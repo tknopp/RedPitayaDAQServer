@@ -1,7 +1,8 @@
-export decimation, masterTrigger, currentFrame, ramWriterMode, connectADC, startADC, stopADC, samplesPerPeriod, periodsPerFrame, 
-     currentWP, slowDACInterpolation, bufferSize, keepAliveReset, triggerMode, numSlowADCChan,
-     ADCPerformanceData, RPPerformance, RPStatus, RPInfo, startPipelinedData, PerformanceData, numChan, dataRate
+export TriggerMode, decimation, masterTrigger, masterTrigger!, currentFrame, ramWriterMode, connectADC, startADC, stopADC, samplesPerPeriod, samplesPerPeriod!, periodsPerFrame,
+     periodsPerFrame!, currentWP, slowDACInterpolation, bufferSize, keepAliveReset, triggerMode, triggerMode!, numSlowADCChan,
+     ADCPerformanceData, RPPerformance, RPStatus, RPInfo, startPipelinedData!, PerformanceData, numChan, dataRate
 
+@enum TriggerMode INTERNAL EXTERNAL
 struct ADCPerformanceData
   deltaRead::UInt64
   deltaSend::UInt64
@@ -56,7 +57,7 @@ Return the decimation of the RedPitaya.
 ```julia
 julia> rp = RedPitaya("192.168.1.100");
 
-julia> decimation(rp, 8)
+julia> decimation!(rp, 8)
 
 julia> decimation(rp)
 8
@@ -64,32 +65,32 @@ julia> decimation(rp)
 """
 decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
 """
-    decimation(rp::RedPitaya, dec)
+    decimation!(rp::RedPitaya, dec)
 
 Set the decimation of the RedPitaya.
 
 # Examples
 ```julia
-julia> decimation(rp, 8)
+julia> decimation!(rp, 8)
 
 julia> decimation(rp)
 8
 ```
 """
-function decimation(rp::RedPitaya, dec)
+function decimation!(rp::RedPitaya, dec)
   rp.decimation = Int64(dec)
   send(rp, string("RP:ADC:DECimation ", rp.decimation))
 end
 
 numChan(rp::RedPitaya) = 2
 
-function slowDACInterpolation(rp::RedPitaya, enable::Bool)
+function slowDACInterpolation!(rp::RedPitaya, enable::Bool)
   enableI = Int32(enable)
   send(rp, string("RP:ADC:SlowDACInterpolation ", enableI))
 end
 
 numSlowADCChan(rp::RedPitaya) = query(rp,"RP:ADC:SlowADC?", Int64)
-function numSlowADCChan(rp::RedPitaya, value)
+function numSlowADCChan!(rp::RedPitaya, value)
   send(rp, string("RP:ADC:SlowADC ", Int64(value)))
 end
 
@@ -100,7 +101,7 @@ Return the number of samples per period.
 
 # Example
 ```julia
-julia> samplesPerPeriod(rp, 256)
+julia> samplesPerPeriod!(rp, 256)
 
 julia> samplesPerPeriod(rp)
 256
@@ -111,31 +112,31 @@ function samplesPerPeriod(rp::RedPitaya)
   return rp.samplesPerPeriod
 end
 """
-    samplesPerPeriod(rp::RedPitaya, value)
+    samplesPerPeriod!(rp::RedPitaya, value)
   
 Set the number of samples per period.
 
 # Example
 ```julia
-julia> samplesPerPeriod(rp, 256)
+julia> samplesPerPeriod!(rp, 256)
 
 julia> samplesPerPeriod(rp)
 256
 
 ```
 """
-function samplesPerPeriod(rp::RedPitaya, value)
+function samplesPerPeriod!(rp::RedPitaya, value)
   rp.samplesPerPeriod = value
 end
 
 """
-    periodsPerFrame(rp::RedPitaya, value)
+    periodsPerFrame(rp::RedPitaya)
   
 Return the number of periods per frame.
 
 # Example
 ```julia
-julia> periodsPerFrame(rp, 16)
+julia> periodsPerFrame!(rp, 16)
 
 julia> periodsPerFrame(rp)
 16
@@ -152,14 +153,14 @@ Set the number of periods per frame.
 
 # Example
 ```julia
-julia> periodsPerFrame(rp, 16)
+julia> periodsPerFrame!(rp, 16)
 
 julia> periodsPerFrame(rp)
 16
 
 ```
 """
-function periodsPerFrame(rp::RedPitaya, value)
+function periodsPerFrame!(rp::RedPitaya, value)
   rp.periodsPerFrame = value
 end
 
@@ -200,13 +201,13 @@ Set the master trigger of the RedPitaya to `val`.
 
 # Example
 ```julia
-julia> masterTrigger(rp, true)
+julia> masterTrigger!(rp, true)
 
 julia>masterTrigger(rp)
 true
 ```
 """
-function masterTrigger(rp::RedPitaya, val::Bool)
+function masterTrigger!(rp::RedPitaya, val::Bool)
   valStr = val ? "ON" : "OFF"
   send(rp, string("RP:MasterTrigger ", valStr))
 end
@@ -216,7 +217,7 @@ end
 Determine whether the master trigger is set.
 # Example
 ```julia
-julia> masterTrigger(rp, true)
+julia> masterTrigger!(rp, true)
 
 julia>masterTrigger(rp)
 true
@@ -242,18 +243,27 @@ end
 
 Set the trigger mode of the RedPitaya. Valid values are `"INTERNAL"` or `"EXTERNAL"`.
 """
-function triggerMode(rp::RedPitaya, mode::String)
-  send(rp, string("RP:Trigger:Mode ", mode))
+function triggerMode!(rp::RedPitaya, mode::String)
+  triggerMode!(rp, stringToEnum(TriggerMode, mode))
+end
+"""
+    triggerMode(rp::RedPitaya, mode::String)
+
+Set the trigger mode of the RedPitaya.
+"""
+function triggerMode!(rp::RedPitaya, mode::TriggerMode)
+  send(rp, string("RP:Trigger:Mode ", string(mode)))
 end
 
+# Check if still needed
 connectADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQCONNect")
 function startADC(rp::RedPitaya)
   send(rp, "RP:ADC:ACQSTATUS ON")
 end
 stopADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQSTATUS OFF")
 
-wasOverwritten(rp::RedPitaya) = query(rp, "RP:STATus:OVERwritten?", Bool)
-wasCorrupted(rp::RedPitaya) = query(rp, "RP:STATus:CORRupted?", Bool)
+overwritten(rp::RedPitaya) = query(rp, "RP:STATus:OVERwritten?", Bool)
+corrupted(rp::RedPitaya) = query(rp, "RP:STATus:CORRupted?", Bool)
 
 function serverStatus(rp::RedPitaya) 
   send(rp, "RP:STATus?")
@@ -262,11 +272,12 @@ end
 
 function readServerStatus(rp::RedPitaya)
   statusRaw = read!(rp.dataSocket, Array{Int8}(undef, 1))[1]
-  status = RPStatus((statusRaw & 1) != 0, # overwritten
-   (statusRaw & (1 << 1)) != 0, # corrupted
-   (statusRaw & (1 << 2)) != 0, # stepsLost
-   (statusRaw & (1 << 3)) != 0, # adcEnabled
-   (statusRaw & (1 << 4)) != 0) # dacEnabled
+  status = RPStatus(
+   (statusRaw >> 0) & 1, # overwritten
+   (statusRaw >> 1) & 1, # corrupted
+   (statusRaw >> 2) & 1, # stepsLost
+   (statusRaw >> 3) & 1, # adcEnabled
+   (statusRaw >> 4) & 1) # dacEnabled
   return status
 end
 
@@ -316,25 +327,6 @@ function readDetailedSamples_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
   command = string("RP:ADC:DATA:DETAILED? ",Int64(reqWP),",",Int64(numSamples))
   send(rp, command)
   return readSamplesChunk_(rp, reqWP, numSamples)
-end
-
-
-function readSamplesIntermediate_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
-  data = readSamples_(rp, reqWP, numSamples)
-  status = serverStatus(rp)
-  (adc, dac) = performanceData(rp)
-  perf = PerformanceData(UInt64(reqWP), adc, dac, status)
-  return (data, perf)
-end
-
-function readSamplesOld_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
-  data = readSamples_(rp, reqWP, numSamples)
-  overwritten = wasOverwritten(rp)
-  corrupted = wasCorrupted(rp)
-  status = RPStatus(overwritten, corrupted, false, true, true)
-  (adc, dac) = performanceData(rp)
-  perf = PerformanceData(UInt64(reqWP), adc, dac, status)
-  return (data, perf)
 end
 
 """
