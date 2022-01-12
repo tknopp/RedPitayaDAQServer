@@ -127,7 +127,7 @@ function connect(rp::RedPitaya)
     begin
     rp.socket = connect(rp.host, 5025, _timeout)
     send(rp, string("RP:Init"))
-    connectADC(rp)
+    send(rp, string("RP:ADC:ACQCONNect"))
     rp.dataSocket = connect(rp.host, 5026, _timeout)
     rp.isConnected = true
     updateCalib(rp)

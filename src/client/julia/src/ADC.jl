@@ -1,4 +1,4 @@
-export TriggerMode, decimation, masterTrigger, masterTrigger!, currentFrame, ramWriterMode, connectADC, startADC, stopADC, samplesPerPeriod, samplesPerPeriod!, periodsPerFrame,
+export TriggerMode, decimation, masterTrigger, masterTrigger!, currentFrame, ramWriterMode, startADC, stopADC, samplesPerPeriod, samplesPerPeriod!, periodsPerFrame,
      periodsPerFrame!, currentWP, slowDACInterpolation, bufferSize, keepAliveReset, triggerMode, triggerMode!, numSlowADCChan,
      ADCPerformanceData, RPPerformance, RPStatus, RPInfo, startPipelinedData!, PerformanceData, numChan, dataRate
 
@@ -255,8 +255,6 @@ function triggerMode!(rp::RedPitaya, mode::TriggerMode)
   send(rp, string("RP:Trigger:Mode ", string(mode)))
 end
 
-# Check if still needed
-connectADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQCONNect")
 function startADC(rp::RedPitaya)
   send(rp, "RP:ADC:ACQSTATUS ON")
 end
