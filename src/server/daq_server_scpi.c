@@ -284,8 +284,17 @@ int main(int argc, char** argv) {
 				initialized = true;
 			}
 
-			createThreads();
-			printf("Created threads\n");
+			newdatasocklen = sizeof(newdatasockaddr);
+			newdatasockfd = accept(datasockfd, (struct sockaddr *) &newdatasockaddr, &newdatasocklen);
+
+			if (newdatasockfd < 0) {
+				printf("Error accepting data socket: %s\n", strerror(errno));
+				close(clifdTmp);
+			}
+			else {
+				createThreads();
+				printf("Created threads\n");
+			}
 		}
 		
 	}

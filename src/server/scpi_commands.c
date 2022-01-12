@@ -33,20 +33,6 @@ static void readyConfigSequence() {
 	}
 }
 
-static scpi_result_t RP_Init(scpi_t * context) {
-
-	if(!initialized) {
-		init();
-		initialized = true;
-	}
-
-	//cleanUpSequenceList();
-
-	return SCPI_RES_OK;
-}
-
-
-
 
 static scpi_result_t RP_DAC_GetAmplitude(scpi_t * context) {
 	int32_t numbers[2];
