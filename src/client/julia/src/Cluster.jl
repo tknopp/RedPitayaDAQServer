@@ -12,7 +12,7 @@ function RedPitayaCluster(hosts::Vector{String}, port=5025)
   rps = RedPitaya[ RedPitaya(host, port, i==1) for (i,host) in enumerate(hosts) ]
 
   @sync for rp in rps
-    @async triggerMode(rp, "EXTERNAL")
+    @async triggerMode!(rp, EXTERNAL)
   end
 
   return RedPitayaCluster(rps)
@@ -61,10 +61,19 @@ function currentWP(rpc::RedPitayaCluster)
 end
 
 for op in [:periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset, :sequenceRepetitions,
-           :triggerMode, :samplesPerSlowDACStep, :slowDACStepsPerFrame,
-           :rampUpTime, :rampUpFraction]
+           :triggerMode, :samplesPerSlowDACStep, :slowDACStepsPerFrame]
   @eval $op(rpc::RedPitayaCluster) = $op(master(rpc))
+end
+
+for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :samplesPerSlowDACStep!, :slowDACStepsPerFrame!]
   @eval begin
+    """
+          $op(rpc::RedPitayaCluster, value)
+    
+    $op is applied to all RedPitayas in a cluster.
+
+    See [$op](@ref)
+    """
     function $op(rpc::RedPitayaCluster, value)
       @sync for rp in rpc
         @async $op(rp, value)
