@@ -324,13 +324,6 @@ function readSamplesChunk_(rp::RedPitaya, reqWP::Int64, numSamples::Int64, into=
   return (data, perf)
 end
 
-# Low level read, that includes performance and error data
-function readDetailedSamples_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
-  command = string("RP:ADC:DATA:DETAILED? ",Int64(reqWP),",",Int64(numSamples))
-  send(rp, command)
-  return readSamplesChunk_(rp, reqWP, numSamples)
-end
-
 """
     startPipelinedData(rp::RedPitaya, reqWP, numSamples, chunkSize)
 
