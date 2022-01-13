@@ -256,7 +256,7 @@ function triggerMode!(rp::RedPitaya, mode::TriggerMode)
 end
 
 function triggerMode(rp::RedPitaya)
-  return stringToEnum(TriggerMode, query("RP:TRIGger:MODe?"))
+  return stringToEnum(TriggerMode, query(rp, "RP:TRIGger:MODe?"))
 end
 
 function startADC(rp::RedPitaya)
