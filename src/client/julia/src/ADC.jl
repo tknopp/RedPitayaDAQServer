@@ -227,9 +227,9 @@ masterTrigger(rp::RedPitaya) = occursin("ON", query(rp,"RP:TRIGger?"))
 
 function keepAliveReset(rp::RedPitaya, val::Bool)
   valStr = val ? "ON" : "OFF"
-  send(rp, string("RP:KeepAliveReset ", valStr))
+  send(rp, string("RP:TRIGger:ALiVe ", valStr))
 end
-keepAliveReset(rp::RedPitaya) = occursin("ON", query(rp,"RP:KeepAliveReset?"))
+keepAliveReset(rp::RedPitaya) = occursin("ON", query(rp,"RP:TRIGger:ALiVe?"))
 
 
 # "TRIGGERED" or "CONTINUOUS"
