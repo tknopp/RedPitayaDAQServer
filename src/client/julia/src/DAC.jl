@@ -1,9 +1,9 @@
 export amplitudeDAC, frequencyDAC, phaseDAC, modeDAC,
        DCSignDAC, signalTypeDAC, offsetDAC, jumpSharpnessDAC, passPDMToFastDAC, DACConfig, configureFastDAC,
        waveforms, DACPerformanceData, computeRamping, rampUp, rampUpSteps, rampUpTotalSteps, sequenceRepetitions,
-       prepareSlowDAC, slowDACStepsPerFrame, slowDACStepsPerSequence, samplesPerSlowDACStep,
+       prepareSlowDAC, stepsPerFrame, stepsPerRepetition!, samplesPerSlowDACStep,
        enableDACLUT, setArbitraryLUT, setConstantLUT, setPauseLUT, setRangeLUT, numSlowDACChan,
-       appendSequence!, popSequence!, clearSequence!, prepareSequence!, resetAfterSequence, numLostStepsSlowADC,
+       appendSequence!, popSequence!, clearSequence!, prepareSequence!, resetAfterSequence,
        AbstractSequence, ArbitrarySequence, ConstantSequence, PauseSequence, RangeSequence, fastDACConfig
 
 @enum SignalType SINE SQUARE TRIANGLE SAWTOOTH
@@ -38,9 +38,9 @@ end
 
 function passPDMToFastDAC!(rp::RedPitaya, val::Bool)
   valStr = val ? "ON" : "OFF"
-  send(rp, string("RP:PassPDMToFastDAC ", valStr))
+  send(rp, string("RP:DAC:PASStofast ", valStr))
 end
-passPDMToFastDAC(rp::RedPitaya) = occursin("ON", query(rp,"RP:PassPDMToFastDAC?"))
+passPDMToFastDAC(rp::RedPitaya) = occursin("ON", query(rp,"RP:DAC:PASStofast?"))
 
 function amplitudeDAC(rp::RedPitaya, channel, component)
   command = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":AMP?")
@@ -106,11 +106,11 @@ function phaseDAC!(config::DACConfig, channel, component, value)
 end
 
 function jumpSharpnessDAC(rp::RedPitaya, channel)
-  command = string("RP:DAC:CH", Int(channel)-1, ":JumpSharpness?")
+  command = string("RP:DAC:CH", Int(channel)-1, ":JUMPsharpness?")
   return query(rp, command, Float64)
 end
 function jumpSharpnessDAC!(rp::RedPitaya, channel, value; forSequence=false)
-  command = string(getDACScpiPrefix(forSequence), ":CH", Int(channel)-1, ":JumpSharpness ", Float64(value))
+  command = string(getDACScpiPrefix(forSequence), ":CH", Int(channel)-1, ":JUMPsharpness ", Float64(value))
   send(rp, command)
 end
 function jumpSharpnessDAC!(config::DACConfig, channel, value)
@@ -188,13 +188,10 @@ function readDACPerformanceData(rp::RedPitaya)
   return DACPerformanceData(perf[1], perf[2], perf[3], perf[4])
 end
 
-
-numLostStepsSlowADC(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:LostSteps?", Int64) # TODO slowADC vs slowDAC in name and string
-
-numSlowDACChan(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:CHan?", Int64)
-function numSlowDACChan!(rp::RedPitaya, value)
+numSeqChan(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:CHan?", Int64)
+function numSeqChan!(rp::RedPitaya, value)
   if value <= 0 || value > 4
-    error("Num slow DAC channels needs to be between 1 and 4!")
+    error("Num sequence channels needs to be between 1 and 4!")
   end
   send(rp, string("RP:DAC:SEQ:CHan ", Int64(value)))
 end
@@ -215,27 +212,26 @@ function enableDACLUT(rp::RedPitaya, lut::Array)
   write(rp.dataSocket, lutBool)
 end
 
-samplesPerSlowDACStep(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:SAMPlesPerStep?", Int64)
-function samplesPerSlowDACStep!(rp::RedPitaya, value)
-  send(rp, string("RP:DAC:SEQ:SAMPlesPerStep ", value))
+samplesPerStep(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:SAMP?", Int64)
+function samplesPerStep!(rp::RedPitaya, value)
+  send(rp, string("RP:DAC:SEQ:SAMP ", value))
 end
 
-slowDACStepsPerSequence(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:STEPsPerSequence?", Int64)
-function slowDACStepsPerSequence!(rp::RedPitaya, value)
-  send(rp, string("RP:DAC:SEQ:STEPsPerSequence ", value))
+stepsPerRepetition(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:STEPs:REPetition?", Int64)
+function stepsPerRepetition!(rp::RedPitaya, value)
+  send(rp, string("RP:DAC:SEQ:STEPs:REPetition ", value))
 end
 
 function prepareSlowDAC!(rp::RedPitaya, samplesPerStep, stepsPerSequence, numOfChan)
   numSlowDACChan!(rp, numOfChan)
-  samplesPerSlowDACStep!(rp, samplesPerStep)
-  slowDACStepsPerSequence!(rp, stepsPerSequence)
+  samplesPerStep!(rp, samplesPerStep)
+  stepsPerSequence!(rp, stepsPerSequence)
 end
 
-function slowDACStepsPerFrame!(rp::RedPitaya, stepsPerFrame)
+function stepsPerFrame!(rp::RedPitaya, stepsPerFrame)
   samplesPerFrame = rp.periodsPerFrame * rp.samplesPerPeriod
   samplesPerStep = div(samplesPerFrame, stepsPerFrame)
-  samplesPerSlowDACStep!(rp, samplesPerStep) # Sets PDMClockDivider
-  #slowDACStepsPerSequence(rp, stepsPerFrame)  
+  samplesPerStep!(rp, samplesPerStep) # Sets PDMClockDivider
 end
 
 ramping!(rp::RedPitaya, rampSteps::Int32, rampTotalSteps::Int32) = send(rp, string("RP:DAC:SEQ:RaMPing ", rampSteps, ",", rampTotalSteps))
@@ -405,10 +401,10 @@ function computeRamping(dec, samplesPerStep, stepsPerSeq, rampTime, rampFraction
   #@show samplesPerRotation totalRotations totalSteps steps rampTime rampFraction
   return (steps, totalSteps)
 end
-computeRamping(rp::RedPitaya, stepsPerSeq ,rampTime, rampFraction) = computeRamping(decimation(rp), samplesPerSlowDACStep(rp), stepsPerSeq, rampTime, rampFraction)
+computeRamping(rp::RedPitaya, stepsPerSeq ,rampTime, rampFraction) = computeRamping(decimation(rp), samplesPerStep(rp), stepsPerSeq, rampTime, rampFraction)
 
 function appendSequence!(rp::RedPitaya, seq::AbstractSequence)
-  slowDACStepsPerSequence!(rp, stepsPerRepetition(seq))
+  stepsPerRepetition!(rp, stepsPerRepetition(seq))
   rampUp(rp, rampUpSteps(seq), rampUpTotalSteps(seq))
   rampDown(rp, rampDownSteps(seq), rampDownTotalSteps(seq))
   sequenceRepetitions!(rp, repetitions(seq))

@@ -72,7 +72,7 @@ double rampUpTime;
 double rampUpFraction;
 double rampDownTime;
 double rampDownFraction;
-int numSamplesPerSlowDACStep = 0; 
+int numSamplesPerStep = 0; 
 int numSlowDACStepsPerSequence = 20;
 int numSlowDACChan = 0;
 int numSlowADCChan = 0;

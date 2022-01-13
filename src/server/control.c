@@ -266,11 +266,11 @@ static float getFactor(sequenceData_t *seqData, int localRepetition, int localSt
 
 void setupRampingTiming(sequenceData_t *seqData, double rampUpTime, double rampUpFraction, double rampDownTime, double rampDownFraction) {
 	double bandwidth = 125e6 / getDecimation();
-	double period = (numSamplesPerSlowDACStep * seqData->numStepsPerRepetition) / bandwidth;
-	seqData->rampUpTotalSteps = ceil(rampUpTime / (numSamplesPerSlowDACStep / bandwidth));
-	seqData->rampUpSteps = ceil(rampUpTime * rampUpFraction / (numSamplesPerSlowDACStep / bandwidth));
-	seqData->rampDownTotalSteps = ceil(rampDownTime / (numSamplesPerSlowDACStep / bandwidth));
-	seqData->rampDownSteps = ceil(rampDownTime * rampDownFraction / (numSamplesPerSlowDACStep / bandwidth));
+	double period = (numSamplesPerStep * seqData->numStepsPerRepetition) / bandwidth;
+	seqData->rampUpTotalSteps = ceil(rampUpTime / (numSamplesPerStep / bandwidth));
+	seqData->rampUpSteps = ceil(rampUpTime * rampUpFraction / (numSamplesPerStep / bandwidth));
+	seqData->rampDownTotalSteps = ceil(rampDownTime / (numSamplesPerStep / bandwidth));
+	seqData->rampDownSteps = ceil(rampDownTime * rampDownFraction / (numSamplesPerStep / bandwidth));
 }
 
 static void initSlowDAC() {
@@ -425,7 +425,7 @@ static void handleLostSlowDACSteps(uint64_t oldSlowDACStep, uint64_t currentSlow
 
 static void updatePerformance(float alpha) {
 	int64_t deltaControl = oldSlowDACStepTotal + lookahead - currentSlowDACStepTotal;
-	int64_t deltaSet = (getTotalWritePointer() / numSamplesPerSlowDACStep) - currentSlowDACStepTotal;
+	int64_t deltaSet = (getTotalWritePointer() / numSamplesPerStep) - currentSlowDACStepTotal;
 
 	deltaSet = (deltaSet > 0xFF) ? 0xFF : deltaSet;
 	deltaControl = (deltaControl < 0) ? 0 : deltaControl;
@@ -469,7 +469,7 @@ void *controlThread(void *ch) {
 
 			// Handle sequence
 			wp = getTotalWritePointer();
-			currentSlowDACStepTotal = wp / numSamplesPerSlowDACStep;
+			currentSlowDACStepTotal = wp / numSamplesPerStep;
 
 			if (currentSlowDACStepTotal > oldSlowDACStepTotal) {
 

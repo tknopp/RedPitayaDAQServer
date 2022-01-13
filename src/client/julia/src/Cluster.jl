@@ -62,17 +62,24 @@ end
 
 for op in [:periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset, :sequenceRepetitions,
            :triggerMode, :samplesPerSlowDACStep, :slowDACStepsPerFrame]
+  
+  """
+        $($op)(rpc::RedPitayaCluster, value)
+
+  As single RedPitaya, but applied to only the master.
+  See [$($op)](@ref)
+  """
   @eval $op(rpc::RedPitayaCluster) = $op(master(rpc))
 end
 
-for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :samplesPerSlowDACStep!, :slowDACStepsPerFrame!]
+for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :samplesPerSlowDACStep!, :slowDACStepsPerFrame!, :keepAliveReset!]
   @eval begin
     """
-          $op(rpc::RedPitayaCluster, value)
+          $($op)(rpc::RedPitayaCluster, value)
     
-    $op is applied to all RedPitayas in a cluster.
+    As single RedPitaya, but applied to all RedPitayas in a cluster.
 
-    See [$op](@ref)
+    See [$($op)](@ref)
     """
     function $op(rpc::RedPitayaCluster, value)
       @sync for rp in rpc

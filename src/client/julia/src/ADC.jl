@@ -209,7 +209,7 @@ true
 """
 function masterTrigger!(rp::RedPitaya, val::Bool)
   valStr = val ? "ON" : "OFF"
-  send(rp, string("RP:MasterTrigger ", valStr))
+  send(rp, string("RP:TRIGger ", valStr))
 end
 """
     masterTrigger(rp::RedPitaya)
@@ -223,7 +223,7 @@ julia>masterTrigger(rp)
 true
 ```
 """
-masterTrigger(rp::RedPitaya) = occursin("ON", query(rp,"RP:MasterTrigger?"))
+masterTrigger(rp::RedPitaya) = occursin("ON", query(rp,"RP:TRIGger?"))
 
 function keepAliveReset(rp::RedPitaya, val::Bool)
   valStr = val ? "ON" : "OFF"
@@ -252,7 +252,11 @@ end
 Set the trigger mode of the RedPitaya.
 """
 function triggerMode!(rp::RedPitaya, mode::TriggerMode)
-  send(rp, string("RP:Trigger:Mode ", string(mode)))
+  send(rp, string("RP:TRIGger:MODe ", string(mode)))
+end
+
+function triggerMode(rp::RedPitaya)
+  return stringToEnum(TriggerMode, query("RP:TRIGger:MODe?"))
 end
 
 function startADC(rp::RedPitaya)

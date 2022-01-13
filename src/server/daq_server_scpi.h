@@ -132,7 +132,7 @@ struct sequenceNode_s {
 
 // Global sequence settings
 int numSlowDACChan; // How many channels are considered
-extern int numSamplesPerSlowDACStep;
+extern int numSamplesPerStep;
 extern int numSlowDACLostSteps;
 extern bool slowDACInterpolation;
 extern float *slowADCBuffer;

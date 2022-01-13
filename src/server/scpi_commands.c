@@ -464,30 +464,30 @@ static scpi_result_t RP_ADC_GetDecimation(scpi_t * context) {
 }
 
 
-static scpi_result_t RP_DAC_SetSamplesPerSlowDACStep(scpi_t * context) {
+static scpi_result_t RP_DAC_SetSamplesPerStep(scpi_t * context) {
 	// Enforce changing the samples per slowDAC steps to be only
 	// possible while not acquiring data
 	if(!isSequenceConfigurable()) {
 		return SCPI_RES_ERR;
 	}
 
-	if (!SCPI_ParamInt32(context, &numSamplesPerSlowDACStep, TRUE)) {
+	if (!SCPI_ParamInt32(context, &numSamplesPerStep, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 
 	// Adapt the slowDAC frequency to match the step length
-	setPDMClockDivider(numSamplesPerSlowDACStep * getDecimation());
+	setPDMClockDivider(numSamplesPerStep * getDecimation());
 	seqState = CONFIG;
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_GetSamplesPerSlowDACStep(scpi_t * context) {
-	SCPI_ResultInt32(context, numSamplesPerSlowDACStep);
+static scpi_result_t RP_DAC_GetSamplesPerStep(scpi_t * context) {
+	SCPI_ResultInt32(context, numSamplesPerStep);
 
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_SetSlowDACStepsPerSequence(scpi_t * context) {
+static scpi_result_t RP_DAC_SetStepsPerRepetition(scpi_t * context) {
 	// Enforce changing the slowDAC steps per sequence to be only
 	// possible while not acquiring data
 	if(!isSequenceConfigurable()) {
@@ -505,7 +505,7 @@ static scpi_result_t RP_DAC_SetSlowDACStepsPerSequence(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_GetSlowDACStepsPerSequence(scpi_t * context) {
+static scpi_result_t RP_DAC_GetStepsPerRepetition(scpi_t * context) {
 	SCPI_ResultInt32(context, (configNode->sequence).data.numStepsPerRepetition);
 
 	return SCPI_RES_OK;
@@ -513,7 +513,7 @@ static scpi_result_t RP_DAC_GetSlowDACStepsPerSequence(scpi_t * context) {
 
 
 
-static scpi_result_t RP_ADC_SetPDMClockDivider(scpi_t * context) {
+static scpi_result_t RP_ADC_SetSeqClockDivider(scpi_t * context) {
 	if(!isSequenceConfigurable()) {
 		return SCPI_RES_ERR;
 	}
@@ -528,7 +528,7 @@ static scpi_result_t RP_ADC_SetPDMClockDivider(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_ADC_GetPDMClockDivider(scpi_t * context) {
+static scpi_result_t RP_ADC_GetSeqClockDivider(scpi_t * context) {
 	SCPI_ResultInt32(context, getPDMClockDivider());
 
 	return SCPI_RES_OK;
@@ -1694,7 +1694,6 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "STATus:PRESet", .callback = SCPI_StatusPreset,},
 
 	/* RP-DAQ */
-	{.pattern = "RP:Init", .callback = RP_Init,},
 	// DAC
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude?", .callback = RP_DAC_GetAmplitude,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude", .callback = RP_DAC_SetAmplitude,},
@@ -1704,25 +1703,30 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency", .callback = RP_DAC_SetFrequency,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:PHAse?", .callback = RP_DAC_GetPhase,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:PHAse", .callback = RP_DAC_SetPhase,},
-	{.pattern = "RP:DAC:MODe", .callback = RP_DAC_SetDACMode,},
-	{.pattern = "RP:DAC:MODe?", .callback = RP_DAC_GetDACMode,},
+	//{.pattern = "RP:DAC:MODe", .callback = RP_DAC_SetDACMode,},
+	//{.pattern = "RP:DAC:MODe?", .callback = RP_DAC_GetDACMode,},
 	{.pattern = "RP:DAC:CHannel#:SIGnaltype", .callback = RP_DAC_SetSignalType,},
 	{.pattern = "RP:DAC:CHannel#:SIGnaltype?", .callback = RP_DAC_GetSignalType,},
-	{.pattern = "RP:DAC:CHannel#:JumpSharpness", .callback = RP_DAC_SetJumpSharpness,},
-	{.pattern = "RP:DAC:CHannel#:JumpSharpness?", .callback = RP_DAC_GetJumpSharpness,},
+	{.pattern = "RP:DAC:CHannel#:JUMPsharpness", .callback = RP_DAC_SetJumpSharpness,},
+	{.pattern = "RP:DAC:CHannel#:JUMPsharpness?", .callback = RP_DAC_GetJumpSharpness,},
 	// Sequences
+	{.pattern = "RP:DAC:SEQ:CLocKdivider", .callback = RP_ADC_SetSeqClockDivider,},
+	{.pattern = "RP:DAC:SEQ:CLocKdivider?", .callback = RP_ADC_GetSeqClockDivider,},
+	{.pattern = "RP:DAC:SEQ:SAMPlesperstep", .callback = RP_DAC_SetSamplesPerStep,},
+	{.pattern = "RP:DAC:SEQ:SAMPlesperstep?", .callback = RP_DAC_GetSamplesPerStep,},
 	{.pattern = "RP:DAC:SEQ:CHan", .callback = RP_DAC_SetNumSlowDACChan,},
 	{.pattern = "RP:DAC:SEQ:CHan?", .callback = RP_DAC_GetNumSlowDACChan,},
+	{.pattern = "RP:DAC:PASStofast", .callback = RP_SetPassPDMToFastDAC,},
+	{.pattern = "RP:DAC:PASStofast?", .callback = RP_GetPassPDMToFastDAC,},
+	// Specific/Current Sequence
 	{.pattern = "RP:DAC:SEQ:LUT:ARBITRARY", .callback = RP_DAC_SetArbitraryLUT,},
 	{.pattern = "RP:DAC:SEQ:LUT:CONSTANT", .callback = RP_DAC_SetConstantLUT,},
 	{.pattern = "RP:DAC:SEQ:LUT:PAUSE", .callback = RP_DAC_SetPauseLUT,},
 	{.pattern = "RP:DAC:SEQ:LUT:RANGE", .callback = RP_DAC_SetRangeLUT,},
 	{.pattern = "RP:DAC:SEQ:LUT:ENaBle", .callback = RP_DAC_SetEnableDACLUT,},
-	{.pattern = "RP:DAC:SEQ:LostSteps?", .callback = RP_DAC_GetSlowDACLostSteps,},
-	{.pattern = "RP:DAC:SEQ:STEPsPerSequence", .callback = RP_DAC_SetSlowDACStepsPerSequence,},
-	{.pattern = "RP:DAC:SEQ:STEPsPerSequence?", .callback = RP_DAC_GetSlowDACStepsPerSequence,},
-	{.pattern = "RP:DAC:SEQ:SAMPlesperstep", .callback = RP_DAC_SetSamplesPerSlowDACStep,},
-	{.pattern = "RP:DAC:SEQ:SAMPlesperstep?", .callback = RP_DAC_GetSamplesPerSlowDACStep,},
+	//{.pattern = "RP:DAC:SEQ:LostSteps?", .callback = RP_DAC_GetSlowDACLostSteps,},
+	{.pattern = "RP:DAC:SEQ:STEPs:REPetition", .callback = RP_DAC_SetStepsPerRepetition,},
+	{.pattern = "RP:DAC:SEQ:STEPs:REPetition?", .callback = RP_DAC_GetStepsPerRepetition,},
 	{.pattern = "RP:DAC:SEQ:RaMPing", .callback = RP_DAC_SetRamping,},
 	{.pattern = "RP:DAC:SEQ:RaMPing:STEPs", .callback = RP_DAC_SetRampingSteps,},
 	{.pattern = "RP:DAC:SEQ:RaMPing:TOTAL", .callback = RP_DAC_SetRampingTotalSteps,},
@@ -1750,53 +1754,42 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:SEQ:CHannel#:COMPonent#:FREQuency", .callback = RP_DAC_SetSequenceFrequency,},
 	{.pattern = "RP:DAC:SEQ:CHannel#:COMPonent#:PHAse", .callback = RP_DAC_SetSequencePhase,},
 	{.pattern = "RP:DAC:SEQ:CHannel#:SIGnaltype", .callback = RP_DAC_SetSequenceSignalType,},
-	{.pattern = "RP:DAC:SEQ:CHannel#:JumpSharpness", .callback = RP_DAC_SetSequenceJumpSharpness,},
+	{.pattern = "RP:DAC:SEQ:CHannel#:JUMPsharpness", .callback = RP_DAC_SetSequenceJumpSharpness,},
 	// ADC
-	{.pattern = "RP:ADC:SlowADC", .callback = RP_ADC_SetNumSlowADCChan,},
-	{.pattern = "RP:ADC:SlowADC?", .callback = RP_ADC_GetNumSlowADCChan,},
+	//{.pattern = "RP:ADC:SlowADC", .callback = RP_ADC_SetNumSlowADCChan,},
+	//{.pattern = "RP:ADC:SlowADC?", .callback = RP_ADC_GetNumSlowADCChan,},
 	{.pattern = "RP:ADC:DECimation", .callback = RP_ADC_SetDecimation,},
 	{.pattern = "RP:ADC:DECimation?", .callback = RP_ADC_GetDecimation,},
-	{.pattern = "RP:ADC:SlowDACInterpolation", .callback = RP_ADC_SlowDACInterpolation,},
+	//{.pattern = "RP:ADC:SlowDACInterpolation", .callback = RP_ADC_SlowDACInterpolation,},
 	{.pattern = "RP:ADC:WP:CURRent?", .callback = RP_ADC_GetCurrentWP,},
 	{.pattern = "RP:ADC:DATa?", .callback = RP_ADC_GetData,},
 	{.pattern = "RP:ADC:DATa:DETailed?", .callback = RP_ADC_GetDetailedData,},
 	{.pattern = "RP:ADC:DATa:PIPElined?", .callback = RP_ADC_GetPipelinedData,},
 	{.pattern = "RP:ADC:BUFfer:Size?", .callback = RP_ADC_GetBufferSize,},
-	{.pattern = "RP:ADC:Slow:FRAmes:DATa", .callback = RP_ADC_Slow_GetFrames,},
-	{.pattern = "RP:ADC:ACQCONNect", .callback = RP_ADC_StartAcquisitionConnection,},
+	//{.pattern = "RP:ADC:Slow:FRAmes:DATa", .callback = RP_ADC_Slow_GetFrames,},
 	{.pattern = "RP:ADC:ACQSTATus", .callback = RP_ADC_SetAcquisitionStatus,},
 	{.pattern = "RP:ADC:ACQSTATus?", .callback = RP_ADC_GetAcquisitionStatus,},
-	{.pattern = "RP:PDM:ClockDivider", .callback = RP_ADC_SetPDMClockDivider,},
-	{.pattern = "RP:PDM:ClockDivider?", .callback = RP_ADC_GetPDMClockDivider,},
-	{.pattern = "RP:PDM:CHannel#:NextValue", .callback = RP_PDM_SetPDMNextValue,},
-	{.pattern = "RP:PDM:CHannel#:NextValueVolt", .callback = RP_PDM_SetPDMNextValueVolt,},
-	{.pattern = "RP:PDM:CHannel#:NextValue?", .callback = RP_PDM_GetPDMNextValue,},
-	{.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},
+	//{.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},
 	{.pattern = "RP:DIO:DIR", .callback = RP_DIO_SetDIODirection,},
 	{.pattern = "RP:DIO", .callback = RP_DIO_SetDIOOutput,},
 	{.pattern = "RP:DIO?", .callback = RP_DIO_GetDIOOutput,},
 	{.pattern = "RP:WatchDogMode", .callback = RP_SetWatchdogMode,},
 	{.pattern = "RP:WatchDogMode?", .callback = RP_GetWatchdogMode,},
-	{.pattern = "RP:RamWriterMode", .callback = RP_SetRAMWriterMode,},
-	{.pattern = "RP:RamWriterMode?", .callback = RP_GetRAMWriterMode,},
-	{.pattern = "RP:PassPDMToFastDAC", .callback = RP_SetPassPDMToFastDAC,},
-	{.pattern = "RP:PassPDMToFastDAC?", .callback = RP_GetPassPDMToFastDAC,},
 	{.pattern = "RP:KeepAliveReset", .callback = RP_SetKeepAliveReset,},
 	{.pattern = "RP:KeepAliveReset?", .callback = RP_GetKeepAliveReset,},
-	{.pattern = "RP:Trigger:MODe", .callback = RP_DAC_SetTriggerMode,},
-	{.pattern = "RP:Trigger:MODe?", .callback = RP_DAC_GetTriggerMode,},
-	{.pattern = "RP:MasterTrigger", .callback = RP_SetMasterTrigger,},
-	{.pattern = "RP:MasterTrigger?", .callback = RP_GetMasterTrigger,},
-	{.pattern = "RP:InstantResetMode", .callback = RP_SetInstantResetMode,},
-	{.pattern = "RP:InstantResetMode?", .callback = RP_GetInstantResetMode,},
-	{.pattern = "RP:PeripheralAResetN?", .callback = RP_PeripheralAResetN,},
-	{.pattern = "RP:FourierSynthAResetN?", .callback = RP_FourierSynthAResetN,},
-	{.pattern = "RP:PDMAResetN?", .callback = RP_PDMAResetN,},
-	{.pattern = "RP:WriteToRAMAResetN?", .callback = RP_WriteToRAMAResetN,},
-	{.pattern = "RP:XADCAResetN?", .callback = RP_XADCAResetN,},
-	{.pattern = "RP:TriggerStatus?", .callback = RP_TriggerStatus,},
-	{.pattern = "RP:WatchdogStatus?", .callback = RP_WatchdogStatus,},
-	{.pattern = "RP:InstantResetStatus?", .callback = RP_InstantResetStatus,},
+	{.pattern = "RP:TRIGger:MODe", .callback = RP_DAC_SetTriggerMode,},
+	{.pattern = "RP:TRIGger:MODe?", .callback = RP_DAC_GetTriggerMode,},
+	{.pattern = "RP:TRIGger", .callback = RP_SetMasterTrigger,},
+	{.pattern = "RP:TRIGger?", .callback = RP_GetMasterTrigger,},
+	//{.pattern = "RP:InstantResetMode", .callback = RP_SetInstantResetMode,},
+	//{.pattern = "RP:InstantResetMode?", .callback = RP_GetInstantResetMode,},
+	//{.pattern = "RP:PeripheralAResetN?", .callback = RP_PeripheralAResetN,},
+	//{.pattern = "RP:FourierSynthAResetN?", .callback = RP_FourierSynthAResetN,},
+	//{.pattern = "RP:PDMAResetN?", .callback = RP_PDMAResetN,},
+	//{.pattern = "RP:WriteToRAMAResetN?", .callback = RP_WriteToRAMAResetN,},
+	//{.pattern = "RP:XADCAResetN?", .callback = RP_XADCAResetN,},
+	//{.pattern = "RP:WatchdogStatus?", .callback = RP_WatchdogStatus,},
+	//{.pattern = "RP:InstantResetStatus?", .callback = RP_InstantResetStatus,},
 	/* RP-DAQ Errors */
 	{.pattern = "RP:STATus:OVERwritten?", .callback = RP_GetOverwrittenStatus,},
 	{.pattern = "RP:STATus:CORRupted?", .callback = RP_GetCorruptedStatus,},
