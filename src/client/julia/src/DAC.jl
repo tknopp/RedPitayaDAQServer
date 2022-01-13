@@ -1,10 +1,13 @@
-export amplitudeDAC, frequencyDAC, phaseDAC, modeDAC,
-       DCSignDAC, signalTypeDAC, offsetDAC, jumpSharpnessDAC, passPDMToFastDAC, DACConfig, configureFastDAC,
-       waveforms, DACPerformanceData, computeRamping, rampUp, rampUpSteps, rampUpTotalSteps, sequenceRepetitions,
-       prepareSlowDAC, stepsPerFrame, stepsPerRepetition!, samplesPerSlowDACStep,
-       enableDACLUT, setArbitraryLUT, setConstantLUT, setPauseLUT, setRangeLUT, numSlowDACChan,
-       appendSequence!, popSequence!, clearSequence!, prepareSequence!, resetAfterSequence,
-       AbstractSequence, ArbitrarySequence, ConstantSequence, PauseSequence, RangeSequence, fastDACConfig
+export SignalType, DACPerformanceData, DACConfig, passPDMToFastDAC, passPDMToFastDAC!,
+amplitudeDAC, amplitudeDAC!, amplitudeDACSeq!, offsetDAC, offsetDAC!, offsetDACSeq!,
+frequencyDAC, frequencyDAC!, frequencyDACSeq!, phaseDAC, phaseDAC!, phaseDACSeq!,
+jumpSharpnessDAC, jumpSharpnessDAC!, jumpSharpnessDACSeq!, signalTypeDAC, signalTypeDAC!, signalTypeDACSeq!,
+configureFastDACSeq!, numSeqChan, numSeqChan!, setLUT!, samplesPerStep, samplesPerStep!,
+stepsPerRepetition, stepsPerRepetition!, prepareSteps!, stepsPerFrame!, 
+ramping!, rampUp!, rampDown!, rampingSteps, rampingSteps!, rampingTotalSteps, rampingTotalSteps!,
+rampUpSteps, rampUpSteps!, rampUpTotalSteps, rampUpTotalSteps!, rampDownSteps, rampDownSteps!, rampDownTotalSteps, rampDownTotalSteps!, 
+popSequence!, clearSequence!, prepareSequence!, AbstractSequence, ArbitrarySequence, enableLUT,
+fastDACConfig, resetAfterSequence!
 
 @enum SignalType SINE SQUARE TRIANGLE SAWTOOTH
 struct DACPerformanceData
@@ -167,17 +170,6 @@ function signalTypeDACSeq!(config::DACConfig, channel, sigType::String)
   config.signalTypes[channel] = sigType
 end
 
-function DCSignDAC(rp::RedPitaya, channel)
-  command = string("RP:DAC:CH", Int(channel)-1, ":SIGn?")
-  return query(rp, command, Int64) == "POSITIVE" ? 1 : -1
-end
-
-function DCSignDAC(rp::RedPitaya, channel, sign::Integer)
-  command = string("RP:DAC:CH", Int(channel)-1, ":SIGn ",
-             sign > 0 ? "POSITIVE" : "NEGATIVE")
-  return send(rp, command)
-end
-
 function configureFastDACSeq!(rp::RedPitaya, config::DACConfig)
   for ch = 1:2
     
@@ -237,7 +229,7 @@ function stepsPerRepetition!(rp::RedPitaya, value)
   send(rp, string("RP:DAC:SEQ:STEPs:REPetition ", value))
 end
 
-function prepareSlowDAC!(rp::RedPitaya, samplesPerStep, stepsPerSequence, numOfChan)
+function prepareSteps!(rp::RedPitaya, samplesPerStep, stepsPerSequence, numOfChan)
   numSlowDACChan!(rp, numOfChan)
   samplesPerStep!(rp, samplesPerStep)
   stepsPerSequence!(rp, stepsPerSequence)
@@ -428,7 +420,7 @@ function appendSequence!(rp::RedPitaya, seq::AbstractSequence)
   if !isnothing(enable)
     enableDACLUT(rp, enable)
   end
-  configureFastDACSeq!(rp, fastDACConfig(seq), forSequence = true)
+  configureFastDACSeq!(rp, fastDACConfig(seq))
   resetAfterSequence!(rp, resetAfterSequence(seq))
   appendSequence!(rp)
 end

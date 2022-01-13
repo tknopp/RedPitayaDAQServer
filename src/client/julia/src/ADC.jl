@@ -1,6 +1,9 @@
-export TriggerMode, decimation, masterTrigger, masterTrigger!, currentFrame, ramWriterMode, startADC, stopADC, samplesPerPeriod, samplesPerPeriod!, periodsPerFrame,
-     periodsPerFrame!, currentWP, slowDACInterpolation, bufferSize, keepAliveReset, triggerMode, triggerMode!, numSlowADCChan,
-     ADCPerformanceData, RPPerformance, RPStatus, RPInfo, startPipelinedData!, PerformanceData, numChan, dataRate
+export TriggerMode, ADCPerformanceData, RPStatus, PerformanceData, RPPerformance, RPInfo,
+decimation, decimation!, numChan, samplesPerPeriod, samplesPerPeriod!, periodsPerFrame, periodsPerFrame!,
+currentWP, currentPeriod, currentFrame, masterTrigger, masterTrigger!, keepAliveReset, keepAliveReset!,
+triggerMode, triggerMode!, startADC, stopADC, overwritten, corrupted, serverStatus, performanceData,
+startPipelinedData
+
 
 @enum TriggerMode INTERNAL EXTERNAL
 struct ADCPerformanceData
@@ -82,6 +85,11 @@ function decimation!(rp::RedPitaya, dec)
   send(rp, string("RP:ADC:DECimation ", rp.decimation))
 end
 
+"""
+    numChan(rp::RedPitaya)
+
+Return the number of ADC channel of a RedPitaya.
+"""
 numChan(rp::RedPitaya) = 2
 
 """
