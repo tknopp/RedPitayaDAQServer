@@ -171,7 +171,7 @@ static void configureFastDAC(fastDACConfig_t * config) {
 }
 
 bool isSequenceConfigurable() {
-	return !rxEnabled && (seqState == CONFIG || seqState == PREPARED || seqState == FINISHED);
+	return getServerMode() == CONFIGRUATION && (seqState == CONFIG || seqState == PREPARED || seqState == FINISHED);
 }
 
 float getArbitrarySequenceValue(sequenceData_t *seqData, int step, int channel) {
@@ -520,6 +520,5 @@ void *controlThread(void *ch) {
 
 void joinControlThread() {
 	controlThreadRunning = false;
-	rxEnabled = false;
 	pthread_join(pControl, NULL);
 }

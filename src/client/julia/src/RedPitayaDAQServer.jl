@@ -11,7 +11,7 @@ using LinearAlgebra
 
 import Base: reset, iterate, length
 
-export RedPitaya, send, receive, query, start, stop, disconnect, getLog
+export RedPitaya, send, receive, query, start, stop, disconnect, ServerMode, getLog
 
 """
     RedPitaya(ip [, port = 5025, isMaster = false])
@@ -166,6 +166,19 @@ function stringToEnum(enumType::Type{T}, value::AbstractString) where {T <: Enum
     throw(ArgumentError("$value cannot be resolved to an instance of $(typeof(enumType)). Possible instances are: " * join(stringInstances, ", ", " and ")))
   end
   return instances(enumType)[index]
+end
+
+@enum ServerMode CONFIGURATION MEASUREMENT TRANSMISSION
+
+function serverMode(rp::RedPitaya)
+  return stringToEnum(ServerMode, query(rp, "RP:MODe?"))
+end
+
+function serverMode!(rp::RedPitaya, mode::String)
+  serverMode!(rp, stringToEnum(ServerMode, mode))
+end
+function serverMode!(rp::RedPitaya, mode::ServerMode)
+  send(rp, string("RP:MODe ", string(mode)))
 end
 
 include("DAC.jl")

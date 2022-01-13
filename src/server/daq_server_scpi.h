@@ -43,8 +43,6 @@ extern int64_t channel;
 
 extern uint32_t *buffer;
 extern bool initialized;
-extern bool rxEnabled;
-extern bool buffInitialized;
 extern bool controlThreadRunning;
 extern bool commThreadRunning;
 
@@ -80,6 +78,11 @@ extern int setSocketNonBlocking(int);
 extern void* communicationThread(void*);
 extern void* controlThread(void*);
 extern void joinControlThread();
+
+typedef enum SERVER_MODE {CONFIGRUATION, MEASUREMENT, TRANSMISSION};
+extern SERVER_MODE getServerMode();
+extern void setServerMode(SERVER_MODE mode);
+
 
 // Sequences
 // Sequence structures

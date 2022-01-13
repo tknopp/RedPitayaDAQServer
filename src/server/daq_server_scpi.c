@@ -62,6 +62,15 @@
 #include "../lib/rp-daq-lib.h"
 #include "../server/daq_server_scpi.h"
 
+static SERVER_MODE serverMode = CONFIGRUATION;
+
+SERVER_MODE getServerMode() {
+	return serverMode;
+}
+
+void setServerMode(SERVER_MODE mode) {
+	serverMode = mode;
+}
 
 sequenceState_t seqState;
 sequenceNode_t *head = NULL; 
@@ -82,8 +91,6 @@ int numSlowDACLostSteps = 0;
 int64_t channel;
 
 bool initialized = false;
-bool rxEnabled = false;
-bool buffInitialized = false;
 bool controlThreadRunning = false;
 bool commThreadRunning = false;
 
@@ -125,7 +132,7 @@ void getprio( pthread_t id ) {
 }
 
 uint8_t getStatus() {
-	return getErrorStatus() | rxEnabled << 3 | seqState == RUNNING << 4; 
+	return getErrorStatus() | getServerMode() != CONFIGRUATION << 3 | seqState == RUNNING << 4; 
 }
 
 uint8_t getErrorStatus() {
@@ -224,9 +231,6 @@ int main(int argc, char** argv) {
 	datasockfd = createServer(5026);
 	newdatasockfd = 0;
 
-	rxEnabled = false;
-	buffInitialized = false;
-
 	// Set priority of this thread
 	struct sched_param p;
 	p.sched_priority = 20;
@@ -292,6 +296,7 @@ int main(int argc, char** argv) {
 				close(clifdTmp);
 			}
 			else {
+				setServerMode(CONFIGRUATION);
 				createThreads();
 				printf("Created threads\n");
 			}

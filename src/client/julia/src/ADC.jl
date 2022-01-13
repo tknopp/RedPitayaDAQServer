@@ -331,7 +331,7 @@ end
 
 
 # Low level read. One has to take care that the numFrames are available
-function readDataSlow_(rp::RedPitaya, startFrame, numFrames)
+#=function readDataSlow_(rp::RedPitaya, startFrame, numFrames)
   numPeriods = rp.periodsPerFrame
   numChan = numSlowADCChan(rp)
 
@@ -344,3 +344,4 @@ function readDataSlow_(rp::RedPitaya, startFrame, numFrames)
   #return reshape(u, numChan, numPeriods, numFrames)
   return zeros(Float32, numChan, numPeriods, numFrames)
 end
+=#
