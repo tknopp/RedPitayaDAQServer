@@ -84,16 +84,6 @@ end
 
 numChan(rp::RedPitaya) = 2
 
-function slowDACInterpolation!(rp::RedPitaya, enable::Bool)
-  enableI = Int32(enable)
-  send(rp, string("RP:ADC:SlowDACInterpolation ", enableI))
-end
-
-numSlowADCChan(rp::RedPitaya) = query(rp,"RP:ADC:SlowADC?", Int64)
-function numSlowADCChan!(rp::RedPitaya, value)
-  send(rp, string("RP:ADC:SlowADC ", Int64(value)))
-end
-
 """
     samplesPerPeriod(rp::RedPitaya)
 
@@ -231,11 +221,6 @@ function keepAliveReset(rp::RedPitaya, val::Bool)
 end
 keepAliveReset(rp::RedPitaya) = occursin("ON", query(rp,"RP:TRIGger:ALiVe?"))
 
-
-# "TRIGGERED" or "CONTINUOUS"
-function ramWriterMode(rp::RedPitaya, mode::String)
-  send(rp, string("RP:RamWriterMode ", mode))
-end
 
 # "INTERNAL" or "EXTERNAL"
 """

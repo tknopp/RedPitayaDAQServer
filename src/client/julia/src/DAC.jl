@@ -28,14 +28,6 @@ struct DACConfig
   end
 end
 
-function getDACScpiPrefix(forSequence)
-  prefix = "RP:DAC"
-  if forSequence
-    prefix = prefix * ":SEQ"
-  end
-  return prefix
-end
-
 function passPDMToFastDAC!(rp::RedPitaya, val::Bool)
   valStr = val ? "ON" : "OFF"
   send(rp, string("RP:DAC:PASStofast ", valStr))
@@ -46,15 +38,24 @@ function amplitudeDAC(rp::RedPitaya, channel, component)
   command = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":AMP?")
   return query(rp, command, Float64)
 end
-function amplitudeDAC!(rp::RedPitaya, channel, component, value; forSequence=false)
+function amplitudeDAC!(rp::RedPitaya, channel, component, value)
   if value > 1.0
     error("$value is larger than 1.0 V!")
   end
-  command = string(getDACScpiPrefix(forSequence), ":CH", Int(channel)-1, ":COMP",
+  command = string("RP:DAC:CH", Int(channel)-1, ":COMP",
                    Int(component)-1, ":AMP ", Float64(value))
   return send(rp, command)
 end
-function amplitudeDAC!(config::DACConfig, channel, component, value)
+
+function amplitudeDACSeq!(rp::RedPitaya, channel, component, value)
+  if value > 1.0
+    error("$value is larger than 1.0 V!")
+  end
+  command = string("RP:DAC:SEQ:CH", Int(channel)-1, ":COMP",
+                   Int(component)-1, ":AMP ", Float64(value))
+  return send(rp, command)
+end
+function amplitudeDACSeq!(config::DACConfig, channel, component, value)
   if value > 1.0
     error("$value is larger than 1.0 V!")
   end
@@ -65,14 +66,22 @@ function offsetDAC(rp::RedPitaya, channel)
   command = string("RP:DAC:CH", Int(channel)-1, ":OFF?")
   return query(rp, command, Float64)
 end
-function offsetDAC!(rp::RedPitaya, channel, value; forSequence=false)
+function offsetDAC!(rp::RedPitaya, channel, value)
   if value > 1.0
     error("$value is larger than 1.0 V!")
   end
-  command = string(getDACScpiPrefix(forSequence), ":CH", Int(channel)-1, ":OFF ", Float64(value))
+  command = string("RP:DAC:CH", Int(channel)-1, ":OFF ", Float64(value))
   return send(rp, command)
 end
-function offsetDAC!(config::DACConfig, channel, value)
+
+function offsetDACSeq!(rp::RedPitaya, channel, value)
+  if value > 1.0
+    error("$value is larger than 1.0 V!")
+  end
+  command = string("RP:DAC:SEQ:CH", Int(channel)-1, ":OFF ", Float64(value))
+  return send(rp, command)
+end
+function offsetDACSeq!(config::DACConfig, channel, value)
   if value > 1.0
     error("$value is larger than 1.0 V!")
   end
@@ -83,12 +92,18 @@ function frequencyDAC(rp::RedPitaya, channel, component)
   command = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":FREQ?")
   return query(rp, command, Float64)
 end
-function frequencyDAC!(rp::RedPitaya, channel, component, value; forSequence=false)
-  command = string(getDACScpiPrefix(forSequence), ":CH", Int(channel)-1, ":COMP",
+function frequencyDAC!(rp::RedPitaya, channel, component, value)
+  command = string("RP:DAC:CH", Int(channel)-1, ":COMP",
                    Int(component)-1, ":FREQ ", Float64(value))
   send(rp, command)
 end
-function frequencyDAC!(config::DACConfig, channel, component, value)
+
+function frequencyDACSeq!(rp::RedPitaya, channel, component, value)
+  command = string("RP:DAC:SEQ:CH", Int(channel)-1, ":COMP",
+                   Int(component)-1, ":FREQ ", Float64(value))
+  send(rp, command)
+end
+function frequencyDACSeq!(config::DACConfig, channel, component, value)
   config.frequencies[channel, component] = value
 end
 
@@ -96,12 +111,18 @@ function phaseDAC(rp::RedPitaya, channel, component)
   command = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":PHA?")
   return query(rp, command, Float64)
 end
-function phaseDAC!(rp::RedPitaya, channel, component, value; forSequence=false)
-  command = string(getDACScpiPrefix(forSequence), ":CH", Int(channel)-1, ":COMP",
+function phaseDAC!(rp::RedPitaya, channel, component, value)
+  command = string("RP:DAC:CH", Int(channel)-1, ":COMP",
                    Int(component)-1, ":PHA ", Float64(value))
   send(rp, command)
 end
-function phaseDAC!(config::DACConfig, channel, component, value)
+
+function phaseDACSeq!(rp::RedPitaya, channel, component, value)
+  command = string("RP:DAC:SEQ:CH", Int(channel)-1, ":COMP",
+                   Int(component)-1, ":PHA ", Float64(value))
+  send(rp, command)
+end
+function phaseDACSeq!(config::DACConfig, channel, component, value)
   config.phases[channel, component] = value
 end
 
@@ -109,31 +130,17 @@ function jumpSharpnessDAC(rp::RedPitaya, channel)
   command = string("RP:DAC:CH", Int(channel)-1, ":JUMPsharpness?")
   return query(rp, command, Float64)
 end
-function jumpSharpnessDAC!(rp::RedPitaya, channel, value; forSequence=false)
-  command = string(getDACScpiPrefix(forSequence), ":CH", Int(channel)-1, ":JUMPsharpness ", Float64(value))
+function jumpSharpnessDAC!(rp::RedPitaya, channel, value)
+  command = string("RP:DAC:CH", Int(channel)-1, ":JUMPsharpness ", Float64(value))
   send(rp, command)
 end
-function jumpSharpnessDAC!(config::DACConfig, channel, value)
+
+function jumpSharpnessDACSeq!(rp::RedPitaya, channel, value)
+  command = string("RP:DAC:SEQ:CH", Int(channel)-1, ":JUMPsharpness ", Float64(value))
+  send(rp, command)
+end
+function jumpSharpnessDACSeq!(config::DACConfig, channel, value)
   config.jumpSharpness[channel] = value
-end
-
-#"STANDARD" or "AWG" (not yet supported)
-function modeDAC(rp::RedPitaya)
-  modeDAC_(rp, 1)
-  modeDAC_(rp, 2)
-end
-function modeDAC(rp::RedPitaya, mode::String)
-  modeDAC_(rp, mode, 1)
-  modeDAC_(rp, mode, 2)
-end
-
-function modeDAC_(rp::RedPitaya, channel=1)
-  #return query(rp, "RP:DAC:CH", Int(channel)-1,":MODe?")[2:end-1]
-  return query(rp, "RP:DAC:MODe?")[2:end-1]
-end
-function modeDAC_(rp::RedPitaya, mode::String, channel=1)
-  #send(rp, string("RP:DAC:CH", Int(channel)-1, ":MODe ", mode))
-  send(rp, string("RP:DAC:MODe ", mode))
 end
 
 function signalTypeDAC(rp::RedPitaya, channel)
@@ -141,14 +148,22 @@ function signalTypeDAC(rp::RedPitaya, channel)
   return stringToEnum(SignalType, query(rp, command))
 end
 
-function signalTypeDAC!(rp::RedPitaya, channel, sigType::String; forSequence=false)
-  return signalTypeDAC!(rp, channel, stringToEnum(SignalType, sigType), forSequence = forSequence)
+function signalTypeDAC!(rp::RedPitaya, channel, sigType::String)
+  return signalTypeDAC!(rp, channel, stringToEnum(SignalType, sigType))
 end
-function signalTypeDAC!(rp::RedPitaya, channel, sigType::SignalType; forSequence=false)
-  command = string(getDACScpiPrefix(forSequence), ":CH", Int(channel)-1, ":SIGnaltype ", string(sigType))
+function signalTypeDAC!(rp::RedPitaya, channel, sigType::SignalType)
+  command = string("RP:DAC:CH", Int(channel)-1, ":SIGnaltype ", string(sigType))
   return send(rp, command)
 end
-function signalTypeDAC!(config::DACConfig, channel, sigType::String)
+
+function signalTypeDACSeq!(rp::RedPitaya, channel, sigType::String)
+  return signalTypeDACSeq!(rp, channel, stringToEnum(SignalType, sigType))
+end
+function signalTypeDACSeq!(rp::RedPitaya, channel, sigType::SignalType)
+  command = string("RP:DAC:SEQ:CH", Int(channel)-1, ":SIGnaltype ", string(sigType))
+  return send(rp, command)
+end
+function signalTypeDACSeq!(config::DACConfig, channel, sigType::String)
   config.signalTypes[channel] = sigType
 end
 
@@ -163,22 +178,22 @@ function DCSignDAC(rp::RedPitaya, channel, sign::Integer)
   return send(rp, command)
 end
 
-function configureFastDAC!(rp::RedPitaya, config::DACConfig; forSequence = false)
+function configureFastDACSeq!(rp::RedPitaya, config::DACConfig)
   for ch = 1:2
     
     for cmp = 1:4
       amplitude = config.amplitudes[ch, cmp]
-      isnothing(amplitude) || amplitudeDAC!(rp, ch, cmp, amplitude, forSequence = forSequence)
+      isnothing(amplitude) || amplitudeDACSeq!(rp, ch, cmp, amplitude)
       frequency = config.frequencies[ch, cmp]
-      isnothing(frequency) || frequencyDAC!(rp, ch, cmp, frequency, forSequence = forSequence)
+      isnothing(frequency) || frequencyDACSeq!(rp, ch, cmp, frequency)
       phase = config.phases[ch, cmp]
-      isnothing(phase) || phaseDAC!(rp, ch, cmp, phase, forSequence = forSequence)
+      isnothing(phase) || phaseDACSeq!(rp, ch, cmp, phase)
     end
 
     offset = config.offsets[ch]
-    isnothing(offset) || offsetDAC!(rp, ch, offset, forSequence = forSequence)
+    isnothing(offset) || offsetDACSeq!(rp, ch, offset)
     signalType = config.signalTypes[ch]
-    isnothing(signalType) || signalTypeDAC!(rp, ch, signalType, forSequence = forSequence)
+    isnothing(signalType) || signalTypeDACSeq!(rp, ch, signalType)
 
   end
 end
@@ -413,7 +428,7 @@ function appendSequence!(rp::RedPitaya, seq::AbstractSequence)
   if !isnothing(enable)
     enableDACLUT(rp, enable)
   end
-  configureFastDAC(rp, fastDACConfig(seq), forSequence = true)
+  configureFastDACSeq!(rp, fastDACConfig(seq), forSequence = true)
   resetAfterSequence!(rp, resetAfterSequence(seq))
   appendSequence!(rp)
 end
