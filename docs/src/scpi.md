@@ -18,23 +18,18 @@ For communication betten the server and the client an [SCPI](https://en.wikipedi
 | RP:ADC:SlowADC?     |  |  |  |
 | RP:ADC:DECimation     |  |  |  |
 | RP:ADC:DECimation?     |  |  |  |
-| RP:ADC:PERiod     |  |  |  |
-| RP:ADC:PERiod?     |  |  |  |
-| RP:ADC:PERiods:CURRent     |  |  |  |
-| RP:ADC:PERiods:DATa     |  |  |  |
-| RP:ADC:FRAme     |  |  |  |
-| RP:ADC:FRAme?     |  |  |  |
-| RP:ADC:FRAmes:CURRent?     |  |  |  |
 | RP:ADC:WP:CURRent?     |  |  |  |
-| RP:ADC:FRAmes:DATa     |  |  |  |
 | RP:ADC:BUFfer:Size?     |  |  |  |
-| RP:ADC:Slow:FRAmes:DATa     |  |  |  |
 | RP:ADC:ACQCONNect     |  |  |  |
 | RP:ADC:ACQSTATus     |  |  |  |
 | RP:ADC:ACQSTATus?     |  |  |  |
+| RP:ADC:DATa?  | | | |
+| RP:ADC:DATa:DETailed?  | | | |
+| RP:ADC:DATa:PIPElined?  | | | |
 
 
-## DAC and Sequences
+
+## DAC
 
 | Command        | Arguments    | Description         | Example         |
 | :-------------- | :---------------- | :------------------- | :------------------- |
@@ -63,9 +58,44 @@ For communication betten the server and the client an [SCPI](https://en.wikipedi
 | RP:ADC:SlowDACPeriodsPerFrame?     |  |  |  |
 | RP:PDM:ClockDivider    |  |  |  |
 | RP:PDM:ClockDivider?    |  |  |  |
-| RP:PDM:CHannel#:NextValue    |  |  |  |
-| RP:PDM:CHannel#:NextValueVolt    |  |  |  |
-| RP:PDM:CHannel#:NextValue? | | | |
+
+## Sequences
+| Command        | Arguments    | Description         | Example         |
+| :-------------- | :---------------- | :------------------- | :------------------- |
+|RP:DAC:SEQ:CHan            |  |  |  |
+|RP:DAC:SEQ:CHan?           |  |  |  |
+|RP:DAC:SEQ:LUT:ARBITRARY   |  |  |  |
+|RP:DAC:SEQ:LUT:CONSTANT    |  |  |  |
+|RP:DAC:SEQ:LUT:PAUSE       |  |  |  |
+|RP:DAC:SEQ:LUT:RANGE       |  |  |  |
+|RP:DAC:SEQ:LUT:ENaBle      |  |  |  |
+|RP:DAC:SEQ:LostSteps?      |  |  |  |
+|RP:DAC:SEQ:STEPsPerSequence   |  |  |  |
+|RP:DAC:SEQ:STEPsPerSequence?  |  |  |  |
+|RP:DAC:SEQ:SAMPlesperstep     |  |  |  |
+|RP:DAC:SEQ:SAMPlesperstep?    |  |  |  |
+|RP:DAC:SEQ:RaMPing |  |  |  |
+|RP:DAC:SEQ:RaMPing:STEPs   |  |  |  |
+|RP:DAC:SEQ:RaMPing:TOTAL   |  |  |  |
+|RP:DAC:SEQ:RaMPing:UP  |  |  |  |
+|RP:DAC:SEQ:RaMPing:UP:STEPs    |  |  |  |
+|RP:DAC:SEQ:RaMPing:UP:STEPs?   |  |  |  |
+|RP:DAC:SEQ:RaMPing:UP:TOTAL    |  |  |  |
+|RP:DAC:SEQ:RaMPing:UP:TOTAL?   |  |  |  |
+|RP:DAC:SEQ:RaMPing:DOWN    |  |  |  |
+|RP:DAC:SEQ:RaMPing:DOWN:STEPs  |  |  |  |
+|RP:DAC:SEQ:RaMPing:DOWN:STEPs? |  |  |  |
+|RP:DAC:SEQ:RaMPing:DOWN:TOTAL |  |  |  |
+|RP:DAC:SEQ:RaMPing:DOWN:TOTAL?     |  |  |  |
+|RP:DAC:SEQ:REPetitions |  |  |  |
+|RP:DAC:SEQ:REPetitions?    |  |  |  |
+|RP:DAC:SEQ:RESETafter  |  |  |  |
+|RP:DAC:SEQ:RESETafter? |  |  |  |
+|RP:DAC:SEQ:APPend  |  |  |  |
+|RP:DAC:SEQ:POP |  |  |  |
+|RP:DAC:SEQ:CLEAR   |  |  |  |
+|RP:DAC:SEQ:PREPare?    |  |  |  |
+
 
 
 ## Misc

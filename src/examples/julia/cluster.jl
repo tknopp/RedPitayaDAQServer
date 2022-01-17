@@ -1,5 +1,8 @@
 using RedPitayaDAQServer
-using PyPlot
+using Plots
+
+pyplot()
+default(show = true)
 
 # obtain the URL of the RedPitaya
 include("config.jl")
@@ -18,10 +21,13 @@ periodsPerFrame(rp, periods_per_frame)
 
 modeDAC(rp, "STANDARD")
 frequencyDAC(rp, 1, 1, base_frequency / modulus)
+frequencyDAC(rp, 3, 1, base_frequency / modulus)
 
 println(" frequency = $(frequencyDAC(rp,1,1))")
-amplitudeDAC(rp, 1, 1, 4000)
+amplitudeDAC(rp, 1, 1, 0.8)
+amplitudeDAC(rp, 3, 1, 0.8)
 phaseDAC(rp, 1, 1, 0.0 ) # Phase has to be given in between 0 and 1
+phaseDAC(rp, 1, 1, pi)
 
 triggerMode(rp, "EXTERNAL")
 ramWriterMode(rp, "TRIGGERED")
@@ -36,12 +42,8 @@ uFirstPeriod = readData(rp, 0, 1)
 uCurrentPeriod = readData(rp, currentFrame(rp), 1)
 #RedPitayaDAQServer.disconnect(rp)
 
-figure(1)
-clf()
-subplot(1,2,1)
+
 plot(vec(uFirstPeriod[:,1,:,:]))
-plot(vec(uCurrentPeriod[:,1,:,:]))
-subplot(1,2,2)
-plot(vec(uFirstPeriod[:,3,:,:]))
-plot(vec(uCurrentPeriod[:,3,:,:]))
-legend(("first period", "current period"))
+#plot!(vec(uCurrentPeriod[:,1,:,:]))
+plot!(vec(uFirstPeriod[:,3,:,:]))
+#plot!(vec(uCurrentPeriod[:,3,:,:]))

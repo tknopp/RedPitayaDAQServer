@@ -12,7 +12,7 @@ function RedPitayaCluster(hosts::Vector{String}, port=5025)
   rps = RedPitaya[ RedPitaya(host, port, i==1) for (i,host) in enumerate(hosts) ]
 
   @sync for rp in rps
-    @async triggerMode(rp, "EXTERNAL")
+    @async triggerMode!(rp, EXTERNAL)
   end
 
   return RedPitayaCluster(rps)
@@ -61,10 +61,26 @@ function currentWP(rpc::RedPitayaCluster)
 end
 
 for op in [:periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset, :sequenceRepetitions,
-           :triggerMode, :samplesPerSlowDACStep, :slowDACStepsPerFrame,
-           :rampUpTime, :rampUpFraction]
+           :triggerMode, :samplesPerSlowDACStep, :slowDACStepsPerFrame]
+  
+  """
+        $($op)(rpc::RedPitayaCluster, value)
+
+  As single RedPitaya, but applied to only the master.
+  See [$($op)](@ref)
+  """
   @eval $op(rpc::RedPitayaCluster) = $op(master(rpc))
+end
+
+for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :samplesPerSlowDACStep!, :slowDACStepsPerFrame!, :keepAliveReset!]
   @eval begin
+    """
+          $($op)(rpc::RedPitayaCluster, value)
+    
+    As single RedPitaya, but applied to all RedPitayas in a cluster.
+
+    See [$($op)](@ref)
+    """
     function $op(rpc::RedPitayaCluster, value)
       @sync for rp in rpc
         @async $op(rp, value)
@@ -378,6 +394,7 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
   wait(iterationDone)
   close(t)
   if timeoutHappened
+    @show done
     error("Timout reached when reading from sockets")
   end
 
@@ -387,7 +404,7 @@ end
 
 # High level read. numFrames can adress a future frame. Data is read in
 # chunks
-function readFrames(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; rpInfo=nothing, chunkSize = 50000)
+function readFrames(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; rpInfo=nothing, chunkSize = 50000, useCalibration = false)
   numSampPerPeriod = samplesPerPeriod(rpu)
   numPeriods = periodsPerFrame(rpu)
   numSampPerFrame = numSampPerPeriod * numPeriods
@@ -403,9 +420,24 @@ function readFrames(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}
   rawSamples = readPipelinedSamples(rpu, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
   
   # Reshape/Avg Data
-  data = convertSamplesToFrames(rawSamples, numChan(rpu), numSampPerPeriod, numPeriods, numFrames, numBlockAverages, numPeriodsPerPatch)
+  if useCalibration
+    data = convertSamplesToFrames(rpu, rawSamples, numChan(rpu), numSampPerPeriod, numPeriods, numFrames, numBlockAverages, numPeriodsPerPatch)
+  else
+    data = convertSamplesToFrames(rawSamples, numChan(rpu), numSampPerPeriod, numPeriods, numFrames, numBlockAverages, numPeriodsPerPatch)
+  end
 
   return data
+end
+
+function convertSamplesToFrames(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, samples, numChan, numSampPerPeriod, numPeriods, numFrames, numBlockAverages=1, numPeriodsPerPatch=1)
+  frames = convertSamplesToFrames(samples, numChan, numSampPerPeriod, numPeriods, numFrames, numBlockAverages, numPeriodsPerPatch)
+  calibs = [x.calib for x in rpu]
+  calib = hcat(calibs...)
+  for d = 1:size(frames, 2)
+    frames[:, d, :, :] .*= calib[1, d]
+    frames[:, d, :, :] .+= calib[2, d] 
+  end
+  return frames
 end
 
 function convertSamplesToFrames(samples, numChan, numSampPerPeriod, numPeriods, numFrames, numBlockAverages=1, numPeriodsPerPatch=1)
@@ -416,6 +448,16 @@ function convertSamplesToFrames(samples, numChan, numSampPerPeriod, numPeriods, 
   frames = zeros(Float32, numTrueSampPerPeriod, numChan, numPeriods*numPeriodsPerPatch, numFrames)
   convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages, numPeriodsPerPatch)
   return frames
+end
+
+function convertSamplesToFrames!(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages=1, numPeriodsPerPatch=1)
+  convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages, numPeriodsPerPatch)
+  calibs = [x.calib for x in rpu]
+  calib = hcat(calibs...)
+  for d = 1:size(frames, 2)
+    frames[:, d, :, :] .*= calib[1, d]
+    frames[:, d, :, :] .+= calib[2, d] 
+  end
 end
 
 function convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages=1, numPeriodsPerPatch=1)
@@ -429,7 +471,7 @@ function convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, num
   end
 end
 
-function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startPeriod, numPeriods, numBlockAverages=1; rpInfo=nothing, chunkSize = 50000)
+function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startPeriod, numPeriods, numBlockAverages=1; rpInfo=nothing, chunkSize = 50000, useCalibration = false)
   numSampPerPeriod = samplesPerPeriod(rpu)
 
   if rem(numSampPerPeriod,numBlockAverages) != 0
@@ -446,11 +488,25 @@ function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView
   rawSamples = readPipelinedSamples(rpu, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
   
   # Reshape/Avg Data
-  convertSamplesToPeriods!(rawSamples, data, numChan(rpu), numSampPerPeriod, numPeriods, numBlockAverages)
-
+  if useCalibration
+    convertSamplesToPeriods!(rpu, rawSamples, data, numChan(rpu), numSampPerPeriod, numPeriods, numBlockAverages)
+  else
+    convertSamplesToPeriods!(rawSamples, data, numChan(rpu), numSampPerPeriod, numPeriods, numBlockAverages)
+  end
   return data
 end
 
+function convertSamplesToPeriods!(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages=1)
+  convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages)
+  calibs = [x.calib for x in rpu]
+  calib = hcat(calibs...)
+  for d = 1:size(periods, 2)
+    periods[:, d, :] .*= calib[1, d]
+    periods[:, d, :] .+= calib[2, d] 
+  end
+  return frames
+
+end
 function convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages=1)
   temp = reshape(samples, numChan, numSampPerPeriod, numPeriods)
   for d = 1:div(numChan,2)
@@ -463,13 +519,13 @@ function convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, n
 end
 
 
-function readData(rpc::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; chunkSize = 50000)
-  data = readFrames(rpc, startFrame, numFrames, numBlockAverages, numPeriodsPerPatch, chunkSize = chunkSize)
+function readData(rpc::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; chunkSize = 50000, useCalibration = false)
+  data = readFrames(rpc, startFrame, numFrames, numBlockAverages, numPeriodsPerPatch, chunkSize = chunkSize, useCalibration = useCalibration)
   return data
 end
 
-function readDataPeriods(rpc::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startPeriod, numPeriods, numBlockAverages=1; chunkSize = 50000)
-  data = readPeriods(rpc, startPeriod, numPeriods, numBlockAverages, chunkSize = chunkSize)
+function readDataPeriods(rpc::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startPeriod, numPeriods, numBlockAverages=1; chunkSize = 50000, useCalibration = false)
+  data = readPeriods(rpc, startPeriod, numPeriods, numBlockAverages, chunkSize = chunkSize, useCalibration = useCalibration)
   return data
 end
 

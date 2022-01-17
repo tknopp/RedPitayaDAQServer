@@ -304,8 +304,7 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 	uint64_t readWP = 0;
 	uint64_t chunk = 0;
 	bool clearFlagsAndPerf = true;
-	
-
+	setServerMode(TRANSMISSION);
 	while (sendSamplesTotal < numSamples && chunkSize > 0 && commThreadRunning) {
 		chunk = MIN(numSamples - sendSamplesTotal, chunkSize); // Client and Server can compute same chunk value
 		
@@ -336,6 +335,7 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 		sendSamplesTotal += chunk;
 
 	}
+	setServerMode(MEASUREMENT); // Maybe get and reset previous mode later. Atm it has to be MEASUREMENT anyways
 }
 
 

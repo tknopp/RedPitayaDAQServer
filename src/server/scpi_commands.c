@@ -33,20 +33,35 @@ static void readyConfigSequence() {
 	}
 }
 
-static scpi_result_t RP_Init(scpi_t * context) {
+scpi_choice_def_t server_modes[] = {
+	{"CONFIGURATION", CONFIGRUATION},
+	{"MEASUREMENT", MEASUREMENT},
+	{"TRANSMISSION", TRANSMISSION},
+	SCPI_CHOICE_LIST_END
+};
 
-	if(!initialized) {
-		init();
-		initialized = true;
-	}
-
-	//cleanUpSequenceList();
-
+static scpi_result_t RP_GetServerMode(scpi_t * context) {
+	const char * name;
+	SCPI_ChoiceToName(server_modes, getServerMode(), &name);
+	SCPI_ResultText(context, name);
 	return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_SetServerMode(scpi_t * context) {
+	int32_t tmpMode;
+	
+	if (!SCPI_ParamChoice(context, server_modes, &tmpMode, TRUE)) {
+		return SCPI_RES_ERR;
+	}
 
+	SERVER_MODE current = getServerMode();
+	if (current != TRANSMISSION && (tmpMode == CONFIGRUATION || tmpMode == MEASUREMENT)) {
+		setServerMode((SERVER_MODE) tmpMode);
+		return SCPI_RES_OK;
+	}
 
+	return SCPI_RES_ERR;
+}
 
 static scpi_result_t RP_DAC_GetAmplitude(scpi_t * context) {
 	int32_t numbers[2];
@@ -277,6 +292,10 @@ scpi_choice_def_t DAC_modes[] = {
 };
 
 static scpi_result_t RP_DAC_SetDACMode(scpi_t * context) {
+	if (getServerMode() != CONFIGRUATION) {
+		return SCPI_RES_ERR;
+	}
+
 	int32_t DAC_mode_selection;
 
 	if (!SCPI_ParamChoice(context, DAC_modes, &DAC_mode_selection, TRUE)) {
@@ -306,9 +325,11 @@ scpi_choice_def_t trigger_modes[] = {
 	SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
-
-
 static scpi_result_t RP_DAC_SetTriggerMode(scpi_t * context) {
+	if (getServerMode() != CONFIGRUATION) {
+		return SCPI_RES_ERR;
+	}
+
 	int32_t trigger_mode_selection;
 
 	if (!SCPI_ParamChoice(context, trigger_modes, &trigger_mode_selection, TRUE)) {
@@ -449,9 +470,7 @@ static scpi_result_t RP_DAC_SetSequenceJumpSharpness(scpi_t * context) {
 
 
 static scpi_result_t RP_ADC_SetDecimation(scpi_t * context) {
-	// Enforce changing the decimation to be only
-	// possible while not acquiring data
-	if(rxEnabled) {
+	if (getServerMode() != CONFIGRUATION) {
 		return SCPI_RES_ERR;
 	}
 
@@ -478,32 +497,28 @@ static scpi_result_t RP_ADC_GetDecimation(scpi_t * context) {
 }
 
 
-static scpi_result_t RP_DAC_SetSamplesPerSlowDACStep(scpi_t * context) {
-	// Enforce changing the samples per slowDAC steps to be only
-	// possible while not acquiring data
+static scpi_result_t RP_DAC_SetSamplesPerStep(scpi_t * context) {
 	if(!isSequenceConfigurable()) {
 		return SCPI_RES_ERR;
 	}
 
-	if (!SCPI_ParamInt32(context, &numSamplesPerSlowDACStep, TRUE)) {
+	if (!SCPI_ParamInt32(context, &numSamplesPerStep, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 
 	// Adapt the slowDAC frequency to match the step length
-	setPDMClockDivider(numSamplesPerSlowDACStep * getDecimation());
+	setPDMClockDivider(numSamplesPerStep * getDecimation());
 	seqState = CONFIG;
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_GetSamplesPerSlowDACStep(scpi_t * context) {
-	SCPI_ResultInt32(context, numSamplesPerSlowDACStep);
+static scpi_result_t RP_DAC_GetSamplesPerStep(scpi_t * context) {
+	SCPI_ResultInt32(context, numSamplesPerStep);
 
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_SetSlowDACStepsPerSequence(scpi_t * context) {
-	// Enforce changing the slowDAC steps per sequence to be only
-	// possible while not acquiring data
+static scpi_result_t RP_DAC_SetStepsPerRepetition(scpi_t * context) {
 	if(!isSequenceConfigurable()) {
 		return SCPI_RES_ERR;
 	}
@@ -519,7 +534,7 @@ static scpi_result_t RP_DAC_SetSlowDACStepsPerSequence(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_GetSlowDACStepsPerSequence(scpi_t * context) {
+static scpi_result_t RP_DAC_GetStepsPerRepetition(scpi_t * context) {
 	SCPI_ResultInt32(context, (configNode->sequence).data.numStepsPerRepetition);
 
 	return SCPI_RES_OK;
@@ -527,7 +542,7 @@ static scpi_result_t RP_DAC_GetSlowDACStepsPerSequence(scpi_t * context) {
 
 
 
-static scpi_result_t RP_ADC_SetPDMClockDivider(scpi_t * context) {
+static scpi_result_t RP_ADC_SetSeqClockDivider(scpi_t * context) {
 	if(!isSequenceConfigurable()) {
 		return SCPI_RES_ERR;
 	}
@@ -542,7 +557,7 @@ static scpi_result_t RP_ADC_SetPDMClockDivider(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_ADC_GetPDMClockDivider(scpi_t * context) {
+static scpi_result_t RP_ADC_GetSeqClockDivider(scpi_t * context) {
 	SCPI_ResultInt32(context, getPDMClockDivider());
 
 	return SCPI_RES_OK;
@@ -750,6 +765,9 @@ static scpi_result_t RP_DAC_GetSequenceRepetitions(scpi_t * context) {
 }
 
 static scpi_result_t RP_ADC_SlowDACInterpolation(scpi_t * context) {
+	if (getServerMode() != CONFIGRUATION) {
+		return SCPI_RES_ERR;
+	}
 
 	int32_t tmp;
 	if (!SCPI_ParamInt32(context, &tmp, TRUE)) {
@@ -791,7 +809,7 @@ static scpi_result_t RP_ADC_GetBufferSize(scpi_t * context) {
 
 static scpi_result_t RP_ADC_GetData(scpi_t * context) {
 	// Reading is only possible while an acquisition is running
-	if(!rxEnabled) {
+	if (getServerMode() != MEASUREMENT) {
 		return SCPI_RES_ERR;
 	}
 
@@ -812,7 +830,7 @@ static scpi_result_t RP_ADC_GetData(scpi_t * context) {
 }
 
 static scpi_result_t RP_ADC_GetPipelinedData(scpi_t * context) {
-	if(!rxEnabled) {
+	if (getServerMode() != MEASUREMENT) {
 		return SCPI_RES_ERR;
 	}
 	
@@ -836,29 +854,9 @@ static scpi_result_t RP_ADC_GetPipelinedData(scpi_t * context) {
 
 }
 
-static scpi_result_t RP_ADC_GetDetailedData(scpi_t * context) {
-	if(!rxEnabled) {
-		return SCPI_RES_ERR;
-	}
-	
-	uint64_t reqWP;
-	if (!SCPI_ParamInt64(context, &reqWP, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-
-	uint64_t numSamples;
-	if (!SCPI_ParamInt64(context, &numSamples, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-	
-	sendPipelinedDataToClient(reqWP, numSamples, numSamples);
-
-	return SCPI_RES_OK;
-}
-
 static scpi_result_t RP_ADC_Slow_GetFrames(scpi_t * context) {
 	// Reading is only possible while an acquisition is running
-	if(!rxEnabled) {
+	if (getServerMode() != MEASUREMENT) {
 		return SCPI_RES_ERR;
 	}
 
@@ -874,102 +872,6 @@ static scpi_result_t RP_ADC_Slow_GetFrames(scpi_t * context) {
 
 	//printf("invoke sendDataToHost()");
 	//sendSlowFramesToHost(frame, numFrames);
-
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_ADC_StartAcquisitionConnection(scpi_t * context) {
-	bool connectionEstablished = false;
-
-	printf("RP_ADC_StartAcquisitionConnection\n");
-	newdatasocklen = sizeof(newdatasockaddr);
-	newdatasockfd = accept(datasockfd, (struct sockaddr *) &newdatasockaddr, &newdatasocklen);
-
-	if (newdatasockfd < 0) {
-		printf("Error accepting data socket: %s\n", strerror(errno));
-	} else {
-		connectionEstablished = true;
-	}
-
-	//	SCPI_ResultBool(context, connectionEstablished);
-
-	return SCPI_RES_OK;
-}
-
-scpi_choice_def_t acquisition_status_modes[] = {
-	{"OFF", ACQUISITION_OFF},
-	{"ON", ACQUISITION_ON},
-	SCPI_CHOICE_LIST_END /* termination of option list */
-};
-
-static scpi_result_t RP_ADC_GetAcquisitionStatus(scpi_t * context) {
-	const char * name;
-
-	SCPI_ChoiceToName(acquisition_status_modes, rxEnabled, &name);
-	SCPI_ResultText(context, name);
-
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_ADC_SetAcquisitionStatus(scpi_t * context) {
-	int32_t acquisition_status_selection;
-	if (!SCPI_ParamChoice(context, acquisition_status_modes, &acquisition_status_selection, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-	if(acquisition_status_selection == ACQUISITION_ON) {
-		rxEnabled = true;
-	} else {
-		rxEnabled = false;
-		buffInitialized = false;
-	}
-
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_PDM_SetPDMNextValue(scpi_t * context) {
-	int32_t numbers[1];
-	SCPI_CommandNumbers(context, numbers, 1, 1);
-	int channel = numbers[0];
-
-	uint32_t next_PDM_value;
-	if (!SCPI_ParamInt32(context, &next_PDM_value, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-
-	int result = setPDMAllValues((uint16_t)next_PDM_value, channel);
-	if (result < 0) {
-		return SCPI_RES_ERR;
-	}
-
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_PDM_SetPDMNextValueVolt(scpi_t * context) {
-	int32_t numbers[1];
-	SCPI_CommandNumbers(context, numbers, 1, 1);
-	int channel = numbers[0];
-
-	double next_PDM_value;
-	if (!SCPI_ParamDouble(context, &next_PDM_value, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-
-	printf("Set PDM channel %d to %f Volt\n", channel, next_PDM_value);
-
-	int result = setPDMAllValuesVolt(next_PDM_value, channel);
-	if (result < 0) {
-		return SCPI_RES_ERR;
-	}
-
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_PDM_GetPDMNextValue(scpi_t * context) {
-	int32_t numbers[1];
-	SCPI_CommandNumbers(context, numbers, 1, 1);
-	int channel = numbers[0];
-
-	SCPI_ResultUInt16(context, getPDMNextValue(channel));
 
 	return SCPI_RES_OK;
 }
@@ -1013,8 +915,6 @@ static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context) {
 
 	return SCPI_RES_OK;
 }
-
-
 
 scpi_choice_def_t onoff_modes[] = {
 	{"OFF", OFF},
@@ -1131,6 +1031,10 @@ static scpi_result_t RP_GetRAMWriterMode(scpi_t * context) {
 }
 
 static scpi_result_t RP_SetRAMWriterMode(scpi_t * context) {
+	if (getServerMode() != CONFIGRUATION) {
+		return SCPI_RES_ERR;
+	}
+
 	int32_t RAM_writer_mode_selection;
 
 	if (!SCPI_ParamChoice(context, RAM_writer_modes, &RAM_writer_mode_selection, TRUE)) {
@@ -1155,6 +1059,10 @@ static scpi_result_t RP_GetMasterTrigger(scpi_t * context) {
 }
 
 static scpi_result_t RP_SetMasterTrigger(scpi_t * context) {
+	if (getServerMode() != MEASUREMENT) {
+		return SCPI_RES_ERR;
+	}
+
 	int32_t master_trigger_selection;
 
 	if (!SCPI_ParamChoice(context, onoff_modes, &master_trigger_selection, TRUE)) {
@@ -1179,6 +1087,10 @@ static scpi_result_t RP_GetKeepAliveReset(scpi_t * context) {
 }
 
 static scpi_result_t RP_SetKeepAliveReset(scpi_t * context) {
+	if (getServerMode() != MEASUREMENT) {
+		return SCPI_RES_ERR;
+	}
+
 	int32_t param;
 
 	if (!SCPI_ParamChoice(context, onoff_modes, &param, TRUE)) {
@@ -1245,12 +1157,6 @@ static scpi_result_t RP_WriteToRAMAResetN(scpi_t * context) {
 
 static scpi_result_t RP_XADCAResetN(scpi_t * context) {
 	SCPI_ResultBool(context, getXADCAResetN());
-
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_TriggerStatus(scpi_t * context) {
-	SCPI_ResultBool(context, getTriggerStatus());
 
 	return SCPI_RES_OK;
 }
@@ -1484,7 +1390,7 @@ static scpi_result_t RP_DAC_ClearSequences(scpi_t * context) {
 
 static scpi_result_t RP_DAC_PrepareSequences(scpi_t * context) {
 	bool result = false;
-	if (!getMasterTrigger() && isSequenceConfigurable() ) {
+	if (isSequenceConfigurable() ) {
 		result = prepareSequences();
 	}
 	SCPI_ResultBool(context, result);
@@ -1527,6 +1433,166 @@ static scpi_result_t RP_GetPerformance(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+// Calibration
+static scpi_result_t RP_Calib_DAC_GetOffset(scpi_t* context) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+
+	if (channel == 0) {
+		SCPI_ResultFloat(context, calib_params.dac_ch1_offs);
+	} 
+	else if (channel == 1) {
+		SCPI_ResultFloat(context, calib_params.dac_ch2_offs);
+	}
+	else {
+		SCPI_ResultFloat(context, NAN);
+ 		return SCPI_RES_ERR;
+	}
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_Calib_DAC_SetOffset(scpi_t* context) {
+	if (getServerMode() != CONFIGRUATION) {
+		return SCPI_RES_ERR;
+	}
+
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+	float calibOffset;
+	int16_t offset = 0;
+
+	SCPI_ParamFloat(context, &calibOffset, true);
+	if (channel == 0) {
+		offset = getOffset(channel);
+		calib_params.dac_ch1_offs = calibOffset;
+	} 
+	else if (channel == 1) {
+		offset = getOffset(channel);
+		calib_params.dac_ch2_offs = calibOffset;
+	}
+	else {
+ 		return SCPI_RES_ERR;
+	}
+
+	calib_WriteParams(calib_params, false);	
+	calib_Init(); // Reload from cache from EEPROM
+	setOffset(offset, channel); // Set offset with new calib
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_Calib_ADC_GetOffset(scpi_t* context) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+	if (channel == 0) {
+		SCPI_ResultFloat(context, calib_params.adc_ch1_offs);
+	} 
+	else if (channel == 1) {
+		SCPI_ResultFloat(context, calib_params.adc_ch2_offs);
+	}
+	else {
+		SCPI_ResultFloat(context, NAN);
+ 		return SCPI_RES_ERR;
+	}
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_Calib_ADC_SetOffset(scpi_t* context) {
+	if (getServerMode() != CONFIGRUATION) {
+		return SCPI_RES_ERR;
+	}
+
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+	float offset;
+
+	SCPI_ParamFloat(context, &offset, true);
+	if (channel == 0) {
+		calib_params.adc_ch1_offs = offset;
+	} 
+	else if (channel == 1) {
+		calib_params.adc_ch2_offs = offset;	}
+	else {
+ 		return SCPI_RES_ERR;
+	}
+
+	
+	calib_WriteParams(calib_params, false);	
+	calib_Init(); // Reload from cache from EEPROM
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_Calib_ADC_GetScale(scpi_t* context) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+	if (channel == 0) {
+		SCPI_ResultFloat(context, calib_params.adc_ch1_fs);
+	}
+	else if (channel == 1) {
+		SCPI_ResultFloat(context, calib_params.adc_ch2_fs);
+	}
+	else {
+		SCPI_ResultFloat(context, NAN);
+ 		return SCPI_RES_ERR;
+	}
+
+
+	calib_WriteParams(calib_params, false);	
+	calib_Init(); // Reload from cache from EEPROM
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_Calib_ADC_SetScale(scpi_t* context) {
+	if (getServerMode() != CONFIGRUATION) {
+		return SCPI_RES_ERR;
+	}
+
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+	float scale;
+
+	SCPI_ParamFloat(context, &scale, true);
+	if (channel == 0) {
+		calib_params.adc_ch1_fs = scale;
+	}
+	else if (channel == 1) {
+		calib_params.adc_ch2_fs = scale;	
+	}
+	else {
+ 		return SCPI_RES_ERR;
+	}
+
+
+	calib_WriteParams(calib_params, false);	
+	calib_Init(); // Reload from cache from EEPROM
+	return SCPI_RES_OK;
+}
+
+
+static scpi_result_t RP_ResetCalibration(scpi_t * context) {
+  calib_LoadFromFactoryZone();
+  return SCPI_RES_OK;
+}
+
 const scpi_command_t scpi_commands[] = {
 	/* IEEE Mandated Commands (SCPI std V1999.0 4.1.1) */
 	{ .pattern = "*CLS", .callback = SCPI_CoreCls,},
@@ -1562,7 +1628,8 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "STATus:PRESet", .callback = SCPI_StatusPreset,},
 
 	/* RP-DAQ */
-	{.pattern = "RP:Init", .callback = RP_Init,},
+	{.pattern = "RP:MODe?", .callback = RP_GetServerMode,},
+	{.pattern = "RP:MODe", .callback = RP_SetServerMode,},
 	// DAC
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude?", .callback = RP_DAC_GetAmplitude,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude", .callback = RP_DAC_SetAmplitude,},
@@ -1572,25 +1639,30 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency", .callback = RP_DAC_SetFrequency,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:PHAse?", .callback = RP_DAC_GetPhase,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:PHAse", .callback = RP_DAC_SetPhase,},
-	{.pattern = "RP:DAC:MODe", .callback = RP_DAC_SetDACMode,},
-	{.pattern = "RP:DAC:MODe?", .callback = RP_DAC_GetDACMode,},
+	//{.pattern = "RP:DAC:MODe", .callback = RP_DAC_SetDACMode,},
+	//{.pattern = "RP:DAC:MODe?", .callback = RP_DAC_GetDACMode,},
 	{.pattern = "RP:DAC:CHannel#:SIGnaltype", .callback = RP_DAC_SetSignalType,},
 	{.pattern = "RP:DAC:CHannel#:SIGnaltype?", .callback = RP_DAC_GetSignalType,},
-	{.pattern = "RP:DAC:CHannel#:JumpSharpness", .callback = RP_DAC_SetJumpSharpness,},
-	{.pattern = "RP:DAC:CHannel#:JumpSharpness?", .callback = RP_DAC_GetJumpSharpness,},
+	{.pattern = "RP:DAC:CHannel#:JUMPsharpness", .callback = RP_DAC_SetJumpSharpness,},
+	{.pattern = "RP:DAC:CHannel#:JUMPsharpness?", .callback = RP_DAC_GetJumpSharpness,},
 	// Sequences
+	{.pattern = "RP:DAC:SEQ:CLocKdivider", .callback = RP_ADC_SetSeqClockDivider,},
+	{.pattern = "RP:DAC:SEQ:CLocKdivider?", .callback = RP_ADC_GetSeqClockDivider,},
+	{.pattern = "RP:DAC:SEQ:SAMPlesperstep", .callback = RP_DAC_SetSamplesPerStep,},
+	{.pattern = "RP:DAC:SEQ:SAMPlesperstep?", .callback = RP_DAC_GetSamplesPerStep,},
 	{.pattern = "RP:DAC:SEQ:CHan", .callback = RP_DAC_SetNumSlowDACChan,},
 	{.pattern = "RP:DAC:SEQ:CHan?", .callback = RP_DAC_GetNumSlowDACChan,},
+	{.pattern = "RP:DAC:PASStofast", .callback = RP_SetPassPDMToFastDAC,},
+	{.pattern = "RP:DAC:PASStofast?", .callback = RP_GetPassPDMToFastDAC,},
+	// Specific/Current Sequence
 	{.pattern = "RP:DAC:SEQ:LUT:ARBITRARY", .callback = RP_DAC_SetArbitraryLUT,},
 	{.pattern = "RP:DAC:SEQ:LUT:CONSTANT", .callback = RP_DAC_SetConstantLUT,},
 	{.pattern = "RP:DAC:SEQ:LUT:PAUSE", .callback = RP_DAC_SetPauseLUT,},
 	{.pattern = "RP:DAC:SEQ:LUT:RANGE", .callback = RP_DAC_SetRangeLUT,},
 	{.pattern = "RP:DAC:SEQ:LUT:ENaBle", .callback = RP_DAC_SetEnableDACLUT,},
-	{.pattern = "RP:DAC:SEQ:LostSteps?", .callback = RP_DAC_GetSlowDACLostSteps,},
-	{.pattern = "RP:DAC:SEQ:STEPsPerSequence", .callback = RP_DAC_SetSlowDACStepsPerSequence,},
-	{.pattern = "RP:DAC:SEQ:STEPsPerSequence?", .callback = RP_DAC_GetSlowDACStepsPerSequence,},
-	{.pattern = "RP:DAC:SEQ:SAMPlesperstep", .callback = RP_DAC_SetSamplesPerSlowDACStep,},
-	{.pattern = "RP:DAC:SEQ:SAMPlesperstep?", .callback = RP_DAC_GetSamplesPerSlowDACStep,},
+	//{.pattern = "RP:DAC:SEQ:LostSteps?", .callback = RP_DAC_GetSlowDACLostSteps,},
+	{.pattern = "RP:DAC:SEQ:STEPs:REPetition", .callback = RP_DAC_SetStepsPerRepetition,},
+	{.pattern = "RP:DAC:SEQ:STEPs:REPetition?", .callback = RP_DAC_GetStepsPerRepetition,},
 	{.pattern = "RP:DAC:SEQ:RaMPing", .callback = RP_DAC_SetRamping,},
 	{.pattern = "RP:DAC:SEQ:RaMPing:STEPs", .callback = RP_DAC_SetRampingSteps,},
 	{.pattern = "RP:DAC:SEQ:RaMPing:TOTAL", .callback = RP_DAC_SetRampingTotalSteps,},
@@ -1618,53 +1690,40 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:SEQ:CHannel#:COMPonent#:FREQuency", .callback = RP_DAC_SetSequenceFrequency,},
 	{.pattern = "RP:DAC:SEQ:CHannel#:COMPonent#:PHAse", .callback = RP_DAC_SetSequencePhase,},
 	{.pattern = "RP:DAC:SEQ:CHannel#:SIGnaltype", .callback = RP_DAC_SetSequenceSignalType,},
-	{.pattern = "RP:DAC:SEQ:CHannel#:JumpSharpness", .callback = RP_DAC_SetSequenceJumpSharpness,},
+	{.pattern = "RP:DAC:SEQ:CHannel#:JUMPsharpness", .callback = RP_DAC_SetSequenceJumpSharpness,},
 	// ADC
-	{.pattern = "RP:ADC:SlowADC", .callback = RP_ADC_SetNumSlowADCChan,},
-	{.pattern = "RP:ADC:SlowADC?", .callback = RP_ADC_GetNumSlowADCChan,},
+	//{.pattern = "RP:ADC:SlowADC", .callback = RP_ADC_SetNumSlowADCChan,},
+	//{.pattern = "RP:ADC:SlowADC?", .callback = RP_ADC_GetNumSlowADCChan,},
 	{.pattern = "RP:ADC:DECimation", .callback = RP_ADC_SetDecimation,},
 	{.pattern = "RP:ADC:DECimation?", .callback = RP_ADC_GetDecimation,},
-	{.pattern = "RP:ADC:SlowDACInterpolation", .callback = RP_ADC_SlowDACInterpolation,},
+	//{.pattern = "RP:ADC:SlowDACInterpolation", .callback = RP_ADC_SlowDACInterpolation,},
 	{.pattern = "RP:ADC:WP:CURRent?", .callback = RP_ADC_GetCurrentWP,},
 	{.pattern = "RP:ADC:DATa?", .callback = RP_ADC_GetData,},
-	{.pattern = "RP:ADC:DATa:DETailed?", .callback = RP_ADC_GetDetailedData,},
+	//{.pattern = "RP:ADC:DATa:DETailed?", .callback = RP_ADC_GetDetailedData,},
 	{.pattern = "RP:ADC:DATa:PIPElined?", .callback = RP_ADC_GetPipelinedData,},
 	{.pattern = "RP:ADC:BUFfer:Size?", .callback = RP_ADC_GetBufferSize,},
-	{.pattern = "RP:ADC:Slow:FRAmes:DATa", .callback = RP_ADC_Slow_GetFrames,},
-	{.pattern = "RP:ADC:ACQCONNect", .callback = RP_ADC_StartAcquisitionConnection,},
-	{.pattern = "RP:ADC:ACQSTATus", .callback = RP_ADC_SetAcquisitionStatus,},
-	{.pattern = "RP:ADC:ACQSTATus?", .callback = RP_ADC_GetAcquisitionStatus,},
-	{.pattern = "RP:PDM:ClockDivider", .callback = RP_ADC_SetPDMClockDivider,},
-	{.pattern = "RP:PDM:ClockDivider?", .callback = RP_ADC_GetPDMClockDivider,},
-	{.pattern = "RP:PDM:CHannel#:NextValue", .callback = RP_PDM_SetPDMNextValue,},
-	{.pattern = "RP:PDM:CHannel#:NextValueVolt", .callback = RP_PDM_SetPDMNextValueVolt,},
-	{.pattern = "RP:PDM:CHannel#:NextValue?", .callback = RP_PDM_GetPDMNextValue,},
-	{.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},
+	//{.pattern = "RP:ADC:Slow:FRAmes:DATa", .callback = RP_ADC_Slow_GetFrames,},
+	//{.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},
 	{.pattern = "RP:DIO:DIR", .callback = RP_DIO_SetDIODirection,},
 	{.pattern = "RP:DIO", .callback = RP_DIO_SetDIOOutput,},
 	{.pattern = "RP:DIO?", .callback = RP_DIO_GetDIOOutput,},
 	{.pattern = "RP:WatchDogMode", .callback = RP_SetWatchdogMode,},
 	{.pattern = "RP:WatchDogMode?", .callback = RP_GetWatchdogMode,},
-	{.pattern = "RP:RamWriterMode", .callback = RP_SetRAMWriterMode,},
-	{.pattern = "RP:RamWriterMode?", .callback = RP_GetRAMWriterMode,},
-	{.pattern = "RP:PassPDMToFastDAC", .callback = RP_SetPassPDMToFastDAC,},
-	{.pattern = "RP:PassPDMToFastDAC?", .callback = RP_GetPassPDMToFastDAC,},
-	{.pattern = "RP:KeepAliveReset", .callback = RP_SetKeepAliveReset,},
-	{.pattern = "RP:KeepAliveReset?", .callback = RP_GetKeepAliveReset,},
-	{.pattern = "RP:Trigger:MODe", .callback = RP_DAC_SetTriggerMode,},
-	{.pattern = "RP:Trigger:MODe?", .callback = RP_DAC_GetTriggerMode,},
-	{.pattern = "RP:MasterTrigger", .callback = RP_SetMasterTrigger,},
-	{.pattern = "RP:MasterTrigger?", .callback = RP_GetMasterTrigger,},
-	{.pattern = "RP:InstantResetMode", .callback = RP_SetInstantResetMode,},
-	{.pattern = "RP:InstantResetMode?", .callback = RP_GetInstantResetMode,},
-	{.pattern = "RP:PeripheralAResetN?", .callback = RP_PeripheralAResetN,},
-	{.pattern = "RP:FourierSynthAResetN?", .callback = RP_FourierSynthAResetN,},
-	{.pattern = "RP:PDMAResetN?", .callback = RP_PDMAResetN,},
-	{.pattern = "RP:WriteToRAMAResetN?", .callback = RP_WriteToRAMAResetN,},
-	{.pattern = "RP:XADCAResetN?", .callback = RP_XADCAResetN,},
-	{.pattern = "RP:TriggerStatus?", .callback = RP_TriggerStatus,},
-	{.pattern = "RP:WatchdogStatus?", .callback = RP_WatchdogStatus,},
-	{.pattern = "RP:InstantResetStatus?", .callback = RP_InstantResetStatus,},
+	{.pattern = "RP:TRIGger:ALiVe", .callback = RP_SetKeepAliveReset,},
+	{.pattern = "RP:TRIGger:ALiVe?", .callback = RP_GetKeepAliveReset,},
+	{.pattern = "RP:TRIGger:MODe", .callback = RP_DAC_SetTriggerMode,},
+	{.pattern = "RP:TRIGger:MODe?", .callback = RP_DAC_GetTriggerMode,},
+	{.pattern = "RP:TRIGger", .callback = RP_SetMasterTrigger,},
+	{.pattern = "RP:TRIGger?", .callback = RP_GetMasterTrigger,},
+	//{.pattern = "RP:InstantResetMode", .callback = RP_SetInstantResetMode,},
+	//{.pattern = "RP:InstantResetMode?", .callback = RP_GetInstantResetMode,},
+	//{.pattern = "RP:PeripheralAResetN?", .callback = RP_PeripheralAResetN,},
+	//{.pattern = "RP:FourierSynthAResetN?", .callback = RP_FourierSynthAResetN,},
+	//{.pattern = "RP:PDMAResetN?", .callback = RP_PDMAResetN,},
+	//{.pattern = "RP:WriteToRAMAResetN?", .callback = RP_WriteToRAMAResetN,},
+	//{.pattern = "RP:XADCAResetN?", .callback = RP_XADCAResetN,},
+	//{.pattern = "RP:WatchdogStatus?", .callback = RP_WatchdogStatus,},
+	//{.pattern = "RP:InstantResetStatus?", .callback = RP_InstantResetStatus,},
 	/* RP-DAQ Errors */
 	{.pattern = "RP:STATus:OVERwritten?", .callback = RP_GetOverwrittenStatus,},
 	{.pattern = "RP:STATus:CORRupted?", .callback = RP_GetCorruptedStatus,},
@@ -1672,6 +1731,15 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:STATus:LOSTSteps?", .callback = RP_GetLostStatus,},
 	{.pattern = "RP:LOG?", .callback = RP_GetLog,},
 	{.pattern = "RP:PERF?", .callback = RP_GetPerformance,},	
+
+	/* Calibration */
+	{.pattern = "RP:CALib:DAC:CHannel#:OFFset?", .callback = RP_Calib_DAC_GetOffset,},
+	{.pattern = "RP:CALib:DAC:CHannel#:OFFset", .callback = RP_Calib_DAC_SetOffset,},
+	{.pattern = "RP:CALib:ADC:CHannel#:OFFset?", .callback = RP_Calib_ADC_GetOffset,},
+	{.pattern = "RP:CALib:ADC:CHannel#:OFFset", .callback = RP_Calib_ADC_SetOffset,},
+	{.pattern = "RP:CALib:ADC:CHannel#:SCAle?", .callback = RP_Calib_ADC_GetScale,},
+	{.pattern = "RP:CALib:ADC:CHannel#:SCAle", .callback = RP_Calib_ADC_SetScale,},
+	{.pattern = "RP:CALib:RESet", .callback = RP_ResetCalibration,},
 
 	SCPI_CMD_LIST_END
 };
