@@ -296,7 +296,6 @@ int main(int argc, char** argv) {
 				close(clifdTmp);
 			}
 			else {
-				setServerMode(CONFIGRUATION);
 				createThreads();
 				printf("Created threads\n");
 			}
