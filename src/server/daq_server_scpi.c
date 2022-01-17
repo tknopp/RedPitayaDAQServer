@@ -62,13 +62,13 @@
 #include "../lib/rp-daq-lib.h"
 #include "../server/daq_server_scpi.h"
 
-static SERVER_MODE serverMode = CONFIGRUATION;
+static serverMode_t serverMode = CONFIGRUATION;
 
-SERVER_MODE getServerMode() {
+serverMode_t getServerMode() {
 	return serverMode;
 }
 
-void setServerMode(SERVER_MODE mode) {
+void setServerMode(serverMode_t mode) {
 	serverMode = mode;
 }
 

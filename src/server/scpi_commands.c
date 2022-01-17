@@ -54,9 +54,9 @@ static scpi_result_t RP_SetServerMode(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 
-	SERVER_MODE current = getServerMode();
+	serverMode_t current = getServerMode();
 	if (current != TRANSMISSION && (tmpMode == CONFIGRUATION || tmpMode == MEASUREMENT)) {
-		setServerMode((SERVER_MODE) tmpMode);
+		setServerMode((serverMode_t) tmpMode);
 		return SCPI_RES_OK;
 	}
 
