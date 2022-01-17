@@ -132,7 +132,7 @@ void getprio( pthread_t id ) {
 }
 
 uint8_t getStatus() {
-	return getErrorStatus() | getServerMode() != CONFIGRUATION << 3 | seqState == RUNNING << 4; 
+	return getErrorStatus() | getMasterTrigger()  << 3 | (seqState == RUNNING) << 4; 
 }
 
 uint8_t getErrorStatus() {
@@ -296,7 +296,6 @@ int main(int argc, char** argv) {
 				close(clifdTmp);
 			}
 			else {
-				setServerMode(CONFIGRUATION);
 				createThreads();
 				printf("Created threads\n");
 			}
