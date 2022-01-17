@@ -1,4 +1,4 @@
-export SignalType, DACPerformanceData, DACConfig, passPDMToFastDAC, passPDMToFastDAC!,
+export SignalType, SINE, SQUARE, TRIANGLE, SAWTOOTH, DACPerformanceData, DACConfig, passPDMToFastDAC, passPDMToFastDAC!,
 amplitudeDAC, amplitudeDAC!, amplitudeDACSeq!, offsetDAC, offsetDAC!, offsetDACSeq!,
 frequencyDAC, frequencyDAC!, frequencyDACSeq!, phaseDAC, phaseDAC!, phaseDACSeq!,
 jumpSharpnessDAC, jumpSharpnessDAC!, jumpSharpnessDACSeq!, signalTypeDAC, signalTypeDAC!, signalTypeDACSeq!,

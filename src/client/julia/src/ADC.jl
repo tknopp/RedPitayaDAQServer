@@ -1,4 +1,4 @@
-export TriggerMode, ADCPerformanceData, RPStatus, PerformanceData, RPPerformance, RPInfo,
+export TriggerMode, INTERNAL, EXTERNAL, ADCPerformanceData, RPStatus, PerformanceData, RPPerformance, RPInfo,
 decimation, decimation!, numChan, samplesPerPeriod, samplesPerPeriod!, periodsPerFrame, periodsPerFrame!,
 currentWP, currentPeriod, currentFrame, masterTrigger, masterTrigger!, keepAliveReset, keepAliveReset!,
 triggerMode, triggerMode!, startADC, stopADC, overwritten, corrupted, serverStatus, performanceData,

@@ -11,7 +11,7 @@ using LinearAlgebra
 
 import Base: reset, iterate, length
 
-export RedPitaya, send, receive, query, start, stop, disconnect, ServerMode, getLog
+export RedPitaya, send, receive, query, start, stop, disconnect, ServerMode, serverMode, serverMode!, CONFIGURATION, MEASUREMENT, TRANSMISSION, getLog
 
 """
     RedPitaya(ip [, port = 5025, isMaster = false])
@@ -128,7 +128,7 @@ function connect(rp::RedPitaya)
     rp.socket = connect(rp.host, 5025, _timeout)
     rp.dataSocket = connect(rp.host, 5026, _timeout)
     rp.isConnected = true
-    updateCalib(rp)
+    updateCalib!(rp)
     end
   end
 end
