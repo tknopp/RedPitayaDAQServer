@@ -2,6 +2,7 @@ module RedPitayaDAQServer
 
 # package code goes here
 
+using Base: UInt16
 using Sockets
 import Sockets: send, connect
 
@@ -10,8 +11,16 @@ using LinearAlgebra
 
 import Base: reset, iterate, length
 
-export RedPitaya, receive, query, start, stop, disconnect, getLog
+export RedPitaya, send, receive, query, start, stop, disconnect, ServerMode, serverMode, serverMode!, CONFIGURATION, MEASUREMENT, TRANSMISSION, getLog
 
+"""
+    RedPitaya
+
+Struct representing a connection to a RedPitayaDAQServer.
+
+Contains the sockets used for communication and connection related metadata. Also contains fields for 
+client specific concepts such as periods, frames and calibration values. 
+"""
 mutable struct RedPitaya
   host::String
   delim::String
@@ -23,6 +32,7 @@ mutable struct RedPitaya
   isConnected::Bool
   isMaster::Bool
   destroyed::Bool
+  calib::Array{Float32}
 end
 
 # Iterable Interface
@@ -31,6 +41,8 @@ length(rp::RedPitaya) = 1
 iterate(rp::RedPitaya, state=1) = state > 1 ? nothing : (rp, state + 1)
 
 """
+    send(rp, cmd)
+
 Send a command to the RedPitaya
 """
 function send(rp::RedPitaya,cmd::String)
@@ -38,17 +50,27 @@ function send(rp::RedPitaya,cmd::String)
   write(rp.socket,cmd*rp.delim)
 end
 
+const _timeout = 5.0
+
 """
-Receive a String from the RedPitaya
+    receive(rp)
+
+Receive a String from the RedPitaya command socket. Reads until a whole line is received
 """
 function receive(rp::RedPitaya)
-  return readline(rp.socket)[1:end] 
+  return readline(rp.socket)[1:end]
 end
 
 """
-Perform a query with the RedPitaya. Return String
+    query(rp::RedPitaya, cmd [, timeout = 5.0, N = 100])
+
+Send a query to the RedPitaya command socket. Return reply as String.
+
+Waits for `timeout` seconds and checks every `timeout/N` seconds.
+
+See also [receive](@ref).
 """
-function query(rp::RedPitaya, cmd::String, timeout::Number=2.0,  N=100)
+function query(rp::RedPitaya, cmd::String, timeout::Number=_timeout,  N=100)
   send(rp,cmd)
   t = @async receive(rp)
   for i=1:N
@@ -58,14 +80,18 @@ function query(rp::RedPitaya, cmd::String, timeout::Number=2.0,  N=100)
     sleep(timeout / N )
   end
   @async Base.throwto(t, EOFError())
-  error("Receive run into timeout on RP $(rp.host) on command $(cmd)!")
+  error("Receive ran into timeout on RP $(rp.host) on command $(cmd)!")
 end
 
 """
-Perform a query with the RedPitaya. Parse result as type T
+    query(rp::RedPitaya, cmd, T::Type [timeout = 5.0, N = 100])
+
+Send a query to the RedPitaya. Parse reply as `T`.
+
+Waits for `timeout` seconds and checks every `timeout/N` seconds.
 """
-function query(rp::RedPitaya,cmd::String,T::Type)
-  a = query(rp,cmd)
+function query(rp::RedPitaya,cmd::String,T::Type, timeout::Number=_timeout, N::Number=100)
+  a = query(rp,cmd, timeout, N)
   return parse(T,a)
 end
 
@@ -84,17 +110,13 @@ function Sockets.connect(host, port::Integer, timeout::Number)
   return s
 end
 
-const _timeout = 1.0
-
 function connect(rp::RedPitaya)
   if !rp.isConnected
     begin
     rp.socket = connect(rp.host, 5025, _timeout)
-    send(rp, string("RP:Init"))
-    connectADC(rp)
     rp.dataSocket = connect(rp.host, 5026, _timeout)
     rp.isConnected = true
-    decimation(rp)
+    updateCalib!(rp)
     end
   end
 end
@@ -124,19 +146,62 @@ function getLog(rp::RedPitaya, log)
   close(log)
 end
 
+function stringToEnum(enumType::Type{T}, value::AbstractString) where {T <: Enum}
+  stringInstances = string.(instances(enumType))
+  # If lowercase is not sufficient one could try Unicode.normalize with casefolding
+  index = findfirst(isequal(lowercase(value)), lowercase.(stringInstances))
+  if isnothing(index)
+    throw(ArgumentError("$value cannot be resolved to an instance of $(typeof(enumType)). Possible instances are: " * join(stringInstances, ", ", " and ")))
+  end
+  return instances(enumType)[index]
+end
+
+@enum ServerMode CONFIGURATION MEASUREMENT TRANSMISSION
+
+function serverMode(rp::RedPitaya)
+  return stringToEnum(ServerMode, query(rp, "RP:MODe?"))
+end
+
+function serverMode!(rp::RedPitaya, mode::String)
+  serverMode!(rp, stringToEnum(ServerMode, mode))
+end
+function serverMode!(rp::RedPitaya, mode::ServerMode)
+  send(rp, string("RP:MODe ", string(mode)))
+end
+
 include("DAC.jl")
 include("ADC.jl")
 include("Cluster.jl")
 include("SlowIO.jl")
+include("EEPROM.jl")
 
 function destroy(rp::RedPitaya)
   disconnect(rp)
   rp.destroyed = true
 end
 
+"""
+    RedPitaya(ip [, port = 5025, isMaster = false])
+
+Construct a `RedPitaya`.
+
+During the construction the connection
+is established and the calibration values are loaded from the RedPitayas EEPROM.
+Throws an error if a timeout occurs while attempting to connect.
+
+# Examples
+```julia
+julia> rp = RedPitaya("192.168.1.100");
+
+julia> decimation(rp, 8)
+
+julia> decimation(rp)
+8
+```
+"""
 function RedPitaya(host, port=5025, isMaster=true)
 
-  rp = RedPitaya(host,"\n", TCPSocket(), TCPSocket(), 1, 1, 1, false, isMaster, false)
+  rp = RedPitaya(host,"\n", TCPSocket(), TCPSocket(), 1, 1, 1, false, isMaster, false, zeros(Float32, 2, 2))
 
   connect(rp)
 
@@ -147,51 +212,5 @@ function RedPitaya(host, port=5025, isMaster=true)
   finalizer(d -> destroy(d), rp)
   return rp
 end
-
-
-
-
-#=
-{.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude?", .callback = RP_DAC_GetAmplitude,},
- {.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude", .callback = RP_DAC_SetAmplitude,},
- {.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency?", .callback = RP_DAC_GetFrequency,},
- {.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency", .callback = RP_DAC_SetFrequency,},
- {.pattern = "RP:DAC:CHannel#:COMPonent#:FACtor?", .callback = RP_DAC_GetModulusFactor,},
- {.pattern = "RP:DAC:CHannel#:COMPonent#:FACtor", .callback = RP_DAC_SetModulusFactor,},
- {.pattern = "RP:DAC:CHannel#:COMPonent#:PHAse?", .callback = RP_DAC_GetPhase,},
- {.pattern = "RP:DAC:CHannel#:COMPonent#:PHAse", .callback = RP_DAC_SetPhase,},
- {.pattern = "RP:DAC:MODe", .callback = RP_DAC_SetDACMode,},
- {.pattern = "RP:DAC:MODe?", .callback = RP_DAC_GetDACMode,},
- {.pattern = "RP:DAC:CHannel#:COMPonent#:MODulus", .callback = RP_DAC_ReconfigureDACModulus,},
- {.pattern = "RP:DAC:CHannel#:COMPonent#:MODulus?", .callback = RP_DAC_GetDACModulus,},
- {.pattern = "RP:ADC:DECimation", .callback = RP_ADC_SetDecimation,},
- {.pattern = "RP:ADC:DECimation?", .callback = RP_ADC_GetDecimation,},
- {.pattern = "RP:ADC:PERiod", .callback = RP_ADC_SetSamplesPerPeriod,},
- {.pattern = "RP:ADC:PERiod?", .callback = RP_ADC_GetSamplesPerPeriod,},
- {.pattern = "RP:ADC:FRAme", .callback = RP_ADC_SetPeriodsPerFrame,},
- {.pattern = "RP:ADC:FRAme?", .callback = RP_ADC_GetPeriodsPerFrame,},
- {.pattern = "RP:ADC:FRAmes:CURRent?", .callback = RP_ADC_GetCurrentFrame,},
- {.pattern = "RP:ADC:FRAmes:DATa", .callback = RP_ADC_GetFrames,},
- {.pattern = "RP:ADC:ACQCONNect", .callback = RP_ADC_StartAcquisitionConnection,},
- {.pattern = "RP:ADC:ACQSTATus", .callback = RP_ADC_SetAcquisitionStatus,},
- {.pattern = "RP:PDM:CHannel#:NextValue", .callback = RP_PDM_SetPDMNextValue,},
- {.pattern = "RP:PDM:CHannel#:NextValue?", .callback = RP_PDM_GetPDMNextValue,},
- {.pattern = "RP:PDM:CHannel#:CurrentValue?", .callback = RP_PDM_GetPDMCurrentValue,},
- {.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},
- {.pattern = "RP:WatchDogMode", .callback = RP_WatchdogMode,},
- {.pattern = "RP:RamWriterMode", .callback = RP_RAMWriterMode,},
- {.pattern = "RP:MasterTrigger", .callback = RP_MasterTrigger,},
- {.pattern = "RP:InstantResetMode", .callback = RP_InstantResetMode,},
- {.pattern = "RP:PeripheralAResetN?", .callback = RP_PeripheralAResetN,},
- {.pattern = "RP:FourierSynthAResetN?", .callback = RP_FourierSynthAResetN,},
- {.pattern = "RP:PDMAResetN?", .callback = RP_PDMAResetN,},
- {.pattern = "RP:WriteToRAMAResetN?", .callback = RP_WriteToRAMAResetN,},
- {.pattern = "RP:XADCAResetN?", .callback = RP_XADCAResetN,},
- {.pattern = "RP:TriggerStatus?", .callback = RP_TriggerStatus,},
- {.pattern = "RP:WatchdogStatus?", .callback = RP_WatchdogStatus,},
- {.pattern = "RP:InstantResetStatus?", .callback = RP_InstantResetStatus,},
- =#
-
-
 
 end # module

@@ -1,25 +1,61 @@
-export RedPitayaCluster, master, readDataPeriods, numChan, readDataSlow, readFrames, readPeriods, readPipelinedSamples, startPipelinedData, collectSamples!, readData, readDataPeriods
+export RedPitayaCluster, master, readDataPeriods, numChan, readDataSlow, readFrames, readPeriods, readPipelinedSamples, startPipelinedData, collectSamples!, readData, readDataPeriods, convertSamplesToFrames!, convertSamplesToFrames, SampleChunk
 
 import Base: length, iterate, getindex, firstindex, lastindex
 
+"""
+    RedPitayaCluster
+
+Struct representing a cluster of `RedPitaya`s. Such a cluster should share a common clock and master trigger.
+
+The structure implements the indexing and iterable interfaces.
+"""
 struct RedPitayaCluster
   rp::Vector{RedPitaya}
 end
 
-#TODO: set first RP to master
+"""
+    RedPitayaCluster(hosts::Vector{String} [, port = 5025])
+
+Construct a `RedPitayaCluster`.
+
+During the construction the first host is labelled the master RedPitaya of a cluster and all RedPitayas
+are set to using the `EXTERNAL` trigger mode.
+
+See also [`RedPitaya`](@ref), [`master`](@ref).
+
+# Examples
+```julia 
+julia> rpc = RedPitayaCluster(["192.168.1.100", "192.168.1.101"]);
+
+julia> rp = master(rpc)
+
+julia> rp == rpc[1]
+true
+```
+"""
 function RedPitayaCluster(hosts::Vector{String}, port=5025)
   # the first RP is the master
   rps = RedPitaya[ RedPitaya(host, port, i==1) for (i,host) in enumerate(hosts) ]
 
-  for rp in rps
-    triggerMode(rp, "EXTERNAL")
+  @sync for rp in rps
+    @async triggerMode!(rp, EXTERNAL)
   end
 
   return RedPitayaCluster(rps)
 end
 
+"""
+    length(rpc::RedPitayaCluster)
+
+Return the number of `RedPitaya`s in cluster `rpc`.
+"""
 length(rpc::RedPitayaCluster) = length(rpc.rp)
 numChan(rpc::RedPitayaCluster) = 2*length(rpc)
+"""
+    master(rpc::RedPitayaCluster)
+
+Return the master `RedPitaya` of the cluster.
+"""
 master(rpc::RedPitayaCluster) = rpc.rp[1]
 
 # Indexing Interface
@@ -36,180 +72,190 @@ next_(rpc::RedPitayaCluster,state) = (rpc[state],state+1)
 done_(rpc::RedPitayaCluster,state) = state > length(rpc)
 iterate(rpc::RedPitayaCluster, s=start_(rpc)) = done_(rpc, s) ? nothing : next_(rpc, s)
 
-
 function RPInfo(rpc::RedPitayaCluster)
   return RPInfo([RPPerformance([]) for i = 1:length(rpc)])
 end
 
-const _currentFrame = Ref(0)
+for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset, :sequenceRepetitions,
+           :triggerMode, :samplesPerSlowDACStep, :slowDACStepsPerFrame, :serverMode, :masterTrigger]
+  
+  @eval begin 
+    @doc """
+        $($op)(rpc::RedPitayaCluster, value)
 
-function currentFrame(rpc::RedPitayaCluster)
-  _currentFrame[] = currentFrame(rpc[1]) #[ currentFrame(rp) for rp in rpc.rp ]
-  @debug "Current frame: $(_currentFrame[])"
-  #return minimum(currentFrames)
-  return _currentFrame[]
+    As with single RedPitaya, but applied to only the master.
+    """
+    $op(rpc::RedPitayaCluster) = $op(master(rpc))
+  end
 end
 
-function currentPeriod(rpc::RedPitayaCluster)
-  currentPeriods = currentPeriod(rpc[1])  #[ currentPeriod(rp) for rp in rpc.rp ]
-  @debug "Current period: $currentPeriods"
-  #return minimum(currentPeriods)
-  return currentPeriods
-end
-
-function currentWP(rpc::RedPitayaCluster)
-  return currentWP(master(rpc))
-end
-
-for op in [:periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset,
-           :triggerMode, :slowDACStepsPerRotation, :samplesPerSlowDACStep, :slowDACStepsPerFrame]
-  @eval $op(rpc::RedPitayaCluster) = $op(master(rpc))
+for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :samplesPerSlowDACStep!, :slowDACStepsPerFrame!,
+           :keepAliveReset!, :serverMode!, :appendSequence!]
   @eval begin
+    @doc """
+          $($op)(rpc::RedPitayaCluster, value)
+    
+    As with single RedPitaya, but applied to all RedPitayas in a cluster.
+    """
     function $op(rpc::RedPitayaCluster, value)
-      for rp in rpc
-        $op(rp, value)
+      @sync for rp in rpc
+        @async $op(rp, value)
       end
     end
   end
 end
 
-for op in [:connectADC, :stopADC, :disconnect, :connect]
+for op in [:disconnect, :connect, :clearSequence]
   @eval begin
+    @doc """
+        $($op)(rpc::RedPitayaCluster)
+    
+    As with single RedPitaya, but applied to all RedPitayas in a cluster.
+    """
     function $op(rpc::RedPitayaCluster)
-      for rp in rpc
-        $op(rp)
+      @sync for rp in rpc
+        @async $op(rp)
       end
     end
   end
 end
 
-function startADC(rpc::RedPitayaCluster)
-  for rp in rpc
-    startADC(rp)
-  end
-end
+"""
+    masterTrigger(rpc::RedPitayaCluster, val::Bool)
 
-function masterTrigger(rpc::RedPitayaCluster, val::Bool)
+Set the master trigger of the cluster to `val`. 
+
+For `val` equals to true this is the same as calling the function on the RedPitaya returned by `master(rpc)`.
+If `val` is false then the keepAliveReset is set to true for all RedPitayas in the cluster
+before the master trigger is disabled. Afterwards the keepAliveReset is set to false again.
+
+See also [`master`](@ref), [`keepAliveReset!`](@ref).
+"""
+function masterTrigger!(rpc::RedPitayaCluster, val::Bool)
     if val
-        masterTrigger(master(rpc), val)
+        masterTrigger!(master(rpc), val)
     else
-        keepAliveReset(rpc, true)
-        masterTrigger(master(rpc), false)
-        ramWriterMode(rpc, "TRIGGERED")
-        keepAliveReset(rpc, false)
+        keepAliveReset!(rpc, true)
+        masterTrigger!(master(rpc), false)
+        keepAliveReset!(rpc, false)
     end
 end
-masterTrigger(rpc::RedPitayaCluster) = masterTrigger(master(rpc))
-bufferSize(rpc::RedPitayaCluster) = bufferSize(master(rpc))
 
-# "TRIGGERED" or "CONTINUOUS"
-function ramWriterMode(rpc::RedPitayaCluster, mode::String)
-  for rp in rpc
-    ramWriterMode(rp, mode)
+
+for op in [:amplitudeDAC, :frequencyDAC, :phaseDAC]
+  @eval begin 
+    @doc """
+        $($op)(rpc::RedPitayaCluster, chan::Integer, component::Integer)
+    
+    As with single RedPitaya. The `chan` index refers to the total channel available in a cluster, two per `RedPitaya`.
+    For example channel `4` would refer to the second channel of the second `RedPitaya`. 
+    """
+    function $op(rpc::RedPitayaCluster, chan::Integer, component::Integer)
+      idxRP = div(chan-1, 2) + 1
+      chanRP = mod1(chan, 2)
+      return $op(rpc[idxRP], chanRP, component)
+    end
+  end
+end
+for op in [:amplitudeDAC!, :frequencyDAC!, :phaseDAC!]
+  @eval begin
+    @doc """
+        $($op)(rpc::RedPitayaCluster, chan::Integer, component::Integer, value)
+    
+    As with single RedPitaya. The `chan` index refers to the total channel available in a cluster, two per `RedPitaya`.
+    For example channel `4` would refer to the second channel of the second `RedPitaya`.
+    """
+    function $op(rpc::RedPitayaCluster, chan::Integer, component::Integer, value)
+      idxRP = div(chan-1, 2) + 1
+      chanRP = mod1(chan, 2)
+      return $op(rpc[idxRP], chanRP, component, value)
+    end
   end
 end
 
-for op in [:amplitudeDAC, :amplitudeDACNext, :frequencyDAC, :phaseDAC, :modulusFactorDAC, :modulusDAC]
-  @eval function $op(rpc::RedPitayaCluster, chan::Integer, component::Integer)
-    idxRP = div(chan-1, 2) + 1
-    chanRP = mod1(chan, 2)
-    return $op(rpc[idxRP], chanRP, component)
-  end
-  @eval function $op(rpc::RedPitayaCluster, chan::Integer, component::Integer, value)
-    idxRP = div(chan-1, 2) + 1
-    chanRP = mod1(chan, 2)
-    return $op(rpc[idxRP], chanRP, component, value)
-  end
-end
-
-for op in [:signalTypeDAC,  :DCSignDAC, :jumpSharpnessDAC]
-  @eval function $op(rpc::RedPitayaCluster, chan::Integer)
-    idxRP = div(chan-1, 2) + 1
-    chanRP = mod1(chan, 2)
-    return $op(rpc[idxRP], chanRP)
-  end
-  @eval function $op(rpc::RedPitayaCluster, chan::Integer, value)
-    idxRP = div(chan-1, 2) + 1
-    chanRP = mod1(chan, 2)
-    return $op(rpc[idxRP], chanRP, value)
+for op in [:signalTypeDAC, :jumpSharpnessDAC, :offsetDAC]
+  @eval begin
+    @doc """
+        $($op)(rpc::RedPitayaCluster, chan::Integer)
+    
+    As with single RedPitaya. The `chan` index refers to the total channel available in a cluster, two per `RedPitaya`.
+    For example channel `4` would refer to the second channel of the second `RedPitaya`.
+    """ 
+    function $op(rpc::RedPitayaCluster, chan::Integer)
+      idxRP = div(chan-1, 2) + 1
+      chanRP = mod1(chan, 2)
+      return $op(rpc[idxRP], chanRP)
+    end
   end
 end
-
-function setSlowDAC(rpc::RedPitayaCluster, chan, value)
-  idxRP = div(chan-1, 2) + 1
-  chanRP = mod1(chan, 2)
-  setSlowDAC(rpc[idxRP], chanRP, value)
-end
-
-function getSlowADC(rpc::RedPitayaCluster, chan::Integer)
-  idxRP = div(chan-1, 2) + 1
-  chanRP = mod1(chan, 2)
-  getSlowADC(rpc[idxRP], chanRP)
-end
-
-function offsetDAC(rpc::RedPitayaCluster, chan, value)
-  idxRP = div(chan-1, 2) + 1
-  chanRP = mod1(chan, 2)
-  offsetDAC(rpc[idxRP], chanRP, value)
-end
-
-function offsetDAC(rpc::RedPitayaCluster, chan::Integer)
-  idxRP = div(chan-1, 2) + 1
-  chanRP = mod1(chan, 2)
-  offsetDAC(rpc[idxRP], chanRP)
-end
-
-function numSlowADCChan(rpc::RedPitayaCluster)
-  tmp = [ numSlowADCChan(rp) for rp in rpc]
-  return sum(tmp)
-end
-
-function numSlowADCChan(rpc::RedPitayaCluster, num)
-  for rp in rpc
-    numSlowADCChan(rp, num)
+for op in [:signalTypeDAC!, :jumpSharpnessDAC!, :offsetDAC!]
+  @eval begin
+    @doc """
+        $($op)(rpc::RedPitayaCluster, chan::Integer, value)
+    
+    As with single RedPitaya. The `chan` index refers to the total channel available in a cluster, two per `RedPitaya`.
+    For example channel `4` would refer to the second channel of the second `RedPitaya`.
+    """
+    function $op(rpc::RedPitayaCluster, chan::Integer, value)
+      idxRP = div(chan-1, 2) + 1
+      chanRP = mod1(chan, 2)
+      return $op(rpc[idxRP], chanRP, value)
+    end
   end
-  return
 end
 
-function passPDMToFastDAC(rpc::RedPitayaCluster, val::Vector{Bool})
-  for (d,rp) in enumerate(rpc)
-    passPDMToFastDAC(rp, val[d])
+function passPDMToFastDAC!(rpc::RedPitayaCluster, val::Vector{Bool})
+  @sync for (d,rp) in enumerate(rpc)
+    @async passPDMToFastDAC!(rp, val[d])
   end
 end
 
 function passPDMToFastDAC(rpc::RedPitayaCluster)
-  return [ passPDMToFastDAC(rp) for rp in rpc]
+  result = [false for rp in rpc]
+  @sync for (d, rp) in enumerate(rpc)
+    @async result[d] = passPDMToFastDAC(rp)
+  end
+  return result
 end
 
-modeDAC(rpc::RedPitayaCluster) = modeDAC(master(rpc))
+"""
+    prepareSequence!(rpc::RedPitayaCluster)
 
-function modeDAC(rpc::RedPitayaCluster, mode::String)
-  for rp in rpc
-    modeDAC(rp, mode)
+As with single `RedPitaya`, but applied to all `RedPitaya`s in a cluster.
+Returns true if all could servers could prepare, false otherwise.
+"""
+function prepareSequence!(rpc::RedPitayaCluster)
+  success = [false for rp in rpc]
+  @sync for (i, rp) in enumerate(rpc)
+    @async success[i] = prepareSequence(rp)
+  end
+  all(success)
+end
+
+computeRamping(rpc::RedPitayaCluster, stepsPerSeq, time, fraction) = computeRamping(master(rpc), stepsPerSeq, time, fraction)
+
+include("ClusterView.jl")
+"""
+    SampleChunk
+
+Struct containing a matrix of samples and associated `PerformanceData`
+
+# Fields
+- `samples::Matrix{Int16}`: `n`x`m` matrix containing `m` samples for `n` channel
+- `performance::Vector{PerformanceData}`: `PerformanceData` object for each RedPitaya that transmitted samples
+"""
+struct SampleChunk
+  samples::Matrix{Int16}
+  performance::Vector{PerformanceData}
+end
+
+function startPipelinedData(rpu::Union{RedPitayaCluster,RedPitayaClusterView}, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
+  @sync for rp in rpu
+    @async startPipelinedData(rp, reqWP, numSamples, chunkSize)
   end
 end
 
-function enableSlowDAC(rpc::RedPitayaCluster, enable::Bool, numFrames::Int64=0,
-                       ffRampUpTime::Float64=0.4, ffRampUpFraction::Float64=0.8)
-  # We just use the first rp currently
-  #res = [enableSlowDAC(rp, enable) for rp in rpc.rp]
-  #return maximum(res)
-  return enableSlowDAC(rpc[1], enable, numFrames, ffRampUpTime, ffRampUpFraction)
-end
-
-function slowDACInterpolation(rpc::RedPitayaCluster, enable::Bool)
-  for rp in rpc
-    slowDACInterpolation(rp, enable)
-  end
-end
-
-function startPipelinedData(rpc::RedPitayaCluster, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
-  for rp in rpc
-    startPipelinedData(rp, reqWP, numSamples, chunkSize)
-  end
-end
-
-function readSamples(rpu::Union{RedPitaya,RedPitayaCluster}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
+function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
   numOfReceivedSamples = 0
   index = 1
   rawData = zeros(Int16, numChan(rpu), numOfRequestedSamples)
@@ -235,7 +281,7 @@ function readSamples(rpu::Union{RedPitaya,RedPitayaCluster}, wpStart::Int64, num
   return rawData
 end
 
-function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
+function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
   numOfReceivedSamples = 0
   index = 1
   rawData = zeros(Int16, numChan(rpu), numOfRequestedSamples)
@@ -253,7 +299,8 @@ function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster}, wpStart::I
 
 end
 
-function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster}, wpRead::Int64, chunk::Int64, rawData, chunkBuffer, index; rpInfo=nothing)
+
+function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpRead::Int64, chunk::Int64, rawData::Matrix{Int16}, chunkBuffer, index; rpInfo=nothing)
   done = zeros(Bool, length(rpu))
   iterationDone = Condition()
   timeoutHappened = false
@@ -275,7 +322,7 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster}, wpRead::Int64, 
       end
 
       # Performance
-      if rpInfo !== nothing
+      if !isnothing(rpInfo)
         push!(rpInfo.performances[d].data, perf)
       end
 
@@ -287,8 +334,7 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster}, wpRead::Int64, 
   end
 
   # Setup Timeout
-  timeout = 10
-  t = Timer(timeout)
+  t = Timer(_timeout)
   @async begin
     wait(t)
     notify(iterationDone)
@@ -303,12 +349,67 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster}, wpRead::Int64, 
 
 end
 
+function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64, channel::Channel; chunkSize::Int64 = 25000)
+  numOfReceivedSamples = 0
+  chunkBuffer = zeros(Int16, chunkSize * 2, length(rpu))
+
+  startPipelinedData(rpu, wpStart, numOfRequestedSamples, chunkSize)
+  while numOfReceivedSamples < numOfRequestedSamples
+    wpRead = wpStart + numOfReceivedSamples
+    chunk = min(numOfRequestedSamples - numOfReceivedSamples, chunkSize)
+    collectSamples!(rpu, wpRead, chunk, channel, chunkBuffer)
+    numOfReceivedSamples += chunk
+  end
+
+end
+
+function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpRead::Int64, chunk::Int64, channel::Channel, chunkBuffer)
+  done = zeros(Bool, length(rpu))
+  iterationDone = Condition()
+  timeoutHappened = false
+  result = zeros(Int16, numChan(rpu), chunk)
+  performances = Vector{PerformanceData}(undef, length(rpu))
+
+
+  for (d, rp) in enumerate(rpu)
+    @async begin
+      buffer = view(chunkBuffer, 1:(2 * chunk), d)
+      (u, perf) = readSamplesChunk_(rp, Int64(wpRead), Int64(chunk), buffer)
+      samples = reshape(u, 2, chunk)
+      result[2*d-1, :] = samples[1, :]
+      result[2*d, :] = samples[2, :]
+      performances[d] = perf
+
+      done[d] = true
+      if (all(done))
+        notify(iterationDone)
+      end
+    end
+  end
+
+  # Setup Timeout
+  t = Timer(_timeout)
+  @async begin
+    wait(t)
+    notify(iterationDone)
+    timeoutHappened = true 
+  end
+
+  wait(iterationDone)
+  close(t)
+  if timeoutHappened
+    @show done
+    error("Timout reached when reading from sockets")
+  end
+
+  put!(channel, SampleChunk(result, performances))
+
+end
 
 # High level read. numFrames can adress a future frame. Data is read in
 # chunks
-function readFrames(rpu::Union{RedPitaya,RedPitayaCluster}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; rpInfo=nothing, chunkSize = 50000)
+function readFrames(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; rpInfo=nothing, chunkSize = 50000, useCalibration = false)
   numSampPerPeriod = samplesPerPeriod(rpu)
-  numSamp = numSampPerPeriod * numFrames
   numPeriods = periodsPerFrame(rpu)
   numSampPerFrame = numSampPerPeriod * numPeriods
 
@@ -316,9 +417,6 @@ function readFrames(rpu::Union{RedPitaya,RedPitayaCluster}, startFrame, numFrame
     error("block averages has to be a divider of numSampPerPeriod")
   end
 
-  numTrueSampPerPeriod = div(numSampPerPeriod,numBlockAverages*numPeriodsPerPatch)
-
-  data = zeros(Float32, numTrueSampPerPeriod, numChan(rpu), numPeriods*numPeriodsPerPatch, numFrames)
   wpStart = startFrame * numSampPerFrame
   numOfRequestedSamples = numFrames * numSampPerFrame
 
@@ -326,9 +424,44 @@ function readFrames(rpu::Union{RedPitaya,RedPitayaCluster}, startFrame, numFrame
   rawSamples = readPipelinedSamples(rpu, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
   
   # Reshape/Avg Data
-  convertSamplesToFrames!(rawSamples, data, numChan(rpu), numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages, numPeriodsPerPatch)
+  if useCalibration
+    data = convertSamplesToFrames(rpu, rawSamples, numChan(rpu), numSampPerPeriod, numPeriods, numFrames, numBlockAverages, numPeriodsPerPatch)
+  else
+    data = convertSamplesToFrames(rawSamples, numChan(rpu), numSampPerPeriod, numPeriods, numFrames, numBlockAverages, numPeriodsPerPatch)
+  end
 
   return data
+end
+
+function convertSamplesToFrames(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, samples, numChan, numSampPerPeriod, numPeriods, numFrames, numBlockAverages=1, numPeriodsPerPatch=1)
+  frames = convertSamplesToFrames(samples, numChan, numSampPerPeriod, numPeriods, numFrames, numBlockAverages, numPeriodsPerPatch)
+  calibs = [x.calib for x in rpu]
+  calib = hcat(calibs...)
+  for d = 1:size(frames, 2)
+    frames[:, d, :, :] .*= calib[1, d]
+    frames[:, d, :, :] .+= calib[2, d] 
+  end
+  return frames
+end
+
+function convertSamplesToFrames(samples, numChan, numSampPerPeriod, numPeriods, numFrames, numBlockAverages=1, numPeriodsPerPatch=1)
+  if rem(numSampPerPeriod,numBlockAverages) != 0
+    error("block averages has to be a divider of numSampPerPeriod")
+  end
+  numTrueSampPerPeriod = div(numSampPerPeriod,numBlockAverages*numPeriodsPerPatch)
+  frames = zeros(Float32, numTrueSampPerPeriod, numChan, numPeriods*numPeriodsPerPatch, numFrames)
+  convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages, numPeriodsPerPatch)
+  return frames
+end
+
+function convertSamplesToFrames!(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages=1, numPeriodsPerPatch=1)
+  convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages, numPeriodsPerPatch)
+  calibs = [x.calib for x in rpu]
+  calib = hcat(calibs...)
+  for d = 1:size(frames, 2)
+    frames[:, d, :, :] .*= calib[1, d]
+    frames[:, d, :, :] .+= calib[2, d] 
+  end
 end
 
 function convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages=1, numPeriodsPerPatch=1)
@@ -342,7 +475,7 @@ function convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, num
   end
 end
 
-function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster}, startPeriod, numPeriods, numBlockAverages=1; rpInfo=nothing, chunkSize = 50000)
+function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startPeriod, numPeriods, numBlockAverages=1; rpInfo=nothing, chunkSize = 50000, useCalibration = false)
   numSampPerPeriod = samplesPerPeriod(rpu)
 
   if rem(numSampPerPeriod,numBlockAverages) != 0
@@ -359,11 +492,25 @@ function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster}, startPeriod, numPer
   rawSamples = readPipelinedSamples(rpu, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
   
   # Reshape/Avg Data
-  convertSamplesToPeriods!(rawSamples, data, numChan(rpu), numSampPerPeriod, numPeriods, numBlockAverages)
-
+  if useCalibration
+    convertSamplesToPeriods!(rpu, rawSamples, data, numChan(rpu), numSampPerPeriod, numPeriods, numBlockAverages)
+  else
+    convertSamplesToPeriods!(rawSamples, data, numChan(rpu), numSampPerPeriod, numPeriods, numBlockAverages)
+  end
   return data
 end
 
+function convertSamplesToPeriods!(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages=1)
+  convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages)
+  calibs = [x.calib for x in rpu]
+  calib = hcat(calibs...)
+  for d = 1:size(periods, 2)
+    periods[:, d, :] .*= calib[1, d]
+    periods[:, d, :] .+= calib[2, d] 
+  end
+  return frames
+
+end
 function convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages=1)
   temp = reshape(samples, numChan, numSampPerPeriod, numPeriods)
   for d = 1:div(numChan,2)
@@ -376,60 +523,12 @@ function convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, n
 end
 
 
-function readData(rpc::Union{RedPitaya,RedPitayaCluster}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; chunkSize = 50000)
-  @time data = readFrames(rpc, startFrame, numFrames, numBlockAverages, numPeriodsPerPatch, chunkSize = chunkSize)
+function readData(rpc::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; chunkSize = 50000, useCalibration = false)
+  data = readFrames(rpc, startFrame, numFrames, numBlockAverages, numPeriodsPerPatch, chunkSize = chunkSize, useCalibration = useCalibration)
   return data
 end
 
-function readDataPeriods(rpc::Union{RedPitaya,RedPitayaCluster}, startPeriod, numPeriods, numBlockAverages=1; chunkSize = 50000)
-  data = readPeriods(rpc, startPeriod, numPeriods, numBlockAverages, chunkSize = chunkSize)
-  return data
-end
-
-
-# High level read. numFrames can adress a future frame.
-function readDataSlow(rpc::RedPitayaCluster, startFrame, numFrames)
-  numPeriods = master(rpc).periodsPerFrame
-  numChanTotal = numSlowADCChan(rpc)
-  numSampPerFrame = numPeriods * numChanTotal
-
-  data = zeros(Float32, numChanTotal, numPeriods, numFrames)
-  wpRead = startFrame
-  l=1
-
-  # This is a wild guess for a good chunk size
-  chunkSize = max(1,  round(Int, 1000000 / numSampPerFrame)  )
-  @debug "chunkSize = $chunkSize"
-  while l<=numFrames
-    wpWrite = currentFrame(rpc)
-    while wpRead >= wpWrite # Wait that startFrame is reached
-      wpWrite = currentFrame(rpc)
-      @debug wpWrite
-    end
-    chunk = min(wpWrite-wpRead,chunkSize) # Determine how many frames to read
-    @debug chunk
-    if l+chunk > numFrames
-      chunk = numFrames - l + 1
-    end
-
-    @debug "Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)"
-
-    p = 1
-    for (d,rp) in enumerate(rpc)
-      u = readDataSlow_(rp, Int64(wpRead), Int64(chunk))
-      numChan = size(u,1)
-
-      #utmp1 = reshape(u, numChan, numBlockAverages,
-      #                    div(size(u,2),numBlockAverages),size(u,3))
-      #utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=2) : utmp1
-
-      data[p:(p+numChan-1),:,l:(l+chunk-1)] = u #utmp2[:,1,:,:]
-      p += numChan
-    end
-
-    l += chunk
-    wpRead += chunk
-  end
-
+function readDataPeriods(rpc::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startPeriod, numPeriods, numBlockAverages=1; chunkSize = 50000, useCalibration = false)
+  data = readPeriods(rpc, startPeriod, numPeriods, numBlockAverages, chunkSize = chunkSize, useCalibration = useCalibration)
   return data
 end

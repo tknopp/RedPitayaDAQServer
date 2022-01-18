@@ -1,2 +1,3 @@
-URLs= ["rp-f04972.local", "rp-f044d6.local"]
+# URLs= ["rp-f08ccb.local", "rp-f08caa.local"]
+URLs= ["192.168.2.16", "192.168.2.17"]
 mkpath("images")

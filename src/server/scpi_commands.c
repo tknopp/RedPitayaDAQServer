@@ -27,28 +27,41 @@
 #include "../server/daq_server_scpi.h"
 
 
-static scpi_result_t RP_Init(scpi_t * context) {
-
-	if(!initialized) {
-		init();
-		initialized = true;
+static void readyConfigSequence() {
+	if (configNode == NULL) {
+		configNode = newSequenceNode();
 	}
+}
 
-	if(slowDACLUT != NULL) {
-		free(slowDACLUT);
-		slowDACLUT = NULL;
-	}
+scpi_choice_def_t server_modes[] = {
+	{"CONFIGURATION", CONFIGRUATION},
+	{"MEASUREMENT", MEASUREMENT},
+	{"TRANSMISSION", TRANSMISSION},
+	SCPI_CHOICE_LIST_END
+};
 
-	if(enableDACLUT != NULL) {
-		free(enableDACLUT);
-		enableDACLUT = NULL;
-	}
-
+static scpi_result_t RP_GetServerMode(scpi_t * context) {
+	const char * name;
+	SCPI_ChoiceToName(server_modes, getServerMode(), &name);
+	SCPI_ResultText(context, name);
 	return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_SetServerMode(scpi_t * context) {
+	int32_t tmpMode;
+	
+	if (!SCPI_ParamChoice(context, server_modes, &tmpMode, TRUE)) {
+		return SCPI_RES_ERR;
+	}
 
+	serverMode_t current = getServerMode();
+	if (current != TRANSMISSION && (tmpMode == CONFIGRUATION || tmpMode == MEASUREMENT)) {
+		setServerMode((serverMode_t) tmpMode);
+		return SCPI_RES_OK;
+	}
 
+	return SCPI_RES_ERR;
+}
 
 static scpi_result_t RP_DAC_GetAmplitude(scpi_t * context) {
 	int32_t numbers[2];
@@ -82,18 +95,7 @@ static scpi_result_t RP_DAC_SetAmplitude(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_GetNextAmplitude(scpi_t * context) {
-	int32_t numbers[2];
-	SCPI_CommandNumbers(context, numbers, 2, 1);
-	int channel = numbers[0];
-	int component = numbers[1];
-
-	SCPI_ResultDouble(context, fastDACNextAmplitude[component+4*channel]  / 8192.0 );
-
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_DAC_SetNextAmplitude(scpi_t * context) {
+static scpi_result_t RP_DAC_SetSequenceAmplitude(scpi_t * context) {
 	int32_t numbers[2];
 	SCPI_CommandNumbers(context, numbers, 2, 1);
 	int channel = numbers[0];
@@ -104,13 +106,18 @@ static scpi_result_t RP_DAC_SetNextAmplitude(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 
-	fastDACNextAmplitude[component+4*channel] = (uint16_t)(amplitude*8192.0); 
+	if (!isSequenceConfigurable()) 
+		return SCPI_RES_ERR;
+	
+	readyConfigSequence(); 
 
-	printf("SetNextAmpl: channel = %d; component = %d, amplitude = %f\n", channel, component, amplitude);
+	uint16_t ampValue = (uint16_t) (amplitude*8192.0);	
+	configNode->sequence.fastConfig.amplitudes[channel * 4 + component] = ampValue;
+	configNode->sequence.fastConfig.amplitudesSet[channel * 4 + component] = true;
+	seqState = CONFIG;
 
 	return SCPI_RES_OK;
 }
-
 
 
 static scpi_result_t RP_DAC_GetOffset(scpi_t * context) {
@@ -138,6 +145,30 @@ static scpi_result_t RP_DAC_SetOffset(scpi_t * context) {
 	if (result < 0) {
 		return SCPI_RES_ERR;
 	}
+
+	return SCPI_RES_OK;
+}
+
+
+static scpi_result_t RP_DAC_SetSequenceOffset(scpi_t * context) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	double offset;
+	if (!SCPI_ParamDouble(context, &offset, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+	if (!isSequenceConfigurable()) 
+		return SCPI_RES_ERR;
+
+	readyConfigSequence();
+
+	int16_t offsetValue = (int16_t) (offset*8192.0);	
+	configNode->sequence.fastConfig.offset[channel] = offsetValue;
+	configNode->sequence.fastConfig.offsetSet[channel] = true;
+	seqState = CONFIG;
 
 	return SCPI_RES_OK;
 }
@@ -175,6 +206,30 @@ static scpi_result_t RP_DAC_SetFrequency(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+
+static scpi_result_t RP_DAC_SetSequenceFrequency(scpi_t * context) {
+	int32_t numbers[2];
+	SCPI_CommandNumbers(context, numbers, 2, 1);
+	int channel = numbers[0];
+	int component = numbers[1];
+
+	double frequency;
+	if (!SCPI_ParamDouble(context, &frequency, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+	if (!isSequenceConfigurable()) 
+		return SCPI_RES_ERR;
+
+	readyConfigSequence();
+
+	configNode->sequence.fastConfig.frequency[channel * 4 + component] = frequency;
+	configNode->sequence.fastConfig.frequencySet[channel * 4 + component] = true;
+	seqState = CONFIG;
+	
+	return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_DAC_GetPhase(scpi_t * context) {
 	int32_t numbers[2];
 	SCPI_CommandNumbers(context, numbers, 2, 1);
@@ -206,6 +261,30 @@ static scpi_result_t RP_DAC_SetPhase(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_DAC_SetSequencePhase(scpi_t * context) {
+	int32_t numbers[2];
+	SCPI_CommandNumbers(context, numbers, 2, 1);
+	int channel = numbers[0];
+	int component = numbers[1];
+
+	double phase;
+	if (!SCPI_ParamDouble(context, &phase, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+	
+	if (!isSequenceConfigurable()) 
+		return SCPI_RES_ERR;
+
+	readyConfigSequence();
+
+	configNode->sequence.fastConfig.phase[channel * 4 + component] = phase;
+	configNode->sequence.fastConfig.phaseSet[channel * 4 + component] = true;
+	seqState = CONFIG;
+	
+
+	return SCPI_RES_OK;
+}
+
 scpi_choice_def_t DAC_modes[] = {
 	{"STANDARD", DAC_MODE_STANDARD},
 	{"AWG", DAC_MODE_AWG},
@@ -213,6 +292,10 @@ scpi_choice_def_t DAC_modes[] = {
 };
 
 static scpi_result_t RP_DAC_SetDACMode(scpi_t * context) {
+	if (getServerMode() != CONFIGRUATION) {
+		return SCPI_RES_ERR;
+	}
+
 	int32_t DAC_mode_selection;
 
 	if (!SCPI_ParamChoice(context, DAC_modes, &DAC_mode_selection, TRUE)) {
@@ -242,9 +325,11 @@ scpi_choice_def_t trigger_modes[] = {
 	SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
-
-
 static scpi_result_t RP_DAC_SetTriggerMode(scpi_t * context) {
+	if (getServerMode() != CONFIGRUATION) {
+		return SCPI_RES_ERR;
+	}
+
 	int32_t trigger_mode_selection;
 
 	if (!SCPI_ParamChoice(context, trigger_modes, &trigger_mode_selection, TRUE)) {
@@ -295,6 +380,30 @@ static scpi_result_t RP_DAC_SetSignalType(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+
+static scpi_result_t RP_DAC_SetSequenceSignalType(scpi_t * context) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	int32_t signal_type_selection;
+
+	if (!SCPI_ParamChoice(context, signal_types, &signal_type_selection, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+	if (!isSequenceConfigurable()) 
+		return SCPI_RES_ERR;
+
+	readyConfigSequence();
+
+	configNode->sequence.fastConfig.signalType[channel] = signal_type_selection;
+	configNode->sequence.fastConfig.signalTypeSet[channel] = true;
+	seqState = CONFIG;
+
+	return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_DAC_GetSignalType(scpi_t * context) {
 	int32_t numbers[1];
 	SCPI_CommandNumbers(context, numbers, 1, 1);
@@ -336,11 +445,32 @@ static scpi_result_t RP_DAC_SetJumpSharpness(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_DAC_SetSequenceJumpSharpness(scpi_t * context) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	double percentage;
+	if (!SCPI_ParamDouble(context, &percentage, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+	if (!isSequenceConfigurable()) 
+		return SCPI_RES_ERR;
+
+	readyConfigSequence();
+
+	configNode->sequence.fastConfig.jumpSharpness[channel] = percentage;
+	configNode->sequence.fastConfig.jumpSharpnessSet[channel] = true;
+	seqState = CONFIG;
+
+	return SCPI_RES_OK;
+}
+
+
 
 static scpi_result_t RP_ADC_SetDecimation(scpi_t * context) {
-	// Enforce changing the decimation to be only
-	// possible while not acquiring data
-	if(rxEnabled) {
+	if (getServerMode() != CONFIGRUATION) {
 		return SCPI_RES_ERR;
 	}
 
@@ -360,63 +490,60 @@ static scpi_result_t RP_ADC_SetDecimation(scpi_t * context) {
 }
 
 static scpi_result_t RP_ADC_GetDecimation(scpi_t * context) {
-
 	uint16_t dec = getDecimation();
-
+	
 	SCPI_ResultUInt16(context, dec);
-
 	return SCPI_RES_OK;
 }
 
 
-static scpi_result_t RP_ADC_SetSamplesPerSlowDACStep(scpi_t * context) {
-	// Enforce changing the samples per slowDAC steps to be only
-	// possible while not acquiring data
-	if(rxEnabled) {
+static scpi_result_t RP_DAC_SetSamplesPerStep(scpi_t * context) {
+	if(!isSequenceConfigurable()) {
 		return SCPI_RES_ERR;
 	}
 
-	if (!SCPI_ParamInt32(context, &numSamplesPerSlowDACStep, TRUE)) {
+	if (!SCPI_ParamInt32(context, &numSamplesPerStep, TRUE)) {
 		return SCPI_RES_ERR;
 	}
-
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_ADC_GetSamplesPerSlowDACStep(scpi_t * context) {
-	SCPI_ResultInt32(context, numSamplesPerSlowDACStep);
-
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_ADC_SetSlowDACStepsPerRotation(scpi_t * context) {
-	// Enforce changing the slowDAC steps per rotation to be only
-	// possible while not acquiring data
-	if(rxEnabled) {
-		return SCPI_RES_ERR;
-	}
-
-	if (!SCPI_ParamInt32(context, &numSlowDACStepsPerRotation, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-
 
 	// Adapt the slowDAC frequency to match the step length
-	setPDMClockDivider(numSamplesPerSlowDACStep * getDecimation());
+	setPDMClockDivider(numSamplesPerStep * getDecimation());
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_GetSamplesPerStep(scpi_t * context) {
+	SCPI_ResultInt32(context, numSamplesPerStep);
 
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_ADC_GetSlowDACStepsPerRotation(scpi_t * context) {
-	SCPI_ResultInt32(context, numSlowDACStepsPerRotation);
+static scpi_result_t RP_DAC_SetStepsPerRepetition(scpi_t * context) {
+	if(!isSequenceConfigurable()) {
+		return SCPI_RES_ERR;
+	}
+
+	readyConfigSequence(); 
+
+	if (!SCPI_ParamInt32(context, &(configNode->sequence).data.numStepsPerRepetition, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_GetStepsPerRepetition(scpi_t * context) {
+	SCPI_ResultInt32(context, (configNode->sequence).data.numStepsPerRepetition);
 
 	return SCPI_RES_OK;
 }
 
 
 
-static scpi_result_t RP_ADC_SetPDMClockDivider(scpi_t * context) {
-	if(rxEnabled) {
+static scpi_result_t RP_ADC_SetSeqClockDivider(scpi_t * context) {
+	if(!isSequenceConfigurable()) {
 		return SCPI_RES_ERR;
 	}
 	int32_t clockDiv = 1;
@@ -426,11 +553,11 @@ static scpi_result_t RP_ADC_SetPDMClockDivider(scpi_t * context) {
 	}
 
 	setPDMClockDivider(clockDiv);
-
+	seqState = CONFIG;
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_ADC_GetPDMClockDivider(scpi_t * context) {
+static scpi_result_t RP_ADC_GetSeqClockDivider(scpi_t * context) {
 	SCPI_ResultInt32(context, getPDMClockDivider());
 
 	return SCPI_RES_OK;
@@ -438,69 +565,209 @@ static scpi_result_t RP_ADC_GetPDMClockDivider(scpi_t * context) {
 
 
 
-static scpi_result_t RP_ADC_SetNumSlowDACChan(scpi_t * context) {
-	if(rxEnabled) {
+static scpi_result_t RP_DAC_SetNumSlowDACChan(scpi_t * context) {
+	if(!isSequenceConfigurable()) {
 		return SCPI_RES_ERR;
 	}
+
+	readyConfigSequence();
 
 	if (!SCPI_ParamInt32(context, &numSlowDACChan, TRUE)) {
 		return SCPI_RES_ERR;
 	}
 
+	seqState = CONFIG;
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_ADC_GetNumSlowDACChan(scpi_t * context) {
+static scpi_result_t RP_DAC_GetNumSlowDACChan(scpi_t * context) {
 	SCPI_ResultInt32(context, numSlowDACChan);
 
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_ADC_GetSlowDACLostSteps(scpi_t * context) {
+static scpi_result_t RP_DAC_GetSlowDACLostSteps(scpi_t * context) {
 	SCPI_ResultInt32(context, numSlowDACLostSteps);
 
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_ADC_EnableSlowDAC(scpi_t * context) {
-	int result;
-	if (!SCPI_ParamInt32(context, &result, TRUE)) {
+static scpi_result_t RP_DAC_SetRamping(scpi_t * context) {
+	if (!isSequenceConfigurable())
 		return SCPI_RES_ERR;
-	}
 
-	if (!SCPI_ParamInt32(context, &numSlowDACRotationsEnabled, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-	if (!SCPI_ParamDouble(context, &slowDACRampUpTime, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-	if (!SCPI_ParamDouble(context, &slowDACFractionRampUp, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-	enableSlowDAC = result;
+	readyConfigSequence();
 
-	if(enableSlowDAC && rxEnabled && numSlowDACChan>0) {
-		enableSlowDACAck = false;
-		numSlowDACLostSteps = 0;
-		while(!enableSlowDACAck) {
-			usleep(1.0);
-			//sleep(1.0);
-			//printf("WAIT FOR SLOW DACAck\n");
-		}
-		SCPI_ResultInt64(context, rotationSlowDACEnabled);
-	} else {
-		SCPI_ResultInt64(context, 0);
-	}
-	if(rxEnabled && !enableSlowDAC) {
-		for (int i=0; i<4; i++) {
-			setPDMAllValuesVolt(0.0, i);
-		}  
-	}
+	if(!SCPI_ParamInt32(context, &configNode->sequence.data.rampUpSteps, TRUE)) 
+		return SCPI_RES_ERR;
 
+	if (!SCPI_ParamInt32(context, &configNode->sequence.data.rampUpTotalSteps, TRUE))
+		return SCPI_RES_ERR;
+
+	configNode->sequence.data.rampDownSteps = configNode->sequence.data.rampUpSteps;
+	configNode->sequence.data.rampDownTotalSteps = configNode->sequence.data.rampUpTotalSteps;
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetRampUp(scpi_t * context) {
+	if (!isSequenceConfigurable())
+		return SCPI_RES_ERR;
+
+	readyConfigSequence();
+
+	if(!SCPI_ParamInt32(context, &configNode->sequence.data.rampUpSteps, TRUE)) 
+		return SCPI_RES_ERR;
+
+	if (!SCPI_ParamInt32(context, &configNode->sequence.data.rampUpTotalSteps, TRUE))
+		return SCPI_RES_ERR;
+
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetRampDown(scpi_t * context) {
+	if (!isSequenceConfigurable())
+		return SCPI_RES_ERR;
+
+	readyConfigSequence();
+
+	if(!SCPI_ParamInt32(context, &configNode->sequence.data.rampDownSteps, TRUE)) 
+		return SCPI_RES_ERR;
+
+	if (!SCPI_ParamInt32(context, &configNode->sequence.data.rampDownTotalSteps, TRUE))
+		return SCPI_RES_ERR;
+
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetRampingSteps(scpi_t * context) {
+	if (!isSequenceConfigurable())
+		return SCPI_RES_ERR;
+
+	readyConfigSequence();
+
+	if(!SCPI_ParamInt32(context, &configNode->sequence.data.rampUpSteps, TRUE)) 
+		return SCPI_RES_ERR;
+
+	configNode->sequence.data.rampDownSteps = configNode->sequence.data.rampUpSteps;
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetRampingTotalSteps(scpi_t * context) {
+	if (!isSequenceConfigurable())
+		return SCPI_RES_ERR;
+	
+	readyConfigSequence();
+
+	if(!SCPI_ParamInt32(context, &configNode->sequence.data.rampUpTotalSteps, TRUE)) 
+		return SCPI_RES_ERR;
+
+	configNode->sequence.data.rampDownTotalSteps = configNode->sequence.data.rampUpTotalSteps;
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_GetRampUpSteps(scpi_t * context) {
+	readyConfigSequence();
+	SCPI_ResultInt32(context, configNode->sequence.data.rampUpSteps);
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetRampUpSteps(scpi_t * context) {
+	if (!isSequenceConfigurable())
+		return SCPI_RES_ERR;
+
+	readyConfigSequence();
+
+	if(!SCPI_ParamInt32(context, &configNode->sequence.data.rampUpSteps, TRUE)) 
+		return SCPI_RES_ERR;
+
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_GetRampUpTotalSteps(scpi_t * context) {
+	readyConfigSequence();
+	SCPI_ResultInt32(context, configNode->sequence.data.rampUpTotalSteps);
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetRampUpTotalSteps(scpi_t * context) {
+	if (!isSequenceConfigurable())
+		return SCPI_RES_ERR;
+
+	readyConfigSequence();
+
+	if(!SCPI_ParamInt32(context, &configNode->sequence.data.rampUpTotalSteps, TRUE)) 
+		return SCPI_RES_ERR;
+
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_GetRampDownSteps(scpi_t * context) {
+	readyConfigSequence();
+	SCPI_ResultInt32(context, configNode->sequence.data.rampDownSteps);
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetRampDownSteps(scpi_t * context) {
+	if (!isSequenceConfigurable())
+		return SCPI_RES_ERR;
+	
+	readyConfigSequence();
+
+	if(!SCPI_ParamInt32(context, &configNode->sequence.data.rampDownSteps, TRUE)) 
+		return SCPI_RES_ERR;
+
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_GetRampDownTotalSteps(scpi_t * context) {
+	readyConfigSequence();
+	SCPI_ResultInt32(context, configNode->sequence.data.rampDownTotalSteps);
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetRampDownTotalSteps(scpi_t * context) {
+	if (!isSequenceConfigurable())
+		return SCPI_RES_ERR;
+	
+	readyConfigSequence();
+
+	if(!SCPI_ParamInt32(context, &configNode->sequence.data.rampDownTotalSteps, TRUE)) 
+		return SCPI_RES_ERR;
+
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetSequenceRepetitions(scpi_t * context) {
+	if (!isSequenceConfigurable())
+		return SCPI_RES_ERR;
+
+	readyConfigSequence();
+
+	if (!SCPI_ParamInt32(context, &(configNode->sequence).data.numRepetitions, TRUE))
+		return SCPI_RES_ERR;
+
+	seqState = CONFIG;
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_GetSequenceRepetitions(scpi_t * context) {
+	SCPI_ResultInt32(context, (configNode->sequence).data.numRepetitions);
 	return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_ADC_SlowDACInterpolation(scpi_t * context) {
+	if (getServerMode() != CONFIGRUATION) {
+		return SCPI_RES_ERR;
+	}
 
 	int32_t tmp;
 	if (!SCPI_ParamInt32(context, &tmp, TRUE)) {
@@ -512,14 +779,15 @@ static scpi_result_t RP_ADC_SlowDACInterpolation(scpi_t * context) {
 }
 
 static scpi_result_t RP_ADC_SetNumSlowADCChan(scpi_t * context) {
-	if(rxEnabled) {
+	if(!isSequenceConfigurable()) {
 		return SCPI_RES_ERR;
 	}
 
 	if (!SCPI_ParamInt32(context, &numSlowADCChan, TRUE)) {
 		return SCPI_RES_ERR;
 	}
-
+	
+	seqState = CONFIG;
 	return SCPI_RES_OK;
 }
 
@@ -541,7 +809,7 @@ static scpi_result_t RP_ADC_GetBufferSize(scpi_t * context) {
 
 static scpi_result_t RP_ADC_GetData(scpi_t * context) {
 	// Reading is only possible while an acquisition is running
-	if(!rxEnabled) {
+	if (getServerMode() != MEASUREMENT) {
 		return SCPI_RES_ERR;
 	}
 
@@ -562,7 +830,7 @@ static scpi_result_t RP_ADC_GetData(scpi_t * context) {
 }
 
 static scpi_result_t RP_ADC_GetPipelinedData(scpi_t * context) {
-	if(!rxEnabled) {
+	if (getServerMode() != MEASUREMENT) {
 		return SCPI_RES_ERR;
 	}
 	
@@ -586,29 +854,9 @@ static scpi_result_t RP_ADC_GetPipelinedData(scpi_t * context) {
 
 }
 
-static scpi_result_t RP_ADC_GetDetailedData(scpi_t * context) {
-	if(!rxEnabled) {
-		return SCPI_RES_ERR;
-	}
-	
-	uint64_t reqWP;
-	if (!SCPI_ParamInt64(context, &reqWP, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-
-	uint64_t numSamples;
-	if (!SCPI_ParamInt64(context, &numSamples, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-	
-	sendPipelinedDataToClient(reqWP, numSamples, numSamples);
-
-	return SCPI_RES_OK;
-}
-
 static scpi_result_t RP_ADC_Slow_GetFrames(scpi_t * context) {
 	// Reading is only possible while an acquisition is running
-	if(!rxEnabled) {
+	if (getServerMode() != MEASUREMENT) {
 		return SCPI_RES_ERR;
 	}
 
@@ -624,104 +872,6 @@ static scpi_result_t RP_ADC_Slow_GetFrames(scpi_t * context) {
 
 	//printf("invoke sendDataToHost()");
 	//sendSlowFramesToHost(frame, numFrames);
-
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_ADC_StartAcquisitionConnection(scpi_t * context) {
-	bool connectionEstablished = false;
-
-	printf("RP_ADC_StartAcquisitionConnection\n");
-	while(!connectionEstablished) {
-		newdatasocklen = sizeof (newdatasockaddr);
-		newdatasockfd = accept(datasockfd, (struct sockaddr *) &newdatasockaddr, &newdatasocklen);
-
-		if (newdatasockfd < 0) {
-			continue;
-		} else {
-			connectionEstablished = true;
-		}
-	}
-
-	//	SCPI_ResultBool(context, connectionEstablished);
-
-	return SCPI_RES_OK;
-}
-
-scpi_choice_def_t acquisition_status_modes[] = {
-	{"OFF", ACQUISITION_OFF},
-	{"ON", ACQUISITION_ON},
-	SCPI_CHOICE_LIST_END /* termination of option list */
-};
-
-static scpi_result_t RP_ADC_GetAcquisitionStatus(scpi_t * context) {
-	const char * name;
-
-	SCPI_ChoiceToName(acquisition_status_modes, rxEnabled, &name);
-	SCPI_ResultText(context, name);
-
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_ADC_SetAcquisitionStatus(scpi_t * context) {
-	int32_t acquisition_status_selection;
-	if (!SCPI_ParamChoice(context, acquisition_status_modes, &acquisition_status_selection, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-	if(acquisition_status_selection == ACQUISITION_ON) {
-		rxEnabled = true;
-	} else {
-		rxEnabled = false;
-		buffInitialized = false;
-	}
-
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_PDM_SetPDMNextValue(scpi_t * context) {
-	int32_t numbers[1];
-	SCPI_CommandNumbers(context, numbers, 1, 1);
-	int channel = numbers[0];
-
-	uint32_t next_PDM_value;
-	if (!SCPI_ParamInt32(context, &next_PDM_value, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-
-	int result = setPDMAllValues((uint16_t)next_PDM_value, channel);
-	if (result < 0) {
-		return SCPI_RES_ERR;
-	}
-
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_PDM_SetPDMNextValueVolt(scpi_t * context) {
-	int32_t numbers[1];
-	SCPI_CommandNumbers(context, numbers, 1, 1);
-	int channel = numbers[0];
-
-	double next_PDM_value;
-	if (!SCPI_ParamDouble(context, &next_PDM_value, TRUE)) {
-		return SCPI_RES_ERR;
-	}
-
-	printf("Set PDM channel %d to %f Volt\n", channel, next_PDM_value);
-
-	int result = setPDMAllValuesVolt(next_PDM_value, channel);
-	if (result < 0) {
-		return SCPI_RES_ERR;
-	}
-
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_PDM_GetPDMNextValue(scpi_t * context) {
-	int32_t numbers[1];
-	SCPI_CommandNumbers(context, numbers, 1, 1);
-	int channel = numbers[0];
-
-	SCPI_ResultUInt16(context, getPDMNextValue(channel));
 
 	return SCPI_RES_OK;
 }
@@ -765,8 +915,6 @@ static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context) {
 
 	return SCPI_RES_OK;
 }
-
-
 
 scpi_choice_def_t onoff_modes[] = {
 	{"OFF", OFF},
@@ -849,6 +997,10 @@ static scpi_result_t RP_GetPassPDMToFastDAC(scpi_t * context) {
 }
 
 static scpi_result_t RP_SetPassPDMToFastDAC(scpi_t * context) {
+	if (!isSequenceConfigurable())
+		return SCPI_RES_ERR;
+
+
 	int32_t selection;
 
 	if (!SCPI_ParamChoice(context, onoff_modes, &selection, TRUE)) {
@@ -879,6 +1031,10 @@ static scpi_result_t RP_GetRAMWriterMode(scpi_t * context) {
 }
 
 static scpi_result_t RP_SetRAMWriterMode(scpi_t * context) {
+	if (getServerMode() != CONFIGRUATION) {
+		return SCPI_RES_ERR;
+	}
+
 	int32_t RAM_writer_mode_selection;
 
 	if (!SCPI_ParamChoice(context, RAM_writer_modes, &RAM_writer_mode_selection, TRUE)) {
@@ -903,6 +1059,10 @@ static scpi_result_t RP_GetMasterTrigger(scpi_t * context) {
 }
 
 static scpi_result_t RP_SetMasterTrigger(scpi_t * context) {
+	if (getServerMode() != MEASUREMENT) {
+		return SCPI_RES_ERR;
+	}
+
 	int32_t master_trigger_selection;
 
 	if (!SCPI_ParamChoice(context, onoff_modes, &master_trigger_selection, TRUE)) {
@@ -927,6 +1087,10 @@ static scpi_result_t RP_GetKeepAliveReset(scpi_t * context) {
 }
 
 static scpi_result_t RP_SetKeepAliveReset(scpi_t * context) {
+	if (getServerMode() != MEASUREMENT) {
+		return SCPI_RES_ERR;
+	}
+
 	int32_t param;
 
 	if (!SCPI_ParamChoice(context, onoff_modes, &param, TRUE)) {
@@ -997,12 +1161,6 @@ static scpi_result_t RP_XADCAResetN(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_TriggerStatus(scpi_t * context) {
-	SCPI_ResultBool(context, getTriggerStatus());
-
-	return SCPI_RES_OK;
-}
-
 static scpi_result_t RP_WatchdogStatus(scpi_t * context) {
 	SCPI_ResultBool(context, getWatchdogStatus());
 
@@ -1032,17 +1190,125 @@ static int readAll(int fd, void *buf,  size_t len) {
 	return len;
 }
 
-static scpi_result_t RP_ADC_SetSlowDACLUT(scpi_t * context) {
+static scpi_result_t RP_DAC_SetArbitraryLUT(scpi_t * context) {
 
-	if(numSlowDACStepsPerRotation > 0 && numSlowDACChan > 0 && !enableSlowDAC) {
-		if(slowDACLUT != NULL) {
-			free(slowDACLUT);
-			slowDACLUT = NULL;
+	readyConfigSequence();
+
+	if((configNode->sequence).data.numStepsPerRepetition > 0 && numSlowDACChan > 0 && isSequenceConfigurable()) {
+		if((configNode->sequence).data.LUT != NULL) {
+			free((configNode->sequence).data.LUT);
+			(configNode->sequence).data.LUT = NULL;
 		}
 		printf("Allocating slowDACLUT\n");
-		slowDACLUT = (float *)malloc(numSlowDACChan * numSlowDACStepsPerRotation * sizeof(float));
+		float * temp  = (float *)calloc(numSlowDACChan, (configNode->sequence).data.numStepsPerRepetition * sizeof(float));
 
-		int n = readAll(newdatasockfd,slowDACLUT,numSlowDACChan * numSlowDACStepsPerRotation * sizeof(float));
+		int n = readAll(newdatasockfd, temp, numSlowDACChan * (configNode->sequence).data.numStepsPerRepetition * sizeof(float));
+		if (n < 0) perror("ERROR reading from socket");
+	
+		printf("Setting Arbitray LUT\n");
+		(configNode->sequence).getSequenceValue = &getArbitrarySequenceValue;
+		(configNode->sequence).data.type = ARBITRARY;
+		(configNode->sequence).data.LUT = temp;
+		seqState = CONFIG;
+		return SCPI_RES_OK;
+	}
+	else {
+		return SCPI_RES_ERR;
+	}
+}
+
+static scpi_result_t RP_DAC_SetConstantLUT(scpi_t * context) {
+
+	readyConfigSequence();
+	
+	if((configNode->sequence).data.numStepsPerRepetition > 0 && numSlowDACChan > 0 && isSequenceConfigurable()) {
+		if((configNode->sequence).data.LUT != NULL) {
+			free((configNode->sequence).data.LUT);
+			(configNode->sequence).data.LUT = NULL;
+		}
+		printf("Allocating slowDACLUT\n");
+		float * temp  = (float *)calloc(numSlowDACChan, sizeof(float));
+
+		int n = readAll(newdatasockfd, temp, numSlowDACChan * sizeof(float));
+		if (n < 0) perror("ERROR reading from socket");
+	
+		printf("Setting Constant LUT\n");
+		(configNode->sequence).data.LUT = temp;
+		(configNode->sequence).getSequenceValue = &getConstantSequenceValue;
+		(configNode->sequence).data.type = CONSTANT;
+		seqState = CONFIG;
+		return SCPI_RES_OK;
+	}
+	else {
+		return SCPI_RES_ERR;
+	}
+}
+
+static scpi_result_t RP_DAC_SetPauseLUT(scpi_t * context) {
+
+	readyConfigSequence();
+
+	if((configNode->sequence).data.numStepsPerRepetition > 0 && numSlowDACChan > 0 && isSequenceConfigurable()) {
+		if((configNode->sequence).data.LUT != NULL) {
+			free((configNode->sequence).data.LUT);
+			(configNode->sequence).data.LUT = NULL;
+		}
+		printf("Allocating slowDACLUT\n");
+		float * temp  = (float *)calloc(1, sizeof(float)); //Place holder for != NULL
+
+		printf("Setting Pause LUT\n");
+		(configNode->sequence).data.LUT = temp;
+		(configNode->sequence).getSequenceValue = &getPauseSequenceValue;
+		(configNode->sequence).data.type = PAUSE;
+		seqState = CONFIG;
+		return SCPI_RES_OK;
+	}
+	else {
+		return SCPI_RES_ERR;
+	}
+}
+
+static scpi_result_t RP_DAC_SetRangeLUT(scpi_t * context) {
+
+	readyConfigSequence();
+
+	if((configNode->sequence).data.numStepsPerRepetition > 0 && numSlowDACChan > 0 && isSequenceConfigurable()) {
+		if((configNode->sequence).data.LUT != NULL) {
+			free((configNode->sequence).data.LUT);
+			(configNode->sequence).data.LUT = NULL;
+		}
+		printf("Allocating slowDACLUT\n");
+		float * temp  = (float *)calloc(numSlowDACChan * 2,  sizeof(float));
+
+		int n = readAll(newdatasockfd, temp, numSlowDACChan * 2 * sizeof(float));
+		if (n < 0) perror("ERROR reading from socket");
+	
+		printf("Setting Range LUT\n");
+		(configNode->sequence).data.LUT = temp;
+		(configNode->sequence).getSequenceValue = &getRangeSequenceValue;
+		(configNode->sequence).data.type = RANGE;
+		seqState = CONFIG;
+		return SCPI_RES_OK;
+	}
+	else {
+		return SCPI_RES_ERR;
+	}
+}
+
+static scpi_result_t RP_DAC_SetEnableDACLUT(scpi_t * context) {
+
+	readyConfigSequence();
+
+	if((configNode->sequence).data.numStepsPerRepetition > 0 && numSlowDACChan > 0 && isSequenceConfigurable()) {
+		if((configNode->sequence).data.enableLUT != NULL) {
+			free((configNode->sequence).data.enableLUT);
+			(configNode->sequence).data.enableLUT = NULL;
+		}
+		printf("Allocating enableDACLUT\n");
+		(configNode->sequence).data.enableLUT = (bool *)calloc(numSlowDACChan, (configNode->sequence).data.numStepsPerRepetition * sizeof(bool));
+
+		int n = readAll(newdatasockfd, (configNode->sequence).data.enableLUT, numSlowDACChan * (configNode->sequence).data.numStepsPerRepetition * sizeof(bool));
+		seqState = CONFIG;
 		if (n < 0) perror("ERROR reading from socket");
 		
 		return SCPI_RES_OK;
@@ -1052,25 +1318,83 @@ static scpi_result_t RP_ADC_SetSlowDACLUT(scpi_t * context) {
 	}
 }
 
-
-static scpi_result_t RP_ADC_SetEnableDACLUT(scpi_t * context) {
-
-	if(numSlowDACStepsPerRotation > 0 && numSlowDACChan > 0 && !enableSlowDAC) {
-		if(enableDACLUT != NULL) {
-			free(enableDACLUT);
-			enableDACLUT = NULL;
-		}
-		printf("Allocating enableDACLUT\n");
-		enableDACLUT = (bool *)malloc(numSlowDACChan * numSlowDACStepsPerRotation * sizeof(bool));
-
-		int n = readAll(newdatasockfd, enableDACLUT, numSlowDACChan * numSlowDACStepsPerRotation * sizeof(bool));
-		if (n < 0) perror("ERROR reading from socket");
-		
-		return SCPI_RES_OK;
-	}
-	else {
+static scpi_result_t RP_DAC_SetSequenceResetAfter(scpi_t * context) {
+	if (!isSequenceConfigurable()) {
 		return SCPI_RES_ERR;
 	}
+
+	readyConfigSequence();
+
+	int32_t reset_after_selection;
+
+	if (!SCPI_ParamChoice(context, onoff_modes, &reset_after_selection, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+	configNode->sequence.data.resetAfter = reset_after_selection;
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_GetSequenceResetAfter(scpi_t * context) {
+	if (!isSequenceConfigurable()) {
+		SCPI_ResultText(context, "OFF");
+		return SCPI_RES_ERR;
+	}
+
+	readyConfigSequence();
+
+	const char * name;
+
+	SCPI_ChoiceToName(onoff_modes, configNode->sequence.data.resetAfter, &name);
+	SCPI_ResultText(context, name);
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_AppendSequence(scpi_t * context) {
+	if (!isSequenceConfigurable()) {
+		return SCPI_RES_ERR;
+	}
+
+	if (configNode != NULL) {
+		appendSequenceToList(configNode);
+		configNode = NULL;
+	}
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_PopSequence(scpi_t * context) {
+	if (!isSequenceConfigurable()) {
+		return SCPI_RES_ERR;
+	}
+
+	sequenceNode_t * node = popSequence();
+	cleanUpSequenceNode(node);
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_ClearSequences(scpi_t * context) {
+	if (!isSequenceConfigurable()) {
+		return SCPI_RES_ERR;
+	}
+
+	printf("Cleared Sequences\n");
+	cleanUpSequenceList();
+
+	return SCPI_RES_OK;
+}
+
+
+static scpi_result_t RP_DAC_PrepareSequences(scpi_t * context) {
+	bool result = false;
+	if (isSequenceConfigurable() ) {
+		result = prepareSequences();
+	}
+	SCPI_ResultBool(context, result);
+	return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_GetOverwrittenStatus(scpi_t * context) {
@@ -1109,6 +1433,166 @@ static scpi_result_t RP_GetPerformance(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+// Calibration
+static scpi_result_t RP_Calib_DAC_GetOffset(scpi_t* context) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+
+	if (channel == 0) {
+		SCPI_ResultFloat(context, calib_params.dac_ch1_offs);
+	} 
+	else if (channel == 1) {
+		SCPI_ResultFloat(context, calib_params.dac_ch2_offs);
+	}
+	else {
+		SCPI_ResultFloat(context, NAN);
+ 		return SCPI_RES_ERR;
+	}
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_Calib_DAC_SetOffset(scpi_t* context) {
+	if (getServerMode() != CONFIGRUATION) {
+		return SCPI_RES_ERR;
+	}
+
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+	float calibOffset;
+	int16_t offset = 0;
+
+	SCPI_ParamFloat(context, &calibOffset, true);
+	if (channel == 0) {
+		offset = getOffset(channel);
+		calib_params.dac_ch1_offs = calibOffset;
+	} 
+	else if (channel == 1) {
+		offset = getOffset(channel);
+		calib_params.dac_ch2_offs = calibOffset;
+	}
+	else {
+ 		return SCPI_RES_ERR;
+	}
+
+	calib_WriteParams(calib_params, false);	
+	calib_Init(); // Reload from cache from EEPROM
+	setOffset(offset, channel); // Set offset with new calib
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_Calib_ADC_GetOffset(scpi_t* context) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+	if (channel == 0) {
+		SCPI_ResultFloat(context, calib_params.adc_ch1_offs);
+	} 
+	else if (channel == 1) {
+		SCPI_ResultFloat(context, calib_params.adc_ch2_offs);
+	}
+	else {
+		SCPI_ResultFloat(context, NAN);
+ 		return SCPI_RES_ERR;
+	}
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_Calib_ADC_SetOffset(scpi_t* context) {
+	if (getServerMode() != CONFIGRUATION) {
+		return SCPI_RES_ERR;
+	}
+
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+	float offset;
+
+	SCPI_ParamFloat(context, &offset, true);
+	if (channel == 0) {
+		calib_params.adc_ch1_offs = offset;
+	} 
+	else if (channel == 1) {
+		calib_params.adc_ch2_offs = offset;	}
+	else {
+ 		return SCPI_RES_ERR;
+	}
+
+	
+	calib_WriteParams(calib_params, false);	
+	calib_Init(); // Reload from cache from EEPROM
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_Calib_ADC_GetScale(scpi_t* context) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+	if (channel == 0) {
+		SCPI_ResultFloat(context, calib_params.adc_ch1_fs);
+	}
+	else if (channel == 1) {
+		SCPI_ResultFloat(context, calib_params.adc_ch2_fs);
+	}
+	else {
+		SCPI_ResultFloat(context, NAN);
+ 		return SCPI_RES_ERR;
+	}
+
+
+	calib_WriteParams(calib_params, false);	
+	calib_Init(); // Reload from cache from EEPROM
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_Calib_ADC_SetScale(scpi_t* context) {
+	if (getServerMode() != CONFIGRUATION) {
+		return SCPI_RES_ERR;
+	}
+
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+	float scale;
+
+	SCPI_ParamFloat(context, &scale, true);
+	if (channel == 0) {
+		calib_params.adc_ch1_fs = scale;
+	}
+	else if (channel == 1) {
+		calib_params.adc_ch2_fs = scale;	
+	}
+	else {
+ 		return SCPI_RES_ERR;
+	}
+
+
+	calib_WriteParams(calib_params, false);	
+	calib_Init(); // Reload from cache from EEPROM
+	return SCPI_RES_OK;
+}
+
+
+static scpi_result_t RP_ResetCalibration(scpi_t * context) {
+  calib_LoadFromFactoryZone();
+  return SCPI_RES_OK;
+}
+
 const scpi_command_t scpi_commands[] = {
 	/* IEEE Mandated Commands (SCPI std V1999.0 4.1.1) */
 	{ .pattern = "*CLS", .callback = SCPI_CoreCls,},
@@ -1144,78 +1628,102 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "STATus:PRESet", .callback = SCPI_StatusPreset,},
 
 	/* RP-DAQ */
-	{.pattern = "RP:Init", .callback = RP_Init,},
+	{.pattern = "RP:MODe?", .callback = RP_GetServerMode,},
+	{.pattern = "RP:MODe", .callback = RP_SetServerMode,},
+	// DAC
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude?", .callback = RP_DAC_GetAmplitude,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude", .callback = RP_DAC_SetAmplitude,},
-	{.pattern = "RP:DAC:CHannel#:COMPonent#:Next:AMPlitude?", .callback = RP_DAC_GetNextAmplitude,},
-	{.pattern = "RP:DAC:CHannel#:COMPonent#:Next:AMPlitude", .callback = RP_DAC_SetNextAmplitude,},
 	{.pattern = "RP:DAC:CHannel#:OFFset?", .callback = RP_DAC_GetOffset,},
 	{.pattern = "RP:DAC:CHannel#:OFFset", .callback = RP_DAC_SetOffset,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency?", .callback = RP_DAC_GetFrequency,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency", .callback = RP_DAC_SetFrequency,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:PHAse?", .callback = RP_DAC_GetPhase,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:PHAse", .callback = RP_DAC_SetPhase,},
-	{.pattern = "RP:DAC:MODe", .callback = RP_DAC_SetDACMode,},
-	{.pattern = "RP:DAC:MODe?", .callback = RP_DAC_GetDACMode,},
+	//{.pattern = "RP:DAC:MODe", .callback = RP_DAC_SetDACMode,},
+	//{.pattern = "RP:DAC:MODe?", .callback = RP_DAC_GetDACMode,},
 	{.pattern = "RP:DAC:CHannel#:SIGnaltype", .callback = RP_DAC_SetSignalType,},
 	{.pattern = "RP:DAC:CHannel#:SIGnaltype?", .callback = RP_DAC_GetSignalType,},
-	{.pattern = "RP:DAC:CHannel#:JumpSharpness", .callback = RP_DAC_SetJumpSharpness,},
-	{.pattern = "RP:DAC:CHannel#:JumpSharpness?", .callback = RP_DAC_GetJumpSharpness,},
-	{.pattern = "RP:ADC:SlowADC", .callback = RP_ADC_SetNumSlowADCChan,},
-	{.pattern = "RP:ADC:SlowADC?", .callback = RP_ADC_GetNumSlowADCChan,},
+	{.pattern = "RP:DAC:CHannel#:JUMPsharpness", .callback = RP_DAC_SetJumpSharpness,},
+	{.pattern = "RP:DAC:CHannel#:JUMPsharpness?", .callback = RP_DAC_GetJumpSharpness,},
+	// Sequences
+	{.pattern = "RP:DAC:SEQ:CLocKdivider", .callback = RP_ADC_SetSeqClockDivider,},
+	{.pattern = "RP:DAC:SEQ:CLocKdivider?", .callback = RP_ADC_GetSeqClockDivider,},
+	{.pattern = "RP:DAC:SEQ:SAMPlesperstep", .callback = RP_DAC_SetSamplesPerStep,},
+	{.pattern = "RP:DAC:SEQ:SAMPlesperstep?", .callback = RP_DAC_GetSamplesPerStep,},
+	{.pattern = "RP:DAC:SEQ:CHan", .callback = RP_DAC_SetNumSlowDACChan,},
+	{.pattern = "RP:DAC:SEQ:CHan?", .callback = RP_DAC_GetNumSlowDACChan,},
+	{.pattern = "RP:DAC:PASStofast", .callback = RP_SetPassPDMToFastDAC,},
+	{.pattern = "RP:DAC:PASStofast?", .callback = RP_GetPassPDMToFastDAC,},
+	// Specific/Current Sequence
+	{.pattern = "RP:DAC:SEQ:LUT:ARBITRARY", .callback = RP_DAC_SetArbitraryLUT,},
+	{.pattern = "RP:DAC:SEQ:LUT:CONSTANT", .callback = RP_DAC_SetConstantLUT,},
+	{.pattern = "RP:DAC:SEQ:LUT:PAUSE", .callback = RP_DAC_SetPauseLUT,},
+	{.pattern = "RP:DAC:SEQ:LUT:RANGE", .callback = RP_DAC_SetRangeLUT,},
+	{.pattern = "RP:DAC:SEQ:LUT:ENaBle", .callback = RP_DAC_SetEnableDACLUT,},
+	//{.pattern = "RP:DAC:SEQ:LostSteps?", .callback = RP_DAC_GetSlowDACLostSteps,},
+	{.pattern = "RP:DAC:SEQ:STEPs:REPetition", .callback = RP_DAC_SetStepsPerRepetition,},
+	{.pattern = "RP:DAC:SEQ:STEPs:REPetition?", .callback = RP_DAC_GetStepsPerRepetition,},
+	{.pattern = "RP:DAC:SEQ:RaMPing", .callback = RP_DAC_SetRamping,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:STEPs", .callback = RP_DAC_SetRampingSteps,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:TOTAL", .callback = RP_DAC_SetRampingTotalSteps,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:UP", .callback = RP_DAC_SetRampUp,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:UP:STEPs", .callback = RP_DAC_SetRampUpSteps,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:UP:STEPs?", .callback = RP_DAC_GetRampUpSteps,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:UP:TOTAL", .callback = RP_DAC_SetRampUpTotalSteps,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:UP:TOTAL?", .callback = RP_DAC_GetRampUpTotalSteps,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN", .callback = RP_DAC_SetRampDown,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN:STEPs", .callback = RP_DAC_SetRampDownSteps,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN:STEPs?", .callback = RP_DAC_GetRampDownSteps,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN:TOTAL", .callback = RP_DAC_SetRampDownTotalSteps,},
+	{.pattern = "RP:DAC:SEQ:RaMPing:DOWN:TOTAL?", .callback = RP_DAC_GetRampDownTotalSteps,},
+	{.pattern = "RP:DAC:SEQ:REPetitions", .callback = RP_DAC_SetSequenceRepetitions,},
+	{.pattern = "RP:DAC:SEQ:REPetitions?", .callback = RP_DAC_GetSequenceRepetitions,},
+	{.pattern = "RP:DAC:SEQ:RESETafter", .callback = RP_DAC_SetSequenceResetAfter,},
+	{.pattern = "RP:DAC:SEQ:RESETafter?", .callback = RP_DAC_GetSequenceResetAfter,},
+	{.pattern = "RP:DAC:SEQ:APPend", .callback = RP_DAC_AppendSequence,},
+	{.pattern = "RP:DAC:SEQ:POP", .callback = RP_DAC_PopSequence,},
+	{.pattern = "RP:DAC:SEQ:CLEAR", .callback = RP_DAC_ClearSequences,},
+	{.pattern = "RP:DAC:SEQ:PREPare?", .callback = RP_DAC_PrepareSequences,},
+	// Sequences DAC Config
+	{.pattern = "RP:DAC:SEQ:CHannel#:COMPonent#:AMPlitude", .callback = RP_DAC_SetSequenceAmplitude,},
+	{.pattern = "RP:DAC:SEQ:CHannel#:OFFset", .callback = RP_DAC_SetSequenceOffset,},
+	{.pattern = "RP:DAC:SEQ:CHannel#:COMPonent#:FREQuency", .callback = RP_DAC_SetSequenceFrequency,},
+	{.pattern = "RP:DAC:SEQ:CHannel#:COMPonent#:PHAse", .callback = RP_DAC_SetSequencePhase,},
+	{.pattern = "RP:DAC:SEQ:CHannel#:SIGnaltype", .callback = RP_DAC_SetSequenceSignalType,},
+	{.pattern = "RP:DAC:SEQ:CHannel#:JUMPsharpness", .callback = RP_DAC_SetSequenceJumpSharpness,},
+	// ADC
+	//{.pattern = "RP:ADC:SlowADC", .callback = RP_ADC_SetNumSlowADCChan,},
+	//{.pattern = "RP:ADC:SlowADC?", .callback = RP_ADC_GetNumSlowADCChan,},
 	{.pattern = "RP:ADC:DECimation", .callback = RP_ADC_SetDecimation,},
 	{.pattern = "RP:ADC:DECimation?", .callback = RP_ADC_GetDecimation,},
-	{.pattern = "RP:ADC:SlowDAC", .callback = RP_ADC_SetNumSlowDACChan,},
-	{.pattern = "RP:ADC:SlowDAC?", .callback = RP_ADC_GetNumSlowDACChan,},
-	{.pattern = "RP:ADC:SlowDACLUT", .callback = RP_ADC_SetSlowDACLUT,},
-	{.pattern = "RP:ADC:EnableDACLUT", .callback = RP_ADC_SetEnableDACLUT,},
-	{.pattern = "RP:ADC:SlowDACEnable", .callback = RP_ADC_EnableSlowDAC,},
-	{.pattern = "RP:ADC:SlowDACInterpolation", .callback = RP_ADC_SlowDACInterpolation,},
-	{.pattern = "RP:ADC:SlowDACLostSteps?", .callback = RP_ADC_GetSlowDACLostSteps,},
-	{.pattern = "RP:ADC:SlowDAC:STEPsPerRotation", .callback = RP_ADC_SetSlowDACStepsPerRotation,},
-	{.pattern = "RP:ADC:SlowDAC:STEPsPerRotation?", .callback = RP_ADC_GetSlowDACStepsPerRotation,},
-	{.pattern = "RP:ADC:SlowDAC:SAMPlesPerStep", .callback = RP_ADC_SetSamplesPerSlowDACStep,},
-	{.pattern = "RP:ADC:SlowDAC:SAMPlesPerStep?", .callback = RP_ADC_GetSamplesPerSlowDACStep,},
+	//{.pattern = "RP:ADC:SlowDACInterpolation", .callback = RP_ADC_SlowDACInterpolation,},
 	{.pattern = "RP:ADC:WP:CURRent?", .callback = RP_ADC_GetCurrentWP,},
 	{.pattern = "RP:ADC:DATa?", .callback = RP_ADC_GetData,},
-	{.pattern = "RP:ADC:DATa:DETailed?", .callback = RP_ADC_GetDetailedData,},
+	//{.pattern = "RP:ADC:DATa:DETailed?", .callback = RP_ADC_GetDetailedData,},
 	{.pattern = "RP:ADC:DATa:PIPElined?", .callback = RP_ADC_GetPipelinedData,},
 	{.pattern = "RP:ADC:BUFfer:Size?", .callback = RP_ADC_GetBufferSize,},
-	{.pattern = "RP:ADC:Slow:FRAmes:DATa", .callback = RP_ADC_Slow_GetFrames,},
-	{.pattern = "RP:ADC:ACQCONNect", .callback = RP_ADC_StartAcquisitionConnection,},
-	{.pattern = "RP:ADC:ACQSTATus", .callback = RP_ADC_SetAcquisitionStatus,},
-	{.pattern = "RP:ADC:ACQSTATus?", .callback = RP_ADC_GetAcquisitionStatus,},
-	{.pattern = "RP:PDM:ClockDivider", .callback = RP_ADC_SetPDMClockDivider,},
-	{.pattern = "RP:PDM:ClockDivider?", .callback = RP_ADC_GetPDMClockDivider,},
-	{.pattern = "RP:PDM:CHannel#:NextValue", .callback = RP_PDM_SetPDMNextValue,},
-	{.pattern = "RP:PDM:CHannel#:NextValueVolt", .callback = RP_PDM_SetPDMNextValueVolt,},
-	{.pattern = "RP:PDM:CHannel#:NextValue?", .callback = RP_PDM_GetPDMNextValue,},
-	{.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},
+	//{.pattern = "RP:ADC:Slow:FRAmes:DATa", .callback = RP_ADC_Slow_GetFrames,},
+	//{.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},
 	{.pattern = "RP:DIO:DIR", .callback = RP_DIO_SetDIODirection,},
 	{.pattern = "RP:DIO", .callback = RP_DIO_SetDIOOutput,},
 	{.pattern = "RP:DIO?", .callback = RP_DIO_GetDIOOutput,},
 	{.pattern = "RP:WatchDogMode", .callback = RP_SetWatchdogMode,},
 	{.pattern = "RP:WatchDogMode?", .callback = RP_GetWatchdogMode,},
-	{.pattern = "RP:RamWriterMode", .callback = RP_SetRAMWriterMode,},
-	{.pattern = "RP:RamWriterMode?", .callback = RP_GetRAMWriterMode,},
-	{.pattern = "RP:PassPDMToFastDAC", .callback = RP_SetPassPDMToFastDAC,},
-	{.pattern = "RP:PassPDMToFastDAC?", .callback = RP_GetPassPDMToFastDAC,},
-	{.pattern = "RP:KeepAliveReset", .callback = RP_SetKeepAliveReset,},
-	{.pattern = "RP:KeepAliveReset?", .callback = RP_GetKeepAliveReset,},
-	{.pattern = "RP:Trigger:MODe", .callback = RP_DAC_SetTriggerMode,},
-	{.pattern = "RP:Trigger:MODe?", .callback = RP_DAC_GetTriggerMode,},
-	{.pattern = "RP:MasterTrigger", .callback = RP_SetMasterTrigger,},
-	{.pattern = "RP:MasterTrigger?", .callback = RP_GetMasterTrigger,},
-	{.pattern = "RP:InstantResetMode", .callback = RP_SetInstantResetMode,},
-	{.pattern = "RP:InstantResetMode?", .callback = RP_GetInstantResetMode,},
-	{.pattern = "RP:PeripheralAResetN?", .callback = RP_PeripheralAResetN,},
-	{.pattern = "RP:FourierSynthAResetN?", .callback = RP_FourierSynthAResetN,},
-	{.pattern = "RP:PDMAResetN?", .callback = RP_PDMAResetN,},
-	{.pattern = "RP:WriteToRAMAResetN?", .callback = RP_WriteToRAMAResetN,},
-	{.pattern = "RP:XADCAResetN?", .callback = RP_XADCAResetN,},
-	{.pattern = "RP:TriggerStatus?", .callback = RP_TriggerStatus,},
-	{.pattern = "RP:WatchdogStatus?", .callback = RP_WatchdogStatus,},
-	{.pattern = "RP:InstantResetStatus?", .callback = RP_InstantResetStatus,},
+	{.pattern = "RP:TRIGger:ALiVe", .callback = RP_SetKeepAliveReset,},
+	{.pattern = "RP:TRIGger:ALiVe?", .callback = RP_GetKeepAliveReset,},
+	{.pattern = "RP:TRIGger:MODe", .callback = RP_DAC_SetTriggerMode,},
+	{.pattern = "RP:TRIGger:MODe?", .callback = RP_DAC_GetTriggerMode,},
+	{.pattern = "RP:TRIGger", .callback = RP_SetMasterTrigger,},
+	{.pattern = "RP:TRIGger?", .callback = RP_GetMasterTrigger,},
+	//{.pattern = "RP:InstantResetMode", .callback = RP_SetInstantResetMode,},
+	//{.pattern = "RP:InstantResetMode?", .callback = RP_GetInstantResetMode,},
+	//{.pattern = "RP:PeripheralAResetN?", .callback = RP_PeripheralAResetN,},
+	//{.pattern = "RP:FourierSynthAResetN?", .callback = RP_FourierSynthAResetN,},
+	//{.pattern = "RP:PDMAResetN?", .callback = RP_PDMAResetN,},
+	//{.pattern = "RP:WriteToRAMAResetN?", .callback = RP_WriteToRAMAResetN,},
+	//{.pattern = "RP:XADCAResetN?", .callback = RP_XADCAResetN,},
+	//{.pattern = "RP:WatchdogStatus?", .callback = RP_WatchdogStatus,},
+	//{.pattern = "RP:InstantResetStatus?", .callback = RP_InstantResetStatus,},
 	/* RP-DAQ Errors */
 	{.pattern = "RP:STATus:OVERwritten?", .callback = RP_GetOverwrittenStatus,},
 	{.pattern = "RP:STATus:CORRupted?", .callback = RP_GetCorruptedStatus,},
@@ -1223,6 +1731,15 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:STATus:LOSTSteps?", .callback = RP_GetLostStatus,},
 	{.pattern = "RP:LOG?", .callback = RP_GetLog,},
 	{.pattern = "RP:PERF?", .callback = RP_GetPerformance,},	
+
+	/* Calibration */
+	{.pattern = "RP:CALib:DAC:CHannel#:OFFset?", .callback = RP_Calib_DAC_GetOffset,},
+	{.pattern = "RP:CALib:DAC:CHannel#:OFFset", .callback = RP_Calib_DAC_SetOffset,},
+	{.pattern = "RP:CALib:ADC:CHannel#:OFFset?", .callback = RP_Calib_ADC_GetOffset,},
+	{.pattern = "RP:CALib:ADC:CHannel#:OFFset", .callback = RP_Calib_ADC_SetOffset,},
+	{.pattern = "RP:CALib:ADC:CHannel#:SCAle?", .callback = RP_Calib_ADC_GetScale,},
+	{.pattern = "RP:CALib:ADC:CHannel#:SCAle", .callback = RP_Calib_ADC_SetScale,},
+	{.pattern = "RP:CALib:RESet", .callback = RP_ResetCalibration,},
 
 	SCPI_CMD_LIST_END
 };

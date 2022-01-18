@@ -12,10 +12,9 @@
 #include <sys/ioctl.h>
 #include <sys/socket.h> /* for socket(), connect(), send(), and recv() */
 #include <arpa/inet.h>  /* for sockaddr_in and inet_addr() */
-#include <time.h> 
+#include <time.h>
 #include <limits.h>
 #include "rp-daq-lib.h"
-#include "rp-config.h"
 
 bool verbose = false;
 
@@ -25,16 +24,19 @@ void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *dio_sts;
 char *pdm_cfg, *dac_cfg;
 volatile int32_t *xadc;
 
-static const uint32_t ANALOG_OUT_MASK            = 0xFF;
-static const uint32_t ANALOG_OUT_BITS            = 16;
-static const uint32_t ANALOG_IN_MASK             = 0xFFF;
+// static const uint32_t ANALOG_OUT_MASK            = 0xFF;
+// static const uint32_t ANALOG_OUT_BITS            = 16;
+// static const uint32_t ANALOG_IN_MASK             = 0xFFF;
 
 static const float    ANALOG_IN_MAX_VAL          = 7.0;
 static const float    ANALOG_IN_MIN_VAL          = 0.0;
 static const uint32_t ANALOG_IN_MAX_VAL_INTEGER  = 0xFFF;
-static const float    ANALOG_OUT_MAX_VAL         = 1.8;
-static const float    ANALOG_OUT_MIN_VAL         = 0.0;
-static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
+// static const float    ANALOG_OUT_MAX_VAL         = 1.8;
+// static const float    ANALOG_OUT_MIN_VAL         = 0.0;
+// static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
+
+// Cached parameter values.
+static rp_calib_params_t calib;
 
 // Init stuff
 
@@ -44,10 +46,13 @@ void loadBitstream() {
 	} else {
 		printf("Load Bitfile\n");
 		int catResult = 0;
-		printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/master.bit\n"); 
-		catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");		
+		printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/master.bit\n");
+		catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");
 		if(catResult <= -1) {
 			printf("Error while writing the image to the FPGA.\n");
+		}
+		else {
+			printf("Bitsream loaded\n");
 		}
 
 		FILE* fp = fopen("/tmp/bitstreamLoaded" ,"a");
@@ -63,6 +68,7 @@ void loadBitstream() {
 }
 
 int init() {
+	calib_Init(); // Load calibration from EEPROM
 	loadBitstream();
 
 	// Open memory
@@ -81,7 +87,7 @@ int init() {
 	reset_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40005000);
 	dio_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40006000);
 	cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40004000);
-	ram = mmap(NULL, sizeof(int32_t)*ADC_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, ADC_BUFF_MEM_ADDRESS); 
+	ram = mmap(NULL, sizeof(int32_t)*ADC_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, ADC_BUFF_MEM_ADDRESS);
 	xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
 
 	// Set HP0 bus width to 64 bits
@@ -95,7 +101,7 @@ int init() {
 	printf("Decimation = %d \n", getDecimation());
 	setDACMode(DAC_MODE_STANDARD);
 	setWatchdogMode(OFF);
-	setRAMWriterMode(ADC_MODE_CONTINUOUS);
+	setRAMWriterMode(ADC_MODE_TRIGGERED);
 	setMasterTrigger(OFF);
 	setInstantResetMode(OFF);
 	setPassPDMToFastDAC(OFF);
@@ -128,6 +134,9 @@ int init() {
 	setAmplitude(0, 1, 1);
 	setAmplitude(0, 1, 2);
 	setAmplitude(0, 1, 3);
+
+	setOffset(0, 0);
+	setOffset(0, 1);
 
 	setEnableDACAll(1, 0);
 	setEnableDACAll(1, 1);
@@ -171,6 +180,14 @@ int setAmplitude(uint16_t amplitude, int channel, int component) {
 	return 0;
 }
 
+int16_t getCalibDACOffset(int channel) {
+	if (channel == 0) 
+		return (int16_t)(calib.dac_ch1_offs*8192.0);
+	else if (channel == 1)
+		return (int16_t)(calib.dac_ch1_offs*8192.0);
+	else
+		return 0;
+}
 
 int16_t getOffset(int channel) {
 	if(channel < 0 || channel > 1) {
@@ -179,7 +196,7 @@ int16_t getOffset(int channel) {
 
 	int16_t offset = *((int16_t *)(dac_cfg + 66*channel));
 
-	return offset;
+	return offset - getCalibDACOffset(channel);
 }
 
 int setOffset(int16_t offset, int channel) {
@@ -191,12 +208,12 @@ int setOffset(int16_t offset, int channel) {
 		return -3;
 	}
 
-	*((int16_t *)(dac_cfg + 66*channel)) = offset;
+	int16_t calibOffset = getCalibDACOffset(channel);
+
+	*((int16_t *)(dac_cfg + 66*channel)) = offset + calibOffset;
 
 	return 0;
 }
-
-
 
 double getFrequency(int channel, int component) {
 	if(channel < 0 || channel > 1) {
@@ -246,7 +263,7 @@ int setFrequency(double frequency, int channel, int component)
 		uint64_t mask = 0x0000ffffffffffff;
 		uint64_t register_value = *((uint64_t *)(dac_cfg + 12 + 14*component + 66*channel));
 
-		*((uint64_t *)(dac_cfg + 12 + 14*component + 66*channel)) = 
+		*((uint64_t *)(dac_cfg + 12 + 14*component + 66*channel)) =
 			(register_value & ~mask) | (phase_increment & mask);
 
 	} else {
@@ -281,7 +298,7 @@ double getPhase(int channel, int component)
 }
 
 int setPhase(double phase, int channel, int component)
-{   
+{
 	phase = fmod(phase, 2*M_PI);
 	phase = (phase < 0) ? phase+2*M_PI : phase;
 
@@ -306,11 +323,11 @@ int setPhase(double phase, int channel, int component)
 		uint64_t mask = 0x0000ffffffffffff;
 		uint64_t register_value = *((uint64_t *)(dac_cfg + 18 + 14*component + 66*channel));
 
-		*((uint64_t *)(dac_cfg + 18 + 14*component + 66*channel)) = 
+		*((uint64_t *)(dac_cfg + 18 + 14*component + 66*channel)) =
 			(register_value & ~mask) | (phase_offset & mask);
 
 	} else {
-		// TODO AWG 
+		// TODO AWG
 	}
 
 	return 0;
@@ -346,7 +363,7 @@ int setSignalType(int channel, int signal_type) {
 			&& (signal_type != SIGNAL_TYPE_SAWTOOTH)) {
 		return -2;
 	}
-	*((int16_t *)(dac_cfg + 2 + 66*channel)) = signal_type; 
+	*((int16_t *)(dac_cfg + 2 + 66*channel)) = signal_type;
 
 	return 0;
 }
@@ -360,15 +377,13 @@ int getSignalType(int channel) {
 	return value;
 }
 
-
-
 int setJumpSharpness(int channel, float percentage) {
-	if(channel < 0 || channel > 1) {
+	if(channel < 0 || channel > 1 || percentage == 0.0) {
 		return -3;
 	}
 	int16_t A = (int16_t) (8191*percentage);
-	*((int16_t *)(dac_cfg + 4 + 66*channel)) = A; 
-	*((int16_t *)(dac_cfg + 6 + 66*channel)) = (int16_t) (8191/A); 
+	*((int16_t *)(dac_cfg + 4 + 66*channel)) = A;
+	*((int16_t *)(dac_cfg + 6 + 66*channel)) = (int16_t) (8191/A);
 
 	return 0;
 }
@@ -394,12 +409,10 @@ int setDecimation(uint16_t decimation) {
 	return 0;
 }
 
-
 uint16_t getDecimation() {
 	uint16_t value = *((uint16_t *)(cfg + 2));
 	return value;
 }
-
 
 #define BIT_MASK(__TYPE__, __ONE_COUNT__) \
 	((__TYPE__) (-((__ONE_COUNT__) != 0))) \
@@ -479,8 +492,20 @@ int setEnableDAC(int8_t value, int channel, int index) {
 	return 0;
 }
 
+int setResetDAC(int8_t value, int index) {
+	if (value < 0 || value >= 2)
+		return -1;
 
-
+	printf("%d before reset pdm\n", *((int16_t *)(pdm_cfg + 2*(0+4*index))));
+	int bitpos = 14;
+	// Reset bit is in the 1-th channel
+	// clear the bit
+	*((int16_t *)(pdm_cfg + 2*(0+4*index))) &= ~(1u << bitpos);
+	// set the bit
+	*((int16_t *)(pdm_cfg + 2*(0+4*index))) |= (value << bitpos);
+	printf("%d reset pdm\n", *((int16_t *)(pdm_cfg + 2*(0+4*index))));
+	return 0;
+}
 
 int setPDMRegisterValue(uint64_t value, int index) {
 	//printf("setPDMRegisterValue: value=%llu index=%d \n", value, index);
@@ -551,7 +576,6 @@ int setPDMAllValuesVolt(float voltage, int channel) {
 	return 0;
 }
 
-
 int getPDMClockDivider() {
 	int32_t value = *((int32_t *)(cfg + 4));
 	return value*2;
@@ -574,7 +598,6 @@ uint64_t getPDMTotalWritePointer() {
 	uint64_t value = *((uint64_t *)(pdm_sts));
 	return value;
 }
-
 
 uint64_t getPDMWritePointer() {
 	uint64_t value = *((uint64_t *)(pdm_sts));
@@ -617,7 +640,6 @@ uint32_t getXADCValue(int channel) {
 	}
 	return value;
 }
-
 
 float getXADCValueVolt(int channel) {
 	uint32_t value_raw = getXADCValue(channel);
@@ -695,8 +717,6 @@ int setTriggerMode(int mode) {
 
 	return 0;
 }
-
-
 
 int getMasterTrigger() {
 	int value;
@@ -789,9 +809,6 @@ int setPassPDMToFastDAC(int mode) {
 
 	return 0;
 }
-
-
-
 
 int getKeepAliveReset() {
 	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x40) );
@@ -902,7 +919,7 @@ int getInternalPINNumber(const char* pin) {
 	} else {
 
 		return -1;
-	}	  
+	}
 }
 
 int setDIODirection(const char* pin, int value) {
@@ -921,8 +938,6 @@ int setDIODirection(const char* pin, int value) {
 
 	return 0;
 }
-
-
 
 int setDIO(const char* pin, int value) {
 	int pinInternal = getInternalPINNumber(pin);
@@ -970,4 +985,170 @@ void stopTx() {
 	for(int d=0; d<4; d++) {
 		setEnableDACAll(1,d);
 	}
+}
+
+// Calibration
+
+// From https://github.com/RedPitaya/RedPitaya/blob/e7f4f6b161a9cbbbb3f661228a6e8c5b8f34f661/api/src/calib.c
+
+#define CALIB_MAGIC 0xAABBCCDD
+#define CALIB_MAGIC_FILTER 0xDDCCBBAA
+#define GAIN_LO_FILT_AA 0x7D93
+#define GAIN_LO_FILT_BB 0x437C7
+#define GAIN_LO_FILT_PP 0x2666
+#define GAIN_LO_FILT_KK 0xd9999a
+#define GAIN_HI_FILT_AA 0x4205
+#define GAIN_HI_FILT_BB 0x2F38B
+#define GAIN_HI_FILT_PP 0x2666
+#define GAIN_HI_FILT_KK 0xd9999a
+
+int calib_ReadParams(rp_calib_params_t *calib_params,bool use_factory_zone);
+rp_calib_params_t getDefaultCalib();
+
+static const char eeprom_device[]="/sys/bus/i2c/devices/0-0050/eeprom";
+static const int  eeprom_calib_off=0x0008;
+static const int  eeprom_calib_factory_off = 0x1c08;
+
+int calib_Init()
+{
+    calib_ReadParams(&calib,false);
+    return 0; // Success
+}
+
+int calib_Release()
+{
+    return 0; // Success
+}
+
+/**
+ * Returns cached parameter values
+ * @return Cached parameters.
+ */
+rp_calib_params_t calib_GetParams()
+{
+    return calib;
+}
+
+rp_calib_params_t calib_GetDefaultCalib(){
+    return getDefaultCalib();
+}
+
+/**
+ * @brief Read calibration parameters from EEPROM device.
+ *
+ * Function reads calibration parameters from EEPROM device and stores them to the
+ * specified buffer. Communication to the EEPROM device is taken place through
+ * appropriate system driver accessed through the file system device
+ * /sys/bus/i2c/devices/0-0050/eeprom.
+ *
+ * @param[out]   calib_params  Pointer to destination buffer.
+ * @retval       0 Success
+ * @retval       >0 Failure
+ *
+ */
+int calib_ReadParams(rp_calib_params_t *calib_params,bool use_factory_zone)
+{
+    FILE   *fp;
+    size_t  size;
+
+    /* sanity check */
+    if(calib_params == NULL) {
+        return 11; // Uninitialized Input Argument
+    }
+
+    /* open EEPROM device */
+    fp = fopen(eeprom_device, "r");
+    if(fp == NULL) {
+        return 1; // Failed to Open EEPROM Device
+    }
+
+    /* ...and seek to the appropriate storage offset */
+    int offset = use_factory_zone ? eeprom_calib_factory_off : eeprom_calib_off;
+    if(fseek(fp, offset, SEEK_SET) < 0) {
+        fclose(fp);
+        return 12; // Failed to Find Calibration Parameters
+    }
+
+    /* read data from EEPROM component and store it to the specified buffer */
+    size = fread(calib_params, sizeof(char), sizeof(rp_calib_params_t), fp);
+    if(size != sizeof(rp_calib_params_t)) {
+        fclose(fp);
+        return 13; // Failed to Read Calibration Parameters
+    }
+    fclose(fp);
+
+    return 0;
+}
+
+
+int calib_LoadFromFactoryZone(){
+    rp_calib_params_t calib_values;
+    int ret_val = calib_ReadParams(&calib_values,true);
+    if (ret_val != 0)
+        return ret_val;
+
+    ret_val = calib_WriteParams(calib_values,false);
+    if (ret_val != 0)
+        return ret_val;
+
+    return calib_Init();
+}
+
+int calib_WriteParams(rp_calib_params_t calib_params,bool use_factory_zone) {
+    FILE   *fp;
+    size_t  size;
+
+    /* open EEPROM device */
+    fp = fopen(eeprom_device, "w+");
+    if(fp == NULL) {
+        return 1; // Failed to Open EEPROM Device
+    }
+
+    /* ...and seek to the appropriate storage offset */
+    int offset = use_factory_zone ? eeprom_calib_factory_off : eeprom_calib_off;
+    if(fseek(fp, offset, SEEK_SET) < 0) {
+        fclose(fp);
+        return 12; // Failed to Find Calibration Parameters
+    }
+
+    /* write data to EEPROM component */
+    size = fwrite(&calib_params, sizeof(char), sizeof(rp_calib_params_t), fp);
+    if(size != sizeof(rp_calib_params_t)) {
+        fclose(fp);
+        return 13; // Failed to Read Calibration Parameters
+    }
+    fclose(fp);
+
+    return 0; // Success
+}
+
+int calib_SetParams(rp_calib_params_t calib_params){
+    calib = calib_params;
+    return 0; // Success
+}
+
+rp_calib_params_t getDefaultCalib(){
+    rp_calib_params_t calib;
+		calib.dac_ch1_offs = 0.0;
+		calib.dac_ch2_offs = 0.0;
+		calib.adc_ch1_fs = 1.0;
+		calib.adc_ch1_offs = 0.0;
+		calib.adc_ch2_fs = 1.0;
+		calib.adc_ch2_offs = 0.0;
+    return calib;
+}
+
+void calib_SetToZero() {
+    calib = getDefaultCalib();
+}
+
+// From https://github.com/RedPitaya/RedPitaya/blob/e7f4f6b161a9cbbbb3f661228a6e8c5b8f34f661/api/src/common.c#L172
+/**
+* @brief Converts scale voltage to calibration Full scale. Result is usually written to EPROM calibration parameters.
+*
+* @param[in] voltageScale Scale value in voltage
+* @retval Scale in volts
+*/
+uint32_t cmn_CalibFullScaleFromVoltage(float voltageScale) {
+    return (uint32_t) (voltageScale / 100.0 * ((uint64_t)1<<32));
 }

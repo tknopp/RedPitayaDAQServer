@@ -54,6 +54,7 @@
 #include <sched.h>
 #include <errno.h>
 #include <signal.h>
+#include <time.h>
 #include "logger.h"
 
 #include <scpi/scpi.h>
@@ -61,32 +62,40 @@
 #include "../lib/rp-daq-lib.h"
 #include "../server/daq_server_scpi.h"
 
-int numSamplesPerSlowDACStep = 0; 
-int numSlowDACStepsPerRotation = 20;
+static serverMode_t serverMode = CONFIGRUATION;
+
+serverMode_t getServerMode() {
+	return serverMode;
+}
+
+void setServerMode(serverMode_t mode) {
+	serverMode = mode;
+}
+
+sequenceState_t seqState;
+sequenceNode_t *head = NULL; 
+sequenceNode_t *tail = NULL;
+sequenceNode_t *configNode = NULL;
+
+double rampUpTime;
+double rampUpFraction;
+double rampDownTime;
+double rampDownFraction;
+int numSamplesPerStep = 0; 
+int numSlowDACStepsPerSequence = 20;
 int numSlowDACChan = 0;
 int numSlowADCChan = 0;
-int numSlowDACRotationsEnabled = 0;
+int numSlowDACSequencesEnabled = 0;
 int numSlowDACLostSteps = 0;
-int enableSlowDAC = 0;
-int enableSlowDACAck = true;
-uint64_t rotationSlowDACEnabled = 0;
 
 int64_t channel;
 
 bool initialized = false;
-bool rxEnabled = false;
-bool buffInitialized = false;
 bool controlThreadRunning = false;
 bool commThreadRunning = false;
 
-float *slowDACLUT = NULL;
-bool *enableDACLUT = NULL;
 bool slowDACInterpolation = false;
-double slowDACRampUpTime = 0.4;
-double slowDACFractionRampUp = 0.8;
 float *slowADCBuffer = NULL;
-
-float fastDACNextAmplitude[8] = {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};
 
 pthread_t pControl;
 pthread_t pComm;
@@ -123,7 +132,7 @@ void getprio( pthread_t id ) {
 }
 
 uint8_t getStatus() {
-	return getErrorStatus() | rxEnabled << 3 | enableSlowDAC << 4; 
+	return getErrorStatus() | getMasterTrigger()  << 3 | (seqState == RUNNING) << 4; 
 }
 
 uint8_t getErrorStatus() {
@@ -222,9 +231,6 @@ int main(int argc, char** argv) {
 	datasockfd = createServer(5026);
 	newdatasockfd = 0;
 
-	rxEnabled = false;
-	buffInitialized = false;
-
 	// Set priority of this thread
 	struct sched_param p;
 	p.sched_priority = 20;
@@ -254,6 +260,8 @@ int main(int argc, char** argv) {
 
 	listenfd = createServer(5025);
 
+	cleanUpSequenceList();
+
 	while (true) {
 		logger_flush();
 		printf("\033[0m");
@@ -274,15 +282,25 @@ int main(int argc, char** argv) {
 			if(controlThreadRunning) {
 				joinControlThread();
 			}
+			
+			if(!initialized) {
+				init();
+				initialized = true;
+			}
 
-			createThreads();
+			newdatasocklen = sizeof(newdatasockaddr);
+			newdatasockfd = accept(datasockfd, (struct sockaddr *) &newdatasockaddr, &newdatasocklen);
+
+			if (newdatasockfd < 0) {
+				printf("Error accepting data socket: %s\n", strerror(errno));
+				close(clifdTmp);
+			}
+			else {
+				createThreads();
+				printf("Created threads\n");
+			}
 		}
 		
-		if(commThreadRunning) {
-			sleep(5.0);
-		} else {
-			usleep(100000);
-		}
 	}
 
 	// Exit gracefully
