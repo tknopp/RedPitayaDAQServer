@@ -223,10 +223,20 @@ true
 """
 masterTrigger(rp::RedPitaya) = occursin("ON", query(rp,"RP:TRIGger?"))
 
+"""
+    keepAliveReset!(rp::RedPitaya, val::Bool)
+
+Set the keepAliveReset to `val`.
+"""
 function keepAliveReset!(rp::RedPitaya, val::Bool)
   valStr = val ? "ON" : "OFF"
   send(rp, string("RP:TRIGger:ALiVe ", valStr))
 end
+"""
+    keepAliveReset(rp::RedPitaya)
+
+Determine whether the keepAliveReset is set.
+"""
 keepAliveReset(rp::RedPitaya) = occursin("ON", query(rp,"RP:TRIGger:ALiVe?"))
 
 

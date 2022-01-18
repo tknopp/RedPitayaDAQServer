@@ -2,11 +2,37 @@ export RedPitayaCluster, master, readDataPeriods, numChan, readDataSlow, readFra
 
 import Base: length, iterate, getindex, firstindex, lastindex
 
+"""
+    RedPitayaCluster
+
+Struct representing a cluster of `RedPitaya`s. Such a cluster should share a common clock and master trigger.
+
+The structure implements the indexing and iterable interfaces.
+"""
 struct RedPitayaCluster
   rp::Vector{RedPitaya}
 end
 
-#TODO: set first RP to master
+"""
+    RedPitayaCluster(hosts::Vector{String} [, port = 5025])
+
+Construct a `RedPitayaCluster`.
+
+During the construction the first host is labelled the master RedPitaya of a cluster and all RedPitayas
+are set to using the `EXTERNAL` trigger mode.
+
+See also [`RedPitaya`](@ref), [`master`](@ref).
+
+# Examples
+```julia 
+julia> rpc = RedPitayaCluster(["192.168.1.100", "192.168.1.101"]);
+
+julia> rp = master(rpc)
+
+julia> rp == rpc[1]
+true
+```
+"""
 function RedPitayaCluster(hosts::Vector{String}, port=5025)
   # the first RP is the master
   rps = RedPitaya[ RedPitaya(host, port, i==1) for (i,host) in enumerate(hosts) ]
@@ -18,8 +44,18 @@ function RedPitayaCluster(hosts::Vector{String}, port=5025)
   return RedPitayaCluster(rps)
 end
 
+"""
+    length(rpc::RedPitayaCluster)
+
+Return the number of `RedPitaya`s in cluster `rpc`.
+"""
 length(rpc::RedPitayaCluster) = length(rpc.rp)
 numChan(rpc::RedPitayaCluster) = 2*length(rpc)
+"""
+    master(rpc::RedPitayaCluster)
+
+Return the master `RedPitaya` of the cluster.
+"""
 master(rpc::RedPitayaCluster) = rpc.rp[1]
 
 # Indexing Interface
@@ -40,46 +76,26 @@ function RPInfo(rpc::RedPitayaCluster)
   return RPInfo([RPPerformance([]) for i = 1:length(rpc)])
 end
 
-const _currentFrame = Ref(0)
-
-function currentFrame(rpc::RedPitayaCluster)
-  _currentFrame[] = currentFrame(rpc[1]) #[ currentFrame(rp) for rp in rpc.rp ]
-  @debug "Current frame: $(_currentFrame[])"
-  #return minimum(currentFrames)
-  return _currentFrame[]
-end
-
-function currentPeriod(rpc::RedPitayaCluster)
-  currentPeriods = currentPeriod(rpc[1])  #[ currentPeriod(rp) for rp in rpc.rp ]
-  @debug "Current period: $currentPeriods"
-  #return minimum(currentPeriods)
-  return currentPeriods
-end
-
-function currentWP(rpc::RedPitayaCluster)
-  return currentWP(master(rpc))
-end
-
-for op in [:periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset, :sequenceRepetitions,
-           :triggerMode, :samplesPerSlowDACStep, :slowDACStepsPerFrame]
+for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset, :sequenceRepetitions,
+           :triggerMode, :samplesPerSlowDACStep, :slowDACStepsPerFrame, :serverMode, :masterTrigger]
   
-  """
+  @eval begin 
+    @doc """
         $($op)(rpc::RedPitayaCluster, value)
 
-  As single RedPitaya, but applied to only the master.
-  See [$($op)](@ref)
-  """
-  @eval $op(rpc::RedPitayaCluster) = $op(master(rpc))
+    As with single RedPitaya, but applied to only the master.
+    """
+    $op(rpc::RedPitayaCluster) = $op(master(rpc))
+  end
 end
 
-for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :samplesPerSlowDACStep!, :slowDACStepsPerFrame!, :keepAliveReset!]
+for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :samplesPerSlowDACStep!, :slowDACStepsPerFrame!,
+           :keepAliveReset!, :serverMode!, :appendSequence!]
   @eval begin
-    """
+    @doc """
           $($op)(rpc::RedPitayaCluster, value)
     
-    As single RedPitaya, but applied to all RedPitayas in a cluster.
-
-    See [$($op)](@ref)
+    As with single RedPitaya, but applied to all RedPitayas in a cluster.
     """
     function $op(rpc::RedPitayaCluster, value)
       @sync for rp in rpc
@@ -89,8 +105,13 @@ for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :
   end
 end
 
-for op in [:connectADC, :stopADC, :disconnect, :connect, :clearSequence]
+for op in [:disconnect, :connect, :clearSequence]
   @eval begin
+    @doc """
+        $($op)(rpc::RedPitayaCluster)
+    
+    As with single RedPitaya, but applied to all RedPitayas in a cluster.
+    """
     function $op(rpc::RedPitayaCluster)
       @sync for rp in rpc
         @async $op(rp)
@@ -99,100 +120,93 @@ for op in [:connectADC, :stopADC, :disconnect, :connect, :clearSequence]
   end
 end
 
-function startADC(rpc::RedPitayaCluster)
-  @sync for rp in rpc
-    @async startADC(rp)
-  end
-end
+"""
+    masterTrigger(rpc::RedPitayaCluster, val::Bool)
 
-function masterTrigger(rpc::RedPitayaCluster, val::Bool)
+Set the master trigger of the cluster to `val`. 
+
+For `val` equals to true this is the same as calling the function on the RedPitaya returned by `master(rpc)`.
+If `val` is false then the keepAliveReset is set to true for all RedPitayas in the cluster
+before the master trigger is disabled. Afterwards the keepAliveReset is set to false again.
+
+See also [`master`](@ref), [`keepAliveReset!`](@ref).
+"""
+function masterTrigger!(rpc::RedPitayaCluster, val::Bool)
     if val
-        masterTrigger(master(rpc), val)
+        masterTrigger!(master(rpc), val)
     else
-        keepAliveReset(rpc, true)
-        masterTrigger(master(rpc), false)
-        ramWriterMode(rpc, "TRIGGERED")
-        keepAliveReset(rpc, false)
+        keepAliveReset!(rpc, true)
+        masterTrigger!(master(rpc), false)
+        keepAliveReset!(rpc, false)
     end
 end
-masterTrigger(rpc::RedPitayaCluster) = masterTrigger(master(rpc))
-bufferSize(rpc::RedPitayaCluster) = bufferSize(master(rpc))
 
-# "TRIGGERED" or "CONTINUOUS"
-function ramWriterMode(rpc::RedPitayaCluster, mode::String)
-  @sync for rp in rpc
-    @async ramWriterMode(rp, mode)
+
+for op in [:amplitudeDAC, :frequencyDAC, :phaseDAC]
+  @eval begin 
+    @doc """
+        $($op)(rpc::RedPitayaCluster, chan::Integer, component::Integer)
+    
+    As with single RedPitaya. The `chan` index refers to the total channel available in a cluster, two per `RedPitaya`.
+    For example channel `4` would refer to the second channel of the second `RedPitaya`. 
+    """
+    function $op(rpc::RedPitayaCluster, chan::Integer, component::Integer)
+      idxRP = div(chan-1, 2) + 1
+      chanRP = mod1(chan, 2)
+      return $op(rpc[idxRP], chanRP, component)
+    end
+  end
+end
+for op in [:amplitudeDAC!, :frequencyDAC!, :phaseDAC!]
+  @eval begin
+    @doc """
+        $($op)(rpc::RedPitayaCluster, chan::Integer, component::Integer, value)
+    
+    As with single RedPitaya. The `chan` index refers to the total channel available in a cluster, two per `RedPitaya`.
+    For example channel `4` would refer to the second channel of the second `RedPitaya`.
+    """
+    function $op(rpc::RedPitayaCluster, chan::Integer, component::Integer, value)
+      idxRP = div(chan-1, 2) + 1
+      chanRP = mod1(chan, 2)
+      return $op(rpc[idxRP], chanRP, component, value)
+    end
   end
 end
 
-for op in [:amplitudeDAC, :amplitudeDACNext, :frequencyDAC, :phaseDAC, :modulusFactorDAC, :modulusDAC]
-  @eval function $op(rpc::RedPitayaCluster, chan::Integer, component::Integer)
-    idxRP = div(chan-1, 2) + 1
-    chanRP = mod1(chan, 2)
-    return $op(rpc[idxRP], chanRP, component)
-  end
-  @eval function $op(rpc::RedPitayaCluster, chan::Integer, component::Integer, value)
-    idxRP = div(chan-1, 2) + 1
-    chanRP = mod1(chan, 2)
-    return $op(rpc[idxRP], chanRP, component, value)
-  end
-end
-
-for op in [:signalTypeDAC,  :DCSignDAC, :jumpSharpnessDAC]
-  @eval function $op(rpc::RedPitayaCluster, chan::Integer)
-    idxRP = div(chan-1, 2) + 1
-    chanRP = mod1(chan, 2)
-    return $op(rpc[idxRP], chanRP)
-  end
-  @eval function $op(rpc::RedPitayaCluster, chan::Integer, value)
-    idxRP = div(chan-1, 2) + 1
-    chanRP = mod1(chan, 2)
-    return $op(rpc[idxRP], chanRP, value)
+for op in [:signalTypeDAC, :jumpSharpnessDAC, :offsetDAC]
+  @eval begin
+    @doc """
+        $($op)(rpc::RedPitayaCluster, chan::Integer)
+    
+    As with single RedPitaya. The `chan` index refers to the total channel available in a cluster, two per `RedPitaya`.
+    For example channel `4` would refer to the second channel of the second `RedPitaya`.
+    """ 
+    function $op(rpc::RedPitayaCluster, chan::Integer)
+      idxRP = div(chan-1, 2) + 1
+      chanRP = mod1(chan, 2)
+      return $op(rpc[idxRP], chanRP)
+    end
   end
 end
-
-function setSlowDAC(rpc::RedPitayaCluster, chan, value)
-  idxRP = div(chan-1, 2) + 1
-  chanRP = mod1(chan, 2)
-  setSlowDAC(rpc[idxRP], chanRP, value)
-end
-
-function getSlowADC(rpc::RedPitayaCluster, chan::Integer)
-  idxRP = div(chan-1, 2) + 1
-  chanRP = mod1(chan, 2)
-  getSlowADC(rpc[idxRP], chanRP)
-end
-
-function offsetDAC(rpc::RedPitayaCluster, chan, value)
-  idxRP = div(chan-1, 2) + 1
-  chanRP = mod1(chan, 2)
-  offsetDAC(rpc[idxRP], chanRP, value)
-end
-
-function offsetDAC(rpc::RedPitayaCluster, chan::Integer)
-  idxRP = div(chan-1, 2) + 1
-  chanRP = mod1(chan, 2)
-  offsetDAC(rpc[idxRP], chanRP)
-end
-
-function numSlowADCChan(rpc::RedPitayaCluster)
-  tmp = [0 for rp in rpc]
-  @sync for (d, rp) in enumerate(rpc)
-    @async tmp[d] = numSlowADCChan(rp)
+for op in [:signalTypeDAC!, :jumpSharpnessDAC!, :offsetDAC!]
+  @eval begin
+    @doc """
+        $($op)(rpc::RedPitayaCluster, chan::Integer, value)
+    
+    As with single RedPitaya. The `chan` index refers to the total channel available in a cluster, two per `RedPitaya`.
+    For example channel `4` would refer to the second channel of the second `RedPitaya`.
+    """
+    function $op(rpc::RedPitayaCluster, chan::Integer, value)
+      idxRP = div(chan-1, 2) + 1
+      chanRP = mod1(chan, 2)
+      return $op(rpc[idxRP], chanRP, value)
+    end
   end
-  return sum(tmp)
 end
 
-function numSlowADCChan(rpc::RedPitayaCluster, num)
-  @sync for rp in rpc
-    @async numSlowADCChan(rp, num)
-  end
-  return
-end
-
-function passPDMToFastDAC(rpc::RedPitayaCluster, val::Vector{Bool})
+function passPDMToFastDAC!(rpc::RedPitayaCluster, val::Vector{Bool})
   @sync for (d,rp) in enumerate(rpc)
-    @async passPDMToFastDAC(rp, val[d])
+    @async passPDMToFastDAC!(rp, val[d])
   end
 end
 
@@ -204,17 +218,13 @@ function passPDMToFastDAC(rpc::RedPitayaCluster)
   return result
 end
 
-function appendSequence(rpc::RedPitayaCluster, seq::AbstractSequence)
-  @sync for rp in rpc 
-    @async appendSequence(rp, seq)
-  end
-end
+"""
+    prepareSequence!(rpc::RedPitayaCluster)
 
-function appendSequence(rpc::RedPitayaCluster, index, seq::AbstractSequence)
-  appendSequence(rpc[index], seq)
-end
-
-function prepareSequence(rpc::RedPitayaCluster)
+As with single `RedPitaya`, but applied to all `RedPitaya`s in a cluster.
+Returns true if all could servers could prepare, false otherwise.
+"""
+function prepareSequence!(rpc::RedPitayaCluster)
   success = [false for rp in rpc]
   @sync for (i, rp) in enumerate(rpc)
     @async success[i] = prepareSequence(rp)
@@ -224,22 +234,16 @@ end
 
 computeRamping(rpc::RedPitayaCluster, stepsPerSeq, time, fraction) = computeRamping(master(rpc), stepsPerSeq, time, fraction)
 
-modeDAC(rpc::RedPitayaCluster) = modeDAC(master(rpc))
-
-function modeDAC(rpc::RedPitayaCluster, mode::String)
-  @sync for rp in rpc
-    @async modeDAC(rp, mode)
-  end
-end
-
-function slowDACInterpolation(rpc::RedPitayaCluster, enable::Bool)
-  @sync for rp in rpc
-    @async slowDACInterpolation(rp, enable)
-  end
-end
-
 include("ClusterView.jl")
+"""
+    SampleChunk
 
+Struct containing a matrix of samples and associated `PerformanceData`
+
+# Fields
+- `samples::Matrix{Int16}`: `n`x`m` matrix containing `m` samples for `n` channel
+- `performance::Vector{PerformanceData}`: `PerformanceData` object for each RedPitaya that transmitted samples
+"""
 struct SampleChunk
   samples::Matrix{Int16}
   performance::Vector{PerformanceData}
@@ -526,53 +530,5 @@ end
 
 function readDataPeriods(rpc::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startPeriod, numPeriods, numBlockAverages=1; chunkSize = 50000, useCalibration = false)
   data = readPeriods(rpc, startPeriod, numPeriods, numBlockAverages, chunkSize = chunkSize, useCalibration = useCalibration)
-  return data
-end
-
-
-# High level read. numFrames can adress a future frame.
-function readDataSlow(rpc::RedPitayaCluster, startFrame, numFrames)
-  numPeriods = master(rpc).periodsPerFrame
-  numChanTotal = numSlowADCChan(rpc)
-  numSampPerFrame = numPeriods * numChanTotal
-
-  data = zeros(Float32, numChanTotal, numPeriods, numFrames)
-  wpRead = startFrame
-  l=1
-
-  # This is a wild guess for a good chunk size
-  chunkSize = max(1,  round(Int, 1000000 / numSampPerFrame)  )
-  @debug "chunkSize = $chunkSize"
-  while l<=numFrames
-    wpWrite = currentFrame(rpc)
-    while wpRead >= wpWrite # Wait that startFrame is reached
-      wpWrite = currentFrame(rpc)
-      @debug wpWrite
-    end
-    chunk = min(wpWrite-wpRead,chunkSize) # Determine how many frames to read
-    @debug chunk
-    if l+chunk > numFrames
-      chunk = numFrames - l + 1
-    end
-
-    @debug "Read from $wpRead until $(wpRead+chunk-1), WpWrite $(wpWrite), chunk=$(chunk)"
-
-    p = 1
-    for (d,rp) in enumerate(rpc)
-      u = readDataSlow_(rp, Int64(wpRead), Int64(chunk))
-      numChan = size(u,1)
-
-      #utmp1 = reshape(u, numChan, numBlockAverages,
-      #                    div(size(u,2),numBlockAverages),size(u,3))
-      #utmp2 = numBlockAverages > 1 ? mean(utmp1,dims=2) : utmp1
-
-      data[p:(p+numChan-1),:,l:(l+chunk-1)] = u #utmp2[:,1,:,:]
-      p += numChan
-    end
-
-    l += chunk
-    wpRead += chunk
-  end
-
   return data
 end

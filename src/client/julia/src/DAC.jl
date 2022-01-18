@@ -490,8 +490,27 @@ function sequenceRepetitions!(rp::RedPitaya, value::Int)
 end
 
 appendSequence!(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:APPend")
+
+"""
+    popSequence!(rp::RedPitaya)
+
+Instruct the server to remove the last added sequence from its list.
+"""
 popSequence!(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:POP")
+
+"""
+    clearSequences!(rp::RedPitaya)
+
+Instruct the server to remove all sequences from its list.
+"""
 clearSequences!(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:CLEAR")
+
+"""
+    prepareSequence!(rp::RedPitaya)
+
+Instruct the server to prepare the currently added sequences.
+Returns true if server could prepare, false otherwise.
+"""
 prepareSequence!(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:PREPare?", Bool)
 
 # Helper function for sequences
