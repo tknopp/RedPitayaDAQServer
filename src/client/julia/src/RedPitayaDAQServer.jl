@@ -14,24 +14,12 @@ import Base: reset, iterate, length
 export RedPitaya, send, receive, query, start, stop, disconnect, ServerMode, serverMode, serverMode!, CONFIGURATION, MEASUREMENT, TRANSMISSION, getLog
 
 """
-    RedPitaya(ip [, port = 5025, isMaster = false])
+    RedPitaya
 
-Create a `RedPitaya` (i.e. a connection to a RedPitayaDAQServer server) which is the central structure of
-the Julia client library.
+Struct representing a connection to a RedPitayaDAQServer.
 
-Used to communicate with the server and manage the connection and metadata. During the construction the connection
-is established and the calibration values are loaded from the RedPitayas EEPROM.
-Throws an error if a timeout occurs while attempting to connect.
-
-# Examples
-```julia
-julia> rp = RedPitaya("192.168.1.100");
-
-julia> decimation(rp, 8)
-
-julia> decimation(rp)
-8
-```
+Contains the sockets used for communication and connection related metadata. Also contains fields for 
+client specific concepts such as periods, frames and calibration values. 
 """
 mutable struct RedPitaya
   host::String
@@ -192,6 +180,25 @@ function destroy(rp::RedPitaya)
   rp.destroyed = true
 end
 
+"""
+    RedPitaya(ip [, port = 5025, isMaster = false])
+
+Construct a `RedPitaya`.
+
+During the construction the connection
+is established and the calibration values are loaded from the RedPitayas EEPROM.
+Throws an error if a timeout occurs while attempting to connect.
+
+# Examples
+```julia
+julia> rp = RedPitaya("192.168.1.100");
+
+julia> decimation(rp, 8)
+
+julia> decimation(rp)
+8
+```
+"""
 function RedPitaya(host, port=5025, isMaster=true)
 
   rp = RedPitaya(host,"\n", TCPSocket(), TCPSocket(), 1, 1, 1, false, isMaster, false, zeros(Float32, 2, 2))

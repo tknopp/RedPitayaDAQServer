@@ -193,7 +193,7 @@ currentWP(rp::RedPitaya) = query(rp,"RP:ADC:WP:CURRENT?", Int64)
 bufferSize(rp::RedPitaya) = query(rp,"RP:ADC:BUFFER:SIZE?", Int64)
 
 """
-    masterTrigger(rp::RedPitaya, val::Bool)
+    masterTrigger!(rp::RedPitaya, val::Bool)
 
 Set the master trigger of the RedPitaya to `val`.
 
@@ -223,7 +223,7 @@ true
 """
 masterTrigger(rp::RedPitaya) = occursin("ON", query(rp,"RP:TRIGger?"))
 
-function keepAliveReset(rp::RedPitaya, val::Bool)
+function keepAliveReset!(rp::RedPitaya, val::Bool)
   valStr = val ? "ON" : "OFF"
   send(rp, string("RP:TRIGger:ALiVe ", valStr))
 end

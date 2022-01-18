@@ -2,11 +2,11 @@ export SignalType, SINE, SQUARE, TRIANGLE, SAWTOOTH, DACPerformanceData, DACConf
 amplitudeDAC, amplitudeDAC!, amplitudeDACSeq!, offsetDAC, offsetDAC!, offsetDACSeq!,
 frequencyDAC, frequencyDAC!, frequencyDACSeq!, phaseDAC, phaseDAC!, phaseDACSeq!,
 jumpSharpnessDAC, jumpSharpnessDAC!, jumpSharpnessDACSeq!, signalTypeDAC, signalTypeDAC!, signalTypeDACSeq!,
-configureFastDACSeq!, numSeqChan, numSeqChan!, setLUT!, samplesPerStep, samplesPerStep!,
+configureFastDACSeq!, numSeqChan, numSeqChan!,samplesPerStep, samplesPerStep!,
 stepsPerRepetition, stepsPerRepetition!, prepareSteps!, stepsPerFrame!, 
 ramping!, rampUp!, rampDown!, rampingSteps, rampingSteps!, rampingTotalSteps, rampingTotalSteps!,
 rampUpSteps, rampUpSteps!, rampUpTotalSteps, rampUpTotalSteps!, rampDownSteps, rampDownSteps!, rampDownTotalSteps, rampDownTotalSteps!, 
-popSequence!, clearSequence!, prepareSequence!, AbstractSequence, ArbitrarySequence, enableLUT,
+popSequence!, clearSequences!, prepareSequence!, AbstractSequence, ArbitrarySequence, enableLUT,
 fastDACConfig, resetAfterSequence!
 
 @enum SignalType SINE SQUARE TRIANGLE SAWTOOTH
@@ -37,10 +37,40 @@ function passPDMToFastDAC!(rp::RedPitaya, val::Bool)
 end
 passPDMToFastDAC(rp::RedPitaya) = occursin("ON", query(rp,"RP:DAC:PASStofast?"))
 
+"""
+    amplitudeDAC(rp::RedPitaya, channel, component)
+
+Return the amplitude of composite waveform `component` for `channel`.
+
+See [`amplitudeDAC!`](@ref).
+
+# Examples
+```julia
+julia> amplitudeDAC!(rp, 1, 1, 0.5);
+
+julia> amplitudeDAC(rp, 1, 1)
+0.5
+```
+"""
 function amplitudeDAC(rp::RedPitaya, channel, component)
   command = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":AMP?")
   return query(rp, command, Float64)
 end
+"""
+    amplitudeDAC!(rp::RedPitaya, channel, component, value)
+
+Set the amplitude of composite waveform `component` for `channel`.
+
+See [`amplitudeDAC`](@ref).
+
+# Examples
+```julia
+julia> amplitudeDAC!(rp, 1, 1, 0.5);
+
+julia> amplitudeDAC(rp, 1, 1)
+0.5
+```
+"""
 function amplitudeDAC!(rp::RedPitaya, channel, component, value)
   if value > 1.0
     error("$value is larger than 1.0 V!")
@@ -65,10 +95,40 @@ function amplitudeDACSeq!(config::DACConfig, channel, component, value)
   config.amplitudes[channel, component] = value
 end
 
+"""
+    offsetDAC(rp::RedPitaya, channel)
+
+Return the offset for `channel`.
+
+See [`offsetDAC!`](@ref).
+
+# Examples
+```julia
+julia> offsetDAC!(rp, 1, 0.2);
+
+julia> offsetDAC(rp, 1)
+0.2
+```
+"""
 function offsetDAC(rp::RedPitaya, channel)
   command = string("RP:DAC:CH", Int(channel)-1, ":OFF?")
   return query(rp, command, Float64)
 end
+"""
+    offsetDAC!(rp::RedPitaya, channel, value)
+
+Set the offset for `channel`.
+
+See [`offsetDAC`](@ref).
+
+# Examples
+```julia
+julia> offsetDAC!(rp, 1, 0.2);
+
+julia> offsetDAC(rp, 1)
+0.2
+```
+"""
 function offsetDAC!(rp::RedPitaya, channel, value)
   if value > 1.0
     error("$value is larger than 1.0 V!")
@@ -91,10 +151,40 @@ function offsetDACSeq!(config::DACConfig, channel, value)
   config.offsets[channel] = value
 end
 
+"""
+    frequencyDAC(rp::RedPitaya, channel, component)
+
+Return the frequency of composite waveform `component` for `channel`.
+
+See [`frequencyDAC!`](@ref).
+
+# Examples
+```julia
+julia> frequencyDAC!(rp, 1, 1, 2400);
+
+julia> frequencyDAC(rp, 1, 1)
+2400
+```
+"""
 function frequencyDAC(rp::RedPitaya, channel, component)
   command = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":FREQ?")
   return query(rp, command, Float64)
 end
+"""
+    frequencyDAC!(rp::RedPitaya, channel, component, value)
+
+Set the frequency of composite waveform `component` for `channel`.
+
+See [`frequencyDAC`](@ref).
+
+# Examples
+```julia
+julia> frequencyDAC!(rp, 1, 1, 2400);
+
+julia> frequencyDAC(rp, 1, 1)
+2400
+```
+"""
 function frequencyDAC!(rp::RedPitaya, channel, component, value)
   command = string("RP:DAC:CH", Int(channel)-1, ":COMP",
                    Int(component)-1, ":FREQ ", Float64(value))
@@ -110,10 +200,40 @@ function frequencyDACSeq!(config::DACConfig, channel, component, value)
   config.frequencies[channel, component] = value
 end
 
+"""
+    phaseDAC(rp::RedPitaya, channel, component)
+
+Return the phase of composite waveform `component` for `channel`.
+
+See [`phaseDAC!`](@ref).
+
+# Examples
+```julia
+julia> phaseDAC!(rp, 1, 1, 0.0);
+
+julia> phaseDAC(rp, 1, 0.0)
+0.0
+```
+"""
 function phaseDAC(rp::RedPitaya, channel, component)
   command = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":PHA?")
   return query(rp, command, Float64)
 end
+"""
+    phaseDAC!(rp::RedPitaya, channel, component, value)
+
+Set the phase of composite waveform `component` for `channel`.
+
+See [`phaseDAC`](@ref).
+
+# Examples
+```julia
+julia> phaseDAC!(rp, 1, 1, 0.0);
+
+julia> phaseDAC(rp, 1, 0.0)
+0.0
+```
+"""
 function phaseDAC!(rp::RedPitaya, channel, component, value)
   command = string("RP:DAC:CH", Int(channel)-1, ":COMP",
                    Int(component)-1, ":PHA ", Float64(value))
@@ -129,10 +249,40 @@ function phaseDACSeq!(config::DACConfig, channel, component, value)
   config.phases[channel, component] = value
 end
 
+"""
+    jumpSharpnessDAC(rp::RedPitaya, channel, value)
+
+Return the jumpSharpness of composite waveform for `channel`.
+
+See [`jumpSharpnessDAC!`](@ref).
+
+# Examples
+```julia
+julia> jumpSharpnessDAC!(rp, 1, 0.01);
+
+julia> jumpSharpnessDAC(rp, 1)
+0.01
+```
+"""
 function jumpSharpnessDAC(rp::RedPitaya, channel)
   command = string("RP:DAC:CH", Int(channel)-1, ":JUMPsharpness?")
   return query(rp, command, Float64)
 end
+"""
+    jumpSharpnessDAC!(rp::RedPitaya, channel, value)
+
+Set the jumpSharpness of composite waveform for `channel`.
+
+See [`jumpSharpnessDAC`](@ref).
+
+# Examples
+```julia
+julia> jumpSharpnessDAC!(rp, 1, 0.01);
+
+julia> jumpSharpnessDAC(rp, 1)
+0.01
+```
+"""
 function jumpSharpnessDAC!(rp::RedPitaya, channel, value)
   command = string("RP:DAC:CH", Int(channel)-1, ":JUMPsharpness ", Float64(value))
   send(rp, command)
@@ -146,14 +296,45 @@ function jumpSharpnessDACSeq!(config::DACConfig, channel, value)
   config.jumpSharpness[channel] = value
 end
 
+"""
+    signalTypeDAC!(rp::RedPitaya, channel, value)
+
+Return the signalType of composite waveform for `channel`.
+
+See [`signalTypeDAC!`](@ref).
+
+# Examples
+```julia
+julia> signalTypeDAC!(rp, 1, SINE);
+
+julia> signalTypeDAC(rp, 1)
+SINE
+```
+"""
 function signalTypeDAC(rp::RedPitaya, channel)
   command = string("RP:DAC:CH", Int(channel)-1, ":SIGnaltype?")
   return stringToEnum(SignalType, query(rp, command))
 end
 
+
 function signalTypeDAC!(rp::RedPitaya, channel, sigType::String)
   return signalTypeDAC!(rp, channel, stringToEnum(SignalType, sigType))
 end
+"""
+    signalTypeDAC!(rp::RedPitaya, channel, value)
+
+Set the signalType of composite waveform for `channel`.
+
+See [`signalTypeDAC`](@ref).
+
+# Examples
+```julia
+julia> signalTypeDAC!(rp, 1, SINE);
+
+julia> signalTypeDAC(rp, 1)
+SINE
+```
+"""
 function signalTypeDAC!(rp::RedPitaya, channel, sigType::SignalType)
   command = string("RP:DAC:CH", Int(channel)-1, ":SIGnaltype ", string(sigType))
   return send(rp, command)
@@ -195,7 +376,17 @@ function readDACPerformanceData(rp::RedPitaya)
   return DACPerformanceData(perf[1], perf[2], perf[3], perf[4])
 end
 
+"""
+  numSeqChan(rp::RedPitaya)
+
+Return the number of sequence channel.
+"""
 numSeqChan(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:CHan?", Int64)
+"""
+    numSeqChan(rp::RedPitaya, value)
+
+Set the number of sequence channel. Valid `value`s are between `1` and `4`.
+"""
 function numSeqChan!(rp::RedPitaya, value)
   if value <= 0 || value > 4
     error("Num sequence channels needs to be between 1 and 4!")
@@ -219,12 +410,32 @@ function enableDACLUT(rp::RedPitaya, lut::Array)
   write(rp.dataSocket, lutBool)
 end
 
+"""
+    samplesPerStep(rp::RedPitaya)
+
+Return the number of samples per sequence step.
+"""
 samplesPerStep(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:SAMP?", Int64)
-function samplesPerStep!(rp::RedPitaya, value)
+"""
+    samplesPerStep!(rp::RedPitaya, value::Integer)
+
+Set the number of samples per sequence step.
+"""
+function samplesPerStep!(rp::RedPitaya, value::Integer)
   send(rp, string("RP:DAC:SEQ:SAMP ", value))
 end
 
+"""
+    stepsPerRepetition(rp::RedPitaya)
+
+Return the number of steps per sequence repetitions.
+"""
 stepsPerRepetition(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:STEPs:REPetition?", Int64)
+"""
+    stepsPerRepetition!(rp::RedPitaya)
+
+Set the number of steps per sequence repetitions.
+"""
 function stepsPerRepetition!(rp::RedPitaya, value)
   send(rp, string("RP:DAC:SEQ:STEPs:REPetition ", value))
 end
@@ -235,6 +446,13 @@ function prepareSteps!(rp::RedPitaya, samplesPerStep, stepsPerSequence, numOfCha
   stepsPerSequence!(rp, stepsPerSequence)
 end
 
+"""
+    stepsPerFrame!(rp::RedPitaya, stepsPerFrame)
+
+Set the number of samples per steps s.t. `stepsPerFrame` sequence steps in a frame.
+
+See [`samplesPerPeriod!`](@ref), [`periodsPerFrame!`](@ref), [`samplesPerStep!`](@ref).
+"""
 function stepsPerFrame!(rp::RedPitaya, stepsPerFrame)
   samplesPerFrame = rp.periodsPerFrame * rp.samplesPerPeriod
   samplesPerStep = div(samplesPerFrame, stepsPerFrame)
@@ -273,12 +491,23 @@ end
 
 appendSequence!(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:APPend")
 popSequence!(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:POP")
-clearSequence!(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:CLEAR")
+clearSequences!(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:CLEAR")
 prepareSequence!(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:PREPare?", Bool)
 
 # Helper function for sequences
-abstract type AbstractSequence end
+"""
+    AbstractSequence
 
+Abstract struct of client-side representation of a sequence.
+
+See [`appendSequence!`](@ref), [`prepareSequence!`](@ref), [`ArbitrarySequence`](@ref).
+"""
+abstract type AbstractSequence end
+"""
+    ArbitrarySequence <: AbstractSequence
+
+Struct representing a sequence in which the server directly takes the values from the given LUT.
+"""
 mutable struct ArbitrarySequence <: AbstractSequence
   lut::Array{Float32}
   enable::Union{Array{Bool}, Nothing}
@@ -291,10 +520,40 @@ mutable struct ArbitrarySequence <: AbstractSequence
   fastDAC::DACConfig
   resetAfter::Bool
 end
-ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, rampDownTotalSteps, reset=false) = ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, rampDownTotalSteps, DACConfig(), reset)
-ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps, reset=false) = ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps, steps, totalSteps, DACConfig(), reset)
-ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, (steps, totalSteps)::Tuple, reset=false) = ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, steps, totalSteps, steps, totalSteps, DACConfig(), reset)
-ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, (upSteps, upTotalSteps)::Tuple, (downSteps, downTotalSteps)::Tuple, reset=false) = ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, DACConfig(), reset)
+"""
+    ArbitrarySequence(lut, enable, stepsPerRepetition, repetitions, upSteps, upTotalSteps, downSteps, rampDownTotalSteps, reset=false)
+
+Constructor for `ArbitrarySequence`.
+
+# Arguments
+- `lut::Array{Float32}`: `n`x`m` matrix containing `m` steps for `n` channel
+- `emable::Union{Array{Bool}, Nothing}`: matrix containing enable flags
+- `repetitions::Int32`: the number of times the sequence should be repeated
+- `upSteps::Int32`: the number of steps the ramping factor should be increasing to 1.0
+- `upTotalSteps::Int32`: the total number of steps spent in the ramp up phase
+- `downSteps::Int32` the number of steps the ramping factor should be decreasing to 0.0
+- `downTotalSteps::Int32`: the total number of steps spent in the ramp down phase
+- `reset::Bool`: flag if the phase should be reset after this sequence is done
+"""
+ArbitrarySequence(lut, enable, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, reset=false) = ArbitrarySequence(lut, enable, size(lut, 2), repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, DACConfig(), reset)
+"""
+    ArbitrarySequence(lut, enable, repetitions, steps, totalSteps, reset=false)
+
+Alternative constructor where `upSteps`, `downSteps` is set to `steps` and `upTotalSteps` and `downTotalSteps` is set to `totalSteps`.
+"""
+ArbitrarySequence(lut, enable, repetitions, steps, totalSteps, reset=false) = ArbitrarySequence(lut, enable, repetitions, steps, totalSteps, steps, totalSteps, DACConfig(), reset)
+"""
+    ArbitrarySequence(lut, enable, repetitions, steps, totalSteps, reset=false)
+
+Alternative constructor where `upSteps`, `downSteps` is set to `steps` and `upTotalSteps` and `downTotalSteps` is set to `totalSteps`.
+"""
+ArbitrarySequence(lut, enable, repetitions, (steps, totalSteps)::Tuple, reset=false) = ArbitrarySequence(lut, enable, repetitions, steps, totalSteps, steps, totalSteps, DACConfig(), reset)
+"""
+    ArbitrarySequence(lut, enable, repetitions, (upSteps, upTotalSteps)::Tuple, (downSteps, downTotalSteps)::Tuple, reset=false)
+
+Alternative constructor where the steps can be given as two tuples.
+"""
+ArbitrarySequence(lut, enable, repetitions, (upSteps, upTotalSteps)::Tuple, (downSteps, downTotalSteps)::Tuple, reset=false) = ArbitrarySequence(lut, enable, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, DACConfig(), reset)
 
 
 stepsPerRepetition(seq::ArbitrarySequence) = seq.stepsPerRepetition
@@ -410,27 +669,44 @@ function computeRamping(dec, samplesPerStep, stepsPerSeq, rampTime, rampFraction
 end
 computeRamping(rp::RedPitaya, stepsPerSeq ,rampTime, rampFraction) = computeRamping(decimation(rp), samplesPerStep(rp), stepsPerSeq, rampTime, rampFraction)
 
+"""
+    appendSequence!(rp::RedPitaya, seq::AbstractSequence)
+
+Transmit the client-side representation `seq` to the server and append it to the current list of sequences.
+
+See [`prepareSequence!`](@ref), [`clearSequences!`](@ref).
+"""
 function appendSequence!(rp::RedPitaya, seq::AbstractSequence)
   stepsPerRepetition!(rp, stepsPerRepetition(seq))
-  rampUp(rp, rampUpSteps(seq), rampUpTotalSteps(seq))
-  rampDown(rp, rampDownSteps(seq), rampDownTotalSteps(seq))
+  rampUp!(rp, rampUpSteps(seq), rampUpTotalSteps(seq))
+  rampDown!(rp, rampDownSteps(seq), rampDownTotalSteps(seq))
   sequenceRepetitions!(rp, repetitions(seq))
-  setLUT(rp, seq)
+  setLUT!(rp, seq)
   enable = enableLUT(seq)
   if !isnothing(enable)
-    enableDACLUT(rp, enable)
+    enableDACLUT!(rp, enable)
   end
   configureFastDACSeq!(rp, fastDACConfig(seq))
   resetAfterSequence!(rp, resetAfterSequence(seq))
   appendSequence!(rp)
 end
 
+"""
+    length(seq::AbstractSequence)
+
+Return the number of steps a sequence will take.
+"""
 function length(seq::AbstractSequence)
   result = stepsPerRepetition(seq) * repetitions(seq) + rampUpTotalSteps(seq) + rampDownTotalSteps(seq)
   result = resetAfterSequence(seq) ? result + 1 : result
   return result
 end
 
+"""
+    start(seq::AbstractSequence)
+
+Return the number of steps after which a sequence leaves the ramp up phase.
+"""
 function start(seq::AbstractSequence)
   return rampUpTotalSteps(seq)
 end
