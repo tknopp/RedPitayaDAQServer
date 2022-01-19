@@ -2,17 +2,14 @@
 This page contains documentation of the public API of the Julia client. In the Julia
 REPL one can access this documentation by entering the help mode with `?` and
 then writing the function for which the documentation should be shown.
-## RedPitaya
+## Connection and Communication
 ```@docs
 RedPitayaDAQServer.RedPitaya
-RedPitayaDAQServer.connect
-RedPitayaDAQServer.disconnect
-RedPitayaDAQServer.send
+RedPitayaDAQServer.RedPitaya(RedPitaya(host::String, port::Int64, isMaster::Bool)
+RedPitayaDAQServer.send(rp::RedPitaya, cmd::String)
 RedPitayaDAQServer.query
 RedPitayaDAQServer.receive
 RedPitayaDAQServer.RedPitayaCluster
-RedPitayaDAQServer.serverMode
-RedPitayaDAQServer.serverMode!
 ```
 ## ADC Configuration
 ```@docs
@@ -60,6 +57,8 @@ RedPitayaDAQServer.ArbitrarySequence
 ```
 ## Measurement and Transmission
 ```@docs
+RedPitayaDAQServer.serverMode
+RedPitayaDAQServer.serverMode!
 RedPitayaDAQServer.masterTrigger
 RedPitayaDAQServer.masterTrigger!
 RedPitayaDAQServer.currentWP
