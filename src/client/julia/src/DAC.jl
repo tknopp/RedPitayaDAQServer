@@ -9,6 +9,13 @@ rampUpSteps, rampUpSteps!, rampUpTotalSteps, rampUpTotalSteps!, rampDownSteps, r
 popSequence!, clearSequences!, prepareSequence!, AbstractSequence, ArbitrarySequence, enableLUT,
 fastDACConfig, resetAfterSequence!
 
+"""
+    SignalType
+
+Represent the different types of signals the fast DAC can have.
+
+See [`signalTypeDAC`](@ref), [`signalTypeDAC!`](@ref).
+"""
 @enum SignalType SINE SQUARE TRIANGLE SAWTOOTH
 struct DACPerformanceData
   uDeltaControl::UInt8
@@ -33,7 +40,7 @@ end
 
 function passPDMToFastDAC!(rp::RedPitaya, val::Bool)
   valStr = val ? "ON" : "OFF"
-  send(rp, string("RP:DAC:PASStofast ", valStr))
+  return query(rp, string("RP:DAC:PASStofast ", valStr), Bool)
 end
 passPDMToFastDAC(rp::RedPitaya) = occursin("ON", query(rp,"RP:DAC:PASStofast?"))
 
@@ -77,7 +84,7 @@ function amplitudeDAC!(rp::RedPitaya, channel, component, value)
   end
   command = string("RP:DAC:CH", Int(channel)-1, ":COMP",
                    Int(component)-1, ":AMP ", Float64(value))
-  return send(rp, command)
+  return query(rp, command, Bool)
 end
 
 function amplitudeDACSeq!(rp::RedPitaya, channel, component, value)
@@ -86,7 +93,7 @@ function amplitudeDACSeq!(rp::RedPitaya, channel, component, value)
   end
   command = string("RP:DAC:SEQ:CH", Int(channel)-1, ":COMP",
                    Int(component)-1, ":AMP ", Float64(value))
-  return send(rp, command)
+  return query(rp, command, Bool)
 end
 function amplitudeDACSeq!(config::DACConfig, channel, component, value)
   if value > 1.0
@@ -134,7 +141,7 @@ function offsetDAC!(rp::RedPitaya, channel, value)
     error("$value is larger than 1.0 V!")
   end
   command = string("RP:DAC:CH", Int(channel)-1, ":OFF ", Float64(value))
-  return send(rp, command)
+  return query(rp, command, Bool)
 end
 
 function offsetDACSeq!(rp::RedPitaya, channel, value)
@@ -142,7 +149,7 @@ function offsetDACSeq!(rp::RedPitaya, channel, value)
     error("$value is larger than 1.0 V!")
   end
   command = string("RP:DAC:SEQ:CH", Int(channel)-1, ":OFF ", Float64(value))
-  return send(rp, command)
+  return query(rp, command, Bool)
 end
 function offsetDACSeq!(config::DACConfig, channel, value)
   if value > 1.0
@@ -188,13 +195,13 @@ julia> frequencyDAC(rp, 1, 1)
 function frequencyDAC!(rp::RedPitaya, channel, component, value)
   command = string("RP:DAC:CH", Int(channel)-1, ":COMP",
                    Int(component)-1, ":FREQ ", Float64(value))
-  send(rp, command)
+  return query(rp, command, Bool)
 end
 
 function frequencyDACSeq!(rp::RedPitaya, channel, component, value)
   command = string("RP:DAC:SEQ:CH", Int(channel)-1, ":COMP",
                    Int(component)-1, ":FREQ ", Float64(value))
-  send(rp, command)
+  return query(rp, command, Bool)
 end
 function frequencyDACSeq!(config::DACConfig, channel, component, value)
   config.frequencies[channel, component] = value
@@ -237,13 +244,13 @@ julia> phaseDAC(rp, 1, 0.0)
 function phaseDAC!(rp::RedPitaya, channel, component, value)
   command = string("RP:DAC:CH", Int(channel)-1, ":COMP",
                    Int(component)-1, ":PHA ", Float64(value))
-  send(rp, command)
+  return query(rp, command, Bool)
 end
 
 function phaseDACSeq!(rp::RedPitaya, channel, component, value)
   command = string("RP:DAC:SEQ:CH", Int(channel)-1, ":COMP",
                    Int(component)-1, ":PHA ", Float64(value))
-  send(rp, command)
+  return query(rp, command, Bool)
 end
 function phaseDACSeq!(config::DACConfig, channel, component, value)
   config.phases[channel, component] = value
@@ -285,12 +292,12 @@ julia> jumpSharpnessDAC(rp, 1)
 """
 function jumpSharpnessDAC!(rp::RedPitaya, channel, value)
   command = string("RP:DAC:CH", Int(channel)-1, ":JUMPsharpness ", Float64(value))
-  send(rp, command)
+  return query(rp, command, Bool)
 end
 
 function jumpSharpnessDACSeq!(rp::RedPitaya, channel, value)
   command = string("RP:DAC:SEQ:CH", Int(channel)-1, ":JUMPsharpness ", Float64(value))
-  send(rp, command)
+  return query(rp, command, Bool)
 end
 function jumpSharpnessDACSeq!(config::DACConfig, channel, value)
   config.jumpSharpness[channel] = value
@@ -337,7 +344,7 @@ SINE
 """
 function signalTypeDAC!(rp::RedPitaya, channel, sigType::SignalType)
   command = string("RP:DAC:CH", Int(channel)-1, ":SIGnaltype ", string(sigType))
-  return send(rp, command)
+  return query(rp, command, Bool)
 end
 
 function signalTypeDACSeq!(rp::RedPitaya, channel, sigType::String)
@@ -345,7 +352,7 @@ function signalTypeDACSeq!(rp::RedPitaya, channel, sigType::String)
 end
 function signalTypeDACSeq!(rp::RedPitaya, channel, sigType::SignalType)
   command = string("RP:DAC:SEQ:CH", Int(channel)-1, ":SIGnaltype ", string(sigType))
-  return send(rp, command)
+  return query(rp, command, Bool)
 end
 function signalTypeDACSeq!(config::DACConfig, channel, sigType::String)
   config.signalTypes[channel] = sigType
@@ -385,13 +392,13 @@ numSeqChan(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:CHan?", Int64)
 """
     numSeqChan(rp::RedPitaya, value)
 
-Set the number of sequence channel. Valid `value`s are between `1` and `4`.
+Set the number of sequence channel. Valid values are between `1` and `4`.
 """
 function numSeqChan!(rp::RedPitaya, value)
   if value <= 0 || value > 4
     error("Num sequence channels needs to be between 1 and 4!")
   end
-  send(rp, string("RP:DAC:SEQ:CHan ", Int64(value)))
+  return query(rp, string("RP:DAC:SEQ:CHan ", Int64(value)), Bool)
 end
 
 function setValueLUT(rp::RedPitaya, lut::Union{Array, Nothing}, type::String="ARBITRARY")
@@ -422,7 +429,7 @@ samplesPerStep(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:SAMP?", Int64)
 Set the number of samples per sequence step.
 """
 function samplesPerStep!(rp::RedPitaya, value::Integer)
-  send(rp, string("RP:DAC:SEQ:SAMP ", value))
+  return query(rp, string("RP:DAC:SEQ:SAMP ", value), Bool)
 end
 
 """
@@ -437,7 +444,7 @@ stepsPerRepetition(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:STEPs:REPetition?", Int
 Set the number of steps per sequence repetitions.
 """
 function stepsPerRepetition!(rp::RedPitaya, value)
-  send(rp, string("RP:DAC:SEQ:STEPs:REPetition ", value))
+  return query(rp, string("RP:DAC:SEQ:STEPs:REPetition ", value), Bool)
 end
 
 function prepareSteps!(rp::RedPitaya, samplesPerStep, stepsPerSequence, numOfChan)
@@ -456,54 +463,54 @@ See [`samplesPerPeriod!`](@ref), [`periodsPerFrame!`](@ref), [`samplesPerStep!`]
 function stepsPerFrame!(rp::RedPitaya, stepsPerFrame)
   samplesPerFrame = rp.periodsPerFrame * rp.samplesPerPeriod
   samplesPerStep = div(samplesPerFrame, stepsPerFrame)
-  samplesPerStep!(rp, samplesPerStep) # Sets PDMClockDivider
+  return samplesPerStep!(rp, samplesPerStep) # Sets PDMClockDivider
 end
 
-ramping!(rp::RedPitaya, rampSteps::Int32, rampTotalSteps::Int32) = send(rp, string("RP:DAC:SEQ:RaMPing ", rampSteps, ",", rampTotalSteps))
-rampUp!(rp::RedPitaya, rampUpSteps::Int32, rampUpTotalSteps::Int32) = send(rp, string("RP:DAC:SEQ:RaMPing:UP ", rampUpSteps, ",", rampUpTotalSteps))
-rampDown!(rp::RedPitaya, rampDownSteps::Int32, rampDownTotalSteps::Int32) = send(rp, string("RP:DAC:SEQ:RaMPing:DOWn ", rampDownSteps, ",", rampDownTotalSteps))
+ramping!(rp::RedPitaya, rampSteps::Int32, rampTotalSteps::Int32) = query(rp, string("RP:DAC:SEQ:RaMPing ", rampSteps, ",", rampTotalSteps), Bool)
+rampUp!(rp::RedPitaya, rampUpSteps::Int32, rampUpTotalSteps::Int32) = query(rp, string("RP:DAC:SEQ:RaMPing:UP ", rampUpSteps, ",", rampUpTotalSteps), Bool)
+rampDown!(rp::RedPitaya, rampDownSteps::Int32, rampDownTotalSteps::Int32) = query(rp, string("RP:DAC:SEQ:RaMPing:DOWn ", rampDownSteps, ",", rampDownTotalSteps), Bool)
 
 rampingSteps(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:STEPs?", Int32)
-rampingSteps!(rp::RedPitaya, value::Int32) = send(rp, string("RP:DAC:SEQ:RaMPing:STEPs ", value))
+rampingSteps!(rp::RedPitaya, value::Int32) = query(rp, string("RP:DAC:SEQ:RaMPing:STEPs ", value), Bool)
 rampingTotalSteps(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:TOTAL?", Int32)
-rampingTotalSteps!(rp::RedPitaya, value::Int32) = send(rp, string("RP:DAC:SEQ:RaMPing:TOTAL ", value))
+rampingTotalSteps!(rp::RedPitaya, value::Int32) = query(rp, string("RP:DAC:SEQ:RaMPing:TOTAL ", value), Bool)
 
 rampUpSteps(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:UP:STEPs?", Int32)
-rampUpSteps!(rp::RedPitaya, value::Int32) = send(rp, string("RP:DAC:SEQ:RaMPing:UP:STEPs ", value))
+rampUpSteps!(rp::RedPitaya, value::Int32) = query(rp, string("RP:DAC:SEQ:RaMPing:UP:STEPs ", value), Bool)
 rampUpTotalSteps(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:UP:TOTAL?", Int32)
-rampUpTotalSteps!(rp::RedPitaya, value::Int32) = send(rp, string("RP:DAC:SEQ:RaMPing:UP:TOTAL ", value))
+rampUpTotalSteps!(rp::RedPitaya, value::Int32) = query(rp, string("RP:DAC:SEQ:RaMPing:UP:TOTAL ", value), Bool)
 
 rampDownSteps(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:DOWN:STEPs?", Int32)
-rampDownSteps!(rp::RedPitaya, value::Int32) = send(rp, string("RP:DAC:SEQ:RaMPing:DOWN:STEPs ", value))
+rampDownSteps!(rp::RedPitaya, value::Int32) = query(rp, string("RP:DAC:SEQ:RaMPing:DOWN:STEPs ", value), Bool)
 rampDownTotalSteps(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:DOWN:TOTAL?", Int32)
-rampDownTotalSteps!(rp::RedPitaya, value::Int32) = send(rp, string("RP:DAC:SEQ:RaMPing:DOWN:TOTAL ", value))
+rampDownTotalSteps!(rp::RedPitaya, value::Int32) = query(rp, string("RP:DAC:SEQ:RaMPing:DOWN:TOTAL ", value), Bool)
 
 function resetAfterSequence!(rp::RedPitaya, val::Bool)
   valStr = val ? "ON" : "OFF"
-  send(rp, string("RP:DAC:SEQ:RESETafter ", valStr))
+  return query(rp, string("RP:DAC:SEQ:RESETafter ", valStr), Bool)
 end
 resetAfterSequence(rp::RedPitaya) = occursin("ON", query(rp,"RP:DAC:SEQ:RESETafter?"))
 
 sequenceRepetitions(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:REPetitions?", Int32)
 function sequenceRepetitions!(rp::RedPitaya, value::Int)
-  send(rp, string("RP:DAC:SEQ:REPetitions ", value))
+  return query(rp, string("RP:DAC:SEQ:REPetitions ", value), Bool)
 end
 
-appendSequence!(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:APPend")
+appendSequence!(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:APPend", Bool)
 
 """
     popSequence!(rp::RedPitaya)
 
 Instruct the server to remove the last added sequence from its list.
 """
-popSequence!(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:POP")
+popSequence!(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:POP", Bool)
 
 """
     clearSequences!(rp::RedPitaya)
 
 Instruct the server to remove all sequences from its list.
 """
-clearSequences!(rp::RedPitaya) = send(rp, "RP:DAC:SEQ:CLEAR")
+clearSequences!(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:CLEAR", Bool)
 
 """
     prepareSequence!(rp::RedPitaya)

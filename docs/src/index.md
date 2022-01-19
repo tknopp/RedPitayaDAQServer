@@ -9,7 +9,7 @@ This project contains software to be used with the STEMlab 125-14 device from Re
 * FPGA image
 * Client library (implemented in C) that can be used on the RedPitaya
 * SCPI Server for accessing the functionality over TCP/IP
-* SCPI Clients to access the server
+* SCPI Client to access the server
 
 The code repositories is contained in this [repository](https://github.com/tknopp/RedPitayaDAQServer).
 

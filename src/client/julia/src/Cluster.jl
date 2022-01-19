@@ -33,7 +33,7 @@ julia> rp == rpc[1]
 true
 ```
 """
-function RedPitayaCluster(hosts::Vector{String}, port=5025)
+function RedPitayaCluster(hosts::Vector{String}, port::Int64=5025)
   # the first RP is the master
   rps = RedPitaya[ RedPitaya(host, port, i==1) for (i,host) in enumerate(hosts) ]
 
@@ -50,6 +50,11 @@ end
 Return the number of `RedPitaya`s in cluster `rpc`.
 """
 length(rpc::RedPitayaCluster) = length(rpc.rp)
+"""
+    numChan(rpc::RedPitayaCluster)
+
+Return the number of ADC channel in cluser `rpc`.
+"""
 numChan(rpc::RedPitayaCluster) = 2*length(rpc)
 """
     master(rpc::RedPitayaCluster)
@@ -77,11 +82,11 @@ function RPInfo(rpc::RedPitayaCluster)
 end
 
 for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset, :sequenceRepetitions,
-           :triggerMode, :samplesPerSlowDACStep, :slowDACStepsPerFrame, :serverMode, :masterTrigger]
+           :triggerMode, :samplesPerStep, :stepsPerFrame, :serverMode, :masterTrigger]
   
   @eval begin 
     @doc """
-        $($op)(rpc::RedPitayaCluster, value)
+        $($op)(rpc::RedPitayaCluster)
 
     As with single RedPitaya, but applied to only the master.
     """
@@ -249,6 +254,13 @@ struct SampleChunk
   performance::Vector{PerformanceData}
 end
 
+"""
+    startPipelinedData(rpu::Union{RedPitayaCluster, RedPitayaClusterView}, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
+
+Instruct all `RedPitaya`s to send `numSamples` samples from writepointer `reqWP` in chunks of `chunkSize`.
+
+See [`readPipelinedSamples`](@ref)
+"""
 function startPipelinedData(rpu::Union{RedPitayaCluster,RedPitayaClusterView}, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
   @sync for rp in rpu
     @async startPipelinedData(rp, reqWP, numSamples, chunkSize)
@@ -281,6 +293,13 @@ function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView
   return rawData
 end
 
+"""
+    readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
+
+Request and receive `numOfRequestedSamples` samples from `wpStart` on in a pipelined fashion. Return a matrix of samples.
+
+If `rpInfo` is set to a `RPInfo`, the `PerformanceData` sent after every `chunkSize` samples will be pushed into `rpInfo`.
+"""
 function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
   numOfReceivedSamples = 0
   index = 1
@@ -349,6 +368,13 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
 
 end
 
+"""
+    readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64, channel::Channel; chunkSize::Int64 = 25000)
+
+Request and receive `numOfRequestedSamples` samples from `wpStart` on in a pipelined fashion. The samples and associated `PerformanceData` are pushed into `channel` as a `SampleChunk`.
+
+See [`SampleChunk`](@ref).
+"""
 function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64, channel::Channel; chunkSize::Int64 = 25000)
   numOfReceivedSamples = 0
   chunkBuffer = zeros(Int16, chunkSize * 2, length(rpu))
@@ -406,8 +432,23 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
 
 end
 
-# High level read. numFrames can adress a future frame. Data is read in
-# chunks
+"""
+    readFrames(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; rpInfo=nothing, chunkSize = 50000, useCalibration = false)
+
+Request and receive `numFrames` frames from `startFrame` on.
+
+See [`readPipelinedSamples`](@ref), [`convertSamplesToFrames`](@ref), [`samplesPerPeriod`](@ref), [`periodsPerFrame`](@ref), [`updateCalib!`](@ref).
+
+# Arguments
+- `rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}`: `RedPitaya`s to receive samples from.
+- `startFrame`: frame from which to start transmitting
+- `numFrames`: number of frames to read
+- `numBlockAverages=1`: see `convertSamplesToFrames`
+- `numPeriodsPerPatch=1`: see `convertSamplesToFrames`
+- `chunkSize=50000`: see `readPipelinedSamples`
+- `rpInfo=nothing`: see `readPipelinedSamples`
+- `useCalibration`: convert from Int16 samples to Float32 values based on `RedPitaya`s calibration
+"""
 function readFrames(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; rpInfo=nothing, chunkSize = 50000, useCalibration = false)
   numSampPerPeriod = samplesPerPeriod(rpu)
   numPeriods = periodsPerFrame(rpu)
@@ -475,6 +516,22 @@ function convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, num
   end
 end
 
+"""
+    readPeriods(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startPeriod, numPeriods, numBlockAverages=1, numPeriodsPerPatch=1; rpInfo=nothing, chunkSize = 50000, useCalibration = false)
+
+Request and receive `numPeriods` Periods from `startPeriod` on.
+
+See [`readPipelinedSamples`](@ref), [`convertSamplesToPeriods!`](@ref), [`samplesPerPeriod`](@ref).
+
+# Arguments
+- `rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}`: `RedPitaya`s to receive samples from.
+- `startPeriod`: period from which to start transmitting
+- `numPeriods`: number of periods to read
+- `numBlockAverages=1`: see `convertSamplesToPeriods`
+- `chunkSize=50000`: see `readPipelinedSamples`
+- `rpInfo=nothing`: see `readPipelinedSamples`
+- `useCalibration`: convert samples based on `RedPitaya`s calibration
+"""
 function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startPeriod, numPeriods, numBlockAverages=1; rpInfo=nothing, chunkSize = 50000, useCalibration = false)
   numSampPerPeriod = samplesPerPeriod(rpu)
 
@@ -520,15 +577,4 @@ function convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, n
     periods[:,2*d-1,:] = utmp2[1,:,1,:]
     periods[:,2*d,:] = utmp2[2,:,1,:]
   end
-end
-
-
-function readData(rpc::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; chunkSize = 50000, useCalibration = false)
-  data = readFrames(rpc, startFrame, numFrames, numBlockAverages, numPeriodsPerPatch, chunkSize = chunkSize, useCalibration = useCalibration)
-  return data
-end
-
-function readDataPeriods(rpc::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startPeriod, numPeriods, numBlockAverages=1; chunkSize = 50000, useCalibration = false)
-  data = readPeriods(rpc, startPeriod, numPeriods, numBlockAverages, chunkSize = chunkSize, useCalibration = useCalibration)
-  return data
 end

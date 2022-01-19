@@ -23,6 +23,7 @@ client specific concepts such as periods, frames and calibration values.
 """
 mutable struct RedPitaya
   host::String
+  port::Int64
   delim::String
   socket::TCPSocket
   dataSocket::TCPSocket
@@ -41,9 +42,9 @@ length(rp::RedPitaya) = 1
 iterate(rp::RedPitaya, state=1) = state > 1 ? nothing : (rp, state + 1)
 
 """
-    send(rp, cmd)
+    send(rp::RedPitaya, cmd::String)
 
-Send a command to the RedPitaya
+Send a command to the RedPitaya. Appends delimiter.
 """
 function send(rp::RedPitaya,cmd::String)
   @debug "send command: " cmd
@@ -53,7 +54,7 @@ end
 const _timeout = 5.0
 
 """
-    receive(rp)
+    receive(rp::RedPitaya)
 
 Receive a String from the RedPitaya command socket. Reads until a whole line is received
 """
@@ -113,8 +114,8 @@ end
 function connect(rp::RedPitaya)
   if !rp.isConnected
     begin
-    rp.socket = connect(rp.host, 5025, _timeout)
-    rp.dataSocket = connect(rp.host, 5026, _timeout)
+    rp.socket = connect(rp.host, rp.port, _timeout)
+    rp.dataSocket = connect(rp.host, rp.port, _timeout)
     rp.isConnected = true
     updateCalib!(rp)
     end
@@ -156,17 +157,63 @@ function stringToEnum(enumType::Type{T}, value::AbstractString) where {T <: Enum
   return instances(enumType)[index]
 end
 
+"""
+    ServerMode
+
+Represent the different modes the server can be in.
+
+See also [`serverMode`](@ref), [`serverMode!`](@ref).
+"""
 @enum ServerMode CONFIGURATION MEASUREMENT TRANSMISSION
 
+"""
+    serverMode(rp::RedPitaya)
+
+Return the mode of the server.
+
+# Examples
+```julia
+julia> serverMode!(rp, MEASUREMENT);
+
+julia> serverMode(rp)
+MEASUREMENT
+```
+"""
 function serverMode(rp::RedPitaya)
   return stringToEnum(ServerMode, query(rp, "RP:MODe?"))
 end
 
+"""
+    serverMode!(rp::RedPitaya, mode::ServerMode)
+
+Set the mode of the server. Valid values are "`CONFIGURATION`" and "`MEASUREMENT`".
+
+# Examples
+```julia
+julia> serverMode!(rp, MEASUREMENT);
+
+julia> serverMode(rp)
+MEASUREMENT
+```
+"""
 function serverMode!(rp::RedPitaya, mode::String)
-  serverMode!(rp, stringToEnum(ServerMode, mode))
+  return serverMode!(rp, stringToEnum(ServerMode, mode))
 end
+"""
+    serverMode!(rp::RedPitaya, mode::ServerMode)
+
+Set the mode of the server.
+
+# Examples
+```julia
+julia> serverMode!(rp, MEASUREMENT);
+
+julia> serverMode(rp)
+MEASUREMENT
+```
+"""
 function serverMode!(rp::RedPitaya, mode::ServerMode)
-  send(rp, string("RP:MODe ", string(mode)))
+  return query(rp, string("RP:MODe ", string(mode)), Bool)
 end
 
 include("DAC.jl")
@@ -199,15 +246,11 @@ julia> decimation(rp)
 8
 ```
 """
-function RedPitaya(host, port=5025, isMaster=true)
+function RedPitaya(host::String, port::Int64=5025, isMaster::Bool=true)
 
-  rp = RedPitaya(host,"\n", TCPSocket(), TCPSocket(), 1, 1, 1, false, isMaster, false, zeros(Float32, 2, 2))
+  rp = RedPitaya(host, port, "\n", TCPSocket(), TCPSocket(), 1, 1, 1, false, isMaster, false, zeros(Float32, 2, 2))
 
   connect(rp)
-
-  #rp.decimation = decimation(rp)
-  #rp.samplesPerPeriod = samplesPerPeriod(rp)
-  #rp.periodsPerFrame = periodsPerFrame(rp)
 
   finalizer(d -> destroy(d), rp)
   return rp

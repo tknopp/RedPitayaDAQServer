@@ -4,7 +4,13 @@ currentWP, currentPeriod, currentFrame, masterTrigger, masterTrigger!, keepAlive
 triggerMode, triggerMode!, startADC, stopADC, overwritten, corrupted, serverStatus, performanceData,
 startPipelinedData
 
+"""
+    TriggerMode
 
+Represent the different trigger modes the FPGA image can have.
+
+See [`triggerMode`](@ref), [`triggerMode!`](@ref).
+"""
 @enum TriggerMode INTERNAL EXTERNAL
 struct ADCPerformanceData
   deltaRead::UInt64
@@ -82,7 +88,7 @@ julia> decimation(rp)
 """
 function decimation!(rp::RedPitaya, dec)
   rp.decimation = Int64(dec)
-  send(rp, string("RP:ADC:DECimation ", rp.decimation))
+  return query(rp, string("RP:ADC:DECimation ", rp.decimation), Bool)
 end
 
 """
@@ -125,6 +131,7 @@ julia> samplesPerPeriod(rp)
 """
 function samplesPerPeriod!(rp::RedPitaya, value)
   rp.samplesPerPeriod = value
+  return true
 end
 
 """
@@ -160,6 +167,7 @@ julia> periodsPerFrame(rp)
 """
 function periodsPerFrame!(rp::RedPitaya, value)
   rp.periodsPerFrame = value
+  return true
 end
 
 """
@@ -247,7 +255,7 @@ keepAliveReset(rp::RedPitaya) = occursin("ON", query(rp,"RP:TRIGger:ALiVe?"))
 Set the trigger mode of the RedPitaya. Valid values are `"INTERNAL"` or `"EXTERNAL"`.
 """
 function triggerMode!(rp::RedPitaya, mode::String)
-  triggerMode!(rp, stringToEnum(TriggerMode, mode))
+  return triggerMode!(rp, stringToEnum(TriggerMode, mode))
 end
 """
     triggerMode(rp::RedPitaya, mode::String)
@@ -255,17 +263,12 @@ end
 Set the trigger mode of the RedPitaya.
 """
 function triggerMode!(rp::RedPitaya, mode::TriggerMode)
-  send(rp, string("RP:TRIGger:MODe ", string(mode)))
+  return query(rp, string("RP:TRIGger:MODe ", string(mode)), Bool)
 end
 
 function triggerMode(rp::RedPitaya)
   return stringToEnum(TriggerMode, query(rp, "RP:TRIGger:MODe?"))
 end
-
-function startADC(rp::RedPitaya)
-  send(rp, "RP:ADC:ACQSTATUS ON")
-end
-stopADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQSTATUS OFF")
 
 overwritten(rp::RedPitaya) = query(rp, "RP:STATus:OVERwritten?", Bool)
 corrupted(rp::RedPitaya) = query(rp, "RP:STATus:CORRupted?", Bool)
@@ -330,9 +333,7 @@ end
 """
     startPipelinedData(rp::RedPitaya, reqWP, numSamples, chunkSize)
 
-Instruct the RedPitaya to send `numSamples` samples from writepointer `reqWP` in chunks of `chunkSize`.
-
-See also [readPipelinedSamples](@ref).
+Instruct the `RedPitaya` to send `numSamples` samples from writepointer `reqWP` in chunks of `chunkSize`.
 """
 function startPipelinedData(rp::RedPitaya, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
   command = string("RP:ADC:DATA:PIPELINED? ", reqWP, ",", numSamples, ",", chunkSize)
