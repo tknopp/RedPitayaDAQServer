@@ -262,11 +262,6 @@ function triggerMode(rp::RedPitaya)
   return stringToEnum(TriggerMode, query(rp, "RP:TRIGger:MODe?"))
 end
 
-function startADC(rp::RedPitaya)
-  send(rp, "RP:ADC:ACQSTATUS ON")
-end
-stopADC(rp::RedPitaya) = send(rp, "RP:ADC:ACQSTATUS OFF")
-
 overwritten(rp::RedPitaya) = query(rp, "RP:STATus:OVERwritten?", Bool)
 corrupted(rp::RedPitaya) = query(rp, "RP:STATus:CORRupted?", Bool)
 
@@ -330,9 +325,7 @@ end
 """
     startPipelinedData(rp::RedPitaya, reqWP, numSamples, chunkSize)
 
-Instruct the RedPitaya to send `numSamples` samples from writepointer `reqWP` in chunks of `chunkSize`.
-
-See also [readPipelinedSamples](@ref).
+Instruct the `RedPitaya` to send `numSamples` samples from writepointer `reqWP` in chunks of `chunkSize`.
 """
 function startPipelinedData(rp::RedPitaya, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
   command = string("RP:ADC:DATA:PIPELINED? ", reqWP, ",", numSamples, ",", chunkSize)
