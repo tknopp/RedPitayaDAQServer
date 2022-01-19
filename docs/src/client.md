@@ -5,11 +5,13 @@ then writing the function for which the documentation should be shown.
 ## Connection and Communication
 ```@docs
 RedPitayaDAQServer.RedPitaya
-RedPitayaDAQServer.RedPitaya(RedPitaya(host::String, port::Int64, isMaster::Bool)
-RedPitayaDAQServer.send(rp::RedPitaya, cmd::String)
+RedPitayaDAQServer.RedPitaya(::String, ::Int64, ::Bool)
+RedPitayaDAQServer.send(::RedPitaya, ::String)
 RedPitayaDAQServer.query
 RedPitayaDAQServer.receive
 RedPitayaDAQServer.RedPitayaCluster
+RedPitayaDAQServer.RedPitayaCluster(::Vector{String}, ::Int64)
+RedPitayaDAQServer.master
 ```
 ## ADC Configuration
 ```@docs
@@ -51,12 +53,14 @@ RedPitayaDAQServer.appendSequence!
 RedPitayaDAQServer.prepareSequence!
 RedPitayaDAQServer.clearSequences!
 RedPitayaDAQServer.popSequence!
-RedPitayaDAQServer.length
+RedPitayaDAQServer.length(::AbstractSequence)
 RedPitayaDAQServer.start
 RedPitayaDAQServer.ArbitrarySequence
+RedPitayaDAQServer.ArbitrarySequence(lut, enable, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, reset)
 ```
 ## Measurement and Transmission
 ```@docs
+RedPitayaDAQServer.ServerMode
 RedPitayaDAQServer.serverMode
 RedPitayaDAQServer.serverMode!
 RedPitayaDAQServer.masterTrigger

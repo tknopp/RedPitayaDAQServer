@@ -33,7 +33,7 @@ julia> rp == rpc[1]
 true
 ```
 """
-function RedPitayaCluster(hosts::Vector{String}, port=5025)
+function RedPitayaCluster(hosts::Vector{String}, port::Int64=5025)
   # the first RP is the master
   rps = RedPitaya[ RedPitaya(host, port, i==1) for (i,host) in enumerate(hosts) ]
 
@@ -50,6 +50,11 @@ end
 Return the number of `RedPitaya`s in cluster `rpc`.
 """
 length(rpc::RedPitayaCluster) = length(rpc.rp)
+"""
+    numChan(rpc::RedPitayaCluster)
+
+Return the number of ADC channel in cluser `rpc`.
+"""
 numChan(rpc::RedPitayaCluster) = 2*length(rpc)
 """
     master(rpc::RedPitayaCluster)
@@ -77,11 +82,11 @@ function RPInfo(rpc::RedPitayaCluster)
 end
 
 for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset, :sequenceRepetitions,
-           :triggerMode, :samplesPerSlowDACStep, :slowDACStepsPerFrame, :serverMode, :masterTrigger]
+           :triggerMode, :samplesPerStep, :stepsPerFrame, :serverMode, :masterTrigger]
   
   @eval begin 
     @doc """
-        $($op)(rpc::RedPitayaCluster, value)
+        $($op)(rpc::RedPitayaCluster)
 
     As with single RedPitaya, but applied to only the master.
     """
@@ -572,15 +577,4 @@ function convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, n
     periods[:,2*d-1,:] = utmp2[1,:,1,:]
     periods[:,2*d,:] = utmp2[2,:,1,:]
   end
-end
-
-
-function readData(rpc::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; chunkSize = 50000, useCalibration = false)
-  data = readFrames(rpc, startFrame, numFrames, numBlockAverages, numPeriodsPerPatch, chunkSize = chunkSize, useCalibration = useCalibration)
-  return data
-end
-
-function readDataPeriods(rpc::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startPeriod, numPeriods, numBlockAverages=1; chunkSize = 50000, useCalibration = false)
-  data = readPeriods(rpc, startPeriod, numPeriods, numBlockAverages, chunkSize = chunkSize, useCalibration = useCalibration)
-  return data
 end

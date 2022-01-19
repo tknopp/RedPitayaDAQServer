@@ -166,13 +166,52 @@ See also [`serverMode`](@ref), [`serverMode!`](@ref).
 """
 @enum ServerMode CONFIGURATION MEASUREMENT TRANSMISSION
 
+"""
+    serverMode(rp::RedPitaya)
+
+Return the mode of the server.
+
+# Examples
+```julia
+julia> serverMode!(rp, MEASUREMENT);
+
+julia> serverMode(rp)
+MEASUREMENT
+```
+"""
 function serverMode(rp::RedPitaya)
   return stringToEnum(ServerMode, query(rp, "RP:MODe?"))
 end
 
+"""
+    serverMode!(rp::RedPitaya, mode::ServerMode)
+
+Set the mode of the server. Valid values are "`CONFIGURATION`" and "`MEASUREMENT`".
+
+# Examples
+```julia
+julia> serverMode!(rp, MEASUREMENT);
+
+julia> serverMode(rp)
+MEASUREMENT
+```
+"""
 function serverMode!(rp::RedPitaya, mode::String)
   serverMode!(rp, stringToEnum(ServerMode, mode))
 end
+"""
+    serverMode!(rp::RedPitaya, mode::ServerMode)
+
+Set the mode of the server.
+
+# Examples
+```julia
+julia> serverMode!(rp, MEASUREMENT);
+
+julia> serverMode(rp)
+MEASUREMENT
+```
+"""
 function serverMode!(rp::RedPitaya, mode::ServerMode)
   send(rp, string("RP:MODe ", string(mode)))
 end

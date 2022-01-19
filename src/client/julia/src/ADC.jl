@@ -4,7 +4,13 @@ currentWP, currentPeriod, currentFrame, masterTrigger, masterTrigger!, keepAlive
 triggerMode, triggerMode!, startADC, stopADC, overwritten, corrupted, serverStatus, performanceData,
 startPipelinedData
 
+"""
+    TriggerMode
 
+Represent the different trigger modes the FPGA image can have.
+
+See [`triggerMode`](@ref), [`triggerMode!`](@ref).
+"""
 @enum TriggerMode INTERNAL EXTERNAL
 struct ADCPerformanceData
   deltaRead::UInt64

@@ -9,6 +9,13 @@ rampUpSteps, rampUpSteps!, rampUpTotalSteps, rampUpTotalSteps!, rampDownSteps, r
 popSequence!, clearSequences!, prepareSequence!, AbstractSequence, ArbitrarySequence, enableLUT,
 fastDACConfig, resetAfterSequence!
 
+"""
+    SignalType
+
+Represent the different types of signals the fast DAC can have.
+
+See [`signalTypeDAC`](@ref), [`signalTypeDAC!`](@ref).
+"""
 @enum SignalType SINE SQUARE TRIANGLE SAWTOOTH
 struct DACPerformanceData
   uDeltaControl::UInt8
@@ -385,7 +392,7 @@ numSeqChan(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:CHan?", Int64)
 """
     numSeqChan(rp::RedPitaya, value)
 
-Set the number of sequence channel. Valid `value`s are between `1` and `4`.
+Set the number of sequence channel. Valid values are between `1` and `4`.
 """
 function numSeqChan!(rp::RedPitaya, value)
   if value <= 0 || value > 4
