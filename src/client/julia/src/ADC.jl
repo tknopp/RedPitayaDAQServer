@@ -88,7 +88,7 @@ julia> decimation(rp)
 """
 function decimation!(rp::RedPitaya, dec)
   rp.decimation = Int64(dec)
-  send(rp, string("RP:ADC:DECimation ", rp.decimation))
+  return query(rp, string("RP:ADC:DECimation ", rp.decimation), Bool)
 end
 
 """
@@ -131,6 +131,7 @@ julia> samplesPerPeriod(rp)
 """
 function samplesPerPeriod!(rp::RedPitaya, value)
   rp.samplesPerPeriod = value
+  return true
 end
 
 """
@@ -166,6 +167,7 @@ julia> periodsPerFrame(rp)
 """
 function periodsPerFrame!(rp::RedPitaya, value)
   rp.periodsPerFrame = value
+  return true
 end
 
 """
@@ -253,7 +255,7 @@ keepAliveReset(rp::RedPitaya) = occursin("ON", query(rp,"RP:TRIGger:ALiVe?"))
 Set the trigger mode of the RedPitaya. Valid values are `"INTERNAL"` or `"EXTERNAL"`.
 """
 function triggerMode!(rp::RedPitaya, mode::String)
-  triggerMode!(rp, stringToEnum(TriggerMode, mode))
+  return triggerMode!(rp, stringToEnum(TriggerMode, mode))
 end
 """
     triggerMode(rp::RedPitaya, mode::String)
@@ -261,7 +263,7 @@ end
 Set the trigger mode of the RedPitaya.
 """
 function triggerMode!(rp::RedPitaya, mode::TriggerMode)
-  send(rp, string("RP:TRIGger:MODe ", string(mode)))
+  return query(rp, string("RP:TRIGger:MODe ", string(mode)), Bool)
 end
 
 function triggerMode(rp::RedPitaya)

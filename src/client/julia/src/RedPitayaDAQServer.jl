@@ -197,7 +197,7 @@ MEASUREMENT
 ```
 """
 function serverMode!(rp::RedPitaya, mode::String)
-  serverMode!(rp, stringToEnum(ServerMode, mode))
+  return serverMode!(rp, stringToEnum(ServerMode, mode))
 end
 """
     serverMode!(rp::RedPitaya, mode::ServerMode)
@@ -213,7 +213,7 @@ MEASUREMENT
 ```
 """
 function serverMode!(rp::RedPitaya, mode::ServerMode)
-  send(rp, string("RP:MODe ", string(mode)))
+  return query(rp, string("RP:MODe ", string(mode)), Bool)
 end
 
 include("DAC.jl")
