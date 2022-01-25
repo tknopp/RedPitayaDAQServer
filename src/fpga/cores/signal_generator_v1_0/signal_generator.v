@@ -18,7 +18,7 @@ module signal_generator #
     
     // Synthesized output
     (* X_INTERFACE_PARAMETER = "FREQ_HZ 125000000" *)
-    output wire                        	m_axis_tvalid,
+    output wire                        m_axis_tvalid,
     output wire [AXIS_TDATA_WIDTH-1:0] m_axis_tdata,
     
     input clk,
@@ -32,7 +32,6 @@ module signal_generator #
     reg signed [DAC_WIDTH-1:0] phase;
     reg signed [15:0] A, AIncrement;
 
-	
     always @(posedge clk)
     begin
         if (~aresetn)
@@ -42,64 +41,71 @@ module signal_generator #
             phase <= 0;
             A <= cfg_data[31:16];
             AIncrement <= cfg_data[47:32]; // 2*8191 / (2*A);
-	    signal_type <= cfg_data[3:0];
+	        signal_type <= cfg_data[3:0];
         end
         else
         begin
-
             phase <= (s_axis_tdata_phase >>> (AXIS_TDATA_PHASE_WIDTH-DAC_WIDTH));
 
             if (signal_type == 0) // Sine
             begin
                 dac_out_temp <= s_axis_tdata;
                 dac_out <= dac_out_temp;
-
             end
-            else if (signal_type == 1) // Trapezoid
+            /*else if (signal_type == 1) // Trapezoid
             begin
                 if (phase < -A && phase > -(8191-A))
                 begin
                     dac_out_temp <= -8191;//~0;
+                    dac_out <= dac_out_temp;
                 end
                 else if (phase > A && phase < (8191-A) )
                 begin
                     dac_out_temp <= 8191;
+                    dac_out <= dac_out_temp;
                 end
                 else if (phase <= A && phase >= -A)
                 begin
                     dac_out_temp <= AIncrement*phase;
+                    dac_out <= dac_out_temp;
                 end
                 else if (phase <= -(8191-A) )
                 begin
-                    dac_out_temp <= -AIncrement*(phase+8191);
+                    dac_out_temp <= phase+8191;
+                    dac_out <= -AIncrement*dac_out_temp;
                 end
                 else if (phase >= (8191-A))
                 begin
-                    dac_out_temp <= AIncrement*(8191-phase);
+                    dac_out_temp <= 8191-phase;
+                    dac_out <= AIncrement*dac_out_temp;
                 end
-                
-                dac_out <= dac_out_temp;
-	    end
+	        end*/
             else if (signal_type == 2) // Triangle
             begin
                 if (phase <= -4095 )
                 begin
-                    dac_out_temp <= -2*(phase+8191);
+                    dac_out_temp <= phase+8191;
+                    dac_out <= -2*dac_out_temp;
                 end
                 else if (phase >= 4095)
                 begin
-                    dac_out_temp <= 2*(8191-phase);
-	        end
-		else 
+                    dac_out_temp <= 8191-phase;
+                    dac_out <= 2*dac_out_temp;
+	            end
+		        else 
                 begin
                     dac_out_temp <= 2*phase;
+                    dac_out <= dac_out_temp;
                 end
-                
-                dac_out <= dac_out_temp;
-	    end
-            if (signal_type == 3) // Sawtooth
+	        end
+            else if (signal_type == 3) // Sawtooth
             begin
                 dac_out_temp <= phase;
+                dac_out <= dac_out_temp;
+            end
+            else if (signal_type == 4) // Sawtooth (reverse)
+            begin
+                dac_out_temp <= -phase;
                 dac_out <= dac_out_temp;
             end
        end
