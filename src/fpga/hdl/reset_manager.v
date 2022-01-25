@@ -32,10 +32,10 @@ module reset_manager #
 reset_cfg:
 Bit 0 => 0: continuous mode; 1: trigger mode
 Bit 1 => 0: no watchdog; 1: watchdog mode
-Bit 2 => master trigger
+Bit 2 => not used atm
 Bit 3 => instant reset mode: 0: disabled; 1: enabled
 Bit 4 => 0: internal trigger 1: external trigger
-Bit 5 => internal trigger
+Bit 5 => internal trigger enable/disable, output over DIO5_P
 Bit 6 => keep alive reset
 
 
@@ -46,6 +46,8 @@ localparam integer WATCHDOG_TIMEOUT_CYCLES = 12500000;//(125000000/WATCHDOG_TIME
 localparam integer ALIVE_SIGNAL_LOW_TIME_CYCLES = 12500000;//(125000000/ALIVE_SIGNAL_LOW_TIME)*1000;
 localparam integer ALIVE_SIGNAL_HIGH_TIME_CYCLES = 1250000;//(125000000/ALIVE_SIGNAL_HIGH_TIME)*1000;
 localparam integer RAMWRITER_DELAY_TIME= 1000000000; //100ms
+
+reg triggerState = 0;
 
 reg write_to_ram_aresetn_int = 0;
 reg xadc_aresetn_int = 0;
@@ -198,6 +200,15 @@ begin
     end
 end
 
+// Master Trigger State
+always @(posedge clk)
+begin
+	if (reset_cfg[4] == 0) // internal trigger mode
+		triggerState <= reset_cfg[5];
+	else
+		triggerState <= trigger_in;
+end
+
 always @(posedge clk)
 begin
     if (~peripheral_aresetn)
@@ -307,7 +318,7 @@ assign reset_sts[4] = xadc_aresetn_int;
 assign reset_sts[5] = trigger_in_int;
 assign reset_sts[6] = watchdog_in_int;
 assign reset_sts[7] = instant_reset_in_int;
-assign reset_sts[8] = reset_cfg[2];
+assign reset_sts[8] = triggerState;
 assign reset_sts[31:9] = 23'b0;
 
 assign led[7:0] = reset_sts[7:0];
@@ -315,7 +326,7 @@ assign led[7:0] = reset_sts[7:0];
 assign reset_ack_out = watchdog_in; // Acknowledge received watchdog signal
 
 assign alive_signal_out = alive_signal_int;
-assign master_trigger_out = reset_cfg[2];
+assign master_trigger_out = reset_cfg[5];
 
 
 endmodule
