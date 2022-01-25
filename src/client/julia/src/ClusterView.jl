@@ -80,9 +80,9 @@ end
 function clusterToView(rpcv::RedPitayaClusterView, chan::Integer)
     for (i, v) in enumerate(rpcv.view)
         if 2*v-1 == chan
-            return i
+            return 2*i -1
         elseif 2*v == chan
-            return i + 1
+            return 2*i
         end
     end
     return nothing
