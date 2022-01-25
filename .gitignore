@@ -16,3 +16,4 @@ core
 docs/build/
 Manifest.toml
 vivado*
+.Xil
