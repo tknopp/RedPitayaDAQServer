@@ -28,6 +28,7 @@ module signal_generator #
     reg signed [15:0] A, AIncrement;
 	
 	wire [4-1:0] trapezoidCond;
+	reg [4-1:0] lastTrapezoidCond;
 	
 	assign trapezoidCond[0] = (phase > -8191+A);
 	assign trapezoidCond[1] = (phase >= -A);
@@ -55,10 +56,22 @@ module signal_generator #
             AIncrement <= 100; // 2*8191 / (2*A);
 			signal_type <= 1;
 			justSwitchedCond <= 1;
+			lastTrapezoidCond <= 4'b0000;
         end
         else
         begin
             phase <= phase+10;
+			
+			if (lastTrapezoidCond != trapezoidCond)
+			begin
+				justSwitchedCond <= 1;
+				lastTrapezoidCond <= trapezoidCond;
+			end
+			
+			if (justSwitchedCond == 1)
+			begin
+				justSwitchedCond <= 0;
+			end
 
             if (signal_type == 1) // Trapezoid
             begin
@@ -69,8 +82,7 @@ module signal_generator #
 						
 						if (justSwitchedCond == 1)
 						begin
-							dac_out <= dac_out_temp_4;
-							justSwitchedCond <= 0;
+							dac_out <= AIncrement*dac_out_temp_4;
 						end
 						else
 						begin
@@ -84,7 +96,6 @@ module signal_generator #
 						if (justSwitchedCond == 1)
 						begin
 							dac_out <= AIncrement*dac_out_temp_0;
-							justSwitchedCond <= 0;
 						end
 						else
 						begin
@@ -98,7 +109,6 @@ module signal_generator #
 						if (justSwitchedCond == 1)
 						begin
 							dac_out <= dac_out_temp_1;
-							justSwitchedCond <= 0;
 						end
 						else
 						begin
@@ -112,7 +122,6 @@ module signal_generator #
 						if (justSwitchedCond == 1)
 						begin
 							dac_out <= AIncrement*dac_out_temp_2;
-							justSwitchedCond <= 0;
 						end
 						else
 						begin
@@ -126,7 +135,6 @@ module signal_generator #
 						if (justSwitchedCond == 1)
 						begin
 							dac_out <= dac_out_temp_3;
-							justSwitchedCond <= 0;
 						end
 						else
 						begin
