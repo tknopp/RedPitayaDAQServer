@@ -35,11 +35,8 @@ module signal_generator #
 	assign trapezoidCond[2] = (phase > A);
 	assign trapezoidCond[3] = (phase >= 8191-A);
 	
-	
-	reg justSwitchedCond;
-	always @(trapezoidCond) begin
-		justSwitchedCond <= 1;
-	end
+	wire justSwitchedCond;
+	assign justSwitchedCond = (lastTrapezoidCond != trapezoidCond);
 	
     always @(posedge clk)
     begin
@@ -55,22 +52,15 @@ module signal_generator #
             A <= 80;
             AIncrement <= 100; // 2*8191 / (2*A);
 			signal_type <= 1;
-			justSwitchedCond <= 1;
 			lastTrapezoidCond <= 4'b0000;
         end
         else
         begin
             phase <= phase+10;
 			
-			if (lastTrapezoidCond != trapezoidCond)
-			begin
-				justSwitchedCond <= 1;
-				lastTrapezoidCond <= trapezoidCond;
-			end
-			
 			if (justSwitchedCond == 1)
 			begin
-				justSwitchedCond <= 0;
+				lastTrapezoidCond <= trapezoidCond;
 			end
 
             if (signal_type == 1) // Trapezoid
