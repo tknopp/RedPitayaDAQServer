@@ -17,7 +17,11 @@ module signal_generator #
     reg [3:0] signal_type;
     
     reg [AXIS_TDATA_WIDTH-1:0] dac_out;
-    reg [AXIS_TDATA_WIDTH-1:0] dac_out_temp;
+    reg [AXIS_TDATA_WIDTH-1:0] dac_out_temp_0;
+	reg [AXIS_TDATA_WIDTH-1:0] dac_out_temp_1;
+	reg [AXIS_TDATA_WIDTH-1:0] dac_out_temp_2;
+	reg [AXIS_TDATA_WIDTH-1:0] dac_out_temp_3;
+	reg [AXIS_TDATA_WIDTH-1:0] dac_out_temp_4;
 	reg [AXIS_TDATA_WIDTH-1:0] dac_out2;
     reg [AXIS_TDATA_WIDTH-1:0] dac_out_temp2;
     reg signed [DAC_WIDTH-1:0] phase;
@@ -27,48 +31,113 @@ module signal_generator #
 	
 	assign trapezoidCond[0] = (phase > -8191+A);
 	assign trapezoidCond[1] = (phase >= -A);
-	assign trapezoidCond[2] = (phase >= A);
-	assign trapezoidCond[3] = (phase >= 8191-A+2);
+	assign trapezoidCond[2] = (phase > A);
+	assign trapezoidCond[3] = (phase >= 8191-A);
+	
+	
+	reg justSwitchedCond;
+	always @(trapezoidCond) begin
+		justSwitchedCond <= 1;
+	end
 	
     always @(posedge clk)
     begin
         if (~aresetn)
         begin
             dac_out <= 0;
-            dac_out_temp <= 0;
+            dac_out_temp_0 <= 0;
+			dac_out_temp_1 <= -8191;
+			dac_out_temp_2 <= 0;
+			dac_out_temp_3 <= 8191;
+			dac_out_temp_4 <= 0;
             phase <= -8191;
-            A <= 1638;
-            AIncrement <= 5; // 2*8191 / (2*A);
+            A <= 80;
+            AIncrement <= 100; // 2*8191 / (2*A);
 			signal_type <= 1;
+			justSwitchedCond <= 1;
         end
         else
         begin
-            phase <= phase+5;
+            phase <= phase+10;
 
             if (signal_type == 1) // Trapezoid
             begin
 				case (trapezoidCond)
 					4'b0000 : begin
-						dac_out_temp <= AIncrement*(-8191-phase);
+						$display("0000 phase = %d, temp = %d", phase, dac_out_temp_0);
+						dac_out_temp_0 <= -8191-phase;
+						
+						if (justSwitchedCond == 1)
+						begin
+							dac_out <= dac_out_temp_4;
+							justSwitchedCond <= 0;
+						end
+						else
+						begin
+							dac_out <= AIncrement*dac_out_temp_0;
+						end
 					end
 					4'b0001 : begin
-						dac_out_temp <= -8191;
+						$display("0001 phase = %d, temp = %d", phase, dac_out_temp_1);
+						dac_out_temp_1 <= -8191;
+						
+						if (justSwitchedCond == 1)
+						begin
+							dac_out <= AIncrement*dac_out_temp_0;
+							justSwitchedCond <= 0;
+						end
+						else
+						begin
+							dac_out <= dac_out_temp_1;
+						end
 					end
 					4'b0011 : begin
-						dac_out_temp <= AIncrement*phase;
+						$display("0011 phase = %d, temp = %d", phase, dac_out_temp_2);
+						dac_out_temp_2 <= phase;
+						
+						if (justSwitchedCond == 1)
+						begin
+							dac_out <= dac_out_temp_1;
+							justSwitchedCond <= 0;
+						end
+						else
+						begin
+							dac_out <= AIncrement*dac_out_temp_2;
+						end
 					end
 					4'b0111 : begin
-						dac_out_temp <= 8191;
+						$display("0111 phase = %d, temp = %d", phase, dac_out_temp_3);
+						dac_out_temp_3 <= 8191;
+						
+						if (justSwitchedCond == 1)
+						begin
+							dac_out <= AIncrement*dac_out_temp_2;
+							justSwitchedCond <= 0;
+						end
+						else
+						begin
+							dac_out <= dac_out_temp_3;
+						end
 					end
 					4'b1111 : begin
-						dac_out_temp <= AIncrement*(8191-phase);
+						$display("1111 phase = %d, temp = %d", phase, dac_out_temp_4);
+						dac_out_temp_4 <= 8191-phase;
+						
+						if (justSwitchedCond == 1)
+						begin
+							dac_out <= dac_out_temp_3;
+							justSwitchedCond <= 0;
+						end
+						else
+						begin
+							dac_out <= AIncrement*dac_out_temp_4;
+						end
 					end
 					default : begin
-						dac_out_temp <= 0;
+						$display("default phase = %d", phase);
+						dac_out <= 0;
 					end
 				endcase
-				
-				dac_out <= dac_out_temp;
 			
                 if (phase < -A && phase > -(8191-A))
                 begin
@@ -97,23 +166,23 @@ module signal_generator #
             begin
                 if (phase <= -4095 )
                 begin
-                    dac_out_temp <= -2*(phase+8191);
+                    dac_out_temp_0 <= -2*(phase+8191);
                 end
                 else if (phase >= 4095)
                 begin
-                    dac_out_temp <= 2*(8191-phase);
-	        end
-		else 
+                    dac_out_temp_0 <= 2*(8191-phase);
+				end
+			else 
                 begin
-                    dac_out_temp <= 2*phase;
+                    dac_out_temp_0 <= 2*phase;
                 end
                 
-                dac_out <= dac_out_temp;
+                dac_out <= dac_out_temp_0;
 	    end
             if (signal_type == 3) // Sawtooth
             begin
-                dac_out_temp <= phase;
-                dac_out <= dac_out_temp;
+                dac_out_temp_0 <= phase;
+                dac_out <= dac_out_temp_0;
             end
        end
     end
