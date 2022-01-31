@@ -215,7 +215,7 @@ true
 """
 function masterTrigger!(rp::RedPitaya, val::Bool)
   valStr = val ? "ON" : "OFF"
-  send(rp, string("RP:TRIGger ", valStr))
+  return query(rp, string("RP:TRIGger ", valStr), Bool)
 end
 """
     masterTrigger(rp::RedPitaya)
