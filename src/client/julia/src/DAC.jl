@@ -67,7 +67,7 @@ end
 """
     amplitudeDAC!(rp::RedPitaya, channel, component, value)
 
-Set the amplitude of composite waveform `component` for `channel`. Return `true` if the operation was successful.
+Set the amplitude of composite waveform `component` for `channel`. Return `true` if the command was successful.
 
 See [`amplitudeDAC`](@ref).
 
@@ -127,7 +127,7 @@ end
 """
     offsetDAC!(rp::RedPitaya, channel, value)
 
-Set the offset for `channel`. Return `true` if the operation was successful.
+Set the offset for `channel`. Return `true` if the command was successful.
 
 See [`offsetDAC`](@ref).
 
@@ -185,7 +185,7 @@ end
 """
     frequencyDAC!(rp::RedPitaya, channel, component, value)
 
-Set the frequency of composite waveform `component` for `channel`. Return `true` if the operation was successful.
+Set the frequency of composite waveform `component` for `channel`. Return `true` if the command was successful.
 
 See [`frequencyDAC`](@ref).
 
@@ -236,7 +236,7 @@ end
 """
     phaseDAC!(rp::RedPitaya, channel, component, value)
 
-Set the phase of composite waveform `component` for `channel`. Return `true` if the operation was successful.
+Set the phase of composite waveform `component` for `channel`. Return `true` if the command was successful.
 
 See [`phaseDAC`](@ref).
 
@@ -287,7 +287,7 @@ end
 """
     jumpSharpnessDAC!(rp::RedPitaya, channel, value)
 
-Set the jumpSharpness of composite waveform for `channel`. Return `true` if the operation was successful.
+Set the jumpSharpness of composite waveform for `channel`. Return `true` if the command was successful.
 
 See [`jumpSharpnessDAC`](@ref).
 
@@ -341,7 +341,7 @@ end
 """
     signalTypeDAC!(rp::RedPitaya, channel, value)
 
-Set the signalType of composite waveform for `channel`. Return `true` if the operation was successful.
+Set the signalType of composite waveform for `channel`. Return `true` if the command was successful.
 
 See [`signalTypeDAC`](@ref).
 
@@ -404,7 +404,7 @@ numSeqChan(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:CHan?", Int64)
 """
     numSeqChan(rp::RedPitaya, value)
 
-Set the number of sequence channel. Valid values are between `1` and `4`. Return `true` if the operation was successful.
+Set the number of sequence channel. Valid values are between `1` and `4`. Return `true` if the command was successful.
 """
 function numSeqChan!(rp::RedPitaya, value)
   if value <= 0 || value > 4
@@ -413,20 +413,29 @@ function numSeqChan!(rp::RedPitaya, value)
   return query(rp, string("RP:DAC:SEQ:CHan ", Int64(value)), Bool)
 end
 
-function setValueLUT(rp::RedPitaya, lut::Union{Array, Nothing}, type::String="ARBITRARY")
+function setValueLUT!(rp::RedPitaya, lut::Array, type::String="ARBITRARY")
   send(rp, string("RP:DAC:SEQ:LUT:", type))
   @debug "Writing arbitrary LUT"
-  if !isnothing(lut)
-    lutFloat32 = map(Float32, lut)
-    write(rp.dataSocket, lutFloat32)
-  end
+  lutFloat32 = map(Float32, lut)
+  write(rp.dataSocket, lutFloat32)
+  reply = receive(rp)
+  return parse(Bool, reply)
 end
 
-function enableDACLUT(rp::RedPitaya, lut::Array)
+function setValueLUT!(rp::RedPitaya, lut::Nothing, type::String="ARBITRARY")
+  send(rp, string("RP:DAC:SEQ:LUT:", type))
+  @debug "Writing arbitrary LUT"
+  reply = receive(rp)
+  return parse(Bool, reply)
+end
+
+function enableDACLUT!(rp::RedPitaya, lut::Array)
   lutBool = map(Bool, lut)
   send(rp, string("RP:DAC:SEQ:LUT:ENaBle"))
   @debug "Writing enable DAC LUT"
   write(rp.dataSocket, lutBool)
+  reply = receive(rp)
+  return parse(Bool, reply)
 end
 
 """
@@ -438,7 +447,7 @@ samplesPerStep(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:SAMP?", Int64)
 """
     samplesPerStep!(rp::RedPitaya, value::Integer)
 
-Set the number of samples per sequence step. Return `true` if the operation was successful.
+Set the number of samples per sequence step. Return `true` if the command was successful.
 """
 function samplesPerStep!(rp::RedPitaya, value::Integer)
   return query(rp, string("RP:DAC:SEQ:SAMP ", value), Bool)
@@ -453,7 +462,7 @@ stepsPerRepetition(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:STEPs:REPetition?", Int
 """
     stepsPerRepetition!(rp::RedPitaya)
 
-Set the number of steps per sequence repetitions. Return `true` if the operation was successful.
+Set the number of steps per sequence repetitions. Return `true` if the command was successful.
 """
 function stepsPerRepetition!(rp::RedPitaya, value)
   return query(rp, string("RP:DAC:SEQ:STEPs:REPetition ", value), Bool)
@@ -513,14 +522,14 @@ appendSequence!(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:APPend", Bool)
 """
     popSequence!(rp::RedPitaya)
 
-Instruct the server to remove the last added sequence from its list. Return `true` if the operation was successful.
+Instruct the server to remove the last added sequence from its list. Return `true` if the command was successful.
 """
 popSequence!(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:POP", Bool)
 
 """
     clearSequences!(rp::RedPitaya)
 
-Instruct the server to remove all sequences from its list. Return `true` if the operation was successful.
+Instruct the server to remove all sequences from its list. Return `true` if the command was successful.
 """
 clearSequences!(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:CLEAR", Bool)
 
@@ -528,7 +537,7 @@ clearSequences!(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:CLEAR", Bool)
     prepareSequence!(rp::RedPitaya)
 
 Instruct the server to prepare the currently added sequences.
-Return `true` if the operation was successful.
+Return `true` if the command was successful.
 """
 prepareSequences!(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:PREPare?", Bool)
 
@@ -681,19 +690,19 @@ resetAfterSequence(seq::RangeSequence) = seq.resetAfter
 setLUT!(rp::RedPitaya, seq::AbstractSequence) = error("Sequence did not implement setLUT!")
 
 function setLUT!(rp::RedPitaya, seq::ArbitrarySequence)
-  setValueLUT(rp, seq.lut, "ARBITRARY")
+  setValueLUT!(rp, seq.lut, "ARBITRARY")
 end
 
 function setLUT!(rp::RedPitaya, seq::ConstantSequence)
-  setValueLUT(rp, seq.lut, "CONSTANT")
+  setValueLUT!(rp, seq.lut, "CONSTANT")
 end
 
 function setLUT!(rp::RedPitaya, seq::PauseSequence)
-  setValueLUT(rp, nothing, "PAUSE")
+  setValueLUT!(rp, nothing, "PAUSE")
 end
 
 function setLUT!(rp::RedPitaya, seq::RangeSequence) 
-  setValueLUT(rp, seq.lut, "RANGE")
+  setValueLUT!(rp, seq.lut, "RANGE")
 end
 
 function computeRamping(dec, samplesPerStep, stepsPerSeq, rampTime, rampFraction)
@@ -710,23 +719,24 @@ computeRamping(rp::RedPitaya, stepsPerSeq ,rampTime, rampFraction) = computeRamp
 """
     appendSequence!(rp::RedPitaya, seq::AbstractSequence)
 
-Transmit the client-side representation `seq` to the server and append it to the current list of sequences.
+Transmit the client-side representation `seq` to the server and append it to the current list of sequences. Return `true` if the required commands were successful.
 
 See [`prepareSequence!`](@ref), [`clearSequences!`](@ref).
 """
 function appendSequence!(rp::RedPitaya, seq::AbstractSequence)
-  stepsPerRepetition!(rp, stepsPerRepetition(seq))
-  rampUp!(rp, rampUpSteps(seq), rampUpTotalSteps(seq))
-  rampDown!(rp, rampDownSteps(seq), rampDownTotalSteps(seq))
-  sequenceRepetitions!(rp, repetitions(seq))
-  setLUT!(rp, seq)
+  result = true
+  result &= stepsPerRepetition!(rp, stepsPerRepetition(seq))
+  result &= rampUp!(rp, rampUpSteps(seq), rampUpTotalSteps(seq))
+  result &= rampDown!(rp, rampDownSteps(seq), rampDownTotalSteps(seq))
+  result &= sequenceRepetitions!(rp, repetitions(seq))
+  result &= setLUT!(rp, seq)
   enable = enableLUT(seq)
   if !isnothing(enable)
-    enableDACLUT!(rp, enable)
+    result &= enableDACLUT!(rp, enable)
   end
-  configureFastDACSeq!(rp, fastDACConfig(seq))
-  resetAfterSequence!(rp, resetAfterSequence(seq))
-  appendSequence!(rp)
+  result &= configureFastDACSeq!(rp, fastDACConfig(seq))
+  result &= resetAfterSequence!(rp, resetAfterSequence(seq))
+  result &= appendSequence!(rp)
 end
 
 """

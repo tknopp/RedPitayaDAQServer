@@ -75,7 +75,7 @@ decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
 """
     decimation!(rp::RedPitaya, dec)
 
-Set the decimation of the RedPitaya. Return `true` if the operation was successful.
+Set the decimation of the RedPitaya. Return `true` if the command was successful.
 
 # Examples
 ```julia
@@ -205,7 +205,7 @@ bufferSize(rp::RedPitaya) = query(rp,"RP:ADC:BUFFER:SIZE?", Int64)
 """
     masterTrigger!(rp::RedPitaya, val::Bool)
 
-Set the master trigger of the RedPitaya to `val`. Return `true` if the operation was successful.
+Set the master trigger of the RedPitaya to `val`. Return `true` if the command was successful.
 
 # Example
 ```julia
@@ -255,7 +255,7 @@ keepAliveReset(rp::RedPitaya) = occursin("ON", query(rp,"RP:TRIGger:ALiVe?"))
 """
     triggerMode!(rp::RedPitaya, mode::String)
 
-Set the trigger mode of the RedPitaya. Return `true` if the operation was successful.
+Set the trigger mode of the RedPitaya. Return `true` if the command was successful.
 """
 function triggerMode!(rp::RedPitaya, mode::String)
   return triggerMode!(rp, stringToEnum(TriggerMode, mode))
@@ -263,7 +263,7 @@ end
 """
     triggerMode!(rp::RedPitaya, mode::String)
 
-Set the trigger mode of the RedPitaya. Return `true` if the operation was successful.
+Set the trigger mode of the RedPitaya. Return `true` if the command was successful.
 """
 function triggerMode!(rp::RedPitaya, mode::TriggerMode)
   return query(rp, string("RP:TRIGger:MODe ", string(mode)), Bool)
