@@ -33,9 +33,9 @@ julia> rp == rpc[1]
 true
 ```
 """
-function RedPitayaCluster(hosts::Vector{String}, port::Int64=5025)
+function RedPitayaCluster(hosts::Vector{String}, port::Int64=5025, dataPort::Int64=5026)
   # the first RP is the master
-  rps = RedPitaya[ RedPitaya(host, port, i==1) for (i,host) in enumerate(hosts) ]
+  rps = RedPitaya[ RedPitaya(host, port, dataPort, i==1) for (i,host) in enumerate(hosts) ]
 
   @sync for rp in rps
     @async triggerMode!(rp, EXTERNAL)

@@ -24,6 +24,7 @@ client specific concepts such as periods, frames and calibration values.
 mutable struct RedPitaya
   host::String
   port::Int64
+  dataPort::Int64
   delim::String
   socket::TCPSocket
   dataSocket::TCPSocket
@@ -115,7 +116,7 @@ function connect(rp::RedPitaya)
   if !rp.isConnected
     begin
     rp.socket = connect(rp.host, rp.port, _timeout)
-    rp.dataSocket = connect(rp.host, rp.port, _timeout)
+    rp.dataSocket = connect(rp.host, rp.dataPort, _timeout)
     rp.isConnected = true
     updateCalib!(rp)
     end
@@ -228,7 +229,7 @@ function destroy(rp::RedPitaya)
 end
 
 """
-    RedPitaya(ip [, port = 5025, isMaster = false])
+    RedPitaya(ip [, port = 5025, dataPort=5026, isMaster = false])
 
 Construct a `RedPitaya`.
 
@@ -246,9 +247,9 @@ julia> decimation(rp)
 8
 ```
 """
-function RedPitaya(host::String, port::Int64=5025, isMaster::Bool=true)
+function RedPitaya(host::String, port::Int64=5025, dataPort::Int64=5026, isMaster::Bool=true)
 
-  rp = RedPitaya(host, port, "\n", TCPSocket(), TCPSocket(), 1, 1, 1, false, isMaster, false, zeros(Float32, 2, 2))
+  rp = RedPitaya(host, port, dataPort, "\n", TCPSocket(), TCPSocket(), 1, 1, 1, false, isMaster, false, zeros(Float32, 2, 2))
 
   connect(rp)
 
