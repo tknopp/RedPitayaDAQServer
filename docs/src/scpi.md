@@ -1,6 +1,6 @@
 # SCPI Interface
 
-For communication betten the server and the client an [SCPI](https://en.wikipedia.org/wiki/Standard_Commands_for_Programmable_Instruments) with custom commands is used. The following table gives an overview of all commands:
+For communication betten the server and the client an [SCPI](https://en.wikipedia.org/wiki/Standard_Commands_for_Programmable_Instruments) with custom commands is used. The following table gives an overview of availalbe commands:
 
 ## DIO
 
@@ -10,116 +10,35 @@ For communication betten the server and the client an [SCPI](https://en.wikipedi
 | RP:DIO      | identifier of pin, value (0/1)  | Set the output of the DIO      |  RP:DIO DIO7_P,1  |
 | RP:DIO?      | identifier of pin  | Get the input of the DIO      |  RP:DIO? DIO7_P  |
 
-## Fast ADC
+## ADC Configuration
 
-| Command        | Arguments    | Description         | Example         |
-| :-------------- | :---------------- | :------------------- | :------------------- |
-| RP:ADC:SlowADC     |  |  |  |
-| RP:ADC:SlowADC?     |  |  |  |
-| RP:ADC:DECimation     |  |  |  |
-| RP:ADC:DECimation?     |  |  |  |
-| RP:ADC:WP:CURRent?     |  |  |  |
-| RP:ADC:BUFfer:Size?     |  |  |  |
-| RP:ADC:ACQCONNect     |  |  |  |
-| RP:ADC:ACQSTATus     |  |  |  |
-| RP:ADC:ACQSTATus?     |  |  |  |
-| RP:ADC:DATa?  | | | |
-| RP:ADC:DATa:DETailed?  | | | |
-| RP:ADC:DATa:PIPElined?  | | | |
+| Command | Arguments | Description | Mode | Example |
+| :--- | :--- | :--- | :---: | :--- |
+| RP:ADC:DECimation | decimation value [8, ..., n]| Set the decimation factor of the sampling rate| C | RP:ADC:DEC 8 | 
+| RP:ADC:DECimation? | | Return the decimation factor | C, M, T | |
+| RP:TRIGger:MODe | server mode (CONFIGURATION, MEASUREMENT) | Set the server mode | C | RP:TRIG:MOD CONFIGURATION |
+| RP:TRIGger:MODe? |  | Return the server mode | C, M, T | RP:TRIG:MOD? |
 
 
+## DAC Configuration
 
-## DAC
+| Command | Arguments | Description | Mode | Example |
+| :--- | :--- | :--- | :---: | :--- |
+| |  |  |  | |
 
-| Command        | Arguments    | Description         | Example         |
-| :-------------- | :---------------- | :------------------- | :------------------- |
-| RP:DAC:CHannel#:COMPonent#:AMPlitude?     |  |  |  |
-| RP:DAC:CHannel#:COMPonent#:AMPlitude     |  |  |  |
-| RP:DAC:CHannel#:COMPonent#:Next:AMPlitude?     |  |  |  |
-| RP:DAC:CHannel#:COMPonent#:Next:AMPlitude     |  |  |  |
-| RP:DAC:CHannel#:COMPonent#:FREQuency?     |  |  |  |
-| RP:DAC:CHannel#:COMPonent#:FREQuency     |  |  |  |
-| RP:DAC:CHannel#:COMPonent#:PHase?     |  |  |  |
-| RP:DAC:CHannel#:COMPonent#:PHase     |  |  |  |
-| RP:DAC:CHannel#:OFFset?     |  |  |  |
-| RP:DAC:CHannel#:OFFset     |  |  |  |
-| RP:DAC:MODe     |  |  |  |
-| RP:DAC:MODe?     |  |  |  |
-| RP:DAC:CHannel#:SIGnaltype     | signaltype (SINE / SQUARE / TRIANGLE / SAWTOOTH)   | set the signal type  | RP:DAC:CH0:SIG SINE |
-| RP:DAC:CHannel#:SIGnaltype?     |  |  |  |
-| RP:DAC:CHannel#:JumpSharpness     |  |  |  |
-| RP:DAC:CHannel#:JumpSharpness?     |  |  |  |
-| RP:ADC:SlowDAC     |  |  |  |
-| RP:ADC:SlowDAC?     |  |  |  |
-| RP:ADC:SlowDACLUT     |  |  |  |
-| RP:ADC:SlowDACEnable     |  |  |  |
-| RP:ADC:SlowDACLostSteps?     |  |  |  |
-| RP:ADC:SlowDACPeriodsPerFrame     |  |  |  |
-| RP:ADC:SlowDACPeriodsPerFrame?     |  |  |  |
-| RP:PDM:ClockDivider    |  |  |  |
-| RP:PDM:ClockDivider?    |  |  |  |
-
-## Sequences
-| Command        | Arguments    | Description         | Example         |
-| :-------------- | :---------------- | :------------------- | :------------------- |
-|RP:DAC:SEQ:CHan            |  |  |  |
-|RP:DAC:SEQ:CHan?           |  |  |  |
-|RP:DAC:SEQ:LUT:ARBITRARY   |  |  |  |
-|RP:DAC:SEQ:LUT:CONSTANT    |  |  |  |
-|RP:DAC:SEQ:LUT:PAUSE       |  |  |  |
-|RP:DAC:SEQ:LUT:RANGE       |  |  |  |
-|RP:DAC:SEQ:LUT:ENaBle      |  |  |  |
-|RP:DAC:SEQ:LostSteps?      |  |  |  |
-|RP:DAC:SEQ:STEPsPerSequence   |  |  |  |
-|RP:DAC:SEQ:STEPsPerSequence?  |  |  |  |
-|RP:DAC:SEQ:SAMPlesperstep     |  |  |  |
-|RP:DAC:SEQ:SAMPlesperstep?    |  |  |  |
-|RP:DAC:SEQ:RaMPing |  |  |  |
-|RP:DAC:SEQ:RaMPing:STEPs   |  |  |  |
-|RP:DAC:SEQ:RaMPing:TOTAL   |  |  |  |
-|RP:DAC:SEQ:RaMPing:UP  |  |  |  |
-|RP:DAC:SEQ:RaMPing:UP:STEPs    |  |  |  |
-|RP:DAC:SEQ:RaMPing:UP:STEPs?   |  |  |  |
-|RP:DAC:SEQ:RaMPing:UP:TOTAL    |  |  |  |
-|RP:DAC:SEQ:RaMPing:UP:TOTAL?   |  |  |  |
-|RP:DAC:SEQ:RaMPing:DOWN    |  |  |  |
-|RP:DAC:SEQ:RaMPing:DOWN:STEPs  |  |  |  |
-|RP:DAC:SEQ:RaMPing:DOWN:STEPs? |  |  |  |
-|RP:DAC:SEQ:RaMPing:DOWN:TOTAL |  |  |  |
-|RP:DAC:SEQ:RaMPing:DOWN:TOTAL?     |  |  |  |
-|RP:DAC:SEQ:REPetitions |  |  |  |
-|RP:DAC:SEQ:REPetitions?    |  |  |  |
-|RP:DAC:SEQ:RESETafter  |  |  |  |
-|RP:DAC:SEQ:RESETafter? |  |  |  |
-|RP:DAC:SEQ:APPend  |  |  |  |
-|RP:DAC:SEQ:POP |  |  |  |
-|RP:DAC:SEQ:CLEAR   |  |  |  |
-|RP:DAC:SEQ:PREPare?    |  |  |  |
+## Sequence Configuration
+| Command | Arguments | Description | Mode | Example |
+| :--- | :--- | :--- | :---: | :--- |
+| |  |  |  | |
 
 
-
-## Misc
-
-| Command        | Arguments    | Description         | Example         |
-| :-------------- | :---------------- | :------------------- | :------------------- |
-| RP:XADC:CHannel#?     |  |  |  |
-| RP:WatchDogMode     |  |  |  |
-| RP:WatchDogMode?     |  |  |  |
-| RP:RamWriterMode     |  |  |  |
-| RP:RamWriterMode?     |  |  |  |
-| RP:PassPDMToFastDAC     |  |  |  |
-| RP:PassPDMToFastDAC?     |  |  |  |
-| RP:KeepAliveReset     |  |  |  |
-| RP:KeepAliveReset?     |  |  |  |
-| RP:Trigger:MODe     |  |  |  |
-| RP:Trigger:MODe?     |  |  |  |
-| RP:MasterTrigger     |  |  |  |
-| RP:InstantResetMode     |  |  |  |
-| RP:InstantResetMode?     |  |  |  |
-| RP:PeripheralAResetN?    |  |  |  |
-| RP:FourierSynthAResetN?    |  |  |  |
-| RP:PDMAResetN?    |  |  |  |
-| RP:XADCAResetN?    |  |  |  |
-| RP:TriggerStatus?    |  |  |  |
-| RP:WatchdogStatus?    |  |  |  |
-| RP:InstantResetStatus?    |  |  |  |
+## Transmission
+| Command | Arguments | Description | Mode | Example |
+| :--- | :--- | :--- | :---: | :--- |
+| RP:TRIGger |  |  | M | |
+| RP:TRIGger? |  |  | C, M, T | |
+| RP:TRIGger:ALiVe |  | | M | |
+| RP:TRIGger:ALiVe? |  | | C, M, T | |
+| RP:ADC:WP:CURRent? |  | | M, T | |
+| RP:ADC:DATa? |  |  | M | |
+| RP:ADC:DATa:PIPElined? |  |  | M | |

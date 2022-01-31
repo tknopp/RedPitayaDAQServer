@@ -5,12 +5,12 @@ then writing the function for which the documentation should be shown.
 ## Connection and Communication
 ```@docs
 RedPitayaDAQServer.RedPitaya
-RedPitayaDAQServer.RedPitaya(::String, ::Int64, ::Bool)
+RedPitayaDAQServer.RedPitaya(::String, ::Int64, ::Int64, ::Bool)
 RedPitayaDAQServer.send(::RedPitaya, ::String)
 RedPitayaDAQServer.query
 RedPitayaDAQServer.receive
 RedPitayaDAQServer.RedPitayaCluster
-RedPitayaDAQServer.RedPitayaCluster(::Vector{String}, ::Int64)
+RedPitayaDAQServer.RedPitayaCluster(::Vector{String}, ::Int64, ::Int64)
 RedPitayaDAQServer.master
 ```
 ## ADC Configuration
