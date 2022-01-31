@@ -2,7 +2,6 @@
 
 module reset_manager #
 (
-    parameter integer WATCHDOG_TIMEOUT = 100, // in milliseconds
     parameter integer ALIVE_SIGNAL_LOW_TIME = 100, // in milliseconds
     parameter integer ALIVE_SIGNAL_HIGH_TIME = 10, // in milliseconds
     parameter integer RAMWRITER_DELAY = 1 // in milliseconds
@@ -42,7 +41,6 @@ Bit 6 => keep alive reset
 reset_ack: high if reset active (either watchdog failed or instant reset)
 */
 
-localparam integer WATCHDOG_TIMEOUT_CYCLES = 12500000;//(125000000/WATCHDOG_TIMEOUT)*1000;
 localparam integer ALIVE_SIGNAL_LOW_TIME_CYCLES = 12500000;//(125000000/ALIVE_SIGNAL_LOW_TIME)*1000;
 localparam integer ALIVE_SIGNAL_HIGH_TIME_CYCLES = 1250000;//(125000000/ALIVE_SIGNAL_HIGH_TIME)*1000;
 localparam integer RAMWRITER_DELAY_TIME= 1000000000; //100ms
@@ -172,34 +170,6 @@ begin
     end
 end
 
-// Watchdog counter for timeouts
-reg [25:0] watchdog_counter = 0;
-reg last_status = 0;
-always @(posedge clk)
-begin
-    if (watchdog_in & last_status == 0)
-    begin
-        watchdog_counter <= 0;
-        last_status <= 1;
-    end
-    else if (~watchdog_in & last_status == 1)
-    begin
-        watchdog_counter <= 0;
-        last_status <= 0;
-    end
-    else
-    begin
-        if (watchdog_counter < 16777213) // Prevent wrapping
-        begin
-            watchdog_counter <= watchdog_counter + 1;
-        end
-        else
-        begin
-            watchdog_counter <= 16777214;
-        end
-    end
-end
-
 // Master Trigger State
 always @(posedge clk)
 begin
@@ -224,76 +194,23 @@ begin
         if (reset_cfg[0] == 0) // continuous mode
         begin
             write_to_ram_aresetn_int <= peripheral_aresetn;
+            fourier_synth_aresetn_int <= peripheral_aresetn;
+            pdm_aresetn_int <= peripheral_aresetn;
         end
         else // trigger mode
         begin
-            if (reset_cfg[4] == 0) // internal trigger
+            // ADC
+            write_to_ram_aresetn_int <= triggerState;
+            // DAC
+            if (instant_reset_in && reset_cfg[3])
             begin
-                write_to_ram_aresetn_int <= reset_cfg[5];
+                fourier_synth_aresetn_int <= 1'b0;
+                pdm_aresetn_int <= 1'b0;
             end
-            else // external trigger
+            else
             begin
-                write_to_ram_aresetn_int <= trigger_in;
-            end
-        end
-
-        // Watchdog for DACs
-        if (instant_reset_in && reset_cfg[3])
-        begin
-            fourier_synth_aresetn_int <= 1'b0;
-            pdm_aresetn_int <= 1'b0;
-        end
-        else
-        begin
-            if (reset_cfg[1] == 0) // no watchdog
-            begin
-                if (reset_cfg[0] == 0) // continuous mode
-                begin
-                    fourier_synth_aresetn_int <= peripheral_aresetn;
-                    pdm_aresetn_int <= peripheral_aresetn;
-                end
-                else // trigger mode
-                begin
-                    if (reset_cfg[4] == 0) // internal trigger
-                    begin
-                        fourier_synth_aresetn_int <= reset_cfg[5];
-                        pdm_aresetn_int <= reset_cfg[5];
-                    end
-                    else // external trigger
-                    begin
-                        fourier_synth_aresetn_int <= trigger_in;
-                        pdm_aresetn_int <= trigger_in;
-                    end
-                end
-            end
-            else // watchdog mode
-            begin
-                if (watchdog_counter < WATCHDOG_TIMEOUT_CYCLES) // watchdog still working
-                begin
-                    if (reset_cfg[0] == 0) // continuous mode
-                    begin
-                        fourier_synth_aresetn_int <= peripheral_aresetn;
-                        pdm_aresetn_int <= peripheral_aresetn;
-                    end
-                    else // trigger mode
-                    begin
-                        if (reset_cfg[4] == 0) // internal trigger
-                        begin
-                            fourier_synth_aresetn_int <= reset_cfg[5];
-                            pdm_aresetn_int <= reset_cfg[5];
-                        end
-                        else // external trigger
-                        begin
-                            fourier_synth_aresetn_int <= trigger_in;
-                            pdm_aresetn_int <= trigger_in;
-                        end
-                    end
-                end
-                else // watchdog failed to signal within the given timeframe
-                begin
-                    fourier_synth_aresetn_int <= 1'b0;
-                    pdm_aresetn_int <= 1'b0;
-                end
+                fourier_synth_aresetn_int <= triggerState;
+                pdm_aresetn_int <= triggerState;
             end
         end
 
