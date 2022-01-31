@@ -4,7 +4,9 @@ using PyPlot
 # obtain the URL of the RedPitaya
 include("config.jl")
 
-rp = RedPitayaCluster([URLs[1]])
+rp = RedPitaya(URLs[1])
+
+serverMode!(rp, CONFIGURATION)
 
 dec = 32
 modulus = 12500
@@ -13,39 +15,37 @@ samples_per_period = div(modulus, dec)
 periods_per_frame = 10
 N = samples_per_period * periods_per_frame
 
-decimation(rp, dec)
-samplesPerPeriod(rp, samples_per_period)
-periodsPerFrame(rp, periods_per_frame)
+decimation!(rp, dec)
+samplesPerPeriod!(rp, samples_per_period)
+periodsPerFrame!(rp, periods_per_frame)
 
-modeDAC(rp, "STANDARD")
+frequencyDAC!(rp,1,1, base_frequency / modulus)
 
-frequencyDAC(rp,1,1, base_frequency / modulus)
+amplitudeDAC!(rp, 1, 1, 0.5)
+offsetDAC!(rp, 1, 0.1)
 
-amplitudeDAC(rp, 1, 1, 0.5)
-offsetDAC(master(rp), 1, 0.1)
+phaseDAC!(rp, 1, 1, 0.0 )
 
-phaseDAC(rp, 1, 1, 0.0 )
-
-ramWriterMode(rp, "TRIGGERED")
-triggerMode(rp, "INTERNAL")
+triggerMode!(rp, "INTERNAL")
 
 signals = zeros(4*N)
 
-jumpSharpnessDAC(rp, 1, 0.01) # controls the sharpness of the jump for the square
+jumpSharpnessDAC!(rp, 1, 0.01) # controls the sharpness of the jump for the square
 
 figure(1)
 clf()
 
 color = ["g", "b", "orange", "k"]
 for (i,name) in enumerate(["SINE", "SQUARE", "TRIANGLE", "SAWTOOTH"])
-  signalTypeDAC(rp, 1 , name)
-  masterTrigger(rp, false)
-  startADC(rp)
-  masterTrigger(rp, true)
+  signalTypeDAC!(rp, 1 , name)
+  serverMode!(rp, MEASUREMENT)
+  masterTrigger!(rp, false)
+  masterTrigger!(rp, true)
   fr = 1
-  uFirstPeriod = readData(rp, fr, 1) # read 2nd frame
+  uFirstPeriod = readFrames(rp, fr, 1) # read 2nd frame
   subplot(2,2,i)
-
+  masterTrigger!(rp, false)
+  serverMode!(rp, CONFIGURATION)
   plot(vec(uFirstPeriod[:,1,:,:]),color[i])
   title(name)
 end
