@@ -161,7 +161,7 @@ end
 """
     ServerMode
 
-Represent the different modes the server can be in.
+Represent the different modes the server can be in. Valid values are `CONFIGURATION`, `MEASUREMENT` and `TRANSMISSION`.
 
 See also [`serverMode`](@ref), [`serverMode!`](@ref).
 """
@@ -175,6 +175,7 @@ Return the mode of the server.
 # Examples
 ```julia
 julia> serverMode!(rp, MEASUREMENT);
+true
 
 julia> serverMode(rp)
 MEASUREMENT
@@ -192,6 +193,7 @@ Set the mode of the server. Valid values are "`CONFIGURATION`" and "`MEASUREMENT
 # Examples
 ```julia
 julia> serverMode!(rp, MEASUREMENT);
+true
 
 julia> serverMode(rp)
 MEASUREMENT
@@ -208,6 +210,7 @@ Set the mode of the server.
 # Examples
 ```julia
 julia> serverMode!(rp, MEASUREMENT);
+true
 
 julia> serverMode(rp)
 MEASUREMENT
@@ -241,7 +244,8 @@ Throws an error if a timeout occurs while attempting to connect.
 ```julia
 julia> rp = RedPitaya("192.168.1.100");
 
-julia> decimation(rp, 8)
+julia> decimation!(rp, 8)
+true
 
 julia> decimation(rp)
 8

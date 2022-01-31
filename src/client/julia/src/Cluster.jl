@@ -95,22 +95,24 @@ for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samples
 end
 
 for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :samplesPerSlowDACStep!, :slowDACStepsPerFrame!,
-           :keepAliveReset!, :serverMode!, :appendSequence!]
+           :keepAliveReset!, :serverMode!, :appendSequence!, :prepareSequences!]
   @eval begin
     @doc """
-          $($op)(rpc::RedPitayaCluster, value)
+        $($op)(rpc::RedPitayaCluster, value)
     
     As with single RedPitaya, but applied to all RedPitayas in a cluster.
     """
     function $op(rpc::RedPitayaCluster, value)
-      @sync for rp in rpc
-        @async $op(rp, value)
+      result = [false for i = 1:length(rpc)]
+      @sync for (i, rp) in enumerate(rpc)
+        @async result[i] = $op(rp, value)
       end
+      return result
     end
   end
 end
 
-for op in [:disconnect, :connect, :clearSequence]
+for op in [:disconnect, :connect, :clearSequences!]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster)
@@ -144,6 +146,7 @@ function masterTrigger!(rpc::RedPitayaCluster, val::Bool)
         masterTrigger!(master(rpc), false)
         keepAliveReset!(rpc, false)
     end
+    return masterTrigger(rpc)
 end
 
 
@@ -210,8 +213,9 @@ for op in [:signalTypeDAC!, :jumpSharpnessDAC!, :offsetDAC!]
 end
 
 function passPDMToFastDAC!(rpc::RedPitayaCluster, val::Vector{Bool})
+  result = [false for i=1:length(rpc)]
   @sync for (d,rp) in enumerate(rpc)
-    @async passPDMToFastDAC!(rp, val[d])
+    @async result[d] = passPDMToFastDAC!(rp, val[d])
   end
 end
 
@@ -221,20 +225,6 @@ function passPDMToFastDAC(rpc::RedPitayaCluster)
     @async result[d] = passPDMToFastDAC(rp)
   end
   return result
-end
-
-"""
-    prepareSequence!(rpc::RedPitayaCluster)
-
-As with single `RedPitaya`, but applied to all `RedPitaya`s in a cluster.
-Returns true if all could servers could prepare, false otherwise.
-"""
-function prepareSequence!(rpc::RedPitayaCluster)
-  success = [false for rp in rpc]
-  @sync for (i, rp) in enumerate(rpc)
-    @async success[i] = prepareSequence(rp)
-  end
-  all(success)
 end
 
 computeRamping(rpc::RedPitayaCluster, stepsPerSeq, time, fraction) = computeRamping(master(rpc), stepsPerSeq, time, fraction)

@@ -7,7 +7,7 @@ startPipelinedData
 """
     TriggerMode
 
-Represent the different trigger modes the FPGA image can have.
+Represent the different trigger modes the FPGA image can have. Valid value are `INTERNAL` and `EXTERNAL`.
 
 See [`triggerMode`](@ref), [`triggerMode!`](@ref).
 """
@@ -64,9 +64,8 @@ Return the decimation of the RedPitaya.
 
 # Examples
 ```julia
-julia> rp = RedPitaya("192.168.1.100");
-
 julia> decimation!(rp, 8)
+true
 
 julia> decimation(rp)
 8
@@ -76,11 +75,12 @@ decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
 """
     decimation!(rp::RedPitaya, dec)
 
-Set the decimation of the RedPitaya.
+Set the decimation of the RedPitaya. Return `true` if the operation was successful.
 
 # Examples
 ```julia
 julia> decimation!(rp, 8)
+true
 
 julia> decimation(rp)
 8
@@ -106,6 +106,7 @@ Return the number of samples per period.
 # Example
 ```julia
 julia> samplesPerPeriod!(rp, 256)
+true
 
 julia> samplesPerPeriod(rp)
 256
@@ -123,6 +124,7 @@ Set the number of samples per period.
 # Example
 ```julia
 julia> samplesPerPeriod!(rp, 256)
+true
 
 julia> samplesPerPeriod(rp)
 256
@@ -203,11 +205,12 @@ bufferSize(rp::RedPitaya) = query(rp,"RP:ADC:BUFFER:SIZE?", Int64)
 """
     masterTrigger!(rp::RedPitaya, val::Bool)
 
-Set the master trigger of the RedPitaya to `val`.
+Set the master trigger of the RedPitaya to `val`. Return `true` if the operation was successful.
 
 # Example
 ```julia
 julia> masterTrigger!(rp, true)
+true
 
 julia>masterTrigger(rp)
 true
@@ -250,17 +253,17 @@ keepAliveReset(rp::RedPitaya) = occursin("ON", query(rp,"RP:TRIGger:ALiVe?"))
 
 # "INTERNAL" or "EXTERNAL"
 """
-    triggerMode(rp::RedPitaya, mode::String)
+    triggerMode!(rp::RedPitaya, mode::String)
 
-Set the trigger mode of the RedPitaya. Valid values are `"INTERNAL"` or `"EXTERNAL"`.
+Set the trigger mode of the RedPitaya. Return `true` if the operation was successful.
 """
 function triggerMode!(rp::RedPitaya, mode::String)
   return triggerMode!(rp, stringToEnum(TriggerMode, mode))
 end
 """
-    triggerMode(rp::RedPitaya, mode::String)
+    triggerMode!(rp::RedPitaya, mode::String)
 
-Set the trigger mode of the RedPitaya.
+Set the trigger mode of the RedPitaya. Return `true` if the operation was successful.
 """
 function triggerMode!(rp::RedPitaya, mode::TriggerMode)
   return query(rp, string("RP:TRIGger:MODe ", string(mode)), Bool)
