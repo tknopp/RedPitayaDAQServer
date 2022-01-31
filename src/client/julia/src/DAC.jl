@@ -331,7 +331,7 @@ SINE
 """
 function signalTypeDAC(rp::RedPitaya, channel)
   command = string("RP:DAC:CH", Int(channel)-1, ":SIGnaltype?")
-  return stringToEnum(SignalType, query(rp, command))
+  return stringToEnum(SignalType, strip(query(rp, command), '\"'))
 end
 
 

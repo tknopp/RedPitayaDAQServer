@@ -270,7 +270,7 @@ function triggerMode!(rp::RedPitaya, mode::TriggerMode)
 end
 
 function triggerMode(rp::RedPitaya)
-  return stringToEnum(TriggerMode, query(rp, "RP:TRIGger:MODe?"))
+  return stringToEnum(TriggerMode, strip(query(rp, "RP:TRIGger:MODe?"), '\"'))
 end
 
 overwritten(rp::RedPitaya) = query(rp, "RP:STATus:OVERwritten?", Bool)
@@ -342,20 +342,3 @@ function startPipelinedData(rp::RedPitaya, reqWP::Int64, numSamples::Int64, chun
   command = string("RP:ADC:DATA:PIPELINED? ", reqWP, ",", numSamples, ",", chunkSize)
   send(rp, command)
 end
-
-
-# Low level read. One has to take care that the numFrames are available
-#=function readDataSlow_(rp::RedPitaya, startFrame, numFrames)
-  numPeriods = rp.periodsPerFrame
-  numChan = numSlowADCChan(rp)
-
-  command = string("RP:ADC:SLOW:FRAMES:DATA ",Int64(startFrame),",",Int64(numFrames))
-  #send(rp, command)
-
-  @debug "read data ..."
-  #u = read!(rp.dataSocket, Array{Float32}(undef, numChan * numFrames * numPeriods))
-  @debug "read data!"
-  #return reshape(u, numChan, numPeriods, numFrames)
-  return zeros(Float32, numChan, numPeriods, numFrames)
-end
-=#

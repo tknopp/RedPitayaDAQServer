@@ -182,7 +182,7 @@ MEASUREMENT
 ```
 """
 function serverMode(rp::RedPitaya)
-  return stringToEnum(ServerMode, query(rp, "RP:MODe?"))
+  return stringToEnum(ServerMode, strip(query(rp, "RP:MODe?"), '\"'))
 end
 
 """
