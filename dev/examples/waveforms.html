@@ -5,7 +5,9 @@ using PyPlot
 # obtain the URL of the RedPitaya
 include(&quot;config.jl&quot;)
 
-rp = RedPitayaCluster([URLs[1]])
+rp = RedPitaya(URLs[1])
+
+serverMode!(rp, CONFIGURATION)
 
 dec = 32
 modulus = 12500
@@ -14,42 +16,40 @@ samples_per_period = div(modulus, dec)
 periods_per_frame = 10
 N = samples_per_period * periods_per_frame
 
-decimation(rp, dec)
-samplesPerPeriod(rp, samples_per_period)
-periodsPerFrame(rp, periods_per_frame)
+decimation!(rp, dec)
+samplesPerPeriod!(rp, samples_per_period)
+periodsPerFrame!(rp, periods_per_frame)
 
-modeDAC(rp, &quot;STANDARD&quot;)
+frequencyDAC!(rp,1,1, base_frequency / modulus)
 
-frequencyDAC(rp,1,1, base_frequency / modulus)
+amplitudeDAC!(rp, 1, 1, 0.5)
+offsetDAC!(rp, 1, 0.1)
 
-amplitudeDAC(rp, 1, 1, 0.5)
-offsetDAC(master(rp), 1, 0.1)
+phaseDAC!(rp, 1, 1, 0.0 )
 
-phaseDAC(rp, 1, 1, 0.0 )
-
-ramWriterMode(rp, &quot;TRIGGERED&quot;)
-triggerMode(rp, &quot;INTERNAL&quot;)
+triggerMode!(rp, &quot;INTERNAL&quot;)
 
 signals = zeros(4*N)
 
-jumpSharpnessDAC(rp, 1, 0.01) # controls the sharpness of the jump for the square
+jumpSharpnessDAC!(rp, 1, 0.01) # controls the sharpness of the jump for the square
 
 figure(1)
 clf()
 
 color = [&quot;g&quot;, &quot;b&quot;, &quot;orange&quot;, &quot;k&quot;]
 for (i,name) in enumerate([&quot;SINE&quot;, &quot;SQUARE&quot;, &quot;TRIANGLE&quot;, &quot;SAWTOOTH&quot;])
-  signalTypeDAC(rp, 1 , name)
-  masterTrigger(rp, false)
-  startADC(rp)
-  masterTrigger(rp, true)
+  signalTypeDAC!(rp, 1 , name)
+  serverMode!(rp, MEASUREMENT)
+  masterTrigger!(rp, false)
+  masterTrigger!(rp, true)
   fr = 1
-  uFirstPeriod = readData(rp, fr, 1) # read 2nd frame
+  uFirstPeriod = readFrames(rp, fr, 1) # read 2nd frame
   subplot(2,2,i)
-
+  masterTrigger!(rp, false)
+  serverMode!(rp, CONFIGURATION)
   plot(vec(uFirstPeriod[:,1,:,:]),color[i])
   title(name)
 end
 subplots_adjust(left=0.08, bottom=0.05, right=0.98, top=0.95, wspace=0.3, hspace=0.35)
 savefig(&quot;images/waveforms.png&quot;)
-</code></pre><p><img src="../assets/waveforms.png" alt="Simple Example Results"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="simple.html">« Simple</a><a class="docs-footer-nextpage" href="slowADC.html">SlowADC »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.12 on <span class="colophon-date" title="Wednesday 19 January 2022 16:34">Wednesday 19 January 2022</span>. Using Julia version 1.5.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+</code></pre><p><img src="../assets/waveforms.png" alt="Simple Example Results"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="simple.html">« Simple</a><a class="docs-footer-nextpage" href="slowADC.html">SlowADC »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.12 on <span class="colophon-date" title="Monday 31 January 2022 13:37">Monday 31 January 2022</span>. Using Julia version 1.7.1.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
