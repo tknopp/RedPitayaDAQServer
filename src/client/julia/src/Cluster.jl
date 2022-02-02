@@ -487,7 +487,7 @@ function convertSamplesToPeriods!(rpu::Union{RedPitaya, RedPitayaCluster, RedPit
     periods[:, d, :] .*= calib[1, d]
     periods[:, d, :] .+= calib[2, d] 
   end
-  return frames
+  return periods
 
 end
 function convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages=1)
