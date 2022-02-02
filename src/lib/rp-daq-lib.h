@@ -50,6 +50,12 @@ extern void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *buf, *dio_sts;
 extern char *pdm_cfg, *dac_cfg; 
 
 // init routines
+extern int getFPGAId();
+extern bool isZynq7010();
+extern bool isZynq7015();
+extern bool isZynq7020();
+extern bool isZynq7030();
+extern bool isZynq7045();
 extern int init();
 extern void loadBitstream();
 
