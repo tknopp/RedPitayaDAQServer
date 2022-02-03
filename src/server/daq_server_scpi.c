@@ -88,6 +88,13 @@ int numSlowADCChan = 0;
 int numSlowDACSequencesEnabled = 0;
 int numSlowDACLostSteps = 0;
 
+// Performance data
+struct performance perf;
+uint8_t avgDeltaControl = 0;
+uint8_t avgDeltaSet = 0;
+uint8_t minDeltaControl = 0;
+uint8_t maxDeltaSet = 0;
+
 int64_t channel;
 
 bool initialized = false;
