@@ -134,7 +134,7 @@ struct sequenceNode_s {
 };
 
 // Global sequence settings
-int numSlowDACChan; // How many channels are considered
+extern int numSlowDACChan; // How many channels are considered
 extern int numSamplesPerStep;
 extern int numSlowDACLostSteps;
 extern bool slowDACInterpolation;
@@ -186,7 +186,7 @@ struct status {
 	uint8_t corrupted :1;
 	uint8_t lostSteps :1;
 };
-struct status err;
+extern struct status err;
 extern uint8_t getStatus();
 extern uint8_t getErrorStatus();
 extern uint8_t getOverwrittenStatus();
@@ -203,12 +203,12 @@ struct performance {
 	uint64_t deltaRead;
 	uint64_t deltaSend;
 };
-struct performance perf;
+extern struct performance perf;
 // DAC/Control performance
-uint8_t avgDeltaControl;
-uint8_t avgDeltaSet;
-uint8_t minDeltaControl;
-uint8_t maxDeltaSet;
+extern uint8_t avgDeltaControl;
+extern uint8_t avgDeltaSet;
+extern uint8_t minDeltaControl;
+extern uint8_t maxDeltaSet;
 
 // Client communication
 extern void sendPerformanceDataToClient();
