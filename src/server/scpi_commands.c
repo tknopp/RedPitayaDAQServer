@@ -44,7 +44,7 @@ static void readyConfigSequence() {
 }
 
 scpi_choice_def_t server_modes[] = {
-	{"CONFIGURATION", CONFIGRUATION},
+	{"CONFIGURATION", CONFIGURATION},
 	{"MEASUREMENT", MEASUREMENT},
 	{"TRANSMISSION", TRANSMISSION},
 	SCPI_CHOICE_LIST_END
@@ -65,7 +65,7 @@ static scpi_result_t RP_SetServerMode(scpi_t * context) {
 	}
 
 	serverMode_t current = getServerMode();
-	if (current != TRANSMISSION && (tmpMode == CONFIGRUATION || tmpMode == MEASUREMENT)) {
+	if (current != TRANSMISSION && (tmpMode == CONFIGURATION || tmpMode == MEASUREMENT)) {
 		setServerMode((serverMode_t) tmpMode);
 		return returnSCPIBool(context, true);
 	}
@@ -302,7 +302,7 @@ scpi_choice_def_t DAC_modes[] = {
 };
 
 static scpi_result_t RP_DAC_SetDACMode(scpi_t * context) {
-	if (getServerMode() != CONFIGRUATION) {
+	if (getServerMode() != CONFIGURATION) {
 		return SCPI_RES_ERR;
 	}
 
@@ -336,7 +336,7 @@ scpi_choice_def_t trigger_modes[] = {
 };
 
 static scpi_result_t RP_DAC_SetTriggerMode(scpi_t * context) {
-	if (getServerMode() != CONFIGRUATION) {
+	if (getServerMode() != CONFIGURATION) {
 		return SCPI_RES_ERR;
 	}
 
@@ -480,7 +480,7 @@ static scpi_result_t RP_DAC_SetSequenceJumpSharpness(scpi_t * context) {
 
 
 static scpi_result_t RP_ADC_SetDecimation(scpi_t * context) {
-	if (getServerMode() != CONFIGRUATION) {
+	if (getServerMode() != CONFIGURATION) {
 		return SCPI_RES_ERR;
 	}
 
@@ -775,7 +775,7 @@ static scpi_result_t RP_DAC_GetSequenceRepetitions(scpi_t * context) {
 }
 
 static scpi_result_t RP_ADC_SlowDACInterpolation(scpi_t * context) {
-	if (getServerMode() != CONFIGRUATION) {
+	if (getServerMode() != CONFIGURATION) {
 		return SCPI_RES_ERR;
 	}
 
@@ -1041,7 +1041,7 @@ static scpi_result_t RP_GetRAMWriterMode(scpi_t * context) {
 }
 
 static scpi_result_t RP_SetRAMWriterMode(scpi_t * context) {
-	if (getServerMode() != CONFIGRUATION) {
+	if (getServerMode() != CONFIGURATION) {
 		return SCPI_RES_ERR;
 	}
 
@@ -1465,7 +1465,7 @@ static scpi_result_t RP_Calib_DAC_GetOffset(scpi_t* context) {
 }
 
 static scpi_result_t RP_Calib_DAC_SetOffset(scpi_t* context) {
-	if (getServerMode() != CONFIGRUATION) {
+	if (getServerMode() != CONFIGURATION) {
 		return returnSCPIBool(context, false);
 	}
 
@@ -1517,7 +1517,7 @@ static scpi_result_t RP_Calib_ADC_GetOffset(scpi_t* context) {
 }
 
 static scpi_result_t RP_Calib_ADC_SetOffset(scpi_t* context) {
-	if (getServerMode() != CONFIGRUATION) {
+	if (getServerMode() != CONFIGURATION) {
 		return returnSCPIBool(context, false);
 	}
 
@@ -1568,7 +1568,7 @@ static scpi_result_t RP_Calib_ADC_GetScale(scpi_t* context) {
 }
 
 static scpi_result_t RP_Calib_ADC_SetScale(scpi_t* context) {
-	if (getServerMode() != CONFIGRUATION) {
+	if (getServerMode() != CONFIGURATION) {
 		return returnSCPIBool(context, false);
 	}
 
@@ -1706,7 +1706,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:DECimation", .callback = RP_ADC_SetDecimation,},
 	{.pattern = "RP:ADC:DECimation?", .callback = RP_ADC_GetDecimation,},
 	//{.pattern = "RP:ADC:SlowDACInterpolation", .callback = RP_ADC_SlowDACInterpolation,},
-	{.pattern = "RP:ADC:WP:CURRent?", .callback = RP_ADC_GetCurrentWP,},
+	{.pattern = "RP:ADC:WP?", .callback = RP_ADC_GetCurrentWP,},
 	{.pattern = "RP:ADC:DATa?", .callback = RP_ADC_GetData,},
 	//{.pattern = "RP:ADC:DATa:DETailed?", .callback = RP_ADC_GetDetailedData,},
 	{.pattern = "RP:ADC:DATa:PIPElined?", .callback = RP_ADC_GetPipelinedData,},

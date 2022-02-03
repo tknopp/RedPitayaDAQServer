@@ -62,7 +62,7 @@
 #include "../lib/rp-daq-lib.h"
 #include "../server/daq_server_scpi.h"
 
-static serverMode_t serverMode = CONFIGRUATION;
+static serverMode_t serverMode = CONFIGURATION;
 
 serverMode_t getServerMode() {
 	return serverMode;
@@ -88,6 +88,13 @@ int numSlowADCChan = 0;
 int numSlowDACSequencesEnabled = 0;
 int numSlowDACLostSteps = 0;
 
+// Performance data
+struct performance perf;
+uint8_t avgDeltaControl = 0;
+uint8_t avgDeltaSet = 0;
+uint8_t minDeltaControl = 0;
+uint8_t maxDeltaSet = 0;
+
 int64_t channel;
 
 bool initialized = false;
@@ -108,10 +115,6 @@ socklen_t clilen;
 int newdatasockfd;
 struct sockaddr_in newdatasockaddr;
 socklen_t newdatasocklen;
-
-char scpi_input_buffer[SCPI_INPUT_BUFFER_LENGTH];
-scpi_error_t scpi_error_queue_data[SCPI_ERROR_QUEUE_SIZE];
-scpi_t scpi_context;
 
 struct status err;
 
