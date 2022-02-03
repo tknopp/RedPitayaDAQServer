@@ -40,14 +40,49 @@ static rp_calib_params_t calib;
 
 // Init stuff
 
+int getFPGAId() {
+	// Refer to "Register PSS_IDCODE Details" on page 1607 in https://www.xilinx.com/support/documentation/user_guides/ug585-Zynq-7000-TRM.pdf
+	int id = (slcr[332] >> 12) & 0x1f;
+	return id;
+}
+
+bool isZynq7010() {
+	return (getFPGAId() == 0x02);
+}
+
+bool isZynq7015() {
+	return (getFPGAId() == 0x1b);
+}
+
+bool isZynq7020() {
+	return (getFPGAId() == 0x07);
+}
+
+bool isZynq7030() {
+	return (getFPGAId() == 0x0c);
+}
+
+bool isZynq7045() {
+	return (getFPGAId() == 0x11);
+}
+
 void loadBitstream() {
 	if(!access("/tmp/bitstreamLoaded", F_OK )){
 		printf("Bitfile already loaded\n");
 	} else {
 		printf("Load Bitfile\n");
 		int catResult = 0;
-		printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/master.bit\n");
-		catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");
+
+		if(isZynq7020()) {
+			printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/z7020.bit\n");
+			catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/z7020.bit > /dev/xdevcfg");
+		}
+		else {
+			printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/z7010.bit\n");
+			catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/z7010.bit > /dev/xdevcfg");
+		}
+		
+
 		if(catResult <= -1) {
 			printf("Error while writing the image to the FPGA.\n");
 		}
@@ -55,7 +90,7 @@ void loadBitstream() {
 			printf("Bitsream loaded\n");
 		}
 
-		FILE* fp = fopen("/tmp/bitstreamLoaded" ,"a");
+		FILE* fp = fopen("/tmp/bitstreamLoaded", "a");
 		int writeResult = fprintf(fp, "loaded \n");
 
 		if(writeResult <= -1) {

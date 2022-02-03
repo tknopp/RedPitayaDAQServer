@@ -199,7 +199,7 @@ end
 
 Return the current writepointer of the RedPitaya.
 """
-currentWP(rp::RedPitaya) = query(rp,"RP:ADC:WP:CURRENT?", Int64)
+currentWP(rp::RedPitaya) = query(rp,"RP:ADC:WP?", Int64)
 bufferSize(rp::RedPitaya) = query(rp,"RP:ADC:BUFFER:SIZE?", Int64)
 
 """
@@ -241,7 +241,7 @@ Set the keepAliveReset to `val`.
 """
 function keepAliveReset!(rp::RedPitaya, val::Bool)
   valStr = val ? "ON" : "OFF"
-  send(rp, string("RP:TRIGger:ALiVe ", valStr))
+  return query(rp, string("RP:TRIGger:ALiVe ", valStr), Bool)
 end
 """
     keepAliveReset(rp::RedPitaya)
