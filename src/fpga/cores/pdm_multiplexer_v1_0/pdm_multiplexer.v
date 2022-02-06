@@ -30,8 +30,26 @@ module pdm_multiplexer_v1_0 #
 
 input wire [(PDM_BUFFER_WIDTH*PDM_DATA_WIDTH)-1:0] pdm_data_in,
 input wire [PDM_BUFFER_ADRESS_WIDTH-1:0] sample_select ,
-output wire [PDM_DATA_WIDTH-1:0] pdm_data_out
+output wire [PDM_DATA_WIDTH-1:0] pdm_data_out,
+
+input clk,
+input aresetn
 );
-assign pdm_data_out = pdm_data_in[(sample_select*64) +: 64];
+
+    reg [PDM_DATA_WIDTH-1:0] pdm_data_out_reg;
+
+    always @(posedge clk)
+    begin
+        if (~aresetn)
+        begin
+            pdm_data_out_reg <= 0;
+        end
+        else
+        begin
+            pdm_data_out_reg <= pdm_data_in[(sample_select*64) +: 64];
+        end
+    end
+
+    assign pdm_data_out = pdm_data_out_reg;
 
 endmodule
