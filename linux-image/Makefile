@@ -44,9 +44,9 @@ RTL8192_URL = https://github.com/pvaret/rtl8192cu-fixes/archive/master.tar.gz
 
 .PRECIOUS: $(BUILD_DIR)/tmp/cores/% $(BUILD_DIR)/tmp/%.xpr $(BUILD_DIR)/tmp/%.xsa $(BUILD_DIR)/tmp/%.bit $(BUILD_DIR)/tmp/%.fsbl/executable.elf $(BUILD_DIR)/tmp/%.tree/system-top.dts
 
-all: $(BUILD_DIR)/tmp/$(NAME).bit $(BUILD_DIR)/boot.bin $(BUILD_DIR)/uImage $(BUILD_DIR)/devicetree.dtb
+all: $(BUILD_DIR)/tmp/$(NAME).bit boot.bin uImage devicetree.dtb
 
-cores: $(addprefix tmp/cores/, $(CORES))
+cores: $(addprefix $(BUILD_DIR)/tmp/cores/, $(CORES))
 
 xpr: $(BUILD_DIR)/tmp/$(NAME).xpr
 
@@ -96,7 +96,7 @@ $(DTREE_DIR): $(DTREE_TAR)
 	mkdir -p $@
 	tar -zxf $< --strip-components=1 --directory=$@
 
-$(BUILD_DIR)/uImage: $(LINUX_DIR)
+uImage: $(LINUX_DIR)
 	make -C $< mrproper
 	make -C $< ARCH=arm xilinx_zynq_defconfig
 	make -C $< ARCH=arm -j $(shell nproc 2> /dev/null || echo 1) \
@@ -111,21 +111,21 @@ $(UBOOT_DIR)/u-boot.bin: $(UBOOT_DIR)
 	make -C $< ARCH=arm -j $(shell nproc 2> /dev/null || echo 1) \
 	  CROSS_COMPILE=arm-linux-gnueabihf- all
 
-$(BUILD_DIR)/boot.bin: $(BUILD_DIR)/tmp/$(NAME).fsbl/executable.elf $(UBOOT_DIR)/u-boot.bin
+boot.bin: $(BUILD_DIR)/tmp/$(NAME).fsbl/executable.elf $(UBOOT_DIR)/u-boot.bin
 	echo "img:{[bootloader] $(BUILD_DIR)/tmp/$(NAME).fsbl/executable.elf [load=0x4000000,startup=0x4000000] $(UBOOT_DIR)/u-boot.bin}" > $(BUILD_DIR)/tmp/boot.bif
 	bootgen -image $(BUILD_DIR)/tmp/boot.bif -w -o i $@
 
-$(BUILD_DIR)/devicetree.dtb: $(BUILD_DIR)/uImage $(BUILD_DIR)/tmp/$(NAME).tree/system-top.dts
-	$(LINUX_DIR)/scripts/dtc/dtc -I dts -O dtb -o $(BUILD_DIR)/devicetree.dtb \
+devicetree.dtb: uImage $(BUILD_DIR)/tmp/$(NAME).tree/system-top.dts
+	$(LINUX_DIR)/scripts/dtc/dtc -I dts -O dtb -o devicetree.dtb \
 	  -i $(BUILD_DIR)/tmp/$(NAME).tree $(BUILD_DIR)/tmp/$(NAME).tree/system-top.dts
 
-$(BUILD_DIR)/tmp/cores/%: linux-image/cores/%/core_config.tcl linux-image/cores/%/*.v
+$(BUILD_DIR)/tmp/cores/%: linux-image/cores/%/core_config.tcl cores/%/*.v
 	mkdir -p $(@D)
 	$(VIVADO) -source linux-image/scripts/core.tcl -tclargs $* $(PART)
 
 $(BUILD_DIR)/tmp/%.xpr: linux-image/projects/% $(addprefix $(BUILD_DIR)/tmp/cores/, $(CORES))
 	mkdir -p $(@D)
-	$(VIVADO) -source linux-image/scripts/project.tcl -tclargs $* $(PART)
+	$(VIVADO) -source linux-imagescripts/project.tcl -tclargs $* $(PART)
 
 $(BUILD_DIR)/tmp/%.xsa: $(BUILD_DIR)/tmp/%.xpr
 	mkdir -p $(@D)
@@ -158,7 +158,7 @@ server:
 clean:
 	$(RM) $(BUILD_DIR)/uImage $(BUILD_DIR)/boot.bin $(BUILD_DIR)/devicetree.dtb $(BUILD_DIR)/tmp
 	$(RM) .Xil usage_statistics_webtalk.html usage_statistics_webtalk.xml
-	$(RM) vivado*.jou vivado*.log vivado*.str
+	$(RM) vivado*.jou vivado*.log
 	$(RM) webtalk*.jou webtalk*.log
 	@$(MAKE) -C src/lib clean
 	@$(MAKE) -C src/server clean

@@ -15,4 +15,15 @@ core
 *.jl.mem
 docs/build/
 Manifest.toml
+*.apk
+*.bin
+*.dtb
+*.img
+*.tar.gz
+*.zip
 vivado*
+webtalk*
+tmp
+uImage
+.vscode
+.Xil
