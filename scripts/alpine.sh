@@ -106,7 +106,7 @@ echo $alpine_url/community >> $root_dir/etc/apk/repositories
 chroot $root_dir /bin/sh <<- EOF_CHROOT
 
 apk update
-apk add openssh ucspi-tcp6 iw wpa_supplicant dhcpcd dnsmasq hostapd iptables avahi dbus dcron chrony gpsd libgfortran musl-dev fftw-dev libconfig-dev alsa-lib-dev alsa-utils curl wget less nano bc dos2unix
+apk add openssh ucspi-tcp6 iw wpa_supplicant dhcpcd dnsmasq hostapd iptables avahi dbus dcron chrony gpsd libgfortran musl-dev fftw-dev libconfig-dev alsa-lib-dev alsa-utils curl wget less nano bc dos2unix patch make git build-base gfortran
 
 rc-update add bootmisc boot
 rc-update add hostname boot
@@ -163,8 +163,6 @@ lbu delete etc/resolv.conf
 lbu delete root/.ash_history
 
 lbu commit -d
-
-apk add patch make git build-base gfortran
 
 make -C /media/mmcblk0p1/apps/RedPitayaDAQServer clean
 make -C /media/mmcblk0p1/apps/RedPitayaDAQServer server

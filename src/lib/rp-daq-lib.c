@@ -23,6 +23,7 @@ volatile uint32_t *slcr, *axi_hp0;
 void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *dio_sts;
 char *pdm_cfg, *dac_cfg;
 volatile int32_t *xadc;
+int id
 
 // static const uint32_t ANALOG_OUT_MASK            = 0xFF;
 // static const uint32_t ANALOG_OUT_BITS            = 16;
@@ -42,7 +43,8 @@ static rp_calib_params_t calib;
 
 int getFPGAId() {
 	// Refer to "Register PSS_IDCODE Details" on page 1607 in https://www.xilinx.com/support/documentation/user_guides/ug585-Zynq-7000-TRM.pdf
-	int id = (slcr[332] >> 12) & 0x1f;
+	int id = slcr[332];
+	id = (id >> 12) & 0x1f;
 	return id;
 }
 
