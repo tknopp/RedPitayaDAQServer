@@ -73,7 +73,7 @@ done
 
 mksquashfs alpine-modloop/lib modloop -b 1048576 -comp xz -Xdict-size 100%
 
-#rm -rf alpine-uboot alpine-initramfs initrd.gz alpine-modloop
+rm -rf alpine-uboot alpine-initramfs initrd.gz alpine-modloop
 
 root_dir=alpine-root
 
@@ -86,6 +86,8 @@ cp /etc/resolv.conf $root_dir/etc/
 mkdir -p $root_dir/etc/apk
 mkdir -p $root_dir/media/mmcblk0p1/cache
 ln -s /media/mmcblk0p1/cache $root_dir/etc/apk/cache
+
+cp ../../linux-image/uEnv.txt .
 
 cp -r ../../linux-image/alpine/etc $root_dir/
 #cp -r ../../linux-image/alpine/apps $root_dir/media/mmcblk0p1/
