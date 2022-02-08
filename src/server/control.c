@@ -171,7 +171,7 @@ static void configureFastDAC(fastDACConfig_t * config) {
 }
 
 bool isSequenceConfigurable() {
-	return getServerMode() == CONFIGRUATION && (seqState == CONFIG || seqState == PREPARED || seqState == FINISHED);
+	return getServerMode() == CONFIGURATION && (seqState == CONFIG || seqState == PREPARED || seqState == FINISHED);
 }
 
 float getArbitrarySequenceValue(sequenceData_t *seqData, int step, int channel) {
