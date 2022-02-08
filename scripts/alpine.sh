@@ -1,5 +1,6 @@
 build_dir=build/linux-image
-download_dir=$build_dir/downloads
+download_dir_local=downloads
+download_dir=$build_dir/$download_dir_local
 
 alpine_url=http://dl-cdn.alpinelinux.org/alpine/v3.14
 
@@ -15,10 +16,11 @@ firmware_url=$alpine_url/main/armv7/$firmware_tar
 linux_dir=tmp/linux-5.10
 linux_ver=5.10.80-xilinx
 
-modules_dir=$build_dir/alpine-modloop/lib/modules/$linux_ver
+modules_dir=alpine-modloop/lib/modules/$linux_ver
 
 passwd=root
 
+echo "Downloading files if necessary and un-tar them..."
 mkdir -p $download_dir
 
 test -f $download_dir/$uboot_tar || curl -L $uboot_url -o $download_dir/$uboot_tar
@@ -50,6 +52,7 @@ find . | sort | cpio --quiet -o -H newc | gzip -9 > ../initrd.gz
 
 cd ..
 
+echo "Creating image..."
 mkimage -A arm -T ramdisk -C gzip -d initrd.gz uInitrd
 
 mkdir -p $modules_dir/kernel
@@ -58,18 +61,19 @@ find $linux_dir -name \*.ko -printf '%P\0' | tar --directory=$linux_dir --owner=
 
 cp $linux_dir/modules.order $linux_dir/modules.builtin $modules_dir/
 
+echo "Running depmod..."
 depmod -a -b alpine-modloop $linux_ver
 
-tar -zxf $firmware_tar --directory=alpine-modloop/lib/modules --warning=no-unknown-keyword --strip-components=1 --wildcards lib/firmware/ar* lib/firmware/rt*
+tar -zxf $download_dir_local/$firmware_tar --directory=alpine-modloop/lib/modules --warning=no-unknown-keyword --strip-components=1 --wildcards lib/firmware/ar* lib/firmware/rt*
 
 for tar in linux-firmware-ath9k_htc-20210716-r0.apk linux-firmware-brcm-20210716-r0.apk linux-firmware-cypress-20210716-r0.apk linux-firmware-rtlwifi-20210716-r0.apk
 do
-  tar -zxf $tar --directory=alpine-modloop/lib/modules --warning=no-unknown-keyword --strip-components=1
+  tar -zxf $download_dir_local/$tar --directory=alpine-modloop/lib/modules --warning=no-unknown-keyword --strip-components=1
 done
 
 mksquashfs alpine-modloop/lib modloop -b 1048576 -comp xz -Xdict-size 100%
 
-rm -rf alpine-uboot alpine-initramfs initrd.gz alpine-modloop
+#rm -rf alpine-uboot alpine-initramfs initrd.gz alpine-modloop
 
 root_dir=alpine-root
 
@@ -83,27 +87,12 @@ mkdir -p $root_dir/etc/apk
 mkdir -p $root_dir/media/mmcblk0p1/cache
 ln -s /media/mmcblk0p1/cache $root_dir/etc/apk/cache
 
-cp -r alpine/etc $root_dir/
-cp -r alpine/apps $root_dir/media/mmcblk0p1/
-
-for project in led_blinker # common_tools sdr_receiver_hpsdr sdr_transceiver sdr_transceiver_emb sdr_transceiver_ft8 sdr_transceiver_hpsdr sdr_transceiver_wide sdr_transceiver_wspr mcpha pulsed_nmr vna
-do
-  mkdir -p $root_dir/media/mmcblk0p1/apps/$project
-  #cp -r projects/$project/server/* $root_dir/media/mmcblk0p1/apps/$project/
-  cp -r projects/$project/app/* $root_dir/media/mmcblk0p1/apps/$project/
-  cp tmp/$project.bit $root_dir/media/mmcblk0p1/apps/$project/
-done
-
-for project in led_blinker_122_88 #sdr_receiver_hpsdr_122_88 sdr_receiver_wide_122_88 sdr_transceiver_122_88 sdr_transceiver_emb_122_88 sdr_transceiver_ft8_122_88 sdr_transceiver_hpsdr_122_88 sdr_transceiver_wspr_122_88 pulsed_nmr_122_88 vna_122_88
-do
-  mkdir -p $root_dir/media/mmcblk0p1/apps/$project
-  #cp -r projects/$project/server/* $root_dir/media/mmcblk0p1/apps/$project/
-  cp -r projects/$project/app/* $root_dir/media/mmcblk0p1/apps/$project/
-  cp tmp/$project.bit $root_dir/media/mmcblk0p1/apps/$project/
-done
+cp -r ../../linux-image/alpine/etc $root_dir/
+#cp -r ../../linux-image/alpine/apps $root_dir/media/mmcblk0p1/
+mkdir -p $root_dir/media/mmcblk0p1/apps
 
 # Copy current status of RedPitayaDAQServer directory
-rsync -av --progress ../../ $root_dir/media/mmcblk0p1/apps/RedPitayaDAQServer --exclude build --exclude .Xil
+rsync -av -q ../../ $root_dir/media/mmcblk0p1/apps/RedPitayaDAQServer --exclude build --exclude .Xil --exclude "red-pitaya-alpine*.zip"
 
 cp -r alpine-apk/sbin $root_dir/
 
@@ -169,16 +158,11 @@ ln -s /media/mmcblk0p1/wifi root/wifi
 
 lbu add root
 lbu delete etc/resolv.conf
-lbu delete etc/cron.d/ft8
-lbu delete etc/cron.d/ft8_122_88
-lbu delete etc/cron.d/wspr
-lbu delete etc/cron.d/wspr_122_88
 lbu delete root/.ash_history
 
 lbu commit -d
 
-apk add patch make gcc gfortran
-apk add git build-base
+apk add patch make git build-base gfortran
 
 make -C /media/mmcblk0p1/apps/RedPitayaDAQServer clean
 make -C /media/mmcblk0p1/apps/RedPitayaDAQServer server
@@ -189,13 +173,13 @@ cp -r $root_dir/media/mmcblk0p1/apps .
 cp -r $root_dir/media/mmcblk0p1/cache .
 cp $root_dir/media/mmcblk0p1/red-pitaya.apkovl.tar.gz .
 
-cp -r alpine/wifi .
+cp -r ../../linux-image/alpine/wifi .
 
 hostname -F /etc/hostname
 
 rm -rf $root_dir alpine-apk
 
-zip -r red-pitaya-alpine-3.14-armv7-`date +%Y%m%d`.zip apps boot.bin cache devicetree.dtb modloop red-pitaya.apkovl.tar.gz uEnv.txt uImage uInitrd wifi
+zip -r -q red-pitaya-alpine-3.14-armv7-`date +%Y%m%d`.zip apps boot.bin cache devicetree.dtb modloop red-pitaya.apkovl.tar.gz uEnv.txt uImage uInitrd wifi
 
 rm -rf apps cache modloop red-pitaya.apkovl.tar.gz uInitrd wifi
 
