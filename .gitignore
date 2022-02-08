@@ -10,6 +10,7 @@ src/examples/python/.pydevproject
 src/examples/python/.project
 src/examples/julia/images
 core
+bitfiles
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
