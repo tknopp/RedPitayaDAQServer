@@ -74,12 +74,12 @@ void loadBitstream() {
 		int catResult = 0;
 
 		if(isZynq7020()) {
-			printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/z7020.bit\n");
-			catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/z7020.bit > /dev/xdevcfg");
+			printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/daq_xc7z020clg400-1.bit\n");
+			catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/daq_xc7z020clg400-1.bit > /dev/xdevcfg");
 		}
 		else {
-			printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/z7010.bit\n");
-			catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/z7010.bit > /dev/xdevcfg");
+			printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/daq_xc7z010clg400-1.bit\n");
+			catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/daq_xc7z010clg400-1.bit > /dev/xdevcfg");
 		}
 		
 
