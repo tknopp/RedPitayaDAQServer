@@ -16,6 +16,8 @@ PROC = ps7_cortexa9_0
 
 CORES = axi_axis_reader_v1_0 port_slicer_v1_0 dna_reader_v1_0 axi_sts_register_v1_0\
 
+DAQ_PARTS = xc7z010clg400-1 xc7z020clg400-1\
+
 VIVADO = vivado -nolog -nojournal -mode batch
 XSCT = xsct
 RM = rm -rf
@@ -44,7 +46,16 @@ RTL8192_URL = https://github.com/pvaret/rtl8192cu-fixes/archive/master.tar.gz
 
 .PRECIOUS: $(BUILD_DIR)/tmp/cores/% $(BUILD_DIR)/tmp/%.xpr $(BUILD_DIR)/tmp/%.xsa $(BUILD_DIR)/tmp/%.bit $(BUILD_DIR)/tmp/%.fsbl/executable.elf $(BUILD_DIR)/tmp/%.tree/system-top.dts
 
-all: $(BUILD_DIR)/tmp/$(NAME).bit $(BUILD_DIR)/boot.bin $(BUILD_DIR)/uImage $(BUILD_DIR)/devicetree.dtb
+all: daq_bitfiles $(BUILD_DIR)/tmp/$(NAME).bit $(BUILD_DIR)/boot.bin $(BUILD_DIR)/uImage $(BUILD_DIR)/devicetree.dtb linux
+
+daq_bitfiles: $(addsuffix .bit, $(addprefix bitfiles/daq_,$(DAQ_PARTS)))
+
+bitfiles/daq_%.bit:
+	sh scripts/make_fpga_project.sh $*
+	sh scripts/make_implementation.sh $*
+	
+linux: daq_bitfiles $(BUILD_DIR)/tmp/$(NAME).bit $(BUILD_DIR)/boot.bin $(BUILD_DIR)/uImage $(BUILD_DIR)/devicetree.dtb
+	sh scripts/alpine.sh
 
 cores: $(addprefix tmp/cores/, $(CORES))
 

@@ -1,3 +1,9 @@
+# Check if we are root, since chroot doesn't work otherwise
+if [ "$(id -u)" -ne 0 ]; then
+        echo 'This script must be run by root. Please execute `sudo -s` to do so.' >&2
+        exit 1
+fi
+
 build_dir=build/linux-image
 download_dir_local=downloads
 download_dir=$build_dir/$download_dir_local
@@ -106,7 +112,7 @@ echo $alpine_url/community >> $root_dir/etc/apk/repositories
 chroot $root_dir /bin/sh <<- EOF_CHROOT
 
 apk update
-apk add openssh ucspi-tcp6 iw wpa_supplicant dhcpcd dnsmasq hostapd iptables avahi dbus dcron chrony gpsd libgfortran musl-dev fftw-dev libconfig-dev alsa-lib-dev alsa-utils curl wget less nano bc dos2unix patch make git build-base gfortran
+apk add openssh ucspi-tcp6 iw wpa_supplicant dhcpcd dnsmasq hostapd iptables avahi dbus dcron chrony gpsd libgfortran musl-dev fftw-dev libconfig-dev alsa-lib-dev alsa-utils curl wget less nano bc dos2unix patch make git build-base gfortran gdb
 
 rc-update add bootmisc boot
 rc-update add hostname boot

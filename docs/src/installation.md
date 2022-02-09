@@ -23,24 +23,14 @@ in order to get the essential tools. Afterwards clone the project with
 git clone https://github.com/tknopp/RedPitayaDAQServer
 ```
 
-Then switch into this directory. You can now start to get the build process running. Start with generating the FPGA images by running
-```
-./scripts/make_parts.sh
-```
-
-Afterwards run `make` in order to compile the basic Linux image parts:
+Then switch into this directory. You can build the whole project using
 ```
 make all
-```
+```.
 
-Note: Currently we need to run this command three times due to some strange errors. This will be fixed later.
+For only building some parts please refer to the Makefile.
 
-To collate the image into a ZIP file, you need to be `root` and thus run
-```
-sudo -s
-source scripts/alpine.sh
-exit
-```
+Note: `make` has to be run as root if you want to build the Linux image, since `chroot` requires `root` privileges.
 
 ## Setting Up the Server
 
