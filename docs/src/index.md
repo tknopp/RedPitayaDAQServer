@@ -7,7 +7,7 @@
 This project contains software to be used with the STEMlab 125-14 device from RedPitaya. It allows for continuous generation and measurement of signals with up to 15.625 MS/s, which is not possible with the standard image of the RedPitaya. In addition, the software allows to synchronize a cluster of multiple RedPitayas. This project contains the following parts:
 * Alpine Linux image for the RedPitaya
 * FPGA image
-* Client library (implemented in C) that can be used on the RedPitaya
+* Library written in C to interact with the FPGA image on the RedPitaya
 * SCPI Server for accessing the functionality over TCP/IP
 * SCPI Client to access the server
 
