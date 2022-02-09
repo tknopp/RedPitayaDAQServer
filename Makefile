@@ -163,8 +163,9 @@ server:
 	@$(MAKE) -C src/lib
 	@$(MAKE) -C src/server
 	@$(MAKE) -C src/test
-	cp scripts/daqserver.start /etc/local.d/
-#	cp scripts/daq_server.service /etc/systemd/system/
+	cp scripts/daq_server_scpi /etc/init.d/
+	chmod +x /etc/init.d/daq_server_scpi
+	rc-update add daq_server_scpi default
 
 clean:
 	$(RM) $(BUILD_DIR)/uImage $(BUILD_DIR)/boot.bin $(BUILD_DIR)/devicetree.dtb $(BUILD_DIR)/tmp

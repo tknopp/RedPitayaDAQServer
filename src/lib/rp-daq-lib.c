@@ -23,7 +23,6 @@ volatile uint32_t *slcr, *axi_hp0;
 void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *dio_sts;
 char *pdm_cfg, *dac_cfg;
 volatile int32_t *xadc;
-int id
 
 // static const uint32_t ANALOG_OUT_MASK            = 0xFF;
 // static const uint32_t ANALOG_OUT_BITS            = 16;

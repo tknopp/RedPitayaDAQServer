@@ -102,10 +102,6 @@ mkdir -p $root_dir/media/mmcblk0p1/apps
 # Copy current status of RedPitayaDAQServer directory
 rsync -av -q ../../ $root_dir/media/mmcblk0p1/apps/RedPitayaDAQServer --exclude build --exclude .Xil --exclude "red-pitaya-alpine*.zip"
 
-# Copy OpenRC file in order to run the server on startup
-cp ../../scripts/daq_server_scpi /etc/init.d/
-chmod +x /etc/init.d/daq_server_scpi
-
 cp -r alpine-apk/sbin $root_dir/
 
 chroot $root_dir /sbin/apk.static --repository $alpine_url/main --update-cache --allow-untrusted --initdb add alpine-base
@@ -142,8 +138,6 @@ rc-update add local default
 rc-update add dcron default
 rc-update add sshd default
 
-rc-update add daq_server_scpi default
-
 mkdir -p etc/runlevels/wifi
 rc-update -s add default wifi
 
@@ -174,10 +168,11 @@ lbu add root
 lbu delete etc/resolv.conf
 lbu delete root/.ash_history
 
-lbu commit -d
-
 make -C /media/mmcblk0p1/apps/RedPitayaDAQServer clean
 make -C /media/mmcblk0p1/apps/RedPitayaDAQServer server
+
+lbu include /etc/init.d
+lbu commit -d
 
 EOF_CHROOT
 
@@ -195,5 +190,5 @@ zip -r -q red-pitaya-alpine-3.14-armv7-`date +%Y%m%d`.zip apps boot.bin cache de
 
 rm -rf apps cache modloop red-pitaya.apkovl.tar.gz uInitrd wifi
 
-cp red-pitaya-alpine-3.14-armv7-`date +%Y%m%d`.zip ../../
+mv red-pitaya-alpine-3.14-armv7-`date +%Y%m%d`.zip ../../
 cd ../../
