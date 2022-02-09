@@ -1,5 +1,0 @@
-copy daq_server.service to /etc/systemd/system/
-
-the service is enabled by
-
-systemctl start daq_server
