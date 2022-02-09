@@ -41,10 +41,9 @@ static rp_calib_params_t calib;
 
 // Init stuff
 
-int getFPGAId() {
+uint32_t getFPGAId() {
 	// Refer to "Register PSS_IDCODE Details" on page 1607 in https://www.xilinx.com/support/documentation/user_guides/ug585-Zynq-7000-TRM.pdf
-	int id = slcr[332];
-	id = (id >> 12) & 0x1f;
+	uint32_t id = (slcr[332] >> 12) & 0x1f;
 	return id;
 }
 
@@ -105,9 +104,6 @@ void loadBitstream() {
 }
 
 int init() {
-	calib_Init(); // Load calibration from EEPROM
-	loadBitstream();
-
 	// Open memory
 	if((mmapfd = open("/dev/mem", O_RDWR|O_SYNC)) < 0) {
 		perror("open");
@@ -126,6 +122,9 @@ int init() {
 	cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40004000);
 	ram = mmap(NULL, sizeof(int32_t)*ADC_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, ADC_BUFF_MEM_ADDRESS);
 	xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
+
+	calib_Init(); // Load calibration from EEPROM
+	loadBitstream();
 
 	// Set HP0 bus width to 64 bits
 	slcr[2] = 0xDF0D;
