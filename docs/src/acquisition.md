@@ -30,3 +30,17 @@ To help clients with these issues, the server offers a second type of sample tra
 The samples sent by the server are the 16-bit values of the ADC channel of a RedPitaya. However, one might want to instead work with voltage values or encapsulate samples into a repeating concept like frames. The Julia client library offers functions to convert samples into such a concept or to directly request a number of frames instead of a number of samples.
 
 Here, frames are comprised of periods, which in turn are comprised of samples. During the conversion process the 16-bit binary values can also be converted to floating point numbers representing a voltage if the RedPitaya was calibrated beforehand. In this calibration process, a client can store scale and offset values for each channel in the EEPROM of the RedPitaya. When the client establishes a connection to the server, it reads these values and can use them to translate the 16-bit values into a respective voltage value.
+
+## Sampling and Data Rates, Transmission Speeds and Time-to-Live
+The highest supported sampling rate of the RedPitayaDAQServer is 15.625 MHz or 15.625 MS/s, as this is the sampling rate at which a single RedPitaya can produce and transmit samples continously without data loss given the 1 Gbit/s limit of the ethernet connection from the RedPitaya. This rate is a achieved with a decimation of 8 from the base 125 MHz sampling rate of the RedPitaya hardware.
+
+At this sampling rate a single RedPitaya produces new samples at a data rate of 500 Mbit/s. Furthermore at this rate, once a sample has been written to the buffer it exists for 2.15s before being overwritten again. An overview of these metrics for different decimation factors is shown in the following table:
+
+| Decimation | MHz | MByte/s | Mbit/s | TTL |
+|:---:|:---:|:---:|:---:|:---:|
+|64|1.95|7.81|62.5|17.18s|
+|32|3.91|15.63|125|8.59s|
+|16|7.81|31.25|250|4.29s|
+|8|15.63|62.5|500|2.15s|
+
+The table only refers to the data rate of new samples being produced. The data rate of samples being transmitted to a client can differ greatly depending on how the client queries and processes the samples and the available network bandwidth and usage. At the higher sampling rates it is recommended to have client threads that exclusively receive samples and perform any computation on samples in different threads to maximise the transmission speed, as a server can only transmit data at a rate of just above 500 Mbit/s.
