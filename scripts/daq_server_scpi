@@ -15,7 +15,6 @@ depend() {
 }
 
 start_pre() {
-        mount -o rw,remount /media/mmcblk0p1
         checkpath --directory --owner $command_user:$command_user --mode 0775 \
                 /run/$RC_SVCNAME /var/log/$RC_SVCNAME
 }

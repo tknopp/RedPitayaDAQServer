@@ -161,6 +161,11 @@ alias rw='mount -o rw,remount /media/mmcblk0p1'
 alias ro='mount -o ro,remount /media/mmcblk0p1'
 EOF_CAT
 
+cat <<- EOF_CAT > /etc/fstab
+/dev/mmcblk0p1 /media/mmcblk0p1 vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=iso8859-1,shortname=mixed,errors=remount-ro 0 0
+tmpfs / tmpfs rw,relatime,size=1048576k,mode=755 0 0
+EOF_CAT
+
 ln -s /media/mmcblk0p1/apps root/apps
 ln -s /media/mmcblk0p1/wifi root/wifi
 
