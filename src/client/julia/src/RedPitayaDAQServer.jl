@@ -273,20 +273,22 @@ end
 
 scpiCommand(f::Function, args...) = error("Function $(string(f)) does not support scpiCommand")
 scpiReturn(f::Function) = typeof(nothing)
+parseReturn(f::Function, ret) = parse(scpiReturn(f), ret)
 
-#=function batch(rp::RedPitaya, cmds::Vector{(Function, Tuple)})
+function batch(rp::RedPitaya, cmds::Vector{Pair{Function, Vector{Any}}})
   for (f, args) in cmds
     send(rp, scpiCommand(f, args...))
   end
   result = []
   for (f, _) in cmds
-    T = scpiReturn(f) 
+    T = scpiReturn(f)
     if T != Nothing
-      push!(result, parse(T, receive(rp, _timeout)))
+      ret = receive(rp, _timeout)
+      push!(result, parseReturn(f, ret))
     end
   end
   return result
-end=#
+end
 
 
 end # module
