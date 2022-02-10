@@ -161,9 +161,22 @@ alias rw='mount -o rw,remount /media/mmcblk0p1'
 alias ro='mount -o ro,remount /media/mmcblk0p1'
 EOF_CAT
 
-cat <<- EOF_CAT > /etc/fstab
+cat <<- EOF_CAT >> /etc/fstab
 /dev/mmcblk0p1 /media/mmcblk0p1 vfat rw,relatime,fmask=0022,dmask=0022,codepage=437,iocharset=iso8859-1,shortname=mixed,errors=remount-ro 0 0
 tmpfs / tmpfs rw,relatime,size=1048576k,mode=755 0 0
+EOF_CAT
+
+cat <<- EOF_CAT > /etc/motd
+Welcome to the Red Pitaya DAQ Server Alpine Linux!
+
+Please head to ~/apps/RedPitayaDAQServer for working with the server and its components.
+For further help please refer to the documentation at https://tknopp.github.io/RedPitayaDAQServer/dev/index.html.
+
+Hints:
+- Only changes within /media/mmcblk0p1 are stored to the SD card.
+  If you want to persist other changes, please use `lbu commit -d` after
+  including the specific directory with `lbu include`.
+- The server is compiled by running `make server` from ~/apps/RedPitayaDAQServer.
 EOF_CAT
 
 ln -s /media/mmcblk0p1/apps root/apps
