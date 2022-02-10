@@ -63,6 +63,19 @@ function receive(rp::RedPitaya)
   return readline(rp.socket)[1:end]
 end
 
+function receive(rp::RedPitaya, timeout::Number,  N=100)
+  t = @async receive(rp)
+  for i=1:N
+    if istaskdone(t)
+      return fetch(t)
+    end
+    sleep(timeout / N )
+  end
+  @async Base.throwto(t, EOFError())
+  error("Receive ran into timeout on RP $(rp.host) on command $(cmd)!")
+  return t
+end
+
 """
     query(rp::RedPitaya, cmd [, timeout = 5.0, N = 100])
 
@@ -74,15 +87,7 @@ See also [receive](@ref).
 """
 function query(rp::RedPitaya, cmd::String, timeout::Number=_timeout,  N=100)
   send(rp,cmd)
-  t = @async receive(rp)
-  for i=1:N
-    if istaskdone(t)
-      return fetch(t)
-    end
-    sleep(timeout / N )
-  end
-  @async Base.throwto(t, EOFError())
-  error("Receive ran into timeout on RP $(rp.host) on command $(cmd)!")
+  receive(rp, timeout, N)
 end
 
 """
@@ -182,8 +187,11 @@ MEASUREMENT
 ```
 """
 function serverMode(rp::RedPitaya)
-  return stringToEnum(ServerMode, strip(query(rp, "RP:MODe?"), '\"'))
+  return stringToEnum(ServerMode, strip(query(rp, scpiCommand(serverMode)), '\"'))
 end
+scpiCommand(::typeof(serverMode)) = "RP:MODe?"
+scpiReturn(::typeof(serverMode)) = ServerMode
+parseReturn(::typeof(ServerMode), ret) = stringToEnum(ServerMode, strip(ret, '\"'))
 
 """
     serverMode!(rp::RedPitaya, mode::ServerMode)
@@ -217,8 +225,10 @@ MEASUREMENT
 ```
 """
 function serverMode!(rp::RedPitaya, mode::ServerMode)
-  return query(rp, string("RP:MODe ", string(mode)), Bool)
+  return query(rp, scpiCommand(serverMode!, mode), scpiReturn(serverMode!))
 end
+scpiCommand(::typeof(serverMode!), mode) = string("RP:MODe ", string(mode))
+scpiReturn(::typeof(serverMode!)) = Bool
 
 include("DAC.jl")
 include("ADC.jl")
@@ -260,5 +270,23 @@ function RedPitaya(host::String, port::Int64=5025, dataPort::Int64=5026, isMaste
   finalizer(d -> destroy(d), rp)
   return rp
 end
+
+scpiCommand(f::Function, args...) = error("Function $(string(f)) does not support scpiCommand")
+scpiReturn(f::Function) = typeof(nothing)
+
+#=function batch(rp::RedPitaya, cmds::Vector{(Function, Tuple)})
+  for (f, args) in cmds
+    send(rp, scpiCommand(f, args...))
+  end
+  result = []
+  for (f, _) in cmds
+    T = scpiReturn(f) 
+    if T != Nothing
+      push!(result, parse(T, receive(rp, _timeout)))
+    end
+  end
+  return result
+end=#
+
 
 end # module
