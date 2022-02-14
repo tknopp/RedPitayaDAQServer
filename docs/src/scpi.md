@@ -1,6 +1,11 @@
 # SCPI Interface
 
-For communication betten the server and the client an [SCPI](https://en.wikipedia.org/wiki/Standard_Commands_for_Programmable_Instruments) with custom commands is used. The following table gives an overview of availalbe commands:
+For communication betten the server and the client an [SCPI](https://en.wikipedia.org/wiki/Standard_Commands_for_Programmable_Instruments) with custom commands is used. In the following tables an overview of the available commands and their behaviour is given. The Julia [Client](client.md) library encapsulates these commands into function calls, abstracting their communication details and also combining commands to manage a cluster of RedPitayas at the same time.
+
+As a safe guard the server has different modes and certain commands are only available in certain modes. As an example, during an acquisition changing the sampling rate would result in unclear behaviour. To stop such a scenario the decimation can only be set in the `CONFIGURATION` mode and an acquisition can only be triggered in the `ACQUISITION` mode. The available modes are `CONFIGURATION`, `ACQUISITION` and `TRANSMISSION`. The former two are set by the client and the latter is set by the server during sample transmission.
+
+After each SCPI command the server replies with `true` or `false` on the command socket depending on whether the given command was successfully excecuted. The exception to this rule are the commands which themselves just query singular values from the server which are then the only reply.
+
 ## ADC Configuration
 
 | Command | Arguments | Description | Mode | Example |

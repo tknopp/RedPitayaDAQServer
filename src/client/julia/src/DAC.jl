@@ -61,9 +61,12 @@ julia> amplitudeDAC(rp, 1, 1)
 ```
 """
 function amplitudeDAC(rp::RedPitaya, channel, component)
-  command = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":AMP?")
+  command = scpiCommand(amplitudeDAC, channel, component)
   return query(rp, command, Float64)
 end
+scpiCommand(::typeof(amplitudeDAC), channel, component) = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":AMP?")
+scpiReturn(::typeof(amplitudeDAC)) = Float64
+
 """
     amplitudeDAC!(rp::RedPitaya, channel, component, value)
 
@@ -84,19 +87,20 @@ function amplitudeDAC!(rp::RedPitaya, channel, component, value)
   if value > 1.0
     error("$value is larger than 1.0 V!")
   end
-  command = string("RP:DAC:CH", Int(channel)-1, ":COMP",
-                   Int(component)-1, ":AMP ", Float64(value))
+  command = scpiCommand(amplitudeDAC!, channel, component, value)
   return query(rp, command, Bool)
 end
-
+scpiCommand(::typeof(amplitudeDAC!), channel, component, value) = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":AMP ", Float64(value))
+scpiReturn(::typeof(amplitudeDAC!)) = Bool
 function amplitudeDACSeq!(rp::RedPitaya, channel, component, value)
   if value > 1.0
     error("$value is larger than 1.0 V!")
   end
-  command = string("RP:DAC:SEQ:CH", Int(channel)-1, ":COMP",
-                   Int(component)-1, ":AMP ", Float64(value))
+  command = scpiCommand(amplitudeDACSeq!, channel, component, value)
   return query(rp, command, Bool)
 end
+scpiCommand(::typeof(amplitudeDACSeq!), channel, component, value) = string("RP:DAC:SEQ:CH", Int(channel)-1, ":COMP", Int(component)-1, ":AMP ", Float64(value))
+scpiReturn(::typeof(amplitudeDACSeq!)) = Bool
 function amplitudeDACSeq!(config::DACConfig, channel, component, value)
   if value > 1.0
     error("$value is larger than 1.0 V!")
@@ -121,9 +125,11 @@ julia> offsetDAC(rp, 1)
 ```
 """
 function offsetDAC(rp::RedPitaya, channel)
-  command = string("RP:DAC:CH", Int(channel)-1, ":OFF?")
+  command = scpiCommand(offsetDAC, channel)
   return query(rp, command, Float64)
 end
+scpiCommand(::typeof(offsetDAC), channel) = string("RP:DAC:CH", Int(channel)-1, ":OFF?")
+scpiReturn(::typeof(offsetDAC)) = Float64
 """
     offsetDAC!(rp::RedPitaya, channel, value)
 
@@ -144,17 +150,20 @@ function offsetDAC!(rp::RedPitaya, channel, value)
   if value > 1.0
     error("$value is larger than 1.0 V!")
   end
-  command = string("RP:DAC:CH", Int(channel)-1, ":OFF ", Float64(value))
+  command = scpiCommand(offsetDAC!, channel, value)
   return query(rp, command, Bool)
 end
-
+scpiCommand(::typeof(offsetDAC!), channel, value) = string("RP:DAC:CH", Int(channel)-1, ":OFF ", Float64(value))
+scpiReturn(::typeof(offsetDAC!)) = Bool
 function offsetDACSeq!(rp::RedPitaya, channel, value)
   if value > 1.0
     error("$value is larger than 1.0 V!")
   end
-  command = string("RP:DAC:SEQ:CH", Int(channel)-1, ":OFF ", Float64(value))
+  command = scpiCommand(offsetDACSeq!, channel, value)
   return query(rp, command, Bool)
 end
+scpiCommand(::typeof(offsetDACSeq!), channel, value) = string("RP:DAC:SEQ:CH", Int(channel)-1, ":OFF ", Float64(value))
+scpiReturn(::typeof(offsetDACSeq!)) = Bool
 function offsetDACSeq!(config::DACConfig, channel, value)
   if value > 1.0
     error("$value is larger than 1.0 V!")
@@ -179,9 +188,11 @@ julia> frequencyDAC(rp, 1, 1)
 ```
 """
 function frequencyDAC(rp::RedPitaya, channel, component)
-  command = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":FREQ?")
+  command = scpiCommand(frequencyDAC, channel, component)
   return query(rp, command, Float64)
 end
+scpiCommand(::typeof(frequencyDAC), channel, component) = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":FREQ?")
+scpiReturn(::typeof(frequencyDAC)) = Float64
 """
     frequencyDAC!(rp::RedPitaya, channel, component, value)
 
@@ -199,16 +210,18 @@ julia> frequencyDAC(rp, 1, 1)
 ```
 """
 function frequencyDAC!(rp::RedPitaya, channel, component, value)
-  command = string("RP:DAC:CH", Int(channel)-1, ":COMP",
-                   Int(component)-1, ":FREQ ", Float64(value))
+  command = scpiCommand(frequencyDAC!, channel, component, value)
   return query(rp, command, Bool)
 end
+scpiCommand(::typeof(frequencyDAC!), channel, component, value) = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":FREQ ", Float64(value))
+scpiReturn(::typeof(frequencyDAC!)) = Bool
 
 function frequencyDACSeq!(rp::RedPitaya, channel, component, value)
-  command = string("RP:DAC:SEQ:CH", Int(channel)-1, ":COMP",
-                   Int(component)-1, ":FREQ ", Float64(value))
+  command = scpiCommand(frequencyDACSeq!, channel, component, value)
   return query(rp, command, Bool)
 end
+scpiCommand(::typeof(frequencyDACSeq!), channel, component, value) = string("RP:DAC:SEQ:CH", Int(channel)-1, ":COMP", Int(component)-1, ":FREQ ", Float64(value))
+scpiReturn(::typeof(frequencyDACSeq!)) = Bool
 function frequencyDACSeq!(config::DACConfig, channel, component, value)
   config.frequencies[channel, component] = value
 end
@@ -230,9 +243,11 @@ julia> phaseDAC(rp, 1, 0.0)
 ```
 """
 function phaseDAC(rp::RedPitaya, channel, component)
-  command = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":PHA?")
-  return query(rp, command, Float64)
+  command = scpiCommand(phaseDAC, channel, component)
+  return query(rp, command, scpiReturn(phaseDAC))
 end
+scpiCommand(::typeof(phaseDAC), channel, component) = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":PHA?")
+scpiReturn(::typeof(phaseDAC)) = Float64
 """
     phaseDAC!(rp::RedPitaya, channel, component, value)
 
@@ -250,16 +265,18 @@ julia> phaseDAC(rp, 1, 0.0)
 ```
 """
 function phaseDAC!(rp::RedPitaya, channel, component, value)
-  command = string("RP:DAC:CH", Int(channel)-1, ":COMP",
-                   Int(component)-1, ":PHA ", Float64(value))
+  command = scpiCommand(phaseDAC!, channel, component, value)
   return query(rp, command, Bool)
 end
+scpiCommand(::typeof(phaseDAC!), channel, component, value) = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":PHA ", Float64(value))
+scpiReturn(::typeof(phaseDAC!)) = Bool 
 
 function phaseDACSeq!(rp::RedPitaya, channel, component, value)
-  command = string("RP:DAC:SEQ:CH", Int(channel)-1, ":COMP",
-                   Int(component)-1, ":PHA ", Float64(value))
+  command = scpiCommand(phaseDACSeq!, channel, component, value)
   return query(rp, command, Bool)
 end
+scpiCommand(::typeof(phaseDACSeq!), channel, component, value) = string("RP:DAC:SEQ:CH", Int(channel)-1, ":COMP", Int(component)-1, ":PHA ", Float64(value))
+scpiReturn(::typeof(phaseDACSeq!)) = Bool
 function phaseDACSeq!(config::DACConfig, channel, component, value)
   config.phases[channel, component] = value
 end
@@ -281,9 +298,10 @@ julia> jumpSharpnessDAC(rp, 1)
 ```
 """
 function jumpSharpnessDAC(rp::RedPitaya, channel)
-  command = string("RP:DAC:CH", Int(channel)-1, ":JUMPsharpness?")
-  return query(rp, command, Float64)
+  return query(rp, scpiCommand(jumpSharpnessDAC, channel), scpiReturn(jumpSharpnessDAC))
 end
+scpiCommand(::typeof(jumpSharpnessDAC), channel) = string("RP:DAC:CH", Int(channel)-1, ":JUMPsharpness?")
+scpiReturn(::typeof(jumpSharpnessDAC)) = Float64
 """
     jumpSharpnessDAC!(rp::RedPitaya, channel, value)
 
@@ -301,14 +319,16 @@ julia> jumpSharpnessDAC(rp, 1)
 ```
 """
 function jumpSharpnessDAC!(rp::RedPitaya, channel, value)
-  command = string("RP:DAC:CH", Int(channel)-1, ":JUMPsharpness ", Float64(value))
-  return query(rp, command, Bool)
+  return query(rp, scpiCommand(jumpSharpnessDAC!, channel, value), scpiReturn(jumpSharpnessDAC!))
 end
+scpiCommand(::typeof(jumpSharpnessDAC!), channel, value) = string("RP:DAC:CH", Int(channel)-1, ":JUMPsharpness ", Float64(value))
+scpiReturn(::typeof(jumpSharpnessDAC!)) = Bool
 
 function jumpSharpnessDACSeq!(rp::RedPitaya, channel, value)
-  command = string("RP:DAC:SEQ:CH", Int(channel)-1, ":JUMPsharpness ", Float64(value))
-  return query(rp, command, Bool)
+  return query(rp, scpiCommand(jumpSharpnessDACSeq!, channel, value), scpiReturn(jumpSharpnessDACSeq!))
 end
+scpiCommand(::typeof(jumpSharpnessDACSeq!), channel, value) = string("RP:DAC:SEQ:CH", Int(channel)-1, ":JUMPsharpness ", Float64(value))
+scpiReturn(::typeof(jumpSharpnessDACSeq!)) = Float64
 function jumpSharpnessDACSeq!(config::DACConfig, channel, value)
   config.jumpSharpness[channel] = value
 end
@@ -330,9 +350,12 @@ SINE
 ```
 """
 function signalTypeDAC(rp::RedPitaya, channel)
-  command = string("RP:DAC:CH", Int(channel)-1, ":SIGnaltype?")
+  command = scpiCommand(signalTypeDAC, channel)
   return stringToEnum(SignalType, strip(query(rp, command), '\"'))
 end
+scpiCommand(::typeof(signalTypeDAC), channel) = string("RP:DAC:CH", Int(channel)-1, ":SIGnaltype?")
+scpiReturn(::typeof(signalTypeDAC)) = SignalType
+parseReturn(::typeof(signalTypeDAC), ret) = stringToEnum(SignalType, strip(ret, '\"'))
 
 
 function signalTypeDAC!(rp::RedPitaya, channel, sigType::String)
@@ -355,17 +378,19 @@ SINE
 ```
 """
 function signalTypeDAC!(rp::RedPitaya, channel, sigType::SignalType)
-  command = string("RP:DAC:CH", Int(channel)-1, ":SIGnaltype ", string(sigType))
-  return query(rp, command, Bool)
+  return query(rp, scpiCommand(signalTypeDAC!, channel, sigType), scpiResult(signalTypeDAC!))
 end
+scpiCommand(::typeof(signalTypeDAC!), channel, sigType) = string("RP:DAC:CH", Int(channel)-1, ":SIGnaltype ", string(sigType))
+scpiReturn(::typeof(signalTypeDAC!)) = Bool
 
 function signalTypeDACSeq!(rp::RedPitaya, channel, sigType::String)
   return signalTypeDACSeq!(rp, channel, stringToEnum(SignalType, sigType))
 end
 function signalTypeDACSeq!(rp::RedPitaya, channel, sigType::SignalType)
-  command = string("RP:DAC:SEQ:CH", Int(channel)-1, ":SIGnaltype ", string(sigType))
-  return query(rp, command, Bool)
+  return query(rp, scpiCommand(signalTypeDACSeq!, channel, sigType), scpiResult(signalTypeDACSeq!))
 end
+scpiCommand(::typeof(signalTypeDACSeq!), channel, sigType) = string("RP:DAC:SEQ:CH", Int(channel)-1, ":SIGnaltype ", string(sigType))
+scpiReturn(::typeof(signalTypeDACSeq!)) = Bool
 function signalTypeDACSeq!(config::DACConfig, channel, sigType::String)
   config.signalTypes[channel] = sigType
 end
@@ -400,7 +425,9 @@ end
 
 Return the number of sequence channel.
 """
-numSeqChan(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:CHan?", Int64)
+numSeqChan(rp::RedPitaya) = query(rp, scpiCommand(numSeqChan), scpiReturn(numSeqChan))
+scpiCommand(::typeof(numSeqChan)) = "RP:DAC:SEQ:CHan?"
+scpiReturn(::typeof(numSeqChan)) = Int64
 """
     numSeqChan(rp::RedPitaya, value)
 
@@ -410,8 +437,10 @@ function numSeqChan!(rp::RedPitaya, value)
   if value <= 0 || value > 4
     error("Num sequence channels needs to be between 1 and 4!")
   end
-  return query(rp, string("RP:DAC:SEQ:CHan ", Int64(value)), Bool)
+  return query(rp, scpiCommand(numSeqChan!, value), scpiReturn(numSeqChan!))
 end
+scpiCommand(::typeof(numSeqChan!), value) = string("RP:DAC:SEQ:CHan ", Int64(value))
+scpiReturn(::typeof(numSeqChan!)) =  Bool
 
 function setValueLUT!(rp::RedPitaya, lut::Array, type::String="ARBITRARY")
   send(rp, string("RP:DAC:SEQ:LUT:", type))
@@ -443,30 +472,37 @@ end
 
 Return the number of samples per sequence step.
 """
-samplesPerStep(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:SAMP?", Int64)
+samplesPerStep(rp::RedPitaya) = query(rp, scpiCommand(samplesPerStep), scpiReturn(samplesPerStep))
+scpiCommand(::typeof(samplesPerStep)) = "RP:DAC:SEQ:SAMP?"
+scpiReturn(::typeof(samplesPerStep)) = Int64 
 """
     samplesPerStep!(rp::RedPitaya, value::Integer)
 
 Set the number of samples per sequence step. Return `true` if the command was successful.
 """
 function samplesPerStep!(rp::RedPitaya, value::Integer)
-  return query(rp, string("RP:DAC:SEQ:SAMP ", value), Bool)
+  return query(rp, scpiCommand(samplesPerStep!, value), scpiReturn(samplesPerStep!))
 end
-
+scpiCommand(::typeof(samplesPerStep!), value) = string("RP:DAC:SEQ:SAMP ", value)
+scpiReturn(::typeof(samplesPerStep!)) = Bool
 """
     stepsPerRepetition(rp::RedPitaya)
 
 Return the number of steps per sequence repetitions.
 """
-stepsPerRepetition(rp::RedPitaya) = query(rp,"RP:DAC:SEQ:STEPs:REPetition?", Int64)
+stepsPerRepetition(rp::RedPitaya) = query(rp, scpiCommand(stepsPerRepetition), scpiReturn(stepsPerRepetition))
+scpiCommand(::typeof(stepsPerRepetition)) = "RP:DAC:SEQ:STEPs:REPetition?"
+scpiReturn(::typeof(stepsPerRepetition)) = Int64
 """
     stepsPerRepetition!(rp::RedPitaya)
 
 Set the number of steps per sequence repetitions. Return `true` if the command was successful.
 """
 function stepsPerRepetition!(rp::RedPitaya, value)
-  return query(rp, string("RP:DAC:SEQ:STEPs:REPetition ", value), Bool)
+  return query(rp, scpiCommand(stepsPerRepetition!, value), scpiReturn(stepsPerRepetition!))
 end
+scpiCommand(::typeof(stepsPerRepetition!)) = string("RP:DAC:SEQ:STEPs:REPetition ", value)
+scpiReturn(::typeof(stepsPerRepetition!)) = Bool
 
 function prepareSteps!(rp::RedPitaya, samplesPerStep, stepsPerSequence, numOfChan)
   numSlowDACChan!(rp, numOfChan)

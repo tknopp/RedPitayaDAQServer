@@ -71,7 +71,9 @@ julia> decimation(rp)
 8
 ```
 """
-decimation(rp::RedPitaya) = query(rp,"RP:ADC:DECimation?", Int64)
+decimation(rp::RedPitaya) = query(rp, scpiCommand(decimation), scpiReturn(decimation))
+scpiCommand(::typeof(decimation)) = "RP:ADC:DECimation?"
+scpiReturn(::typeof(decimation)) = Int64
 """
     decimation!(rp::RedPitaya, dec)
 
@@ -88,9 +90,10 @@ julia> decimation(rp)
 """
 function decimation!(rp::RedPitaya, dec)
   rp.decimation = Int64(dec)
-  return query(rp, string("RP:ADC:DECimation ", rp.decimation), Bool)
+  return query(rp, scpiCommand(decimation!, rp.decimation), scpiReturn(decimation!))
 end
-
+scpiCommand(::typeof(decimation!), dec) = string("RP:ADC:DECimation ", dec)
+scpiReturn(::typeof(decimation!)) = Bool
 """
     numChan(rp::RedPitaya)
 
@@ -199,7 +202,9 @@ end
 
 Return the current writepointer of the RedPitaya.
 """
-currentWP(rp::RedPitaya) = query(rp,"RP:ADC:WP?", Int64)
+currentWP(rp::RedPitaya) = query(rp, scpiCommand(currentWP), scpiReturn(currentWP))
+scpiCommand(::typeof(currentWP)) = "RP:ADC:WP?"
+scpiReturn(::typeof(currentWP)) = Int64
 bufferSize(rp::RedPitaya) = query(rp,"RP:ADC:BUFFER:SIZE?", Int64)
 
 """
@@ -216,10 +221,12 @@ julia>masterTrigger(rp)
 true
 ```
 """
-function masterTrigger!(rp::RedPitaya, val::Bool)
-  valStr = val ? "ON" : "OFF"
-  return query(rp, string("RP:TRIGger ", valStr), Bool)
+function masterTrigger!(rp::RedPitaya, val)
+  return query(rp, scpiCommand(masterTrigger!, val), scpiReturn(masterTrigger!))
 end
+scpiCommand(::typeof(masterTrigger!), val::Bool) = scpiCommand(masterTrigger!, val ? "ON" : "OFF")
+scpiCommand(::typeof(masterTrigger!), valStr) = string("RP:TRIGger ", valStr)
+scpiReturn(::typeof(masterTrigger!)) = Bool
 """
     masterTrigger(rp::RedPitaya)
 
@@ -232,7 +239,10 @@ julia>masterTrigger(rp)
 true
 ```
 """
-masterTrigger(rp::RedPitaya) = occursin("ON", query(rp,"RP:TRIGger?"))
+masterTrigger(rp::RedPitaya) = occursin("ON", query(rp, scpiCommand(masterTrigger)))
+scpiCommand(::typeof(masterTrigger)) = "RP:TRIGger?"
+scpiReturn(::typeof(masterTrigger)) = String
+parseReturn(::typeof(masterTrigger), ret) = occursin("ON", ret)
 
 """
     keepAliveReset!(rp::RedPitaya, val::Bool)
@@ -240,15 +250,20 @@ masterTrigger(rp::RedPitaya) = occursin("ON", query(rp,"RP:TRIGger?"))
 Set the keepAliveReset to `val`.
 """
 function keepAliveReset!(rp::RedPitaya, val::Bool)
-  valStr = val ? "ON" : "OFF"
-  return query(rp, string("RP:TRIGger:ALiVe ", valStr), Bool)
+  return query(rp, scpiCommand(keepAliveReset!, val), scpiReturn(keepAliveReset!))
 end
+scpiCommand(::typeof(keepAliveReset!), val::Bool) = scpiCommand(keepAliveReset!, val ? "ON" : "OFF")
+scpiCommand(::typeof(keepAliveReset!)) = string("RP:TRIGger:ALiVe ", valStr)
+scpiReturn(::typeof(keepAliveReset!)) = Bool
 """
     keepAliveReset(rp::RedPitaya)
 
 Determine whether the keepAliveReset is set.
 """
-keepAliveReset(rp::RedPitaya) = occursin("ON", query(rp,"RP:TRIGger:ALiVe?"))
+keepAliveReset(rp::RedPitaya) = occursin("ON", query(rp, scpiCommand(keepAliveReset)))
+scpiCommand(::typeof(keepAliveReset)) = "RP:TRIGger?"
+scpiReturn(::typeof(keepAliveReset)) = String
+parseReturn(::typeof(keepAliveReset), ret) = occursin("ON", ret)
 
 
 # "INTERNAL" or "EXTERNAL"
@@ -266,15 +281,24 @@ end
 Set the trigger mode of the RedPitaya. Return `true` if the command was successful.
 """
 function triggerMode!(rp::RedPitaya, mode::TriggerMode)
-  return query(rp, string("RP:TRIGger:MODe ", string(mode)), Bool)
+  return query(rp, scpiCommand(triggerMode!, mode), scpiReturn(triggerMode!))
 end
+scpiCommand(::typeof(triggerMode!), mode) = string("RP:TRIGger:MODe ", string(mode))
+scpiReturn(::typeof(triggerMode!)) = Bool
 
 function triggerMode(rp::RedPitaya)
   return stringToEnum(TriggerMode, strip(query(rp, "RP:TRIGger:MODe?"), '\"'))
 end
+scpiCommand(::typeof(triggerMode)) = "RP:TRIGger:MODe?"
+scpiReturn(::typeof(triggerMode)) = TriggerMode
+parseReturn(::typeof(triggerMode), ret) = stringToEnum(TriggerMode, strip(ret, '\"'))
 
 overwritten(rp::RedPitaya) = query(rp, "RP:STATus:OVERwritten?", Bool)
+#scpiCommand(::typeof()) = 
+#scpiReturn(::typeof()) = 
 corrupted(rp::RedPitaya) = query(rp, "RP:STATus:CORRupted?", Bool)
+#scpiCommand(::typeof()) = 
+#scpiReturn(::typeof()) = 
 
 function serverStatus(rp::RedPitaya) 
   send(rp, "RP:STATus?")
