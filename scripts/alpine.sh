@@ -148,6 +148,7 @@ rc-update add hostapd wifi
 sed -i 's/^SAVE_ON_STOP=.*/SAVE_ON_STOP="no"/;s/^IPFORWARD=.*/IPFORWARD="yes"/' etc/conf.d/iptables
 
 sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' etc/ssh/sshd_config
+chmod 400 /etc/ssh/*
 
 echo root:$passwd | chpasswd
 
