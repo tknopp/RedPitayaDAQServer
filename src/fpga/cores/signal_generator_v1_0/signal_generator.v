@@ -27,12 +27,12 @@ module signal_generator #
 
     reg [3:0] signal_type;
     
-    reg [AXIS_TDATA_WIDTH-1:0] dac_out;
-    reg [AXIS_TDATA_WIDTH-1:0] dac_out_temp_0;
-	reg [AXIS_TDATA_WIDTH-1:0] dac_out_temp_1;
-	reg [AXIS_TDATA_WIDTH-1:0] dac_out_temp_2;
-	reg [AXIS_TDATA_WIDTH-1:0] dac_out_temp_3;
-	reg [AXIS_TDATA_WIDTH-1:0] dac_out_temp_4;
+    reg signed [AXIS_TDATA_WIDTH-1:0] dac_out;
+    reg signed [AXIS_TDATA_WIDTH-1:0] dac_out_temp_0;
+	reg signed [AXIS_TDATA_WIDTH-1:0] dac_out_temp_1;
+	reg signed [AXIS_TDATA_WIDTH-1:0] dac_out_temp_2;
+	reg signed [AXIS_TDATA_WIDTH-1:0] dac_out_temp_3;
+	reg signed [AXIS_TDATA_WIDTH-1:0] dac_out_temp_4;
     reg signed [DAC_WIDTH-1:0] phase;
     reg signed [DAC_WIDTH-1:0] phase_delayed;
     reg signed [15:0] A, AIncrement;
@@ -134,29 +134,29 @@ module signal_generator #
 				    endcase
             	end
             	2 : begin // Triangle
-            	    dac_out_temp_0 <= (phase << 2);
-            	    
-            	    if (dac_out_temp_0 < -8192)
-            	    begin
-            	        dac_out <= 8191-dac_out_temp_0;
-            	    end
-            	    else if (dac_out_temp_0 > 8192)
-            	    begin
-            	        dac_out <= dac_out_temp_0-8191;
-            	    end
-		            else 
-                    begin
-                        dac_out <= dac_out_temp_0;
-                    end
+            	    dac_out_temp_0 <= (phase << 1);
+            	
+					if (dac_out_temp_0 <= -8192)
+					begin
+						dac_out <= -dac_out_temp_0-16384;
+					end
+					else if (dac_out_temp_0 >= 8190)
+					begin
+						dac_out <= -dac_out_temp_0+16384;
+					end
+					else
+					begin
+						dac_out <= dac_out_temp_0;
+					end
             	end
             	3 : begin // Sawtooth
             	    dac_out_temp_0 <= phase;
                     dac_out <= dac_out_temp_0;
             	end
-            	4 : begin // Sawtooth (reverse)
+            	/*4 : begin // Sawtooth (reverse)
             	    dac_out_temp_0 <= -phase;
                     dac_out <= dac_out_temp_0;
-            	end
+            	end*/
             endcase
        end
     end

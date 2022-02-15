@@ -16,12 +16,12 @@ module signal_generator #
 
     reg [3:0] signal_type;
     
-    reg [AXIS_TDATA_WIDTH-1:0] dac_out;
-    reg [AXIS_TDATA_WIDTH-1:0] dac_out_temp_0;
-	reg [AXIS_TDATA_WIDTH-1:0] dac_out_temp_1;
-	reg [AXIS_TDATA_WIDTH-1:0] dac_out_temp_2;
-	reg [AXIS_TDATA_WIDTH-1:0] dac_out_temp_3;
-	reg [AXIS_TDATA_WIDTH-1:0] dac_out_temp_4;
+    reg signed [AXIS_TDATA_WIDTH-1:0] dac_out;
+    reg signed [AXIS_TDATA_WIDTH-1:0] dac_out_temp_0;
+	reg signed [AXIS_TDATA_WIDTH-1:0] dac_out_temp_1;
+	reg signed [AXIS_TDATA_WIDTH-1:0] dac_out_temp_2;
+	reg signed [AXIS_TDATA_WIDTH-1:0] dac_out_temp_3;
+	reg signed [AXIS_TDATA_WIDTH-1:0] dac_out_temp_4;
     reg signed [DAC_WIDTH-1:0] phase;
 	reg signed [DAC_WIDTH-1:0] phase_delayed;
     reg signed [15:0] A, AIncrement;
@@ -56,7 +56,7 @@ module signal_generator #
 			phase_delayed <= -8191;
             A <= 80;
             AIncrement <= 100; // 2*8191 / (2*A);
-			signal_type <= 1;
+			signal_type <= 2;
 			lastTrapezoidCond <= 4'b0000;
 			justChangedCond <= 0;
         end
@@ -162,21 +162,21 @@ module signal_generator #
 			end
             else if (signal_type == 2) // Triangle
             begin
-                if (phase <= -4095 )
-                begin
-                    dac_out_temp_0 <= -2*(phase+8191);
-                end
-                else if (phase >= 4095)
-                begin
-                    dac_out_temp_0 <= 2*(8191-phase);
+                dac_out_temp_0 <= (phase << 1);
+            	
+				if (dac_out_temp_0 <= -8192)
+				begin
+					dac_out <= -dac_out_temp_0-16384;
 				end
-			else 
-                begin
-                    dac_out_temp_0 <= 2*phase;
-                end
-                
-                dac_out <= dac_out_temp_0;
-	    end
+				else if (dac_out_temp_0 >= 8190)
+				begin
+					dac_out <= -dac_out_temp_0+16384;
+				end
+				else
+				begin
+					dac_out <= dac_out_temp_0;
+				end
+			end
             if (signal_type == 3) // Sawtooth
             begin
                 dac_out_temp_0 <= phase;
