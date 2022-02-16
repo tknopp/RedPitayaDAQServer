@@ -5,44 +5,55 @@ using PyPlot
 # obtain the URL of the RedPitaya
 include(&quot;config.jl&quot;)
 
-rp = RedPitayaCluster([URLs[1]])
+# Establish connection to the RedPitaya
+rp = RedPitaya(URLs[1])
+
+# Set server in CONFIGURATION mode, s.t. we can prepare our signal generation + acquisition
+serverMode!(rp, CONFIGURATION) # or serverMode!(rp, &quot;CONFIGURATION&quot;)
 
 dec = 32
 modulus = 4800
 base_frequency = 125000000
 samples_per_period = div(modulus, dec)
-periods_per_frame = 10
+periods_per_frame = 2
 
-decimation(rp, dec)
-samplesPerPeriod(rp, samples_per_period)
-periodsPerFrame(rp, periods_per_frame)
+# ADC Configuration
+# These commands are only allowed in CONFIGURATION mode
+decimation!(rp, dec)
+samplesPerPeriod!(rp, samples_per_period)
+periodsPerFrame!(rp, periods_per_frame)
+triggerMode!(rp, INTERNAL) # or triggerMode!(rp, &quot;INTERNAL&quot;)
 
-modeDAC(rp, &quot;STANDARD&quot;)
+# DAC Configuration
+# These commands are allowed during an acquisition
+frequencyDAC!(rp, 1, 1, base_frequency / modulus)
+signalTypeDAC!(rp, 1 , SINE) # or signalTypeDAC!(rp, 1, &quot;SINE&quot;)
+amplitudeDAC!(rp, 1, 1, 0.5)
+offsetDAC!(rp, 1, 0)
+phaseDAC!(rp, 1, 1, 0.0 )
 
-frequencyDAC(rp, 1, 1, base_frequency / modulus)
-println(&quot; frequency = $(frequencyDAC(rp,1,1))&quot;)
+# Start signal generation + acquisition
+# The trigger can only be set in ACQUISITION mode
+serverMode!(rp, MEASUREMENT)
+masterTrigger!(rp, true)
 
-signalTypeDAC(rp, 1 , &quot;SINE&quot;)
-amplitudeDAC(rp, 1, 1, 0.5)
-offsetDAC(master(rp), 1, 0)
-phaseDAC(rp, 1, 1, 0.0 )
-
-ramWriterMode(rp, &quot;TRIGGERED&quot;)
-triggerMode(rp, &quot;INTERNAL&quot;)
-masterTrigger(rp, false)
-startADC(rp)
-masterTrigger(rp, true)
+# Transmit the first frame
 uFirstPeriod = readFrames(rp, 0, 1)
-sleep(0.1)
-fr = currentFrame(rp)
-@show fr
 
+sleep(0.1)
+
+# Transmit the current frame
+fr = currentFrame(rp)
 uCurrentPeriod = readFrames(rp, fr, 1)
+
+# Stop signal generation + acquisition
+masterTrigger!(rp, false)
+serverMode!(rp, CONFIGURATION)
 
 figure(1)
 clf()
+# Frame dimensions are [samples, chan, periods, frames]
 plot(vec(uFirstPeriod[:,1,:,:]))
 plot(vec(uCurrentPeriod[:,1,:,:]))
 legend((&quot;first period&quot;, &quot;current period&quot;))
-savefig(&quot;images/simple.png&quot;)
-</code></pre><p><img src="../assets/simple.png" alt="Simple Example Results"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../client.html">« Client Library</a><a class="docs-footer-nextpage" href="waveforms.html">Waveforms »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.12 on <span class="colophon-date" title="Thursday 10 February 2022 17:03">Thursday 10 February 2022</span>. Using Julia version 1.5.4.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+savefig(&quot;images/simple.png&quot;)</code></pre><p><img src="../assets/simple.png" alt="Simple Example Results"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../client.html">« Client Library</a><a class="docs-footer-nextpage" href="waveforms.html">Waveforms »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.12 on <span class="colophon-date" title="Wednesday 16 February 2022 16:08">Wednesday 16 February 2022</span>. Using Julia version 1.7.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
