@@ -5,7 +5,6 @@ using PyPlot
 include("config.jl")
 
 rp = RedPitaya(URLs[1])
-
 serverMode!(rp, CONFIGURATION)
 
 dec = 32
@@ -18,25 +17,24 @@ N = samples_per_period * periods_per_frame
 decimation!(rp, dec)
 samplesPerPeriod!(rp, samples_per_period)
 periodsPerFrame!(rp, periods_per_frame)
+triggerMode!(rp, INTERNAL)
 
 frequencyDAC!(rp,1,1, base_frequency / modulus)
-
 amplitudeDAC!(rp, 1, 1, 0.5)
 offsetDAC!(rp, 1, 0.1)
-
 phaseDAC!(rp, 1, 1, 0.0 )
+# Controls the sharpness of the jump for the square
+jumpSharpnessDAC!(rp, 1, 0.01)
 
-triggerMode!(rp, "INTERNAL")
 
 signals = zeros(4*N)
-
-jumpSharpnessDAC!(rp, 1, 0.01) # controls the sharpness of the jump for the square
 
 figure(1)
 clf()
 
 color = ["g", "b", "orange", "k"]
 for (i,name) in enumerate(["SINE", "SQUARE", "TRIANGLE", "SAWTOOTH"])
+  # Set different waveforms
   signalTypeDAC!(rp, 1 , name)
   serverMode!(rp, MEASUREMENT)
   masterTrigger!(rp, false)

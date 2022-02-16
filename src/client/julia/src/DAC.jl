@@ -6,7 +6,7 @@ configureFastDACSeq!, numSeqChan, numSeqChan!,samplesPerStep, samplesPerStep!,
 stepsPerRepetition, stepsPerRepetition!, prepareSteps!, stepsPerFrame!, 
 ramping!, rampUp!, rampDown!, rampingSteps, rampingSteps!, rampingTotalSteps, rampingTotalSteps!,
 rampUpSteps, rampUpSteps!, rampUpTotalSteps, rampUpTotalSteps!, rampDownSteps, rampDownSteps!, rampDownTotalSteps, rampDownTotalSteps!, 
-popSequence!, clearSequences!, prepareSequence!, AbstractSequence, ArbitrarySequence, enableLUT,
+popSequence!, clearSequences!, appendSequence!, prepareSequences!, AbstractSequence, ArbitrarySequence, enableLUT,
 fastDACConfig, resetAfterSequence!
 
 """
@@ -378,7 +378,7 @@ SINE
 ```
 """
 function signalTypeDAC!(rp::RedPitaya, channel, sigType::SignalType)
-  return query(rp, scpiCommand(signalTypeDAC!, channel, sigType), scpiResult(signalTypeDAC!))
+  return query(rp, scpiCommand(signalTypeDAC!, channel, sigType), scpiReturn(signalTypeDAC!))
 end
 scpiCommand(::typeof(signalTypeDAC!), channel, sigType) = string("RP:DAC:CH", Int(channel)-1, ":SIGnaltype ", string(sigType))
 scpiReturn(::typeof(signalTypeDAC!)) = Bool
@@ -387,7 +387,7 @@ function signalTypeDACSeq!(rp::RedPitaya, channel, sigType::String)
   return signalTypeDACSeq!(rp, channel, stringToEnum(SignalType, sigType))
 end
 function signalTypeDACSeq!(rp::RedPitaya, channel, sigType::SignalType)
-  return query(rp, scpiCommand(signalTypeDACSeq!, channel, sigType), scpiResult(signalTypeDACSeq!))
+  return query(rp, scpiCommand(signalTypeDACSeq!, channel, sigType), scpiReturn(signalTypeDACSeq!))
 end
 scpiCommand(::typeof(signalTypeDACSeq!), channel, sigType) = string("RP:DAC:SEQ:CH", Int(channel)-1, ":SIGnaltype ", string(sigType))
 scpiReturn(::typeof(signalTypeDACSeq!)) = Bool
@@ -396,23 +396,34 @@ function signalTypeDACSeq!(config::DACConfig, channel, sigType::String)
 end
 
 function configureFastDACSeq!(rp::RedPitaya, config::DACConfig)
+  result = true
   for ch = 1:2
     
     for cmp = 1:4
       amplitude = config.amplitudes[ch, cmp]
-      isnothing(amplitude) || amplitudeDACSeq!(rp, ch, cmp, amplitude)
+      if !isnothing(amplitude) 
+       result &= amplitudeDACSeq!(rp, ch, cmp, amplitude)
+      end
       frequency = config.frequencies[ch, cmp]
-      isnothing(frequency) || frequencyDACSeq!(rp, ch, cmp, frequency)
+      if !isnothing(frequency)
+        result &= frequencyDACSeq!(rp, ch, cmp, frequency)
+      end
       phase = config.phases[ch, cmp]
-      isnothing(phase) || phaseDACSeq!(rp, ch, cmp, phase)
+      if !isnothing(phase)
+        result &= phaseDACSeq!(rp, ch, cmp, phase)
+      end
     end
 
     offset = config.offsets[ch]
-    isnothing(offset) || offsetDACSeq!(rp, ch, offset)
+    if !isnothing(offset)
+      result &= offsetDACSeq!(rp, ch, offset)
+    end
     signalType = config.signalTypes[ch]
-    isnothing(signalType) || signalTypeDACSeq!(rp, ch, signalType)
-
+    if !isnothing(signalType)
+      result &= signalTypeDACSeq!(rp, ch, signalType)
+    end
   end
+  return result
 end
 
 function readDACPerformanceData(rp::RedPitaya)
@@ -446,6 +457,7 @@ function setValueLUT!(rp::RedPitaya, lut::Array, type::String="ARBITRARY")
   send(rp, string("RP:DAC:SEQ:LUT:", type))
   @debug "Writing arbitrary LUT"
   lutFloat32 = map(Float32, lut)
+  @show lutFloat32
   write(rp.dataSocket, lutFloat32)
   reply = receive(rp)
   return parse(Bool, reply)
@@ -501,7 +513,7 @@ Set the number of steps per sequence repetitions. Return `true` if the command w
 function stepsPerRepetition!(rp::RedPitaya, value)
   return query(rp, scpiCommand(stepsPerRepetition!, value), scpiReturn(stepsPerRepetition!))
 end
-scpiCommand(::typeof(stepsPerRepetition!)) = string("RP:DAC:SEQ:STEPs:REPetition ", value)
+scpiCommand(::typeof(stepsPerRepetition!), value) = string("RP:DAC:SEQ:STEPs:REPetition ", value)
 scpiReturn(::typeof(stepsPerRepetition!)) = Bool
 
 function prepareSteps!(rp::RedPitaya, samplesPerStep, stepsPerSequence, numOfChan)
@@ -570,7 +582,7 @@ Instruct the server to remove all sequences from its list. Return `true` if the 
 clearSequences!(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:CLEAR", Bool)
 
 """
-    prepareSequence!(rp::RedPitaya)
+    prepareSequences!(rp::RedPitaya)
 
 Instruct the server to prepare the currently added sequences.
 Return `true` if the command was successful.
@@ -618,7 +630,7 @@ Constructor for `ArbitrarySequence`.
 - `downTotalSteps::Int32`: the total number of steps spent in the ramp down phase
 - `reset::Bool`: flag if the phase should be reset after this sequence is done
 """
-ArbitrarySequence(lut, enable, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, reset=false) = ArbitrarySequence(lut, enable, size(lut, 2), repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, DACConfig(), reset)
+ArbitrarySequence(lut, enable, repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, reset=false) = ArbitrarySequence(lut, enable, length(size(lut)) == 1 ? size(lut, 1) : size(lut, 2), repetitions, upSteps, upTotalSteps, downSteps, downTotalSteps, DACConfig(), reset)
 """
     ArbitrarySequence(lut, enable, repetitions, steps, totalSteps, reset=false)
 
