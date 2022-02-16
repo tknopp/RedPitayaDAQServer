@@ -72,7 +72,7 @@ function receive(rp::RedPitaya, timeout::Number,  N=100)
     sleep(timeout / N )
   end
   @async Base.throwto(t, EOFError())
-  error("Receive ran into timeout on RP $(rp.host) on command $(cmd)!")
+  error("Receive ran into timeout on RP $(rp.host)!")
   return t
 end
 
