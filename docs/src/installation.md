@@ -2,7 +2,7 @@
 
 ## Alpine Linux Image
 
-The RedPitayaDAQServer project uses a custom RedPitaya image that was derived from the [red-pitaya-notes](https://github.com/pavel-demin/red-pitaya-notes) project. It consists of an Alpine Linux with some development tools installed. Additionally the image reserves the upper 128 MB of main memory for the FPGA, which is used as a buffer for recording the data from the fast ADCs. The Linux image can be downloaded [here](https://media.tuhh.de/ibi/2020.09RedPitayaDAQServerImage.zip). Just unzip the zip file and copy the content on an empty SD card that is formatted in FAT32. When you insert the SD card into the RedPitaya you should see a blinking LED.
+The RedPitayaDAQServer project uses a custom RedPitaya image that was derived from the [red-pitaya-notes](https://github.com/pavel-demin/red-pitaya-notes) project. It consists of an Alpine Linux with some development tools installed. Additionally the image reserves the upper 128 MB of main memory for the FPGA, which is used as a buffer for recording the data from the fast ADCs. The Linux image can be downloaded [here](https://github.com/tknopp/RedPitayaDAQServer/releases/download/v0.4.2/red-pitaya-alpine-3.14-armv7-20220216.zip). Just unzip the zip file and copy the content on an empty SD card that is formatted in FAT32. When you insert the SD card into the RedPitaya you should see a blinking LED.
 
 If you want to build the Linux image yourself, you can install Xilinx Vivado and Vitis in an Ubuntu environment (bare metal or virtual machine). Then run
 
