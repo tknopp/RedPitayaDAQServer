@@ -47,8 +47,8 @@ static int16_t getCalibDACOffset(int channel) {
 		return 0;
 }
 
-static float getCalibDACScale(int channel) {
-	if (!getPassPDMToFastDAC()) 
+double getCalibDACScale(int channel, bool isPDM) {
+	if (isPDM || channel >= 2) 
 		return 1.0;
 	else  if (channel == 0)
 		return calib.dac_ch1_fs;
@@ -182,8 +182,8 @@ uint16_t getAmplitude(int channel, int component) {
 	return amplitude;
 }
 
-int setAmplitudeVolt(float amplitude, int channel, int component) {
-	uint16_t calibratedAmplitude = amplitude * getCalibDACScale(channel);
+int setAmplitudeVolt(double amplitude, int channel, int component) {
+	uint16_t calibratedAmplitude = (uint16_t)(amplitude * getCalibDACScale(channel, false)*8192.0);
 	return setAmplitude(calibratedAmplitude, channel, component);
 }
 
@@ -215,8 +215,8 @@ int16_t getOffset(int channel) {
 	return offset - getCalibDACOffset(channel);
 }
 
-int setOffsetVolt(float offset, int channel) {
-	int16_t calibratedOffset = offset * getCalibDACScale(channel);
+int setOffsetVolt(double offset, int channel) {
+	int16_t calibratedOffset = (int16_t)(offset * getCalibDACScale(channel, false)*8192.0);
 	return setOffset(calibratedOffset, channel);
 }
 int setOffset(int16_t offset, int channel) {
@@ -582,7 +582,7 @@ int setPDMValueVolt(float voltage, int channel, int index) {
 	} else {
 		if (voltage > 1) voltage = 1;
 		if (voltage < -1) voltage = -1;
-		val = voltage * 8192. * getCalibDACScale(channel);
+		val = voltage * 8192. * getCalibDACScale(channel, false);
 	}
 
 	//printf("set val %04x.\n", val);

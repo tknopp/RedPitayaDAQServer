@@ -55,10 +55,10 @@ extern void loadBitstream();
 
 // fast DAC
 extern uint16_t getAmplitude(int, int);
-extern int setAmplitudeVolt(float, int, int);
+extern int setAmplitudeVolt(double, int, int);
 extern int setAmplitude(uint16_t, int, int);
 extern int16_t getOffset(int);
-extern int setOffsetVolt(float, int);
+extern int setOffsetVolt(double, int);
 extern int setOffset(int16_t, int);
 extern double getFrequency(int, int);
 extern int setFrequency(double, int, int);
@@ -153,7 +153,7 @@ extern int calib_Release();
 
 extern rp_calib_params_t calib_GetParams();
 extern rp_calib_params_t calib_GetDefaultCalib();
-extern float getCalibDACScalle(int channel);
+extern double getCalibDACScale(int channel, bool isPDM);
 extern int calib_WriteParams(rp_calib_params_t calib_params,bool use_factory_zone);
 extern int calib_SetParams(rp_calib_params_t calib_params);
 extern void calib_SetToZero();
