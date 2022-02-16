@@ -1599,10 +1599,6 @@ static scpi_result_t RP_Calib_DAC_GetScale(scpi_t* context) {
 }
 
 static scpi_result_t RP_Calib_DAC_SetScale(scpi_t* context) {
-	if (getServerMode() != CONFIGURATION) {
-		return returnSCPIBool(context, false);
-	}
-
 	int32_t numbers[1];
 	SCPI_CommandNumbers(context, numbers, 1, 1);
 	int channel = numbers[0];
@@ -1618,13 +1614,13 @@ static scpi_result_t RP_Calib_DAC_SetScale(scpi_t* context) {
 		calib_params.dac_ch2_fs = scale;	
 	}
 	else {
- 		return returnSCPIBool(context, false);
+ 		return SCPI_RES_ERR;
 	}
 
 
 	calib_WriteParams(calib_params, false);	
 	calib_Init(); // Reload from cache from EEPROM
-	return returnSCPIBool(context, true);
+	return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_Calib_ADC_GetOffset(scpi_t* context) {

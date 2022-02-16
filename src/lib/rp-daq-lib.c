@@ -222,7 +222,7 @@ int setOffset(int16_t offset, int channel) {
 	int16_t calibOffset = getCalibDACOffset(channel);
 	int16_t calibratedOffset = offset * getCalibDACScale(channel);
 
-	*((int16_t *)(dac_cfg + 66*channel)) = offset + calibOffset;
+	*((int16_t *)(dac_cfg + 66*channel)) = calibratedOffset + calibOffset;
 
 	return 0;
 }
