@@ -62,6 +62,15 @@
 #include "../lib/rp-daq-lib.h"
 #include "../server/daq_server_scpi.h"
 
+static serverMode_t serverMode = CONFIGURATION;
+
+serverMode_t getServerMode() {
+	return serverMode;
+}
+
+void setServerMode(serverMode_t mode) {
+	serverMode = mode;
+}
 
 sequenceState_t seqState;
 sequenceNode_t *head = NULL; 
@@ -72,18 +81,23 @@ double rampUpTime;
 double rampUpFraction;
 double rampDownTime;
 double rampDownFraction;
-int numSamplesPerSlowDACStep = 0; 
+int numSamplesPerStep = 0; 
 int numSlowDACStepsPerSequence = 20;
 int numSlowDACChan = 0;
 int numSlowADCChan = 0;
 int numSlowDACSequencesEnabled = 0;
 int numSlowDACLostSteps = 0;
 
+// Performance data
+struct performance perf;
+uint8_t avgDeltaControl = 0;
+uint8_t avgDeltaSet = 0;
+uint8_t minDeltaControl = 0;
+uint8_t maxDeltaSet = 0;
+
 int64_t channel;
 
 bool initialized = false;
-bool rxEnabled = false;
-bool buffInitialized = false;
 bool controlThreadRunning = false;
 bool commThreadRunning = false;
 
@@ -101,10 +115,6 @@ socklen_t clilen;
 int newdatasockfd;
 struct sockaddr_in newdatasockaddr;
 socklen_t newdatasocklen;
-
-char scpi_input_buffer[SCPI_INPUT_BUFFER_LENGTH];
-scpi_error_t scpi_error_queue_data[SCPI_ERROR_QUEUE_SIZE];
-scpi_t scpi_context;
 
 struct status err;
 
@@ -125,7 +135,7 @@ void getprio( pthread_t id ) {
 }
 
 uint8_t getStatus() {
-	return getErrorStatus() | rxEnabled << 3 | seqState == RUNNING << 4; 
+	return getErrorStatus() | getMasterTrigger()  << 3 | (seqState == RUNNING) << 4; 
 }
 
 uint8_t getErrorStatus() {
@@ -224,9 +234,6 @@ int main(int argc, char** argv) {
 	datasockfd = createServer(5026);
 	newdatasockfd = 0;
 
-	rxEnabled = false;
-	buffInitialized = false;
-
 	// Set priority of this thread
 	struct sched_param p;
 	p.sched_priority = 20;
@@ -284,8 +291,17 @@ int main(int argc, char** argv) {
 				initialized = true;
 			}
 
-			createThreads();
-			printf("Created threads\n");
+			newdatasocklen = sizeof(newdatasockaddr);
+			newdatasockfd = accept(datasockfd, (struct sockaddr *) &newdatasockaddr, &newdatasocklen);
+
+			if (newdatasockfd < 0) {
+				printf("Error accepting data socket: %s\n", strerror(errno));
+				close(clifdTmp);
+			}
+			else {
+				createThreads();
+				printf("Created threads\n");
+			}
 		}
 		
 	}

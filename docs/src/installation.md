@@ -31,26 +31,15 @@ cd /root/apps/RedPitayaDAQServer
 and enter `make`. This will compile the library, the server, and some example applications. After you restart the RedPitaya the DAQ server will automatically run and you can access it via TCP.
 
 
-## Setting Up the Client
-
-Depending on the client library you are using you need to install them differently
-
-### Julia
+## Setting Up the Julia Client Library
 
 For the Julia client library you need to install RedPitayaDAQServer within Julia. To this end
-download Julia 1.5 or later and go into the package manager mode by intering ]. Then there are three
+download Julia 1.5 or later and go into the package manager mode by intering ]. Then there are two
 options to install the client library.
 
  * add RedPitayaDAQServer:src/client/julia
  * dev RedPitayaDAQServer:src/client/julia
 
-The first is installing the currently published version. The second is installing in development mode and put the files to `~/dev/RedPitayaDAQServer/` where you can the also modify the files, which is handy when trying out the examples. Right now we recommend to `dev` the package. You need to `git pull` from `~/dev/RedPitayaDAQServer/` if you want to get updates, i.e. Julia will not update 
-developed packages automatically.
+The first is installing the currently published version. The second is installing in development mode and put the files to `~/dev/RedPitayaDAQServer/` where you can the also modify the files, which is handy when trying out the examples. Right now we recommend to `dev` the package. You need to `git pull` from `~/dev/RedPitayaDAQServer/` if you want to get updates, i.e. Julia will not update developed packages automatically.
 
-### Matlab
-
-TODO
-
-### Python
-
-TODO
+The client library is not an executable data acquisition program, but it can be used to implement one. The library encapsulates the communication with the server and implements various optimizations. As the communication with the server is language agnostic and one could therefore implement their own client in a different language. The Julia reference client library found in `src/client/julia`, the [SCPI commands](scpi.md) and the sections on the signal [acquisition](acqusition.md) and [generation](generation.md) are starting points for such a custom client.

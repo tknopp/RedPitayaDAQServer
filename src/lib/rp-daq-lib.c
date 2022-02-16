@@ -121,7 +121,7 @@ int init() {
 	printf("Decimation = %d \n", getDecimation());
 	setDACMode(DAC_MODE_STANDARD);
 	setWatchdogMode(OFF);
-	setRAMWriterMode(ADC_MODE_CONTINUOUS);
+	setRAMWriterMode(ADC_MODE_TRIGGERED);
 	setMasterTrigger(OFF);
 	setInstantResetMode(OFF);
 	setPassPDMToFastDAC(OFF);
