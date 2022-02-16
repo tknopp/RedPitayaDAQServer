@@ -175,7 +175,9 @@ int setAmplitude(uint16_t amplitude, int channel, int component) {
 		return -4;
 	}
 
-	*((uint16_t *)(dac_cfg + 10 + 14*component + 66*channel)) = amplitude;
+	uint16_t calibratedAmplitude = amplitude * getCalibDACScale(channel);
+
+	*((uint16_t *)(dac_cfg + 10 + 14*component + 66*channel)) = calibratedAmplitude;
 
 	return 0;
 }
@@ -185,6 +187,15 @@ int16_t getCalibDACOffset(int channel) {
 		return (int16_t)(calib.dac_ch1_offs*8192.0);
 	else if (channel == 1)
 		return (int16_t)(calib.dac_ch1_offs*8192.0);
+	else
+		return 0;
+}
+
+float getCalibDACScale(int channel) {
+	if (channel == 0)
+		return calib.dac_ch1_fs;
+	else if (channel == 1)
+		return calib.dac_ch2_fs;
 	else
 		return 0;
 }
@@ -209,6 +220,7 @@ int setOffset(int16_t offset, int channel) {
 	}
 
 	int16_t calibOffset = getCalibDACOffset(channel);
+	int16_t calibratedOffset = offset * getCalibDACScale(channel);
 
 	*((int16_t *)(dac_cfg + 66*channel)) = offset + calibOffset;
 
@@ -563,6 +575,7 @@ int setPDMValueVolt(float voltage, int channel, int index) {
 		if (voltage > 1) voltage = 1;
 		if (voltage < -1) voltage = -1;
 		val = voltage * 8192.;
+		val = val * getCalibDACScale(channel);
 	}
 
 	//printf("set val %04x.\n", val);
@@ -1118,7 +1131,9 @@ int calib_SetParams(rp_calib_params_t calib_params){
 rp_calib_params_t getDefaultCalib(){
     rp_calib_params_t calib;
 		calib.dac_ch1_offs = 0.0;
+		calib.dac_ch1_fs = 1.0;
 		calib.dac_ch2_offs = 0.0;
+		calib.dac_ch2_fs = 1.0;
 		calib.adc_ch1_fs = 1.0;
 		calib.adc_ch1_offs = 0.0;
 		calib.adc_ch2_fs = 1.0;

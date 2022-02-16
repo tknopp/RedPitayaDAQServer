@@ -9,9 +9,35 @@ function calibDACOffset(rp::RedPitaya, channel::Integer, val)
 end
 calibDACOffset(rp::RedPitaya, channel::Integer) = query(rp, string("RP:CALib:DAC:CH", Int(channel) - 1, ":OFF?"), Float64)
 
-function calibADCOffset(rp::RedPitaya, channel::Integer, val)
-  if val > 1.0
-    error("$val is larger than 1.0 V!")
+"""
+    calibDACScale(rp::RedPitaya, channel::Integer)
+
+Store calibration DAC scale `val` for given channel into the RedPitayas EEPROM.
+This value is used by the server to scale the output voltage.
+"""
+function calibDACScale!(rp::RedPitaya, channel::Integer, val)
+  command = string("RP:CALib:DAC:CH", Int(channel) - 1, ":SCA $(Float32(val))")
+  rp.calib[1, channel] = Float32(val)
+  return send(rp, command)
+end
+"""
+    calibDACScale(rp::RedPitaya, channel::Integer)
+
+Retrieve the calibration DAC scale for given channel from the RedPitayas EEPROM.
+"""
+calibDACScale(rp::RedPitaya, channel::Integer) = query(rp, string("RP:CALib:DAC:CH", Int(channel) - 1, ":SCA?"), Float64)
+
+"""
+    calibADCOffset!(rp::RedPitaya, channel::Integer, val)
+
+Store calibration ADC offset `val` for given channel into the RedPitayas EEPROM.
+Absolute value has to be smaller than 1.0 V.
+
+See also [convertSamplesToPeriods](@ref),[convertSamplesToFrames](@ref).
+"""
+function calibADCOffset!(rp::RedPitaya, channel::Integer, val)
+  if abs(val) > 1.0
+    error("Absolute value of $val is larger than 1.0 V!")
   end
   command = string("RP:CALib:ADC:CH", Int(channel) - 1, ":OFF $(Float32(val))")
   rp.calib[2, channel] = Float32(val)
@@ -19,10 +45,13 @@ function calibADCOffset(rp::RedPitaya, channel::Integer, val)
 end
 calibADCOffset(rp::RedPitaya, channel::Integer) = query(rp, string("RP:CALib:ADC:CH", Int(channel) - 1, ":OFF?"), Float64)
 
-function calibADCScale(rp::RedPitaya, channel::Integer, val)
-  if val > 1.0
-    error("$val is larger than 1.0 V!")
-  end
+"""
+    calibADCScale(rp::RedPitaya, channel::Integer)
+
+Store calibration ADC scale `val` for given channel into the RedPitayas EEPROM.
+See also [convertSamplesToPeriods](@ref),[convertSamplesToFrames](@ref).
+"""
+function calibADCScale!(rp::RedPitaya, channel::Integer, val)
   command = string("RP:CALib:ADC:CH", Int(channel) - 1, ":SCA $(Float32(val))")
   rp.calib[1, channel] = Float32(val)
   return send(rp, command)

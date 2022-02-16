@@ -137,7 +137,9 @@ extern void stopTx();
  */
 typedef struct {
     float dac_ch1_offs;
+    float dac_ch1_fs;
     float dac_ch2_offs;
+    float dac_ch2_fs;
     float adc_ch1_fs;
     float adc_ch1_offs;
     float adc_ch2_fs;

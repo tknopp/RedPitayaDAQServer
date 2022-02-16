@@ -4,7 +4,8 @@ using PyPlot
 # obtain the URL of the RedPitaya
 include("config.jl")
 
-rp = RedPitayaCluster([URLs[1]])
+rp = RedPitaya(URLs[1])
+serverMode!(rp, CONFIGURATION)
 
 dec = 64
 modulus = 4864
@@ -12,42 +13,37 @@ base_frequency = 125000000
 samples_per_period = div(modulus, dec)
 periods_per_frame = 5
 
-clearSequence(rp)
-decimation(rp, dec)
-samplesPerPeriod(rp, samples_per_period)
-periodsPerFrame(rp, periods_per_frame)
-passPDMToFastDAC(master(rp), true)
+decimation!(rp, dec)
+samplesPerPeriod!(rp, samples_per_period)
+periodsPerFrame!(rp, periods_per_frame)
+triggerMode!(rp, INTERNAL)
 
-modeDAC(rp, "STANDARD")
-ramWriterMode(rp, "TRIGGERED")
-triggerMode(rp, "EXTERNAL")
+frequencyDAC!(rp, 1, 1, base_frequency / 4864)
+signalTypeDAC!(rp, 1 , "SINE")
+amplitudeDAC!(rp, 1, 1, 0.9)
+offsetDAC!(rp, 1, 0)
+phaseDAC!(rp, 1, 1, 0.0 )
 
-
-masterTrigger(rp, false)
-
-frequencyDAC(rp, 1, 1, base_frequency / 4864)
-signalTypeDAC(rp, 1 , "SINE")
-amplitudeDAC(rp, 1, 1, 0.9)
-offsetDAC(master(rp), 1, 0)
-phaseDAC(rp, 1, 1, 0.0 )
-
-samplesPerSlowDACStep(rp, div(4800, dec))
-numSlowDACChan(master(rp), 1)
-seq1 = PauseSequence(nothing, periods_per_frame, 1, true)
-seq2 = PauseSequence(nothing, periods_per_frame, 1, true)
-seq3 = PauseSequence(nothing, periods_per_frame, 1, true)
-seq4 = PauseSequence(nothing, periods_per_frame, 1, true)
-seq5 = PauseSequence(nothing, periods_per_frame, 1)
-appendSequence(master(rp), seq1)
-appendSequence(master(rp), seq2)
-appendSequence(master(rp), seq3)
-appendSequence(master(rp), seq4)
-appendSequence(master(rp), seq5)
-prepareSequence(master(rp))
+clearSequences!(rp)
+passPDMToFastDAC!(rp, true)
+samplesPerStep!(rp, div(4800, dec)) # Samples per step out of "sync" with frequency
+numSeqChan!(rp, 1)
+# Reset phase after first 4 sequences
+seq1 = RedPitayaDAQServer.PauseSequence(nothing, periods_per_frame, 1, true)
+seq2 = RedPitayaDAQServer.PauseSequence(nothing, periods_per_frame, 1, true)
+seq3 = RedPitayaDAQServer.PauseSequence(nothing, periods_per_frame, 1, true)
+seq4 = RedPitayaDAQServer.PauseSequence(nothing, periods_per_frame, 1, true)
+seq5 = RedPitayaDAQServer.PauseSequence(nothing, periods_per_frame, 1)
+appendSequence!(rp, seq1)
+appendSequence!(rp, seq2)
+appendSequence!(rp, seq3)
+appendSequence!(rp, seq4)
+appendSequence!(rp, seq5)
+prepareSequences!(rp)
 
 
-startADC(rp)
-masterTrigger(rp, true)
+serverMode!(rp, MEASUREMENT)
+masterTrigger!(rp, true)
 
 
 
@@ -58,9 +54,9 @@ samples3 = readPipelinedSamples(rp, (length(seq1) + length(seq2) + start(seq3)) 
 samples4 = readPipelinedSamples(rp, (length(seq1) + length(seq2) + length(seq3) + start(seq4)) * div(4800, dec), 5 * div(4800, dec))
 samples5 = readPipelinedSamples(rp, (length(seq1) + length(seq2) + length(seq3) + length(seq4) + start(seq5)) * div(4800, dec), 5 * div(4800, dec))
 samplesAll = readPipelinedSamples(rp, 0, (length(seq1) + length(seq2) + length(seq3) + length(seq4) + length(seq5)) * div(4800, dec))
-stopADC(rp)
-masterTrigger(rp, false)
-clearSequence(rp)
+
+masterTrigger!(rp, false)
+serverMode!(rp, CONFIGURATION)
 
 
 fig = figure(1)
