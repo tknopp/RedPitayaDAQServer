@@ -38,6 +38,24 @@ static const uint32_t ANALOG_IN_MAX_VAL_INTEGER  = 0xFFF;
 // Cached parameter values.
 static rp_calib_params_t calib;
 
+static int16_t getCalibDACOffset(int channel) {
+	if (channel == 0) 
+		return (int16_t)(calib.dac_ch1_offs*8192.0);
+	else if (channel == 1)
+		return (int16_t)(calib.dac_ch1_offs*8192.0);
+	else
+		return 0;
+}
+
+static float getCalibDACScale(int channel) {
+	if (channel == 0)
+		return calib.dac_ch1_fs;
+	else if (channel == 1)
+		return calib.dac_ch2_fs;
+	else
+		return 0;
+}
+
 // Init stuff
 
 void loadBitstream() {
@@ -180,24 +198,6 @@ int setAmplitude(uint16_t amplitude, int channel, int component) {
 	*((uint16_t *)(dac_cfg + 10 + 14*component + 66*channel)) = calibratedAmplitude;
 
 	return 0;
-}
-
-int16_t getCalibDACOffset(int channel) {
-	if (channel == 0) 
-		return (int16_t)(calib.dac_ch1_offs*8192.0);
-	else if (channel == 1)
-		return (int16_t)(calib.dac_ch1_offs*8192.0);
-	else
-		return 0;
-}
-
-float getCalibDACScale(int channel) {
-	if (channel == 0)
-		return calib.dac_ch1_fs;
-	else if (channel == 1)
-		return calib.dac_ch2_fs;
-	else
-		return 0;
 }
 
 int16_t getOffset(int channel) {
