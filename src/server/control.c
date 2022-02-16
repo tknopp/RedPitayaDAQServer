@@ -164,14 +164,14 @@ static void configureFastDAC(fastDACConfig_t * config) {
 		for (int cmp = 0; cmp < 4; cmp++) {
 			int index = ch * 4 + cmp;
 			if (config->amplitudesSet[index])
-				setAmplitude(config->amplitudes[index], ch, cmp);
+				setAmplitudeVolt(config->amplitudes[index], ch, cmp);
 			if (config->frequencySet[index])
 				setFrequency(config->frequency[index], ch, cmp);
 			if (config->phaseSet[index])
 				setPhase(config->phase[index], ch, cmp);
 		}
 		if (config->offsetSet[ch])
-			setOffset(config->offset[ch], ch);
+			setOffsetVolt(config->offset[ch], ch);
 		if (config->signalTypeSet[ch])
 			setSignalType(ch, config->signalType[ch]);
 		if (config->jumpSharpnessSet[ch])

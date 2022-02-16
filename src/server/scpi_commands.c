@@ -70,7 +70,7 @@ static scpi_result_t RP_DAC_SetAmplitude(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 
-	int result = setAmplitude((uint16_t)(amplitude*8192.0), channel, component);
+	int result = setAmplitudeVolt(amplitude, channel, component);
 	if (result < 0) {
 		return SCPI_RES_ERR;
 	}
@@ -126,7 +126,7 @@ static scpi_result_t RP_DAC_SetOffset(scpi_t * context) {
 		return SCPI_RES_ERR;
 	}
 
-	int result = setOffset((int16_t)(offset*8192.0), channel);
+	int result = setOffsetVolt(offset, channel);
 	if (result < 0) {
 		return SCPI_RES_ERR;
 	}
@@ -150,8 +150,7 @@ static scpi_result_t RP_DAC_SetSequenceOffset(scpi_t * context) {
 
 	readyConfigSequence();
 
-	int16_t offsetValue = (int16_t) (offset*8192.0);	
-	configNode->sequence.fastConfig.offset[channel] = offsetValue;
+	configNode->sequence.fastConfig.offset[channel] = offset;
 	configNode->sequence.fastConfig.offsetSet[channel] = true;
 	seqState = CONFIG;
 

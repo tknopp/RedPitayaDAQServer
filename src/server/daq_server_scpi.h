@@ -103,9 +103,9 @@ typedef struct {
 } sequenceData_t;
 
 typedef struct {
-	uint16_t amplitudes[8];
+	double amplitudes[8];
 	bool amplitudesSet[8];
-	int16_t offset[2];
+	double offset[2];
 	bool offsetSet[2];
 	double frequency[8];
 	bool frequencySet[8];
