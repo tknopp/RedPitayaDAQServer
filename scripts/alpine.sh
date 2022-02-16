@@ -1,3 +1,5 @@
+# The work in this file is derived from https://github.com/pavel-demin/red-pitaya-notes. Please respect the accompanying license.
+
 # Check if we are root, since chroot doesn't work otherwise
 if [ "$(id -u)" -ne 0 ]; then
         echo 'This script must be run by root. Please execute `sudo -s` to do so.' >&2
