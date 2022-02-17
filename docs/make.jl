@@ -18,7 +18,7 @@ makedocs(
         "Examples" => Any["Simple" => "examples/simple.md",
                           "Waveforms" => "examples/waveforms.md",
                           "Sequence" => "examples/sequence.md",
-                          "Sequence Multi-Channel and Waveform Enable" => "examples/sequenceMultiChannel",
+                          "Sequence Multi-Channel and Waveform Enable" => "examples/sequenceMultiChannel.md",
                           "Cluster" => "examples/cluster.md"],
         "FPGA Development" => "fpga.md",
         "Development Tips" => "devtips.md",
