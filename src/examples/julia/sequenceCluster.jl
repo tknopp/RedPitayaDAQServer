@@ -4,14 +4,14 @@ using PyPlot
 # obtain the URL of the RedPitaya
 include("config.jl")
 
-rp = RedPitayaCluster(URLs[1:3])
+rp = RedPitayaCluster(URLs[1:2])
 
-dec = 8
-modulus = 4800
+dec = 32
+modulus = 12500
 base_frequency = 125000000
 periods_per_step = 10
-samples_per_period = div(modulus, dec)#*periods_per_step
-periods_per_frame = 100 # about 0.5 s frame length
+samples_per_period = div(modulus, dec)
+periods_per_frame = 100
 frame_period = dec*samples_per_period*periods_per_frame / base_frequency
 
 slow_dac_steps_per_frame = div(periods_per_frame, periods_per_step)
