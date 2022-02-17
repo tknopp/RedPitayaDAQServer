@@ -1,10 +1,10 @@
 # Simple Example
 
-In the first example we generate a sinus signal of frequency 10 kHz on fast DAC
-channel 1 and receive the same signal on the fast ADC. To run this example connect
-the RedPitaya in the following way.
+In the first example we connect to a single RedPitaya and generate a sinus signal of frequency 10 kHz on DAC channel 1 and receive the same signal on the ADC channel 1. To run this example connect the RedPitaya in the following way.
 
-![Cluster](../assets/simpleExample.png)
+![RedPitaya](../assets/simpleExample.png)
+
+Note that while the example only plots the first channel of the RedPitaya, both channels are transmitted to the clients.
 
 ## Julia Client
 

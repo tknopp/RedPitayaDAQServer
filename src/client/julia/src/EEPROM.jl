@@ -11,7 +11,7 @@ function calibDACOffset!(rp::RedPitaya, channel::Integer, val)
     error("Absolute value of $val is larger than 1.0 V!")
   end
   command = string("RP:CALib:DAC:CH", Int(channel) - 1, ":OFF $(Float32(val))")
-  return send(rp, command)
+  return query(rp, command, Bool)
 end
 """
     calibDACOffset(rp::RedPitaya, channel::Integer)
@@ -52,7 +52,7 @@ function calibADCOffset!(rp::RedPitaya, channel::Integer, val)
   end
   command = string("RP:CALib:ADC:CH", Int(channel) - 1, ":OFF $(Float32(val))")
   rp.calib[2, channel] = Float32(val)
-  return send(rp, command)
+  return query(rp, command, Bool)
 end
 """
     calibADCOffset(rp::RedPitaya, channel::Integer)

@@ -1,10 +1,12 @@
 # Waveforms Example
 
-In this example we generate different signals with a base frequency of 10 kHz on fast DAC
-channel 1 and receive the same signals on the fast ADC. To run this example connect
+In this example we generate different signals with a base frequency of 10 kHz on DAC
+channel 1 and receive the same signals on the ADC channel 1. To run this example connect
 the RedPitaya in the following way.
 
-![Cluster](../assets/simpleExample.png)
+![RedPitaya](../assets/simpleExample.png)
+
+It is also possible to update the signal type during the acquisition without going back to the `CONFIGURATION` mode.
 
 ## Julia Client
 

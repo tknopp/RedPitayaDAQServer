@@ -1,4 +1,4 @@
-# Development Tips
+# Development Hints
 
 On this slide some development hints are summarized. These might change regularely if things
 are properly integrated into the framework.
@@ -9,10 +9,6 @@ are properly integrated into the framework.
 applications. To change this one can do
 ```
 mount -o remount,size=1G /
-```
-* Right now no debugger is installed. This can be change after increasing / using:
-```
-apk add gdb
 ```
 
 ## DHCP Server

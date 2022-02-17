@@ -60,14 +60,49 @@ double getCalibDACScale(int channel, bool isPDM) {
 
 // Init stuff
 
+uint32_t getFPGAId() {
+	// Refer to "Register PSS_IDCODE Details" on page 1607 in https://www.xilinx.com/support/documentation/user_guides/ug585-Zynq-7000-TRM.pdf
+	uint32_t id = (slcr[332] >> 12) & 0x1f;
+	return id;
+}
+
+bool isZynq7010() {
+	return (getFPGAId() == 0x02);
+}
+
+bool isZynq7015() {
+	return (getFPGAId() == 0x1b);
+}
+
+bool isZynq7020() {
+	return (getFPGAId() == 0x07);
+}
+
+bool isZynq7030() {
+	return (getFPGAId() == 0x0c);
+}
+
+bool isZynq7045() {
+	return (getFPGAId() == 0x11);
+}
+
 void loadBitstream() {
 	if(!access("/tmp/bitstreamLoaded", F_OK )){
 		printf("Bitfile already loaded\n");
 	} else {
 		printf("Load Bitfile\n");
 		int catResult = 0;
-		printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/master.bit\n");
-		catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/master.bit > /dev/xdevcfg");
+
+		if(isZynq7020()) {
+			printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/daq_xc7z020clg400-1.bit\n");
+			catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/daq_xc7z020clg400-1.bit > /dev/xdevcfg");
+		}
+		else {
+			printf("loading bitstream /root/apps/RedPitayaDAQServer/bitfiles/daq_xc7z010clg400-1.bit\n");
+			catResult = system("cat /root/apps/RedPitayaDAQServer/bitfiles/daq_xc7z010clg400-1.bit > /dev/xdevcfg");
+		}
+		
+
 		if(catResult <= -1) {
 			printf("Error while writing the image to the FPGA.\n");
 		}
@@ -75,7 +110,7 @@ void loadBitstream() {
 			printf("Bitsream loaded\n");
 		}
 
-		FILE* fp = fopen("/tmp/bitstreamLoaded" ,"a");
+		FILE* fp = fopen("/tmp/bitstreamLoaded", "a");
 		int writeResult = fprintf(fp, "loaded \n");
 
 		if(writeResult <= -1) {
@@ -88,9 +123,6 @@ void loadBitstream() {
 }
 
 int init() {
-	calib_Init(); // Load calibration from EEPROM
-	loadBitstream();
-
 	// Open memory
 	if((mmapfd = open("/dev/mem", O_RDWR|O_SYNC)) < 0) {
 		perror("open");
@@ -109,6 +141,9 @@ int init() {
 	cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40004000);
 	ram = mmap(NULL, sizeof(int32_t)*ADC_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, ADC_BUFF_MEM_ADDRESS);
 	xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
+
+	calib_Init(); // Load calibration from EEPROM
+	loadBitstream();
 
 	// Set HP0 bus width to 64 bits
 	slcr[2] = 0xDF0D;
