@@ -8,7 +8,7 @@ rp = RedPitaya(URLs[1])
 serverMode!(rp, CONFIGURATION)
 
 dec = 64
-modulus = 4800
+modulus = 12500
 base_frequency = 125000000
 periods_per_step = 5
 samples_per_period = div(modulus, dec)
@@ -32,7 +32,7 @@ passPDMToFastDAC!(rp, true) # if set the sequence will be output in DAC-out
 stepsPerFrame!(rp, steps_per_frame)
 numSeqChan!(rp, 1)
 lut = collect(range(0.1,0.7,length=steps_per_frame))
-seq = ArbitrarySequence(lut, nothing, 2, 0, 0)
+seq = ArbitrarySequence(lut, nothing, 2, 0, 0, 0, 0)
 appendSequence!(rp, seq)
 prepareSequences!(rp)
 

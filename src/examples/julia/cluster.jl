@@ -1,49 +1,56 @@
 using RedPitayaDAQServer
-using Plots
-
-pyplot()
-default(show = true)
+using PyPlot
 
 # obtain the URL of the RedPitaya
 include("config.jl")
 
-rp = RedPitayaCluster([URLs[1], URLs[2]])
+# Establish connection to two RedPitayas. First is treated as master
+rpc = RedPitayaCluster([URLs[1], URLs[2]])
+# Function calls that should affect the whole cluster are distributed to all RedPitayas
+serverMode!(rpc, CONFIGURATION)
 
-dec = 64
-modulus = 4800
+dec = 32
+modulus = 12500
 base_frequency = 125000000
 samples_per_period = div(modulus, dec)
-periods_per_frame = 3
+periods_per_frame = 2
 
-decimation(rp, dec)
-samplesPerPeriod(rp, samples_per_period)
-periodsPerFrame(rp, periods_per_frame)
+decimation!(rpc, dec)
+samplesPerpceriod!(rpc, samples_per_period)
+periodsPerFrame!(rpc, periods_per_frame)
+# In a cluster setting RedPitayas should listen to the external triggered
+triggerMode!(rpc, EXTERNAL)
 
-modeDAC(rp, "STANDARD")
-frequencyDAC(rp, 1, 1, base_frequency / modulus)
-frequencyDAC(rp, 3, 1, base_frequency / modulus)
+# A cluster of size n is treated as having 2*n channels
+# SCPI commands are distributed accordingly
+frequencyDAC!(rpc, 1, 1, base_frequency / modulus)
+frequencyDAC!(rpc, 3, 1, base_frequency / modulus)
+# It is also possible to call functions directly on the RedPitayas in a cluster
+# as long as the function only affects on RedPitaya
+signalTypeDAC!(rpc[1], 1 , SINE)
+signalTypeDAC!(rpc[2], 1 , SINE) # Same as signalTypeDAC!(rpc, 3, SINE)
+amplitudeDAC!(rpc, 1, 1, 0.8)
+amplitudeDAC!(rpc, 3, 1, 0.8)
+phaseDAC!(rpc, 1, 1, 0.0) 
+phaseDAC!(rpc, 3, 1, pi)
 
-println(" frequency = $(frequencyDAC(rp,1,1))")
-amplitudeDAC(rp, 1, 1, 0.8)
-amplitudeDAC(rp, 3, 1, 0.8)
-phaseDAC(rp, 1, 1, 0.0 ) # Phase has to be given in between 0 and 1
-phaseDAC(rp, 1, 1, pi)
+serverMode!(rpc, MEASUREMENT)
+masterTrigger!(rpc, true)
 
-triggerMode(rp, "EXTERNAL")
-ramWriterMode(rp, "TRIGGERED")
-masterTrigger(rp, false)
+uFirstPeriod = readFrames(rpc, 0, 1)
+sleep(0.2)
+uCurrentPeriod = readFrames(rpc, currentFrame(rpc), 1)
 
-startADC(rp)
-masterTrigger(rp, true)
+masterTrigger!(rpc, false)
+serverMode!(rpc, CONFIGURATION)
 
-sleep(1.0)
-
-uFirstPeriod = readData(rp, 0, 1)
-uCurrentPeriod = readData(rp, currentFrame(rp), 1)
-#RedPitayaDAQServer.disconnect(rp)
-
-
+figure(1)
+clf()
+subplot(2, 1, 1)
 plot(vec(uFirstPeriod[:,1,:,:]))
-#plot!(vec(uCurrentPeriod[:,1,:,:]))
-plot!(vec(uFirstPeriod[:,3,:,:]))
-#plot!(vec(uCurrentPeriod[:,3,:,:]))
+plot(vec(uFirstPeriod[:,3,:,:]))
+legend(("Channel 1", "Channel 3"))
+plot(vec(uCurrentPeriod[:,1,:,:]))
+plot(vec(uCurrentPeriod[:,3,:,:]))
+legend(("Channel 1", "Channel 3"))
+savefig("images/cluster.png")

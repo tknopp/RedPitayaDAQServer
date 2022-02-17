@@ -11,7 +11,7 @@ rp = RedPitaya(URLs[1])
 serverMode!(rp, CONFIGURATION) # or serverMode!(rp, "CONFIGURATION")
 
 dec = 32
-modulus = 4800
+modulus = 12500
 base_frequency = 125000000
 samples_per_period = div(modulus, dec)
 periods_per_frame = 2
@@ -43,6 +43,7 @@ sleep(0.1)
 
 # Transmit the current frame
 fr = currentFrame(rp)
+# Dimensions of frames are [samples channel, period, frame]
 uCurrentPeriod = readFrames(rp, fr, 1)
 
 # Stop signal generation + acquisition
