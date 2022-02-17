@@ -1,7 +1,7 @@
 # Architecture
 
 The RedPitayaDAQServer project is implemented as a distributed system in which one client connects to a cluster of RedPitaya boards. The project has four software components:
-* FPGA image running the RedPitayas
+* FPGA image running on the RedPitayas FPGA
 * C library encapsulating access to the FPGA image
 * Server running on the CPU of the RedPitayas
 * [Client](client.md) Julia reference library 

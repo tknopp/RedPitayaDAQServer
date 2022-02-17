@@ -4,21 +4,19 @@ There may be needs to change the FPGA image. The following explains how this can
 
 ## Preparation
 
-If you want to make changes to the FPGA design, you need to install [Vivado 2017.2](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vivado-design-tools/archive.html). More infos for setting up a development machine we refer to the following [recource](http://pavel-demin.github.io/red-pitaya-notes/development-machine/).
+If you want to make changes to the FPGA design, you need to install [Vivado 2021.2](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vivado-design-tools/archive.html). More infos for setting up a development machine we refer to the following [recource](http://pavel-demin.github.io/red-pitaya-notes/development-machine/).
 
-After following the installation steps, you need to clone the repository into a directory of your choice and then regenerate the IP cores  and the project by running
+After following the installation steps, you need to clone the repository into a directory of your choice and then regenerate the IP cores and the project by running
 
 `./make_fpga_project.sh`.
 
-Afterwards you can start Vivado and open the recreated project in `./build/fpga/firmware/RedPitayaDAQServer.xpr`. Apply the changes you need and then create the bitfile by using 'Flow -> Generate Bitstream'. This runs the synthesis and implementation steps and output the Bitfile to `./build/fpga/firmware/RedPitayaDAQServer.runs/impl_1/system_wrapper.bit`. Please note, that you have to create both the master and the slave image. This can be done by simply changing the value of _xlconstant_masterslave_. A '1' denotes the use of the internal ADC clock and is used for the master. A '0' selects the clock distributed via the daisy chain connectors and is therefore used for the slaves.
-
-![Clock selection in the blockdesign](https://raw.githubusercontent.com/tknopp/RedPitayaDAQServer/master/docs/clock_selection.jpg)
+Afterwards you can start Vivado and open the recreated project in `./build/fpga/firmware/RedPitayaDAQServer.xpr`. Apply the changes you need and then create the bitfile by using 'Flow -> Generate Bitstream'. This runs the synthesis and implementation steps and output the Bitfile to `./build/fpga/firmware/RedPitayaDAQServer.runs/impl_1/system_wrapper.bit`.
 
 After creating the respective bitfile you need to copy it to your Red Pitayas. You can use
 
-`scp ./build/fpga/firmware/RedPitayaDAQServer.runs/impl_1/system_wrapper.bin root@<IP>:/root/RedPitayaDAQServer/bitfiles/<master,slave>.bin`
+`scp ./build/fpga/firmware/RedPitayaDAQServer.runs/impl_1/system_wrapper.bin root@<IP>:/root/RedPitayaDAQServer/bitfiles/daq_<xc7z010clg400-1,xc7z020clg400-1>.bin`
 
-for this. Set your IP and master/slave accordingly.
+for this. Set your IP and FPGA version accordingly.
 
 Since using git with Vivado can be annoying here are some hints how you can make your changes ready for git:
 
