@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Cluster · RP DAQ Server</title><script data-outdated-warner src="../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.039/juliamono-regular.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.11/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL=".."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../assets/documenter.js"></script><script src="../siteinfo.js"></script><script src="../../versions.js"></script><script src="../../copy.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../index.html"><img src="../assets/logo.png" alt="RP DAQ Server logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../index.html">RP DAQ Server</a></span></div><form class="docs-search" action="../search.html"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../index.html">Home</a></li><li><a class="tocitem" href="../architecture.html">Architecture</a></li><li><a class="tocitem" href="../installation.html">Installation</a></li><li><a class="tocitem" href="../connections.html">Connections</a></li><li><a class="tocitem" href="../cluster.html">Cluster</a></li><li><a class="tocitem" href="../acquisition.html">Data Acquisition</a></li><li><a class="tocitem" href="../generation.html">Signal Generation</a></li><li><a class="tocitem" href="../scpi.html">SCPI Interface</a></li><li><a class="tocitem" href="../client.html">Client Library</a></li><li><span class="tocitem">Examples</span><ul><li><a class="tocitem" href="simple.html">Simple</a></li><li><a class="tocitem" href="waveforms.html">Waveforms</a></li><li><a class="tocitem" href="sequence.html">Sequence</a></li><li><a class="tocitem" href="sequenceMultiChannel.html">Sequence Multi-Channel and Waveform Enable</a></li><li class="is-active"><a class="tocitem" href="cluster.html">Cluster</a><ul class="internal"><li><a class="tocitem" href="#Julia-Client"><span>Julia Client</span></a></li></ul></li></ul></li><li><a class="tocitem" href="../fpga.html">FPGA Development</a></li><li><a class="tocitem" href="../devtips.html">Development Tips</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href="cluster.html">Cluster</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href="cluster.html">Cluster</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/tknopp/RedPitayaDAQServer/blob/master/docs/src/examples/cluster.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Cluster-Example"><a class="docs-heading-anchor" href="#Cluster-Example">Cluster Example</a><a id="Cluster-Example-1"></a><a class="docs-heading-anchor-permalink" href="#Cluster-Example" title="Permalink"></a></h1><p>In this example we generate and acquire sine waves, similar to to the first <a href="simple.html">example</a>. However, this time we use two RedPitayas sychronized in a cluster. The example will create a sine wave on the first DAC channel of the first RedPitaya and a phase shifted sine wave on the first channel of the second RedPitaya. To run this example connect the RedPitayas in the following way:</p><p><img src="../assets/clusterExample.png" alt="RedPitaya"/></p><p>Note that while the example only plots the first channel of the RedPitaya, both channels are transmitted to the clients.</p><h2 id="Julia-Client"><a class="docs-heading-anchor" href="#Julia-Client">Julia Client</a><a id="Julia-Client-1"></a><a class="docs-heading-anchor-permalink" href="#Julia-Client" title="Permalink"></a></h2><p>This and all other examples are located in the <code>examples</code> <a href="https://github.com/tknopp/RedPitayaDAQServer/tree/master/src/examples/julia">directory</a></p><pre><code class="language-julia hljs">using RedPitayaDAQServer
+using PyPlot
+
+# obtain the URL of the RedPitaya
+include(&quot;config.jl&quot;)
+
+# Establish connection to two RedPitayas. First is treated as master
+rpc = RedPitayaCluster([URLs[1], URLs[2]])
+# Function calls that should affect the whole cluster are distributed to all RedPitayas
+serverMode!(rpc, CONFIGURATION)
+
+dec = 32
+modulus = 12500
+base_frequency = 125000000
+samples_per_period = div(modulus, dec)
+periods_per_frame = 2
+
+decimation!(rpc, dec)
+samplesPerpceriod!(rpc, samples_per_period)
+periodsPerFrame!(rpc, periods_per_frame)
+# In a cluster setting RedPitayas should listen to the external triggered
+triggerMode!(rpc, EXTERNAL)
+
+# A cluster of size n is treated as having 2*n channels
+# SCPI commands are distributed accordingly
+frequencyDAC!(rpc, 1, 1, base_frequency / modulus)
+frequencyDAC!(rpc, 3, 1, base_frequency / modulus)
+# It is also possible to call functions directly on the RedPitayas in a cluster
+# as long as the function only affects on RedPitaya
+signalTypeDAC!(rpc[1], 1 , SINE)
+signalTypeDAC!(rpc[2], 1 , SINE) # Same as signalTypeDAC!(rpc, 3, SINE)
+amplitudeDAC!(rpc, 1, 1, 0.8)
+amplitudeDAC!(rpc, 3, 1, 0.8)
+phaseDAC!(rpc, 1, 1, 0.0) 
+phaseDAC!(rpc, 3, 1, pi)
+
+serverMode!(rpc, MEASUREMENT)
+masterTrigger!(rpc, true)
+
+uFirstPeriod = readFrames(rpc, 0, 1)
+sleep(0.2)
+uCurrentPeriod = readFrames(rpc, currentFrame(rpc), 1)
+
+masterTrigger!(rpc, false)
+serverMode!(rpc, CONFIGURATION)
+
+figure(1)
+clf()
+subplot(2, 1, 1)
+plot(vec(uFirstPeriod[:,1,:,:]))
+plot(vec(uFirstPeriod[:,3,:,:]))
+legend((&quot;Channel 1&quot;, &quot;Channel 3&quot;))
+plot(vec(uCurrentPeriod[:,1,:,:]))
+plot(vec(uCurrentPeriod[:,3,:,:]))
+legend((&quot;Channel 1&quot;, &quot;Channel 3&quot;))
+savefig(&quot;images/cluster.png&quot;)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="sequenceMultiChannel.html">« Sequence Multi-Channel and Waveform Enable</a><a class="docs-footer-nextpage" href="../fpga.html">FPGA Development »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.12 on <span class="colophon-date" title="Thursday 17 February 2022 12:55">Thursday 17 February 2022</span>. Using Julia version 1.7.2.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
