@@ -302,7 +302,7 @@ scpi_choice_def_t DAC_modes[] = {
 
 static scpi_result_t RP_DAC_SetDACMode(scpi_t * context) {
 	if (getServerMode() != CONFIGURATION) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
 	int32_t DAC_mode_selection;
@@ -336,7 +336,7 @@ scpi_choice_def_t trigger_modes[] = {
 
 static scpi_result_t RP_DAC_SetTriggerMode(scpi_t * context) {
 	if (getServerMode() != CONFIGURATION) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
 	int32_t trigger_mode_selection;
@@ -935,20 +935,20 @@ static scpi_result_t RP_DIO_SetDIOOutput(scpi_t * context) {
 	const char* pin;
 	size_t len;
 	if (!SCPI_ParamCharacters(context, &pin, &len, TRUE)) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
 	int32_t DIO_pin_output_selection;
 	if (!SCPI_ParamChoice(context, onoff_modes, &DIO_pin_output_selection, TRUE)) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
 	int result = setDIO(pin, DIO_pin_output_selection);
 	if (result < 0) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
-	return SCPI_RES_OK;
+	return returnSCPIBool(context, true);
 }
 
 static scpi_result_t RP_DIO_GetDIOOutput(scpi_t * context) {
@@ -985,15 +985,15 @@ static scpi_result_t RP_SetWatchdogMode(scpi_t * context) {
 	int32_t watchdog_mode_selection;
 
 	if (!SCPI_ParamChoice(context, onoff_modes, &watchdog_mode_selection, TRUE)) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
 	int result = setWatchdogMode(watchdog_mode_selection);
 	if (result < 0) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
-	return SCPI_RES_OK;
+	return returnSCPIBool(context, true);
 }
 
 static scpi_result_t RP_GetPassPDMToFastDAC(scpi_t * context) {
@@ -1041,21 +1041,21 @@ static scpi_result_t RP_GetRAMWriterMode(scpi_t * context) {
 
 static scpi_result_t RP_SetRAMWriterMode(scpi_t * context) {
 	if (getServerMode() != CONFIGURATION) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
 	int32_t RAM_writer_mode_selection;
 
 	if (!SCPI_ParamChoice(context, RAM_writer_modes, &RAM_writer_mode_selection, TRUE)) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
 	int result = setRAMWriterMode(RAM_writer_mode_selection);
 	if (result < 0) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
-	return SCPI_RES_OK;
+	return returnSCPIBool(context, true);
 }
 
 static scpi_result_t RP_GetMasterTrigger(scpi_t * context) {
@@ -1129,15 +1129,15 @@ static scpi_result_t RP_SetInstantResetMode(scpi_t * context) {
 	int32_t instant_reset_mode_selection;
 
 	if (!SCPI_ParamChoice(context, onoff_modes, &instant_reset_mode_selection, TRUE)) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
 	int result = setInstantResetMode(instant_reset_mode_selection);
 	if (result < 0) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
-	return SCPI_RES_OK;
+	return returnSCPIBool(context, true);
 }
 
 static scpi_result_t RP_PeripheralAResetN(scpi_t * context) {
@@ -1534,13 +1534,13 @@ static scpi_result_t RP_Calib_DAC_SetScale(scpi_t* context) {
 		calib_params.dac_ch2_fs = scale;	
 	}
 	else {
- 		return SCPI_RES_ERR;
+ 		return returnSCPIBool(context, false);
 	}
 
 
 	calib_WriteParams(calib_params, false);	
 	calib_Init(); // Reload from cache from EEPROM
-	return SCPI_RES_OK;
+	return returnSCPIBool(context, true);
 }
 
 static scpi_result_t RP_Calib_ADC_GetOffset(scpi_t* context) {
