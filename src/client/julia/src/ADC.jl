@@ -253,7 +253,7 @@ function keepAliveReset!(rp::RedPitaya, val::Bool)
   return query(rp, scpiCommand(keepAliveReset!, val), scpiReturn(keepAliveReset!))
 end
 scpiCommand(::typeof(keepAliveReset!), val::Bool) = scpiCommand(keepAliveReset!, val ? "ON" : "OFF")
-scpiCommand(::typeof(keepAliveReset!)) = string("RP:TRIGger:ALiVe ", valStr)
+scpiCommand(::typeof(keepAliveReset!), valStr::String) = string("RP:TRIGger:ALiVe ", valStr)
 scpiReturn(::typeof(keepAliveReset!)) = Bool
 """
     keepAliveReset(rp::RedPitaya)
