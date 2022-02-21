@@ -11,7 +11,7 @@ rp = RedPitaya(URLs[1])
 serverMode!(rp, CONFIGURATION) # or serverMode!(rp, "CONFIGURATION")
 
 dec = 32
-modulus = 12500
+modulus = 12480
 base_frequency = 125000000
 samples_per_period = div(modulus, dec)
 periods_per_frame = 2
@@ -29,7 +29,7 @@ frequencyDAC!(rp, 1, 1, base_frequency / modulus)
 signalTypeDAC!(rp, 1 , SINE) # or signalTypeDAC!(rp, 1, "SINE")
 amplitudeDAC!(rp, 1, 1, 0.5)
 offsetDAC!(rp, 1, 0)
-phaseDAC!(rp, 1, 1, 0.0 )
+phaseDAC!(rp, 1, 1, 0.0)
 
 # Start signal generation + acquisition
 # The trigger can only be set in ACQUISITION mode
@@ -45,7 +45,9 @@ sleep(0.1)
 fr = currentFrame(rp)
 # Dimensions of frames are [samples channel, period, frame]
 uCurrentPeriod = readFrames(rp, fr, 1)
+sleep(0.2)
 
+uLastPeriod = readFrames(rp, currentFrame(rp), 1)
 # Stop signal generation + acquisition
 masterTrigger!(rp, false)
 serverMode!(rp, CONFIGURATION)
@@ -53,7 +55,8 @@ serverMode!(rp, CONFIGURATION)
 figure(1)
 clf()
 # Frame dimensions are [samples, chan, periods, frames]
-plot(vec(uFirstPeriod[:,1,:,:]))
+#plot(vec(uFirstPeriod[:,1,:,:]))
 plot(vec(uCurrentPeriod[:,1,:,:]))
-legend(("first period", "current period"))
+plot(vec(uLastPeriod[:,1,:,:]))
+legend(("first period", "current period", "last period"))
 savefig("images/simple.png")

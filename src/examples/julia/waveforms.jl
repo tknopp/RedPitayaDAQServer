@@ -8,7 +8,7 @@ rp = RedPitaya(URLs[1])
 serverMode!(rp, CONFIGURATION)
 
 dec = 32
-modulus = 12500
+modulus = 12480
 base_frequency = 125000000
 samples_per_period = div(modulus, dec)
 periods_per_frame = 10
