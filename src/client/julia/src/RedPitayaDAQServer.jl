@@ -9,9 +9,9 @@ import Sockets: send, connect
 using Statistics
 using LinearAlgebra
 
-import Base: reset, iterate, length
+import Base: reset, iterate, length, push!, pop!
 
-export RedPitaya, send, receive, query, start, stop, disconnect, ServerMode, serverMode, serverMode!, CONFIGURATION, MEASUREMENT, TRANSMISSION, getLog
+export RedPitaya, send, receive, query, start, stop, disconnect, ServerMode, serverMode, serverMode!, CONFIGURATION, MEASUREMENT, TRANSMISSION, getLog, ScpiBatch, execute!, clear!
 
 """
     RedPitaya
@@ -63,17 +63,28 @@ function receive(rp::RedPitaya)
   return readline(rp.socket)[1:end]
 end
 
-function receive(rp::RedPitaya, timeout::Number,  N=100)
-  t = @async receive(rp)
-  for i=1:N
-    if istaskdone(t)
-      return fetch(t)
+function receive(rp::RedPitaya, ch::Channel)
+  put!(ch, receive(rp))
+end
+
+function receive(rp::RedPitaya, timeout::Number)
+  ch = Channel()
+  t = @async receive(rp, ch)
+  result = nothing
+  timeoutTimer = Timer(() -> close(ch), timeout)
+  try 
+    result = take!(ch)
+  catch e
+    @async Base.throwto(t, EOFError())
+    if e isa InvalidStateException
+      error("Receive ran into timeout on RP $(rp.host)")
+    else
+      error("Unexpected state during receive on RP $(rp.host)")
     end
-    sleep(timeout / N )
+  finally
+    close(timeoutTimer)
   end
-  @async Base.throwto(t, EOFError())
-  error("Receive ran into timeout on RP $(rp.host)!")
-  return t
+  return result
 end
 
 """
@@ -85,9 +96,9 @@ Waits for `timeout` seconds and checks every `timeout/N` seconds.
 
 See also [receive](@ref).
 """
-function query(rp::RedPitaya, cmd::String, timeout::Number=_timeout,  N=100)
+function query(rp::RedPitaya, cmd::String, timeout::Number=_timeout)
   send(rp,cmd)
-  receive(rp, timeout, N)
+  receive(rp, timeout)
 end
 
 """
@@ -97,8 +108,8 @@ Send a query to the RedPitaya. Parse reply as `T`.
 
 Waits for `timeout` seconds and checks every `timeout/N` seconds.
 """
-function query(rp::RedPitaya,cmd::String,T::Type, timeout::Number=_timeout, N::Number=100)
-  a = query(rp,cmd, timeout, N)
+function query(rp::RedPitaya,cmd::String,T::Type, timeout::Number=_timeout)
+  a = query(rp,cmd, timeout)
   return parse(T,a)
 end
 
@@ -191,7 +202,7 @@ function serverMode(rp::RedPitaya)
 end
 scpiCommand(::typeof(serverMode)) = "RP:MODe?"
 scpiReturn(::typeof(serverMode)) = ServerMode
-parseReturn(::typeof(ServerMode), ret) = stringToEnum(ServerMode, strip(ret, '\"'))
+parseReturn(::typeof(serverMode), ret) = stringToEnum(ServerMode, strip(ret, '\"'))
 
 """
     serverMode!(rp::RedPitaya, mode::ServerMode)
@@ -229,6 +240,7 @@ function serverMode!(rp::RedPitaya, mode::ServerMode)
 end
 scpiCommand(::typeof(serverMode!), mode) = string("RP:MODe ", string(mode))
 scpiReturn(::typeof(serverMode!)) = Bool
+
 
 include("DAC.jl")
 include("ADC.jl")
@@ -275,18 +287,30 @@ scpiCommand(f::Function, args...) = error("Function $(string(f)) does not suppor
 scpiReturn(f::Function) = typeof(nothing)
 parseReturn(f::Function, ret) = parse(scpiReturn(f), ret)
 
-function batch(rp::RedPitaya, cmds::Vector{Pair{Function, Vector{Any}}})
-  for (f, args) in cmds
+struct ScpiBatch
+  cmds::Vector{Pair{Function, Tuple}}
+end
+ScpiBatch() = ScpiBatch([])
+
+push!(batch::ScpiBatch, cmd::Pair{K, T}) where {K<:Function, T<:Tuple} = push!(batch.cmds, cmd)
+push!(batch::ScpiBatch, cmd::Pair{K, T}) where {K<:Function, T<:Any} = push!(batch, cmd.first => (cmd.second,))
+pop!(batch::ScpiBatch) = pop!(batch.cmds)
+function clear!(batch::ScpiBatch)
+  batch.cmds = []
+end
+
+function execute!(rp::RedPitaya, batch::ScpiBatch)
+  sendTime = @elapsed for (f, args) in batch.cmds
     send(rp, scpiCommand(f, args...))
   end
   result = []
-  for (f, _) in cmds
-    T = scpiReturn(f)
-    if T != Nothing
+  receiveTime = @elapsed for (f, _) in batch.cmds
+     if !isnothing(scpiReturn)
       ret = receive(rp, _timeout)
       push!(result, parseReturn(f, ret))
     end
   end
+  println(string(sendTime)*" "*string(receiveTime))
   return result
 end
 
