@@ -71,7 +71,7 @@ function receive(rp::RedPitaya, timeout::Number)
   ch = Channel()
   t = @async receive(rp, ch)
   result = nothing
-  timeoutTimer = Timer(() -> close(ch), timeout)
+  timeoutTimer = Timer(_ -> close(ch), timeout)
   try 
     result = take!(ch)
   catch e
