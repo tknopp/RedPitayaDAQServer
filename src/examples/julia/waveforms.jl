@@ -39,8 +39,8 @@ for (i,name) in enumerate(["SINE", "SQUARE", "TRIANGLE", "SAWTOOTH"])
   serverMode!(rp, MEASUREMENT)
   masterTrigger!(rp, false)
   masterTrigger!(rp, true)
-  fr = 1
-  uFirstPeriod = readFrames(rp, fr, 1) # read 2nd frame
+  local fr = 1
+  local uFirstPeriod = readFrames(rp, fr, 1) # read 2nd frame
   subplot(2,2,i)
   masterTrigger!(rp, false)
   serverMode!(rp, CONFIGURATION)
