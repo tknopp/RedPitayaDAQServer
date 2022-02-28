@@ -335,7 +335,7 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 		sendSamplesTotal += chunk;
 
 	}
-	setServerMode(MEASUREMENT); // Maybe get and reset previous mode later. Atm it has to be MEASUREMENT anyways
+	setServerMode(ACQUISITION); // Maybe get and reset previous mode later. Atm it has to be ACQUISITION anyways
 }
 
 

@@ -79,7 +79,7 @@ extern void* communicationThread(void*);
 extern void* controlThread(void*);
 extern void joinControlThread();
 
-typedef enum {CONFIGURATION, MEASUREMENT, TRANSMISSION} serverMode_t;
+typedef enum {CONFIGURATION, ACQUISITION, TRANSMISSION} serverMode_t;
 extern serverMode_t getServerMode();
 extern void setServerMode(serverMode_t mode);
 

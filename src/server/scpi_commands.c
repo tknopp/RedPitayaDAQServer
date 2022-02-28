@@ -45,7 +45,7 @@ static void readyConfigSequence() {
 
 scpi_choice_def_t server_modes[] = {
 	{"CONFIGURATION", CONFIGURATION},
-	{"MEASUREMENT", MEASUREMENT},
+	{"ACQUISITION", ACQUISITION},
 	{"TRANSMISSION", TRANSMISSION},
 	SCPI_CHOICE_LIST_END
 };
@@ -65,7 +65,7 @@ static scpi_result_t RP_SetServerMode(scpi_t * context) {
 	}
 
 	serverMode_t current = getServerMode();
-	if (current != TRANSMISSION && (tmpMode == CONFIGURATION || tmpMode == MEASUREMENT)) {
+	if (current != TRANSMISSION && (tmpMode == CONFIGURATION || tmpMode == ACQUISITION)) {
 		setServerMode((serverMode_t) tmpMode);
 		return returnSCPIBool(context, true);
 	}
@@ -480,7 +480,7 @@ static scpi_result_t RP_DAC_SetSequenceJumpSharpness(scpi_t * context) {
 
 static scpi_result_t RP_ADC_SetDecimation(scpi_t * context) {
 	if (getServerMode() != CONFIGURATION) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
 	uint32_t decimation;
@@ -818,7 +818,7 @@ static scpi_result_t RP_ADC_GetBufferSize(scpi_t * context) {
 
 static scpi_result_t RP_ADC_GetData(scpi_t * context) {
 	// Reading is only possible while an acquisition is running
-	if (getServerMode() != MEASUREMENT) {
+	if (getServerMode() != ACQUISITION) {
 		return returnSCPIBool(context, false);
 	}
 
@@ -839,7 +839,7 @@ static scpi_result_t RP_ADC_GetData(scpi_t * context) {
 }
 
 static scpi_result_t RP_ADC_GetPipelinedData(scpi_t * context) {
-	if (getServerMode() != MEASUREMENT) {
+	if (getServerMode() != ACQUISITION) {
 		return returnSCPIBool(context, false);
 	}
 	
@@ -866,7 +866,7 @@ static scpi_result_t RP_ADC_GetPipelinedData(scpi_t * context) {
 
 static scpi_result_t RP_ADC_Slow_GetFrames(scpi_t * context) {
 	// Reading is only possible while an acquisition is running
-	if (getServerMode() != MEASUREMENT) {
+	if (getServerMode() != ACQUISITION) {
 		return SCPI_RES_ERR;
 	}
 
@@ -910,17 +910,17 @@ static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context) {
 	const char* pin;
 	size_t len;
 	if (!SCPI_ParamCharacters(context, &pin, &len, TRUE)) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
 	int32_t DIO_pin_output_selection;
 	if (!SCPI_ParamChoice(context, inout_modes, &DIO_pin_output_selection, TRUE)) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
 	int result = setDIODirection(pin, DIO_pin_output_selection);
 	if (result < 0) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, true);
 	}
 
 	return SCPI_RES_OK;
@@ -1069,7 +1069,7 @@ static scpi_result_t RP_GetMasterTrigger(scpi_t * context) {
 }
 
 static scpi_result_t RP_SetMasterTrigger(scpi_t * context) {
-	if (getServerMode() != MEASUREMENT) {
+	if (getServerMode() != ACQUISITION) {
 		return returnSCPIBool(context, false);
 	}
 
@@ -1097,7 +1097,7 @@ static scpi_result_t RP_GetKeepAliveReset(scpi_t * context) {
 }
 
 static scpi_result_t RP_SetKeepAliveReset(scpi_t * context) {
-	if (getServerMode() != MEASUREMENT) {
+	if (getServerMode() != ACQUISITION) {
 		return returnSCPIBool(context, false);
 	}
 
