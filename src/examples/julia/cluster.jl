@@ -26,7 +26,7 @@ triggerMode!(rpc, EXTERNAL)
 frequencyDAC!(rpc, 1, 1, base_frequency / modulus)
 frequencyDAC!(rpc, 3, 1, base_frequency / modulus)
 # It is also possible to call functions directly on the RedPitayas in a cluster
-# as long as the function only affects on RedPitaya
+# as long as the function only affects one RedPitaya
 signalTypeDAC!(rpc[1], 1 , SINE)
 signalTypeDAC!(rpc[2], 1 , SINE) # Same as signalTypeDAC!(rpc, 3, SINE)
 amplitudeDAC!(rpc, 1, 1, 0.8)

@@ -4,10 +4,10 @@ using PyPlot
 # obtain the URL of the RedPitaya
 include("config.jl")
 
-rp = RedPitayaCluster([URLs[1]])
+rp = RedPitaya(URLs[1])
 
 dec = 64
-modulus = 4800
+modulus = 12500
 base_frequency = 125000000
 periods_per_step = 5
 samples_per_period = div(modulus, dec)
