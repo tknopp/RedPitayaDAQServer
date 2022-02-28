@@ -257,32 +257,6 @@ function startPipelinedData(rpu::Union{RedPitayaCluster,RedPitayaClusterView}, r
   end
 end
 
-function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
-  numOfReceivedSamples = 0
-  index = 1
-  rawData = zeros(Int16, numChan(rpu), numOfRequestedSamples)
-  chunkBuffer = zeros(Int16, chunkSize * 2, length(rpu))
-  
-  while numOfReceivedSamples < numOfRequestedSamples
-    wpRead = wpStart + numOfReceivedSamples
-    wpWrite = currentWP(rpu)
-    chunk = min(numOfRequestedSamples - numOfReceivedSamples, chunkSize)
-
-    
-    # Wait for data to be written
-    while wpRead + chunk >= wpWrite
-      wpWrite = currentWP(rpu)
-      @debug wpWrite
-    end
-
-    # Collect data
-    collectSamples!(rpu, wpRead, chunk, rawData, chunkBuffer, index, rpInfo=rpInfo)
-    index += chunk
-    numOfReceivedSamples += chunk
-  end
-  return rawData
-end
-
 """
     readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
 

@@ -2,7 +2,7 @@ export TriggerMode, INTERNAL, EXTERNAL, ADCPerformanceData, RPStatus, Performanc
 decimation, decimation!, numChan, samplesPerPeriod, samplesPerPeriod!, periodsPerFrame, periodsPerFrame!,
 currentWP, currentPeriod, currentFrame, masterTrigger, masterTrigger!, keepAliveReset, keepAliveReset!,
 triggerMode, triggerMode!, startADC, stopADC, overwritten, corrupted, serverStatus, performanceData,
-startPipelinedData
+readSamples, startPipelinedData
 
 """
     TriggerMode
@@ -336,13 +336,21 @@ function readADCPerformanceData(rp::RedPitaya, numSamples = 0)
 end
 
 # Low level read. One has to take care that the numFrames are available
-function readSamples_(rp::RedPitaya, reqWP, numSamples)
-  command = string("RP:ADC:DATA? ",Int64(reqWP),",",Int64(numSamples))
-  send(rp, command)
+"""
+    readSamples(rp::RedPitaya, reqWP, numSamples)
 
-  @debug "read data ..."
+Retrieves `numSamples` from writepointer `reqWP` on. Throws error if samples can not be sent.
+Does not check if samples exist or fit within the buffer. For such features use `readPipelinedSamples` instead.
+"""
+function readSamples(rp::RedPitaya, reqWP, numSamples)
+  command = string("RP:ADC:DATA? ",Int64(reqWP),",",Int64(numSamples))
+  sending = query(rp, command, Bool)
+
+  if !sending
+    error("RedPitaya $(rp.host) can not start transmitting samples.")
+  end
+
   u = read!(rp.dataSocket, Array{Int16}(undef, 2 * Int64(numSamples)))
-  @debug "read data!"
   return u
 end
 
@@ -367,5 +375,9 @@ Instruct the `RedPitaya` to send `numSamples` samples from writepointer `reqWP` 
 """
 function startPipelinedData(rp::RedPitaya, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
   command = string("RP:ADC:DATA:PIPELINED? ", reqWP, ",", numSamples, ",", chunkSize)
-  send(rp, command)
+  sending = query(rp, command, Bool)
+  
+  if !sending
+    error("RedPitaya $(rp.host) can not start sample pipeline.")
+  end
 end
