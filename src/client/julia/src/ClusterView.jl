@@ -12,11 +12,6 @@ function RedPitayaClusterView(rpc::RedPitayaCluster, selection::Vector{Bool})
     view = findall(selection)
     return RedPitayaClusterView(rpc, view)
 end
-
-function RedPitayaClusterView(hosts::Vector{String}, selection, port=5025)
-    rpc = RedPitayaCluster(hosts, port)
-    return RedPitayaClusterView(rpc, selection)
-end
   
 length(rpcv::RedPitayaClusterView) = length(rpcv.view)
 numChan(rpcv::RedPitayaClusterView) = 2 * length(rpcv.view)
@@ -37,37 +32,6 @@ start_(rpcv::RedPitayaClusterView) = 1
 next_(rpcv::RedPitayaClusterView, state) = (rpcv[state], state + 1)
 done_(rpcv::RedPitayaClusterView, state) = state > length(rpcv)
 iterate(rpcv::RedPitayaClusterView, s=start_(rpcv)) = done_(rpcv, s) ? nothing : next_(rpcv, s)
-
-
-# Pass function calls on to RedPitayaCluster
-for op in [:currentFrame, :currentPeriod, :currentWP, :connectADC, :startADC, :stopADC, :bufferSize]
-    @eval $op(rpcv::RedPitayaClusterView) = $op(rpcv.rpc)
-end
-
-for op in [:periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset,
-    :triggerMode, :slowDACStepsPerSequence, :samplesPerSlowDACStep,
-    :slowDACStepsPerFrame, :ramWriterMode, :numSlowADCChan, :numSlowDACChan,
-    :passPDMToFastDAC, :modeDAC, :masterTrigger]
-    @eval $op(rpcv::RedPitayaClusterView) = $op(master(rpcv))
-    @eval $op(rpcv::RedPitayaClusterView, value) = $op(rpcv.rpc, value)
-end
-
-for op in [:amplitudeDAC, :amplitudeDACNext, :frequencyDAC, :phaseDAC, :modulusFactorDAC, :modulusDAC]
-    @eval $op(rpcv::RedPitayaClusterView, chan::Integer, component::Integer) = $op(rpcv.rpc, chan, component)
-    @eval $op(rpcv::RedPitayaClusterView, chan::Integer, component::Integer, value) = $op(rpcv.rpc, chan, component, value)
-end
-
-for op in [:signalTypeDAC,  :DCSignDAC, :jumpSharpnessDAC, :setSlowDAC, :getSlowDAC, :offsetDAC]
-    @eval $op(rpcv::RedPitayaClusterView, chan::Integer) = $op(rpcv.rpc, chan)
-    @eval $op(rpcv::RedPitayaClusterView, chan::Integer, value) = $op(rpcv.rpc, chan, value) 
-end
-
-function enableSlowDAC(rpcv::RedPitayaClusterView, enable::Bool, numFrames::Int64=0,
-    ffRampUpTime::Float64=0.4, ffRampUpFraction::Float64=0.8)
-    enableSlowDAC(rpcv.rpc, enable, numFrames, ffRampUpTime, ffRampUpFraction)
-end
-
-slowDACInterpolation(rpcv::RedPitayaClusterView, enable::Bool) = slowDACInterpolation(rpcv.rpc, enable)
 
 # Returns the channel number in the cluster for a given channel number in the view
 function viewToCluster(rpcv::RedPitayaClusterView, chan::Integer)
