@@ -277,7 +277,7 @@ function execute!(rp::RedPitaya, batch::ScpiBatch)
   end
   result = []
   for (f, _) in batch.cmds
-    if !isnothing(scpiReturn)
+    if !isnothing(scpiReturn(f))
       ret = receive(rp, _timeout)
       push!(result, parseReturn(f, ret))
     else
