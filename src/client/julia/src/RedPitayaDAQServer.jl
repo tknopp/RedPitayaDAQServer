@@ -11,7 +11,7 @@ using LinearAlgebra
 
 import Base: reset, iterate, length, push!, pop!
 
-export RedPitaya, send, receive, query, start, stop, disconnect, ServerMode, serverMode, serverMode!, CONFIGURATION, MEASUREMENT, TRANSMISSION, getLog, ScpiBatch, execute!, clear!
+export RedPitaya, send, receive, query, start, stop, disconnect, ServerMode, serverMode, serverMode!, CONFIGURATION, ACQUISITION, TRANSMISSION, getLog, ScpiBatch, execute!, clear!
 
 """
     RedPitaya
@@ -183,11 +183,11 @@ end
 """
     ServerMode
 
-Represent the different modes the server can be in. Valid values are `CONFIGURATION`, `MEASUREMENT` and `TRANSMISSION`.
+Represent the different modes the server can be in. Valid values are `CONFIGURATION`, `ACQUISITION` and `TRANSMISSION`.
 
 See also [`serverMode`](@ref), [`serverMode!`](@ref).
 """
-@enum ServerMode CONFIGURATION MEASUREMENT TRANSMISSION
+@enum ServerMode CONFIGURATION ACQUISITION TRANSMISSION
 
 """
     serverMode(rp::RedPitaya)
@@ -196,11 +196,11 @@ Return the mode of the server.
 
 # Examples
 ```julia
-julia> serverMode!(rp, MEASUREMENT);
+julia> serverMode!(rp, ACQUISITION);
 true
 
 julia> serverMode(rp)
-MEASUREMENT
+ACQUISITION
 ```
 """
 function serverMode(rp::RedPitaya)
@@ -213,15 +213,15 @@ parseReturn(::typeof(serverMode), ret) = stringToEnum(ServerMode, strip(ret, '\"
 """
     serverMode!(rp::RedPitaya, mode::ServerMode)
 
-Set the mode of the server. Valid values are "`CONFIGURATION`" and "`MEASUREMENT`".
+Set the mode of the server. Valid values are "`CONFIGURATION`" and "`ACQUISITION`".
 
 # Examples
 ```julia
-julia> serverMode!(rp, MEASUREMENT);
+julia> serverMode!(rp, ACQUISITION);
 true
 
 julia> serverMode(rp)
-MEASUREMENT
+ACQUISITION
 ```
 """
 function serverMode!(rp::RedPitaya, mode::String)
@@ -234,11 +234,11 @@ Set the mode of the server.
 
 # Examples
 ```julia
-julia> serverMode!(rp, MEASUREMENT);
+julia> serverMode!(rp, ACQUISITION);
 true
 
 julia> serverMode(rp)
-MEASUREMENT
+ACQUISITION
 ```
 """
 function serverMode!(rp::RedPitaya, mode::ServerMode)
