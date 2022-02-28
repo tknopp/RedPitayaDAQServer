@@ -45,7 +45,7 @@ static void readyConfigSequence() {
 
 scpi_choice_def_t server_modes[] = {
 	{"CONFIGURATION", CONFIGURATION},
-	{"ACQUISITION", ACQUISITION},
+	{"MEASUREMENT", MEASUREMENT},
 	{"TRANSMISSION", TRANSMISSION},
 	SCPI_CHOICE_LIST_END
 };
@@ -65,7 +65,7 @@ static scpi_result_t RP_SetServerMode(scpi_t * context) {
 	}
 
 	serverMode_t current = getServerMode();
-	if (current != TRANSMISSION && (tmpMode == CONFIGURATION || tmpMode == ACQUISITION)) {
+	if (current != TRANSMISSION && (tmpMode == CONFIGURATION || tmpMode == MEASUREMENT)) {
 		setServerMode((serverMode_t) tmpMode);
 		return returnSCPIBool(context, true);
 	}
@@ -817,8 +817,8 @@ static scpi_result_t RP_ADC_GetBufferSize(scpi_t * context) {
 }
 
 static scpi_result_t RP_ADC_GetData(scpi_t * context) {
-	// Reading is only possible while an acquisition is running
-	if (getServerMode() != ACQUISITION) {
+	// Reading is only possible while a measurement is running
+	if (getServerMode() != MEASUREMENT) {
 		return returnSCPIBool(context, false);
 	}
 
@@ -839,7 +839,7 @@ static scpi_result_t RP_ADC_GetData(scpi_t * context) {
 }
 
 static scpi_result_t RP_ADC_GetPipelinedData(scpi_t * context) {
-	if (getServerMode() != ACQUISITION) {
+	if (getServerMode() != MEASUREMENT) {
 		return returnSCPIBool(context, false);
 	}
 	
@@ -865,8 +865,8 @@ static scpi_result_t RP_ADC_GetPipelinedData(scpi_t * context) {
 }
 
 static scpi_result_t RP_ADC_Slow_GetFrames(scpi_t * context) {
-	// Reading is only possible while an acquisition is running
-	if (getServerMode() != ACQUISITION) {
+	// Reading is only possible while a measurement is running
+	if (getServerMode() != MEASUREMENT) {
 		return SCPI_RES_ERR;
 	}
 
@@ -1069,7 +1069,7 @@ static scpi_result_t RP_GetMasterTrigger(scpi_t * context) {
 }
 
 static scpi_result_t RP_SetMasterTrigger(scpi_t * context) {
-	if (getServerMode() != ACQUISITION) {
+	if (getServerMode() != MEASUREMENT) {
 		return returnSCPIBool(context, false);
 	}
 
@@ -1097,7 +1097,7 @@ static scpi_result_t RP_GetKeepAliveReset(scpi_t * context) {
 }
 
 static scpi_result_t RP_SetKeepAliveReset(scpi_t * context) {
-	if (getServerMode() != ACQUISITION) {
+	if (getServerMode() != MEASUREMENT) {
 		return returnSCPIBool(context, false);
 	}
 

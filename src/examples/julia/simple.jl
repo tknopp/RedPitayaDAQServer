@@ -32,7 +32,7 @@ offsetDAC!(rp, 1, 0)
 phaseDAC!(rp, 1, 1, 0.0)
 
 # Start signal generation + acquisition
-# The trigger can only be set in ACQUISITION mode
+# The trigger can only be set in MEASUREMENT mode
 serverMode!(rp, MEASUREMENT)
 masterTrigger!(rp, true)
 
