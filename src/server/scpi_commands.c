@@ -819,20 +819,20 @@ static scpi_result_t RP_ADC_GetBufferSize(scpi_t * context) {
 static scpi_result_t RP_ADC_GetData(scpi_t * context) {
 	// Reading is only possible while an acquisition is running
 	if (getServerMode() != MEASUREMENT) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
 	uint64_t reqWP;
 	if (!SCPI_ParamInt64(context, &reqWP, TRUE)) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
 	uint64_t numSamples;
 	if (!SCPI_ParamInt64(context, &numSamples, TRUE)) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
-	//printf("invoke sendDataToHost()");
+	SCPI_ResultBool(context, true); // Signal that server starts sending
 	sendDataToClient(reqWP, numSamples, true);
 
 	return SCPI_RES_OK;
@@ -840,24 +840,25 @@ static scpi_result_t RP_ADC_GetData(scpi_t * context) {
 
 static scpi_result_t RP_ADC_GetPipelinedData(scpi_t * context) {
 	if (getServerMode() != MEASUREMENT) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 	
 	uint64_t reqWP;
 	if (!SCPI_ParamInt64(context, &reqWP, TRUE)) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
 	uint64_t numSamples;
 	if (!SCPI_ParamInt64(context, &numSamples, TRUE)) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
 	uint64_t chunkSize;
 	if (!SCPI_ParamInt64(context, &chunkSize, TRUE)) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
+	SCPI_ResultBool(context, true); // Signal that server starts sending
 	sendPipelinedDataToClient(reqWP, numSamples, chunkSize);
 	return SCPI_RES_OK;
 
