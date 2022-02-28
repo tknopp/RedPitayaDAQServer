@@ -98,8 +98,8 @@ for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samples
   end
 end
 
-for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :samplesPerSlowDACStep!, :slowDACStepsPerFrame!,
-           :keepAliveReset!, :serverMode!, :appendSequence!, :prepareSequences!]
+for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :samplesPerStep!, :stepsPerFrame!,
+           :keepAliveReset!, :serverMode!]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster, value)
@@ -117,7 +117,24 @@ for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :
   end
 end
 
-for op in [:disconnect, :connect, :clearSequences!]
+for op in [:clearSequences!, :appendSequence!, :prepareSequences!]
+  @eval begin
+    @doc """
+        $($op)(rpc::RedPitayaCluster, value)
+
+    As with single RedPitaya, but applied to all RedPitayas in a cluster.
+    """
+    function $op(rpc::RedPitayaCluster)
+      result = [false for i = 1:length(rpc)]
+      @sync for (i, rp) in enumerate(rpc)
+        @async result[i] = $op(rp)
+      end
+      return result
+    end
+  end
+end
+
+for op in [:disconnect, :connect]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster)
