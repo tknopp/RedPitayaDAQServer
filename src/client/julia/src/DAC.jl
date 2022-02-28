@@ -661,7 +661,7 @@ Instruct the server to prepare the currently added sequences.
 Return `true` if the command was successful.
 """
 prepareSequences!(rp::RedPitaya) = query(rp, scpiCommand(prepareSequences!), scpiReturn(prepareSequences!))
-scpiCommand(::typeof(prepareSequences!)) = "RP:DAC:SEQ:PREPare?"
+scpiCommand(::typeof(prepareSequences!)) = "RP:DAC:SEQ:PREPare"
 scpiReturn(::typeof(prepareSequences!)) = Bool
 
 # Helper function for sequences

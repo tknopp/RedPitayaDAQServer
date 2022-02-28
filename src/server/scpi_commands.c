@@ -1740,7 +1740,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:SEQ:APPend", .callback = RP_DAC_AppendSequence,},
 	{.pattern = "RP:DAC:SEQ:POP", .callback = RP_DAC_PopSequence,},
 	{.pattern = "RP:DAC:SEQ:CLEAR", .callback = RP_DAC_ClearSequences,},
-	{.pattern = "RP:DAC:SEQ:PREPare?", .callback = RP_DAC_PrepareSequences,},
+	{.pattern = "RP:DAC:SEQ:PREPare", .callback = RP_DAC_PrepareSequences,},
 	// Sequences DAC Config
 	{.pattern = "RP:DAC:SEQ:CHannel#:COMPonent#:AMPlitude", .callback = RP_DAC_SetSequenceAmplitude,},
 	{.pattern = "RP:DAC:SEQ:CHannel#:OFFset", .callback = RP_DAC_SetSequenceOffset,},
