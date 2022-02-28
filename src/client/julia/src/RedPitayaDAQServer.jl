@@ -124,7 +124,7 @@ function Sockets.connect(host, port::Integer, timeout::Number)
   s = TCPSocket()
   t = Timer(_ -> close(s), timeout)
   try
-    connect(s, host, port)
+    Sockets.connect(s, host, port)
   catch e
     error("Could not connect to $(host) on port $(port) 
             since the operations was timed out after $(timeout) seconds!")

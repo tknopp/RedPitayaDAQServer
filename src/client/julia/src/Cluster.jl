@@ -24,7 +24,7 @@ are set to using the `EXTERNAL` trigger mode.
 See also [`RedPitaya`](@ref), [`master`](@ref).
 
 # Examples
-```julia 
+```julia
 julia> rpc = RedPitayaCluster(["192.168.1.100", "192.168.1.101"]);
 
 julia> rp = master(rpc)
@@ -33,12 +33,12 @@ julia> rp == rpc[1]
 true
 ```
 """
-function RedPitayaCluster(hosts::Vector{String}, port::Int64=5025, dataPort::Int64=5026)
+function RedPitayaCluster(hosts::Vector{String}, port::Int64=5025, dataPort::Int64=5026; triggerMode_="EXTERNAL")
   # the first RP is the master
   rps = RedPitaya[ RedPitaya(host, port, dataPort, i==1) for (i,host) in enumerate(hosts) ]
 
   @sync for rp in rps
-    @async triggerMode!(rp, EXTERNAL)
+    @async triggerMode!(rp, triggerMode_)
   end
 
   return RedPitayaCluster(rps)
@@ -86,8 +86,8 @@ end
 
 for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset, :sequenceRepetitions,
            :triggerMode, :samplesPerStep, :stepsPerFrame, :serverMode, :masterTrigger]
-  
-  @eval begin 
+
+  @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster)
 
@@ -103,7 +103,7 @@ for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster, value)
-    
+
     As with single RedPitaya, but applied to all RedPitayas in a cluster.
     """
     function $op(rpc::RedPitayaCluster, value)
@@ -121,7 +121,7 @@ for op in [:disconnect, :connect, :clearSequences!]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster)
-    
+
     As with single RedPitaya, but applied to all RedPitayas in a cluster.
     """
     function $op(rpc::RedPitayaCluster)
@@ -136,7 +136,7 @@ end
 """
     masterTrigger(rpc::RedPitayaCluster, val::Bool)
 
-Set the master trigger of the cluster to `val`. 
+Set the master trigger of the cluster to `val`.
 
 For `val` equals to true this is the same as calling the function on the RedPitaya returned by `master(rpc)`.
 If `val` is false then the keepAliveReset is set to true for all RedPitayas in the cluster
@@ -157,12 +157,12 @@ end
 
 
 for op in [:amplitudeDAC, :frequencyDAC, :phaseDAC]
-  @eval begin 
+  @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster, chan::Integer, component::Integer)
-    
+
     As with single RedPitaya. The `chan` index refers to the total channel available in a cluster, two per `RedPitaya`.
-    For example channel `4` would refer to the second channel of the second `RedPitaya`. 
+    For example channel `4` would refer to the second channel of the second `RedPitaya`.
     """
     function $op(rpc::RedPitayaCluster, chan::Integer, component::Integer)
       idxRP = div(chan-1, 2) + 1
@@ -177,7 +177,7 @@ for op in [:amplitudeDAC!, :frequencyDAC!, :phaseDAC!]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster, chan::Integer, component::Integer, value)
-    
+
     As with single RedPitaya. The `chan` index refers to the total channel available in a cluster, two per `RedPitaya`.
     For example channel `4` would refer to the second channel of the second `RedPitaya`.
     """
@@ -195,10 +195,10 @@ for op in [:signalTypeDAC, :jumpSharpnessDAC, :offsetDAC]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster, chan::Integer)
-    
+
     As with single RedPitaya. The `chan` index refers to the total channel available in a cluster, two per `RedPitaya`.
     For example channel `4` would refer to the second channel of the second `RedPitaya`.
-    """ 
+    """
     function $op(rpc::RedPitayaCluster, chan::Integer)
       idxRP = div(chan-1, 2) + 1
       chanRP = mod1(chan, 2)
@@ -212,7 +212,7 @@ for op in [:signalTypeDAC!, :jumpSharpnessDAC!, :offsetDAC!]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster, chan::Integer, value)
-    
+
     As with single RedPitaya. The `chan` index refers to the total channel available in a cluster, two per `RedPitaya`.
     For example channel `4` would refer to the second channel of the second `RedPitaya`.
     """
@@ -347,8 +347,8 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
       (u, perf) = readSamplesChunk_(rp, Int64(wpRead), Int64(chunk), buffer)
       samples = reshape(u, 2, chunk)
       rawData[2*d-1, index:(index + chunk - 1)] = samples[1, :]
-      rawData[2*d, index:(index + chunk - 1)] = samples[2, :] 
-      
+      rawData[2*d, index:(index + chunk - 1)] = samples[2, :]
+
       # Status
       if perf.status.overwritten
         @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) was overwritten"
@@ -374,7 +374,7 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
   @async begin
     wait(t)
     notify(iterationDone)
-    timeoutHappened = true 
+    timeoutHappened = true
   end
 
   wait(iterationDone)
@@ -435,7 +435,7 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
   @async begin
     wait(t)
     notify(iterationDone)
-    timeoutHappened = true 
+    timeoutHappened = true
   end
 
   wait(iterationDone)
@@ -480,7 +480,7 @@ function readFrames(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}
 
   # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
   rawSamples = readPipelinedSamples(rpu, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
-  
+
   # Reshape/Avg Data
   if useCalibration
     data = convertSamplesToFrames(rpu, rawSamples, numChan(rpu), numSampPerPeriod, numPeriods, numFrames, numBlockAverages, numPeriodsPerPatch)
@@ -497,7 +497,7 @@ function convertSamplesToFrames(rpu::Union{RedPitaya, RedPitayaCluster, RedPitay
   calib = hcat(calibs...)
   for d = 1:size(frames, 2)
     frames[:, d, :, :] .*= calib[1, d]
-    frames[:, d, :, :] .+= calib[2, d] 
+    frames[:, d, :, :] .+= calib[2, d]
   end
   return frames
 end
@@ -518,7 +518,7 @@ function convertSamplesToFrames!(rpu::Union{RedPitaya, RedPitayaCluster, RedPita
   calib = hcat(calibs...)
   for d = 1:size(frames, 2)
     frames[:, d, :, :] .*= calib[1, d]
-    frames[:, d, :, :] .+= calib[2, d] 
+    frames[:, d, :, :] .+= calib[2, d]
   end
 end
 
@@ -555,16 +555,16 @@ function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView
   if rem(numSampPerPeriod,numBlockAverages) != 0
     error("block averages has to be a divider of numSampPerPeriod")
   end
- 
+
   numAveragedSampPerPeriod = div(numSampPerPeriod,numBlockAverages)
 
   data = zeros(Float32, numAveragedSampPerPeriod, numChan(rpu), numPeriods)
   wpStart = startPeriod * numSampPerPeriod
-  numOfRequestedSamples = numPeriods * numSampPerPeriod 
+  numOfRequestedSamples = numPeriods * numSampPerPeriod
 
   # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
   rawSamples = readPipelinedSamples(rpu, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
-  
+
   # Reshape/Avg Data
   if useCalibration
     convertSamplesToPeriods!(rpu, rawSamples, data, numChan(rpu), numSampPerPeriod, numPeriods, numBlockAverages)
@@ -580,7 +580,7 @@ function convertSamplesToPeriods!(rpu::Union{RedPitaya, RedPitayaCluster, RedPit
   calib = hcat(calibs...)
   for d = 1:size(periods, 2)
     periods[:, d, :] .*= calib[1, d]
-    periods[:, d, :] .+= calib[2, d] 
+    periods[:, d, :] .+= calib[2, d]
   end
   return periods
 
