@@ -433,6 +433,27 @@ function configureFastDACSeq!(rp::RedPitaya, config::DACConfig)
   return result
 end
 
+function configureFastDACSeq!(batch::ScpiBatch, config::DACConfig)
+  for ch = 1:2
+    for cmp = 1:4
+      amplitude = config.amplitudes[ch, cmp]
+      isnothing(amplitude) ||  push!(batch, amplitudeDACSeq! => (ch, cmp, amplitude))
+      
+      frequency = config.frequencies[ch, cmp]
+      isnothing(frequency) || push!(batch, frequencyDACSeq! => (ch, cmp, frequency))
+      
+      phase = config.phases[ch, cmp]
+      isnothing(phase) || push!(batch, phaseDACSeq! => (ch, cmp, phase))
+    end
+
+    offset = config.offsets[ch]
+    isnothing(offset) || push!(batch, offsetDACSeq! => (ch, offset))
+    
+    signalType = config.signalTypes[ch]
+    isnothing(signalType) || push!(batch, signalTypeDACSeq! => (ch, signalType))
+  end
+end
+
 function readDACPerformanceData(rp::RedPitaya)
   perf = read!(rp.dataSocket, Array{UInt8}(undef, 4))
   return DACPerformanceData(perf[1], perf[2], perf[3], perf[4])
@@ -578,8 +599,8 @@ rampUpTotalSteps!(rp::RedPitaya, value::Int32) = query(rp, scpiCommand(rampUpTot
 scpiCommand(::typeof(rampUpTotalSteps!), value::Int32) = string("RP:DAC:SEQ:RaMPing:UP:TOTAL ", value)
 scpiReturn(::typeof(rampUpTotalSteps!)) = Bool
 
-rampDownSteps(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:DOWN:STEPs?", Int32)
-scpiCommand(::typeof(rampDownSteps))
+rampDownSteps(rp::RedPitaya) = query(rp, scpiCommand(rampDownSteps), scpiReturn(rampDownSteps))
+scpiCommand(::typeof(rampDownSteps)) = "RP:DAC:SEQ:RaMPing:DOWN:STEPs?"
 scpiReturn(::typeof(rampDownSteps)) = Int32
 rampDownSteps!(rp::RedPitaya, value::Int32) = query(rp, scpiCommand(rampDownSteps!, value), scpiReturn(rampDownSteps!))
 scpiCommand(::typeof(rampDownSteps!), value::Int32) = string("RP:DAC:SEQ:RaMPing:DOWN:STEPs ", value)
@@ -826,19 +847,21 @@ Transmit the client-side representation `seq` to the server and append it to the
 See [`prepareSequence!`](@ref), [`clearSequences!`](@ref).
 """
 function appendSequence!(rp::RedPitaya, seq::AbstractSequence)
-  result = true
-  result &= stepsPerRepetition!(rp, stepsPerRepetition(seq))
-  result &= rampUp!(rp, rampUpSteps(seq), rampUpTotalSteps(seq))
-  result &= rampDown!(rp, rampDownSteps(seq), rampDownTotalSteps(seq))
-  result &= sequenceRepetitions!(rp, repetitions(seq))
-  result &= setLUT!(rp, seq)
+  batch = ScpiBatch()
+  push!(batch, stepsPerRepetition! => stepsPerRepetition(seq))
+  push!(batch, rampUp! => (rampUpSteps(seq), rampUpTotalSteps(seq)))
+  push!(batch, rampDown! => (rampDownSteps(seq), rampDownTotalSteps(seq)))
+  push!(batch, sequenceRepetitions! => repetitions(seq))
+  push!(batch, resetAfterSequence! => resetAfterSequence(seq))
+  configureFastDACSeq!(batch, fastDACConfig(seq))
+  result = all(execute!(rp, batch))
+  setLUT!(rp, seq)
   enable = enableLUT(seq)
   if !isnothing(enable)
     result &= enableDACLUT!(rp, enable)
   end
-  result &= configureFastDACSeq!(rp, fastDACConfig(seq))
-  result &= resetAfterSequence!(rp, resetAfterSequence(seq))
   result &= appendSequence!(rp)
+  return result
 end
 
 """
