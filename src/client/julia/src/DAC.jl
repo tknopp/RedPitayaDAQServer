@@ -42,7 +42,14 @@ function passPDMToFastDAC!(rp::RedPitaya, val::Bool)
   valStr = val ? "ON" : "OFF"
   return query(rp, string("RP:DAC:PASStofast ", valStr), Bool)
 end
-passPDMToFastDAC(rp::RedPitaya) = occursin("ON", query(rp,"RP:DAC:PASStofast?"))
+scpiCommand(::typeof(passPDMToFastDAC!), val::Bool) = scpiCommand(passPDMToFastDAC!, val ? "ON" : "OFF")
+scpiCommand(::typeof(passPDMToFastDAC!), valStr::String) = string("RP:DAC:PASStofast ", valStr)
+scpiReturn(::typeof(passPDMToFastDAC!)) = Bool
+
+passPDMToFastDAC(rp::RedPitaya) = occursin("ON", query(rp, scpiCommand(passPDMToFastDAC)))
+scpiCommand(::typeof(passPDMToFastDAC)) = "RP:DAC:PASStofast?"
+scpiReturn(::typeof(passPDMToFastDAC)) = String
+parseReturn(::typeof(passPDMToFastDAC), ret) = occursin("ON", ret)
 
 """
     amplitudeDAC(rp::RedPitaya, channel, component)
@@ -535,51 +542,96 @@ function stepsPerFrame!(rp::RedPitaya, stepsPerFrame)
   return samplesPerStep!(rp, samplesPerStep) # Sets PDMClockDivider
 end
 
-ramping!(rp::RedPitaya, rampSteps::Int32, rampTotalSteps::Int32) = query(rp, string("RP:DAC:SEQ:RaMPing ", rampSteps, ",", rampTotalSteps), Bool)
-rampUp!(rp::RedPitaya, rampUpSteps::Int32, rampUpTotalSteps::Int32) = query(rp, string("RP:DAC:SEQ:RaMPing:UP ", rampUpSteps, ",", rampUpTotalSteps), Bool)
-rampDown!(rp::RedPitaya, rampDownSteps::Int32, rampDownTotalSteps::Int32) = query(rp, string("RP:DAC:SEQ:RaMPing:DOWn ", rampDownSteps, ",", rampDownTotalSteps), Bool)
+ramping!(rp::RedPitaya, rampSteps::Int32, rampTotalSteps::Int32) = query(rp, scpiCommand(ramping!, rampSteps, rampTotalSteps), scpiReturn(ramping!))
+scpiCommand(::typeof(ramping!), rampSteps::Int32, rampTotalSteps::Int32) = string("RP:DAC:SEQ:RaMPing ", rampSteps, ",", rampTotalSteps)
+scpiReturn(::typeof(ramping!)) = Bool
+rampUp!(rp::RedPitaya, rampUpSteps::Int32, rampUpTotalSteps::Int32) = query(rp, scpiCommand(rampUp!, rampUpSteps, rampUpTotalSteps), scpiReturn(rampUp!))
+scpiCommand(::typeof(rampUp!), rampUpSteps::Int32, rampUpTotalSteps::Int32) = string("RP:DAC:SEQ:RaMPing:UP ", rampUpSteps, ",", rampUpTotalSteps)
+scpiReturn(::typeof(rampUp!)) = Bool
+rampDown!(rp::RedPitaya, rampDownSteps::Int32, rampDownTotalSteps::Int32) = query(rp, scpiCommand(rampDown!, rampDownSteps, rampDownTotalSteps), scpiReturn(rampDown!))
+scpiCommand(::typeof(rampDown!), rampDownSteps::Int32, rampDownTotalSteps::Int32) = string("RP:DAC:SEQ:RaMPing:DOWn ", rampDownSteps, ",", rampDownTotalSteps) 
+scpiReturn(::typeof(rampDown!)) = Bool
 
-rampingSteps(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:STEPs?", Int32)
-rampingSteps!(rp::RedPitaya, value::Int32) = query(rp, string("RP:DAC:SEQ:RaMPing:STEPs ", value), Bool)
-rampingTotalSteps(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:TOTAL?", Int32)
-rampingTotalSteps!(rp::RedPitaya, value::Int32) = query(rp, string("RP:DAC:SEQ:RaMPing:TOTAL ", value), Bool)
+rampingSteps(rp::RedPitaya) = query(rp, scpiCommand(rampingSteps), scpiReturn(rampingSteps))
+scpiCommand(::typeof(rampingSteps)) = "RP:DAC:SEQ:RaMPing:STEPs?"
+scpiReturn(::typeof(rampingSteps)) = Int32
+rampingSteps!(rp::RedPitaya, value::Int32) = query(rp, scpiCommand(rampingSteps!, value), scpiReturn(rampingSteps!))
+scpiCommand(::typeof(rampingSteps!), value::Int32) = string("RP:DAC:SEQ:RaMPing:STEPs ", value)
+scpiReturn(::typeof(rampingSteps!)) = Bool
+rampingTotalSteps(rp::RedPitaya) = query(rp, scpiCommand(rampingTotalSteps), scpiReturn(rampingTotalSteps))
+scpiCommand(::typeof(rampingTotalSteps)) = "RP:DAC:SEQ:RaMPing:TOTAL?"
+scpiReturn(::typeof(rampingTotalSteps)) = Int32
+rampingTotalSteps!(rp::RedPitaya, value::Int32) = query(rp, scpiCommand(rampingTotalSteps!, value), scpiReturn(rampingTotalSteps!))
+scpiCommand(::typeof(rampingTotalSteps!), value::Int32) = string("RP:DAC:SEQ:RaMPing:TOTAL ", value)
+scpiReturn(::typeof(rampingTotalSteps!)) = Bool
 
-rampUpSteps(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:UP:STEPs?", Int32)
-rampUpSteps!(rp::RedPitaya, value::Int32) = query(rp, string("RP:DAC:SEQ:RaMPing:UP:STEPs ", value), Bool)
-rampUpTotalSteps(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:UP:TOTAL?", Int32)
-rampUpTotalSteps!(rp::RedPitaya, value::Int32) = query(rp, string("RP:DAC:SEQ:RaMPing:UP:TOTAL ", value), Bool)
+rampUpSteps(rp::RedPitaya) = query(rp, scpiCommand(rampUpSteps), scpiReturn(rampUpSteps))
+scpiCommand(::typeof(rampUpSteps)) = "RP:DAC:SEQ:RaMPing:UP:STEPs?"
+scpiReturn(::typeof(rampUpSteps)) = Int32
+rampUpSteps!(rp::RedPitaya, value::Int32) = query(rp, scpiCommand(rampUpSteps!, value), scpiReturn(rampUpSteps!))
+scpiCommand(::typeof(rampUpSteps!), value::Int32) = string("RP:DAC:SEQ:RaMPing:UP:STEPs ", value)
+scpiReturn(::typeof(rampUpSteps!)) = Bool
+rampUpTotalSteps(rp::RedPitaya) = query(rp, scpiCommand(rampUpTotalSteps), scpiReturn(rampUpTotalSteps))
+scpiCommand(::typeof(rampUpTotalSteps)) = "RP:DAC:SEQ:RaMPing:UP:TOTAL?"
+scpiReturn(::typeof(rampUpTotalSteps)) = Int32
+rampUpTotalSteps!(rp::RedPitaya, value::Int32) = query(rp, scpiCommand(rampUpTotalSteps!, value), scpiReturn(rampUpTotalSteps!))
+scpiCommand(::typeof(rampUpTotalSteps!), value::Int32) = string("RP:DAC:SEQ:RaMPing:UP:TOTAL ", value)
+scpiReturn(::typeof(rampUpTotalSteps!)) = Bool
 
 rampDownSteps(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:DOWN:STEPs?", Int32)
-rampDownSteps!(rp::RedPitaya, value::Int32) = query(rp, string("RP:DAC:SEQ:RaMPing:DOWN:STEPs ", value), Bool)
-rampDownTotalSteps(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:RaMPing:DOWN:TOTAL?", Int32)
-rampDownTotalSteps!(rp::RedPitaya, value::Int32) = query(rp, string("RP:DAC:SEQ:RaMPing:DOWN:TOTAL ", value), Bool)
+scpiCommand(::typeof(rampDownSteps))
+scpiReturn(::typeof(rampDownSteps)) = Int32
+rampDownSteps!(rp::RedPitaya, value::Int32) = query(rp, scpiCommand(rampDownSteps!, value), scpiReturn(rampDownSteps!))
+scpiCommand(::typeof(rampDownSteps!), value::Int32) = string("RP:DAC:SEQ:RaMPing:DOWN:STEPs ", value)
+scpiReturn(::typeof(rampDownSteps!)) = Bool
+rampDownTotalSteps(rp::RedPitaya) = query(rp, scpiCommand(rampDownTotalSteps), scpiReturn(rampDownTotalSteps))
+scpiCommand(::typeof(rampDownTotalSteps)) = "RP:DAC:SEQ:RaMPing:DOWN:TOTAL?"
+scpiReturn(::typeof(rampDownTotalSteps)) = Int32
+rampDownTotalSteps!(rp::RedPitaya, value::Int32) = query(rp, scpiCommand(rampDownTotalSteps!, value), scpiReturn(rampDownTotalSteps!))
+scpiCommand(::typeof(rampDownTotalSteps!), value::Int32) = string("RP:DAC:SEQ:RaMPing:DOWN:TOTAL ", value)
+scpiReturn(::typeof(rampDownTotalSteps!)) = Bool
 
 function resetAfterSequence!(rp::RedPitaya, val::Bool)
-  valStr = val ? "ON" : "OFF"
-  return query(rp, string("RP:DAC:SEQ:RESETafter ", valStr), Bool)
+  return query(rp, scpiCommand(resetAfterSequence!, val), scpiReturn(resetAfterSequence!))
 end
-resetAfterSequence(rp::RedPitaya) = occursin("ON", query(rp,"RP:DAC:SEQ:RESETafter?"))
+scpiCommand(::typeof(resetAfterSequence!), val::Bool) = scpiCommand(resetAfterSequence!, val ? "ON" : "OFF")
+scpiCommand(::typeof(resetAfterSequence!), valStr::String) = string("RP:DAC:SEQ:RESETafter ", valStr)
+scpiReturn(::typeof(resetAfterSequence!)) = Bool
+resetAfterSequence(rp::RedPitaya) = occursin("ON", query(rp, scpiCommand(resetAfterSequence)))
+scpiCommand(::typeof(resetAfterSequence)) = "RP:DAC:SEQ:RESETafter?"
+scpiReturn(::typeof(resetAfterSequence)) = String
+parseReturn(::typeof(resetAfterSequence), ret) = occursin("ON", ret)
 
-sequenceRepetitions(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:REPetitions?", Int32)
+sequenceRepetitions(rp::RedPitaya) = query(rp, scpiCommand(sequenceRepetitions), scpiReturn(sequenceRepetitions))
+scpiCommand(::typeof(sequenceRepetitions)) = "RP:DAC:SEQ:REPetitions?"
+scpiReturn(::typeof(sequenceRepetitions)) = Int32
 function sequenceRepetitions!(rp::RedPitaya, value::Int)
-  return query(rp, string("RP:DAC:SEQ:REPetitions ", value), Bool)
+  return query(rp, scpiCommand(sequenceRepetitions!, value), scpiReturn(sequenceRepetitions!))
 end
+scpiCommand(::typeof(sequenceRepetitions!), value) = string("RP:DAC:SEQ:REPetitions ", value)
+scpiReturn(::typeof(sequenceRepetitions!)) = Bool
 
-appendSequence!(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:APPend", Bool)
+appendSequence!(rp::RedPitaya) = query(rp, scpiCommand(appendSequence!), scpiReturn(appendSequence!))
+scpiCommand(::typeof(appendSequence!)) = "RP:DAC:SEQ:APPend"
+scpiReturn(::typeof(appendSequence!)) = Bool
 
 """
     popSequence!(rp::RedPitaya)
 
 Instruct the server to remove the last added sequence from its list. Return `true` if the command was successful.
 """
-popSequence!(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:POP", Bool)
+popSequence!(rp::RedPitaya) = query(rp, scpiCommand(popSequence!), scpiReturn(popSequence!))
+scpiCommand(::typeof(popSequence!)) = "RP:DAC:SEQ:POP"
+scpiReturn(::typeof(popSequence!)) = Bool
 
 """
     clearSequences!(rp::RedPitaya)
 
 Instruct the server to remove all sequences from its list. Return `true` if the command was successful.
 """
-clearSequences!(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:CLEAR", Bool)
+clearSequences!(rp::RedPitaya) = query(rp, scpiCommand(clearSequences!), scpiReturn(clearSequences!))
+scpiCommand(::typeof(clearSequences!)) = "RP:DAC:SEQ:CLEAR"
+scpiReturn(::typeof(clearSequences!)) = Bool
 
 """
     prepareSequences!(rp::RedPitaya)
@@ -587,7 +639,9 @@ clearSequences!(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:CLEAR", Bool)
 Instruct the server to prepare the currently added sequences.
 Return `true` if the command was successful.
 """
-prepareSequences!(rp::RedPitaya) = query(rp, "RP:DAC:SEQ:PREPare?", Bool)
+prepareSequences!(rp::RedPitaya) = query(rp, scpiCommand(prepareSequences!), scpiReturn(prepareSequences!))
+scpiCommand(::typeof(prepareSequences!)) = "RP:DAC:SEQ:PREPare?"
+scpiReturn(::typeof(prepareSequences!)) = Bool
 
 # Helper function for sequences
 """

@@ -67,6 +67,12 @@ function receive(rp::RedPitaya, ch::Channel)
   put!(ch, receive(rp))
 end
 
+"""
+    receive(rp::RedPitaya, timeout::Number)
+
+Receive a string from the RedPitaya command socket. Reads until a whole line is received or timeout seconds passed.
+In the latter case an error is thrown.
+"""
 function receive(rp::RedPitaya, timeout::Number)
   ch = Channel()
   t = @async receive(rp, ch)
@@ -287,6 +293,11 @@ scpiCommand(f::Function, args...) = error("Function $(string(f)) does not suppor
 scpiReturn(f::Function) = typeof(nothing)
 parseReturn(f::Function, ret) = parse(scpiReturn(f), ret)
 
+"""
+    ScpiBatch
+
+Struct representing a batch of SCPI commands for a RedPitaya. Only commands that only interact with the command socket should be used in a batch.
+"""
 struct ScpiBatch
   cmds::Vector{Pair{Function, Tuple}}
 end
@@ -299,18 +310,25 @@ function clear!(batch::ScpiBatch)
   batch.cmds = []
 end
 
+"""
+    execute!(rp::RedPitaya, batch::ScpiBatch)
+
+Executes all commands of the given batch. Returns an array of the results in the order of the commands.
+Àn element is `nothing` if the command has no return value.
+"""
 function execute!(rp::RedPitaya, batch::ScpiBatch)
-  sendTime = @elapsed for (f, args) in batch.cmds
+  for (f, args) in batch.cmds
     send(rp, scpiCommand(f, args...))
   end
   result = []
-  receiveTime = @elapsed for (f, _) in batch.cmds
-     if !isnothing(scpiReturn)
+  for (f, _) in batch.cmds
+    if !isnothing(scpiReturn)
       ret = receive(rp, _timeout)
       push!(result, parseReturn(f, ret))
+    else
+      push!(result, nothing)
     end
   end
-  println(string(sendTime)*" "*string(receiveTime))
   return result
 end
 

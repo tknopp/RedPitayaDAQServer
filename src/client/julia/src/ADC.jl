@@ -205,7 +205,10 @@ Return the current writepointer of the RedPitaya.
 currentWP(rp::RedPitaya) = query(rp, scpiCommand(currentWP), scpiReturn(currentWP))
 scpiCommand(::typeof(currentWP)) = "RP:ADC:WP?"
 scpiReturn(::typeof(currentWP)) = Int64
-bufferSize(rp::RedPitaya) = query(rp,"RP:ADC:BUFFER:SIZE?", Int64)
+
+bufferSize(rp::RedPitaya) = query(rp,scpiCommand(bufferSize), scpiReturn(bufferSize))
+scpiCommand(::typeof(bufferSize)) = "RP:ADC:BUFFER:SIZE?"
+scpiReturn(::typeof(bufferSize)) = Int64
 
 """
     masterTrigger!(rp::RedPitaya, val::Bool)
@@ -293,12 +296,12 @@ scpiCommand(::typeof(triggerMode)) = "RP:TRIGger:MODe?"
 scpiReturn(::typeof(triggerMode)) = TriggerMode
 parseReturn(::typeof(triggerMode), ret) = stringToEnum(TriggerMode, strip(ret, '\"'))
 
-overwritten(rp::RedPitaya) = query(rp, "RP:STATus:OVERwritten?", Bool)
-#scpiCommand(::typeof()) = 
-#scpiReturn(::typeof()) = 
-corrupted(rp::RedPitaya) = query(rp, "RP:STATus:CORRupted?", Bool)
-#scpiCommand(::typeof()) = 
-#scpiReturn(::typeof()) = 
+overwritten(rp::RedPitaya) = query(rp, scpiCommand(overwritten), scpiReturn(overwritten))
+scpiCommand(::typeof(overwritten)) = "RP:STATus:OVERwritten?"
+scpiReturn(::typeof(overwritten)) = Bool
+corrupted(rp::RedPitaya) = query(rp, scpiCommand(corrupted), scpiReturn(corrupted))
+scpiCommand(::typeof(corrupted)) = "RP:STATus:CORRupted?"
+scpiReturn(::typeof(corrupted)) = Bool
 
 function serverStatus(rp::RedPitaya) 
   send(rp, "RP:STATus?")
