@@ -248,6 +248,45 @@ scpiCommand(::typeof(serverMode!), mode) = string("RP:MODe ", string(mode))
 scpiReturn(::typeof(serverMode!)) = Bool
 
 
+"""
+    ScpiBatch
+
+Struct representing a batch of SCPI commands for a RedPitaya. Only commands that only interact with the command socket should be used in a batch.
+"""
+struct ScpiBatch
+  cmds::Vector{Pair{Function, Tuple}}
+end
+ScpiBatch() = ScpiBatch([])
+
+push!(batch::ScpiBatch, cmd::Pair{K, T}) where {K<:Function, T<:Tuple} = push!(batch.cmds, cmd)
+push!(batch::ScpiBatch, cmd::Pair{K, T}) where {K<:Function, T<:Any} = push!(batch, cmd.first => (cmd.second,))
+pop!(batch::ScpiBatch) = pop!(batch.cmds)
+function clear!(batch::ScpiBatch)
+  batch.cmds = []
+end
+
+"""
+    execute!(rp::RedPitaya, batch::ScpiBatch)
+
+Executes all commands of the given batch. Returns an array of the results in the order of the commands.
+Àn element is `nothing` if the command has no return value.
+"""
+function execute!(rp::RedPitaya, batch::ScpiBatch)
+  for (f, args) in batch.cmds
+    send(rp, scpiCommand(f, args...))
+  end
+  result = []
+  for (f, _) in batch.cmds
+    if !isnothing(scpiReturn)
+      ret = receive(rp, _timeout)
+      push!(result, parseReturn(f, ret))
+    else
+      push!(result, nothing)
+    end
+  end
+  return result
+end
+
 include("DAC.jl")
 include("ADC.jl")
 include("Cluster.jl")
@@ -292,45 +331,6 @@ end
 scpiCommand(f::Function, args...) = error("Function $(string(f)) does not support scpiCommand")
 scpiReturn(f::Function) = typeof(nothing)
 parseReturn(f::Function, ret) = parse(scpiReturn(f), ret)
-
-"""
-    ScpiBatch
-
-Struct representing a batch of SCPI commands for a RedPitaya. Only commands that only interact with the command socket should be used in a batch.
-"""
-struct ScpiBatch
-  cmds::Vector{Pair{Function, Tuple}}
-end
-ScpiBatch() = ScpiBatch([])
-
-push!(batch::ScpiBatch, cmd::Pair{K, T}) where {K<:Function, T<:Tuple} = push!(batch.cmds, cmd)
-push!(batch::ScpiBatch, cmd::Pair{K, T}) where {K<:Function, T<:Any} = push!(batch, cmd.first => (cmd.second,))
-pop!(batch::ScpiBatch) = pop!(batch.cmds)
-function clear!(batch::ScpiBatch)
-  batch.cmds = []
-end
-
-"""
-    execute!(rp::RedPitaya, batch::ScpiBatch)
-
-Executes all commands of the given batch. Returns an array of the results in the order of the commands.
-Àn element is `nothing` if the command has no return value.
-"""
-function execute!(rp::RedPitaya, batch::ScpiBatch)
-  for (f, args) in batch.cmds
-    send(rp, scpiCommand(f, args...))
-  end
-  result = []
-  for (f, _) in batch.cmds
-    if !isnothing(scpiReturn)
-      ret = receive(rp, _timeout)
-      push!(result, parseReturn(f, ret))
-    else
-      push!(result, nothing)
-    end
-  end
-  return result
-end
 
 
 end # module
