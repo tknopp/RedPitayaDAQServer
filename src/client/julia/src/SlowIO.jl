@@ -94,6 +94,14 @@ See [`DIODirection`](@ref), [`DIODirection!`](@ref), [`DIO`](@ref), [`DIO`](@ref
   DIO2_N
 end
 
+export isValidDIOPin
+"""
+isValidDIOPin(pin::String)
+
+Check if a given string is an allowed value for the DIO pin names.
+
+See [`DIOPins`](@ref).
+"""
 isValidDIOPin(pin::String) = pin in string.(instances(DIOPins))
 
 """
