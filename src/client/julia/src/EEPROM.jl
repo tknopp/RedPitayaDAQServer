@@ -1,4 +1,4 @@
-export calibDACOffset, calibDACOffset!, calibADCScale, calibADCScale!, calibADCOffset, calibADCOffset!, updateCalib!
+export calibDACOffset, calibDACOffset!, calibADCScale, calibADCScale!, calibADCOffset, calibADCOffset!, updateCalib!, calibDACScale!, calibDACScale
 
 """
     calibDACOffset!(rp::RedPitaya, channel::Integer, val)
