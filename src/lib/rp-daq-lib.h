@@ -111,8 +111,9 @@ extern int setEnableDAC(int8_t, int, int);
 extern int setResetDAC(int8_t, int);
 
 // misc
-extern int setDIODirection(const char*,int);
-extern int setDIO(const char*,int);
+extern int getDIODirection(const char*)
+extern int setDIODirection(const char*, int);
+extern int setDIO(const char*, int);
 extern int getDIO(const char*);
 extern int setTriggerMode(int);
 extern int getTriggerMode();
