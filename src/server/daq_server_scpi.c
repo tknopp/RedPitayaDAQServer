@@ -77,6 +77,12 @@ sequenceNode_t *head = NULL;
 sequenceNode_t *tail = NULL;
 sequenceNode_t *configNode = NULL;
 
+// Transmission 
+transmissionState_t transmissionState;
+uint64_t numSamples;
+uint64_t reqWP;
+uint64_t chunkSize;
+
 double rampUpTime;
 double rampUpFraction;
 double rampDownTime;

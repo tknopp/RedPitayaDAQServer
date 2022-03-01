@@ -421,6 +421,20 @@ void* communicationThread(void* p) {
 		}
 		else if (rc > 0) { /* something to handle */
 			SCPI_Input(&scpi_context, smbuffer, rc);
+			// Check transmission requests
+			switch (transmissionState) {
+				case SIMPLE:
+					sendDataToClient(reqWP, numSamples, true);
+					transmissionState = IDLE;
+					break;
+				case PIPELINE:
+					sendPipelinedDataToClient(reqWP, numSamples, chunkSize);
+					transmissionState = IDLE;
+					break;
+				case IDLE:
+				default:
+					break;
+			}
 		}
 		else {
 			/* TODO This was was seen as Connection closed, but rc = 0 could also

@@ -832,10 +832,8 @@ static scpi_result_t RP_ADC_GetData(scpi_t * context) {
 		return returnSCPIBool(context, false);
 	}
 
-	SCPI_ResultBool(context, true); // Signal that server starts sending
-	sendDataToClient(reqWP, numSamples, true);
-
-	return SCPI_RES_OK;
+	transmissionState = SIMPLE;
+	return SCPI_ResultBool(context, true); // Signal that server starts sending
 }
 
 static scpi_result_t RP_ADC_GetPipelinedData(scpi_t * context) {
@@ -843,24 +841,20 @@ static scpi_result_t RP_ADC_GetPipelinedData(scpi_t * context) {
 		return returnSCPIBool(context, false);
 	}
 	
-	uint64_t reqWP;
 	if (!SCPI_ParamInt64(context, &reqWP, TRUE)) {
 		return returnSCPIBool(context, false);
 	}
 
-	uint64_t numSamples;
 	if (!SCPI_ParamInt64(context, &numSamples, TRUE)) {
 		return returnSCPIBool(context, false);
 	}
 
-	uint64_t chunkSize;
 	if (!SCPI_ParamInt64(context, &chunkSize, TRUE)) {
 		return returnSCPIBool(context, false);
 	}
 
-	SCPI_ResultBool(context, true); // Signal that server starts sending
-	sendPipelinedDataToClient(reqWP, numSamples, chunkSize);
-	return SCPI_RES_OK;
+	transmissionState = PIPELINE;
+	return SCPI_ResultBool(context, true); // Signal that server starts sending;
 
 }
 
