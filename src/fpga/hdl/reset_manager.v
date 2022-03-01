@@ -46,6 +46,8 @@ localparam integer ALIVE_SIGNAL_HIGH_TIME_CYCLES = 1250000;//(125000000/ALIVE_SI
 localparam integer RAMWRITER_DELAY_TIME= 1000000000; //100ms
 
 reg triggerState = 0;
+reg masterTriggerState_pre = 0;
+reg masterTriggerState = 0;
 
 reg write_to_ram_aresetn_int = 0;
 reg xadc_aresetn_int = 0;
@@ -110,7 +112,7 @@ IOBUF #(
 .I(reset_ack_out),
 .IO(reset_ack),
 .O(reset_ack_in),
-.T(1'b0) // 3-state enable input, high=input, low=output
+.T(0'b0) // 3-state enable input, high=input, low=output
 );
 
 IOBUF #(
@@ -121,7 +123,7 @@ IOBUF #(
 .I(alive_signal_out),
 .IO(alive_signal),
 .O(alive_signal_in),
-.T(1'b0) // 3-state enable input, high=input, low=output
+.T(0'b0) // 3-state enable input, high=input, low=output
 );
 
 IOBUF #(
@@ -132,18 +134,28 @@ IOBUF #(
 .I(master_trigger_out),
 .IO(master_trigger),
 .O(master_trigger_in),
-.T(1'b0) // 3-state enable input, high=input, low=output
+.T(0'b0) // 3-state enable input, high=input, low=output
 );
 
-// Register Inputs
+// Double-register inputs
+reg trigger_in_int_pre = 0;
 reg trigger_in_int = 0;
+reg watchdog_in_int_pre = 0;
 reg watchdog_in_int = 0;
+reg instant_reset_in_int_pre = 0;
 reg instant_reset_in_int = 0;
+reg peripheral_aresetn_int_pre = 0;
+reg peripheral_aresetn_int = 0;
 always @(posedge clk)
 begin
-    trigger_in_int = trigger_in;
-    watchdog_in_int = watchdog_in;
-    instant_reset_in_int = instant_reset_in;
+    trigger_in_int_pre <= trigger_in;
+    trigger_in_int <= trigger_in_int_pre;
+    watchdog_in_int_pre <= watchdog_in;
+    watchdog_in_int <= watchdog_in_int_pre;
+    instant_reset_in_int_pre <= instant_reset_in;
+    instant_reset_in_int <= instant_reset_in_int_pre;
+    peripheral_aresetn_int_pre <= peripheral_aresetn;
+    peripheral_aresetn_int <= peripheral_aresetn_int_pre;
 end
 
 // Create alive signal
@@ -173,29 +185,36 @@ end
 // Master Trigger State
 always @(posedge clk)
 begin
-	if (reset_cfg[4] == 0) // internal trigger mode
-		triggerState <= reset_cfg[5];
-	else
-		triggerState <= trigger_in;
+    if (reset_cfg[4] == 0) // internal trigger mode
+    begin
+        triggerState <= reset_cfg[5];
+    end
+    else
+    begin
+        triggerState <= trigger_in_int;
+    end
+
+    masterTriggerState_pre <= reset_cfg[5];
+    masterTriggerState <= masterTriggerState_pre;
 end
 
 always @(posedge clk)
 begin
     if (~peripheral_aresetn)
     begin
-        write_to_ram_aresetn_int <= peripheral_aresetn;
-        xadc_aresetn_int <= peripheral_aresetn;
-        fourier_synth_aresetn_int <= peripheral_aresetn;
-        pdm_aresetn_int <= peripheral_aresetn;
+        write_to_ram_aresetn_int <= peripheral_aresetn_int;
+        xadc_aresetn_int <= peripheral_aresetn_int;
+        fourier_synth_aresetn_int <= peripheral_aresetn_int;
+        pdm_aresetn_int <= peripheral_aresetn_int;
     end
     else
     begin
         // Write to RAM
         if (reset_cfg[0] == 0) // continuous mode
         begin
-            write_to_ram_aresetn_int <= peripheral_aresetn;
-            fourier_synth_aresetn_int <= peripheral_aresetn;
-            pdm_aresetn_int <= peripheral_aresetn;
+            write_to_ram_aresetn_int <= peripheral_aresetn_int;
+            fourier_synth_aresetn_int <= peripheral_aresetn_int;
+            pdm_aresetn_int <= peripheral_aresetn_int;
         end
         else // trigger mode
         begin
@@ -215,7 +234,7 @@ begin
         end
 
         // XADC is always running
-        xadc_aresetn_int <= peripheral_aresetn;
+        xadc_aresetn_int <= peripheral_aresetn_int;
         keep_alive_aresetn_int <= reset_cfg[6];
     end
 end
@@ -227,7 +246,7 @@ assign fourier_synth_aresetn = fourier_synth_aresetn_int;
 assign pdm_aresetn = pdm_aresetn_int;
 assign keep_alive_aresetn = keep_alive_aresetn_int;
 
-assign reset_sts[0] = peripheral_aresetn;
+assign reset_sts[0] = peripheral_aresetn_int;
 assign reset_sts[1] = fourier_synth_aresetn_int;
 assign reset_sts[2] = pdm_aresetn_int;
 assign #(0,RAMWRITER_DELAY_TIME) reset_sts[3] = write_to_ram_aresetn_int;
@@ -243,7 +262,7 @@ assign led[7:0] = reset_sts[7:0];
 assign reset_ack_out = watchdog_in; // Acknowledge received watchdog signal
 
 assign alive_signal_out = alive_signal_int;
-assign master_trigger_out = reset_cfg[5];
+assign master_trigger_out = masterTriggerState;
 
 
 endmodule
