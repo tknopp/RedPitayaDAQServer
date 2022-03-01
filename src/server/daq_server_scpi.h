@@ -83,6 +83,12 @@ typedef enum {CONFIGURATION, ACQUISITION, TRANSMISSION} serverMode_t;
 extern serverMode_t getServerMode();
 extern void setServerMode(serverMode_t mode);
 
+// Transmission
+typedef enum {IDLE, SIMPLE, PIPELINE} transmissionState_t;
+extern transmissionState_t transmissionState;
+extern uint64_t numSamples;
+extern uint64_t reqWP;
+extern uint64_t chunkSize;
 
 // Sequences
 // Sequence structures
