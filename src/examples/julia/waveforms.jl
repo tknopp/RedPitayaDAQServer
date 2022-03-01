@@ -36,7 +36,7 @@ color = ["g", "b", "orange", "k"]
 for (i,name) in enumerate(["SINE", "SQUARE", "TRIANGLE", "SAWTOOTH"])
   # Set different waveforms
   signalTypeDAC!(rp, 1 , name)
-  serverMode!(rp, MEASUREMENT)
+  serverMode!(rp, ACQUISITION)
   masterTrigger!(rp, false)
   masterTrigger!(rp, true)
   local fr = 1
