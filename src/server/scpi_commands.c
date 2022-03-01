@@ -904,7 +904,7 @@ static scpi_result_t RP_DIO_GetDIODirection(scpi_t * context) {
 	const char* pin;
 	size_t len;
 	if (!SCPI_ParamCharacters(context, &pin, &len, TRUE)) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
 	const char* name;
@@ -912,7 +912,7 @@ static scpi_result_t RP_DIO_GetDIODirection(scpi_t * context) {
 	int result = getDIODirection(pin);
 
 	if (result < 0) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
 	SCPI_ChoiceToName(inout_modes, result, &name);
@@ -971,7 +971,7 @@ static scpi_result_t RP_DIO_GetDIOOutput(scpi_t * context) {
 	const char* pin;
 	size_t len;
 	if (!SCPI_ParamCharacters(context, &pin, &len, TRUE)) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
 	const char* name;
@@ -979,7 +979,7 @@ static scpi_result_t RP_DIO_GetDIOOutput(scpi_t * context) {
 	int result = getDIO(pin);
 
 	if (result < 0) {
-		return SCPI_RES_ERR;
+		return returnSCPIBool(context, false);
 	}
 
 	SCPI_ChoiceToName(onoff_modes, result,  &name);

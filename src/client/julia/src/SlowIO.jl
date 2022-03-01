@@ -104,6 +104,7 @@ See [`DIOPins`](@ref).
 """
 isValidDIOPin(pin::String) = pin in string.(instances(DIOPins))
 
+export DIODirection!
 """
   DIODirection!(rp::RedPitaya, pin::DIOPins, direction::DIODirectionType)
 
@@ -120,6 +121,7 @@ DIODirection!(rp::RedPitaya, pin, direction) = query(rp, scpiCommand(DIODirectio
 scpiCommand(::typeof(DIODirection!), pin::DIOPins, direction::DIODirectionType) = string("RP:DIO:DIR ", string(pin), ",", (direction == DIO_IN ? "IN" : "OUT"))
 scpiReturn(::typeof(DIODirection!)) = Bool
 
+export DIODirection
 """
   DIODirection(rp::RedPitaya, pin::DIOPins)
 
@@ -137,6 +139,7 @@ scpiCommand(::typeof(DIODirection), pin) = string("RP:DIO:DIR?", string(pin))
 scpiReturn(::typeof(DIODirection)) = DIODirectionType
 parseReturn(::typeof(DIODirection), ret) = stringToEnum(DIODirectionType, "DIO_"*ret)
 
+export DIO!
 """
 DIO!(rp::RedPitaya, pin::DIOPins, val::Bool)
 
@@ -151,6 +154,7 @@ DIO!(rp::RedPitaya, pin, val) = query(rp, scpiCommand(DIO!, pin, val), scpiRetur
 scpiCommand(::typeof(DIO!), pin::DIOPins, val::Bool) = string("RP:DIO ", string(pin), ",", (val ? "ON" : "OFF"))
 scpiReturn(::typeof(DIO!)) = Bool
 
+export DIO
 """
   DIO(rp::RedPitaya, pin::DIOPins)
 
