@@ -960,8 +960,23 @@ int getInternalPINNumber(const char* pin) {
 	} else if(strncmp(pin, "DIO2_N", 6) == 0) {
 		return 7;
 	} else {
-
 		return -1;
+	}
+}
+
+int getDIODirection(const char* pin) {
+	int pinInternal = getInternalPINNumber(pin);
+	if(pinInternal < 0) {
+		return -3;
+	}
+
+	uint32_t register_value = *((uint8_t *)(dio_sts));
+	register_value = ((register_value & (0x1 << (pinInternal))) >> (pinInternal));
+	
+	if(register_value == 1) {
+		return IN;
+	} else {
+		return OUT;
 	}
 }
 
