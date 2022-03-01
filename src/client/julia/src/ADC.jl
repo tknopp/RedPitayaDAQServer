@@ -12,6 +12,7 @@ Represent the different trigger modes the FPGA image can have. Valid value are `
 See [`triggerMode`](@ref), [`triggerMode!`](@ref).
 """
 @enum TriggerMode INTERNAL EXTERNAL
+
 struct ADCPerformanceData
   deltaRead::UInt64
   deltaSend::UInt64

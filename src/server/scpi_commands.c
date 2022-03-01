@@ -906,6 +906,27 @@ scpi_choice_def_t inout_modes[] = {
 	SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
+static scpi_result_t RP_DIO_GetDIODirection(scpi_t * context) {
+	const char* pin;
+	size_t len;
+	if (!SCPI_ParamCharacters(context, &pin, &len, TRUE)) {
+		return SCPI_RES_ERR;
+	}
+
+	const char* name;
+
+	int result = getDIODirection(pin);
+
+	if (result < 0) {
+		return SCPI_RES_ERR;
+	}
+
+	SCPI_ChoiceToName(inout_modes, result, &name);
+	SCPI_ResultText(context, name);
+
+	return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context) {
 	const char* pin;
 	size_t len;
@@ -1762,6 +1783,7 @@ const scpi_command_t scpi_commands[] = {
 	//{.pattern = "RP:ADC:Slow:FRAmes:DATa", .callback = RP_ADC_Slow_GetFrames,},
 	//{.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},
 	{.pattern = "RP:DIO:DIR", .callback = RP_DIO_SetDIODirection,},
+	{.pattern = "RP:DIO:DIR?", .callback = RP_DIO_GetDIODirection,},
 	{.pattern = "RP:DIO", .callback = RP_DIO_SetDIOOutput,},
 	{.pattern = "RP:DIO?", .callback = RP_DIO_GetDIOOutput,},
 	{.pattern = "RP:WatchDogMode", .callback = RP_SetWatchdogMode,},

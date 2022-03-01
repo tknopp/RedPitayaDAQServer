@@ -33,7 +33,7 @@ phaseDAC!(rp, 1, 1, 0.0)
 
 # Start signal generation + acquisition
 # The trigger can only be set in ACQUISITION mode
-serverMode!(rp, MEASUREMENT)
+serverMode!(rp, ACQUISITION)
 masterTrigger!(rp, true)
 
 # Transmit the first frame
