@@ -1,4 +1,5 @@
-from common import *
+from RedPitayaDAQServer import *
+import matplotlib.pyplot as plt
 
 print("Simple Python Example")
 
@@ -13,6 +14,7 @@ modulus = 12480
 base_frequency = 125000000
 samples_per_period = int((modulus / dec)) 
 periods_per_frame = 2
+samples_per_frame = samples_per_period * periods_per_frame
 
 # ADC Configuration
 # These commands are only allowed in CONFIGURATION mode
@@ -32,7 +34,30 @@ ret = rp.query("RP:DAC:CH0:COMP0:PHA %f" % (0.0))
 ret = rp.query("RP:MODe ACQUISITION")
 ret = rp.query("RP:TRIGger ON")
 
+# Transmit the first frame
+uFirstPeriod = rp.readSamples(0, samples_per_frame) 
 
+time.sleep(0.1)
 
+# Transmit a current frame
+fr = int( int(rp.query("RP:ADC:WP?")) / samples_per_frame ) * samples_per_frame
+# Dimensions of frames are [samples channel, period, frame]
+uCurrentPeriod = rp.readSamples(fr, samples_per_frame) 
 
+time.sleep(0.1)
 
+fr = int( int(rp.query("RP:ADC:WP?")) / samples_per_frame ) * samples_per_frame
+uLastPeriod = rp.readSamples(fr, samples_per_frame) 
+# Stop signal generation + acquisition
+ret = rp.query("RP:TRIGger OFF")
+ret = rp.query("RP:MODe CONFIGURATION")
+
+plt.figure(1)
+plt.clf()
+plt.plot(uFirstPeriod[0,:])
+plt.plot(uCurrentPeriod[0,:])
+plt.plot(uLastPeriod[0,:])
+plt.legend(("first period", "current period", "last period"))
+plt.savefig("simple.png")
+
+plt.show()

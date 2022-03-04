@@ -1,10 +1,8 @@
 import socket
-from decimal import Decimal
 import time
 import numpy as np
 import select
 import struct
-import logging
 
 class RedPitaya:
     """Provides access to the DAQ functions of the Red Pitaya
@@ -54,7 +52,6 @@ class RedPitaya:
             for s in inputready:
                 s.recv(1)
         
-        logging.debug('Sending command: %s' % command)
         self._socket.sendall((command + self._delim).encode())
     
     def receive(self):
@@ -83,75 +80,33 @@ class RedPitaya:
     
     ## Data acquisition
     
-    def readDataLowLevel(self, startFrame, numFrames):
-        # Initiate transaction
-        self.initiateReadingFrameData(startFrame, numFrames);
-        
-        # Read specified amount of data
-        logging.debug('Read data...')
-        numSampPerFrame = self._samplesPerPeriod*self._periodsPerFrame
-        
+    def readSamples(self, startSamp, numSamples):
+        chunksSize = 4096
+
         data = []
-        expectedBytes = 2*2*numSampPerFrame*numFrames
+        expectedBytes = 2*2*numSamples
         receivedBytes = 0
+
+        if chunksSize > expectedBytes:
+          chunksSize = expectedBytes
+
+        self.query("RP:ADC:DATA:PIPELINED? %d,%d,%d" % (startSamp, numSamples, chunksSize) )
+
         while receivedBytes < expectedBytes:
-            receivedData = self._dataSocket.recv(4096)
+            receivedData = self._dataSocket.recv(chunksSize)
             receivedBytes += len(receivedData)
             data.append(receivedData)
         
         # Combine all packets into one array
         data = b''.join(data)
-        
+
+        # read away performance data
+        self._dataSocket.recv(21)
+
         # Restructure bytearray to int16 array with little endian
         data = [item[0] for item in struct.iter_unpack('<h', data)]
         
         # Reshape to one row per ADC channel
-        data = np.reshape(data, (2, self._samplesPerPeriod, self._periodsPerFrame, numFrames), 'F')
+        data = np.reshape(data, (2, numSamples), 'F')
         
         return data
-    
-    def readData(self, startFrame, numFrames, numBlockAverages = 1):
-        numSamp = self._samplesPerPeriod*numFrames
-        numSampPerFrame = self._samplesPerPeriod*self._periodsPerFrame
-		
-        if not (self._samplesPerPeriod % numBlockAverages) == 0:
-            raise TypeError('Block averages has to be a divider of numSampPerPeriod. This is not true with samplesPerPeriod=%.0f and numBlockAverages=%.0f.' % (RP.samplesPerPeriod, numBlockAverages))
-        
-        numAveragedSampPerPeriod = int(self._samplesPerPeriod/numBlockAverages);
-        
-        data = np.zeros((2, numAveragedSampPerPeriod, self._periodsPerFrame, numFrames))
-        
-        wpRead = startFrame
-        chunksRead = 0
-
-        # This is a wild guess for a good chunk size
-        chunkSize = max(1, round(1000000 / numSampPerFrame))
-        logging.debug("chunkSize = %d" % chunkSize)
-        while chunksRead < numFrames:
-            wpWrite = self.getCurrentFrame()
-            while wpRead >= wpWrite: # Wait that startFrame is reached
-                wpWrite = self.getCurrentFrame()
-                logging.debug("wpWrite=%d" % wpWrite)
-            
-            chunk = int(min(wpWrite-wpRead, chunkSize)) # Determine how many frames to read
-            logging.debug("chunk=%d" % chunk)
-            
-            if chunksRead+chunk > numFrames:
-                chunk = numFrames-chunksRead
-
-            logging.debug("Read from %.0f until %.0f, WpWrite %.0f, chunk=%.0f" % (wpRead, wpRead+chunk-1, wpWrite, chunk))
-
-            u = self.readDataLowLevel(wpRead, chunk)
-            
-            if numBlockAverages > 1:
-                utmp = np.reshape(u, (2, numAveragedSampPerPeriod, numBlockAverages, np.size(u, 2), np.size(u, 3)), 'F')
-                utmp = np.mean(utmp, 2);
-                data[:,:,:,chunksRead:(chunksRead+chunk)] = utmp
-            else:
-                data[:,:,:,chunksRead:(chunksRead+chunk)] = u
-
-            chunksRead = chunksRead+chunk
-            wpRead = wpRead+chunk
-        
-        return data
-    
