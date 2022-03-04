@@ -5,24 +5,12 @@ import select
 import struct
 
 class RedPitaya:
-    """Provides access to the DAQ functions of the Red Pitaya
-       All functions which are exposed via SCPI on the server have their
-       counterpart in this class. This enables the usage of the data
-       acquisition tools without the need for writing the SCPI commands by
-       hand.
-    """
-    
     _host = None
     _port = 5025
     _dataPort = 5026
     _delim = '\n'
     _socket = None
     _dataSocket = None
-    _isConnected = False
-    _decimation = None
-    _samplesPerPeriod = None
-    _periodsPerFrame = None
-    _slowPeriodsPerFrame = None
     
     def __init__(self, host, port = 5025, dataPort = 5026):
         self._host = host
@@ -35,14 +23,6 @@ class RedPitaya:
         self._dataSocket.connect((self._host, self._dataPort))
     
     def send(self, command):
-        """Send a command to the RedPitaya
-        
-           See also receive(), query().
-        """
-        
-        # Prevent errors due to being too fast
-        time.sleep(0.001)
-    
         # Flush input buffer
         input = [self._socket]
         while True:
@@ -55,11 +35,6 @@ class RedPitaya:
         self._socket.sendall((command + self._delim).encode())
     
     def receive(self):
-        """Receive a value from the RedPitaya
-        
-           See also send(), query().
-        """
-        
         fileHandle = self._socket.makefile('r')
         data = fileHandle.readline().strip()
         
@@ -70,11 +45,6 @@ class RedPitaya:
         return data
     
     def query(self, command):
-        """Send a command and then receive a value from the RedPitaya
-        
-           See also send(), receive().
-        """
-    
         self.send(command)
         return self.receive()
     
