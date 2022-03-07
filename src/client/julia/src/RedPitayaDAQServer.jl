@@ -53,6 +53,7 @@ function send(rp::RedPitaya,cmd::String)
 end
 
 const _timeout = 5.0
+const _scaleWarning = 0.1
 
 """
     receive(rp::RedPitaya)
@@ -137,10 +138,14 @@ end
 function connect(rp::RedPitaya)
   if !rp.isConnected
     begin
-    rp.socket = connect(rp.host, rp.port, _timeout)
-    rp.dataSocket = connect(rp.host, rp.dataPort, _timeout)
-    rp.isConnected = true
-    updateCalib!(rp)
+      rp.socket = connect(rp.host, rp.port, _timeout)
+      rp.dataSocket = connect(rp.host, rp.dataPort, _timeout)
+      rp.isConnected = true
+      updateCalib!(rp)
+      temp = findall([calibDACScale(rp, 1) < _scaleWarning, calibDACScale(rp, 2) < _scaleWarning])
+      if length(temp) > 0
+        @warn "RP $(rp.host): Channels $(string(temp)) have a small DAC scale calibration value. If this is not intended use calibDACScale!(rp, i, 1.0) to set a default scale."
+      end
     end
   end
 end

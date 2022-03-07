@@ -8,7 +8,8 @@ The RedPitayaDAQServer project is implemented as a distributed system in which o
   
 The FPGA image is responsible for [generating](generation.md) and [acquiring](acquisition.md) sychronized out- and input signals. The server acts as an intermediary to the FPGA over a TCP/IP connection, which allows remote clients to configure the FPGA image and retrieve samples. Furthermore, the server also maintains a thread that takes part in signal generation.
 
-The Julia client library can be used to implement a data acqusition client application, which controls a (cluster of) RedPitaya(s). This Julia library acts as a reference, but in principle it is possible to write clients in any programming language, as the communication is language agnostic.
+The Julia client library can be used to implement a data acquisition client application, which controls a (cluster of) RedPitaya(s). This Julia library acts as a reference, but in principle it is possible to write clients in any programming language, as the communication is language agnostic. In the [example directory](https://github.com/tknopp/RedPitayaDAQServer/tree/master/src/examples/python) we provide a rudimentary Python client that allows to perform a simple data acquisition experiment.
+
 
 ## Communication
 The various components of the distributed system communicate over different interfaces. Communication within a RedPitaya is based on memory-mapped I/O, while communication between the server and a client is based on SCPI commands over a TCP/IP connection, usually over Ethernet. Lastly communication between RedPitayas is limited to signals distributed over cables as described in [Cluster](cluster.md).

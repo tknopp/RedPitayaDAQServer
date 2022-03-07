@@ -8,7 +8,7 @@ Note that while the example only plots the first channel of the RedPitaya, both 
 
 ## Julia Client
 
-This and all other examples are located in the ```examples``` [directory](https://github.com/tknopp/RedPitayaDAQServer/tree/master/src/examples/julia)
+This and all other examples are located in the ```examples``` [directory](https://github.com/tknopp/RedPitayaDAQServer/tree/master/src/examples/julia).
 
 ````@eval
 # Adapted from https://github.com/JuliaDocs/Documenter.jl/issues/499
@@ -21,3 +21,18 @@ $(open(f->read(f, String), "../../../src/examples/julia/simple.jl"))
 ````
 
 ![Simple Example Results](../assets/simple.png)
+
+
+## Python Client
+
+This example is located in the ```python examples``` [directory](https://github.com/tknopp/RedPitayaDAQServer/tree/master/src/examples/python). The python examples use a very reduced Python
+client class that is located [here](https://github.com/tknopp/RedPitayaDAQServer/tree/master/src/examples/python/RedPitayaDAQServer.py). The Python client only wraps the low-level socket communication.
+
+````@eval
+using Markdown
+Markdown.parse("""
+```python
+$(open(f->read(f, String), "../../../src/examples/python/simple.py"))
+```
+""")
+````

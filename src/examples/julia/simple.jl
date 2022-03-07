@@ -55,7 +55,7 @@ serverMode!(rp, CONFIGURATION)
 figure(1)
 clf()
 # Frame dimensions are [samples, chan, periods, frames]
-#plot(vec(uFirstPeriod[:,1,:,:]))
+plot(vec(uFirstPeriod[:,1,:,:]))
 plot(vec(uCurrentPeriod[:,1,:,:]))
 plot(vec(uLastPeriod[:,1,:,:]))
 legend(("first period", "current period", "last period"))

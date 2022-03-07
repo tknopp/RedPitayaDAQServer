@@ -1,4 +1,4 @@
-export calibDACOffset, calibDACOffset!, calibADCScale, calibADCScale!, calibADCOffset, calibADCOffset!, updateCalib!
+export calibDACOffset, calibDACOffset!, calibADCScale, calibADCScale!, calibADCOffset, calibADCOffset!, updateCalib!, calibDACScale!, calibDACScale
 
 """
     calibDACOffset!(rp::RedPitaya, channel::Integer, val)
@@ -29,7 +29,7 @@ This value is used by the server to scale the output voltage.
 function calibDACScale!(rp::RedPitaya, channel::Integer, val)
   command = string("RP:CALib:DAC:CH", Int(channel) - 1, ":SCA $(Float32(val))")
   rp.calib[1, channel] = Float32(val)
-  return send(rp, command)
+  return query(rp, command, Bool)
 end
 """
     calibDACScale(rp::RedPitaya, channel::Integer)
@@ -72,7 +72,7 @@ See also [convertSamplesToPeriods](@ref),[convertSamplesToFrames](@ref).
 function calibADCScale!(rp::RedPitaya, channel::Integer, val)
   command = string("RP:CALib:ADC:CH", Int(channel) - 1, ":SCA $(Float32(val))")
   rp.calib[1, channel] = Float32(val)
-  return send(rp, command)
+  return query(rp, command, Bool)
 end
 """
     calibADCScale(rp::RedPitaya, channel::Integer)

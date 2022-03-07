@@ -26,6 +26,11 @@
 #include "../lib/rp-daq-lib.h"
 #include "../server/daq_server_scpi.h"
 
+
+	static int clifd;
+	static int rc;
+	static char smbuffer[32];
+
 size_t SCPI_Write(scpi_t * context, const char * data, size_t len) {
 	(void) context;
 
@@ -304,6 +309,8 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 	uint64_t readWP = 0;
 	uint64_t chunk = 0;
 	bool clearFlagsAndPerf = true;
+	int rc;
+	
 	setServerMode(TRANSMISSION);
 	while (sendSamplesTotal < numSamples && chunkSize > 0 && commThreadRunning) {
 		chunk = MIN(numSamples - sendSamplesTotal, chunkSize); // Client and Server can compute same chunk value
@@ -333,6 +340,12 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 		sendSamples = 0;
 		clearFlagsAndPerf = true;
 		sendSamplesTotal += chunk;
+
+		// Check if SCPI commands are waiting
+		rc = recv(clifd, smbuffer, sizeof (smbuffer), MSG_DONTWAIT);
+		if (rc > 0) {
+			SCPI_Input(&scpi_context, smbuffer, rc);
+		}
 
 	}
 	setServerMode(ACQUISITION); // Maybe get and reset previous mode later. Atm it has to be ACQUISITION anyways
@@ -390,9 +403,7 @@ void sendStatusToClient() {
 }
 
 void* communicationThread(void* p) { 
-	int clifd = (int)p;
-	int rc;
-	char smbuffer[20];
+	clifd = (int)p;
 
 	// Prepare loop
 	userspaceBuffer = malloc(userspaceSizeBytes);

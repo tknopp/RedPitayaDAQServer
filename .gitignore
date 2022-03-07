@@ -9,6 +9,7 @@ src/client/python/.project
 src/examples/python/.pydevproject
 src/examples/python/.project
 src/examples/julia/images
+src/examples/python/*.png
 core
 bitfiles
 *.jl.cov
