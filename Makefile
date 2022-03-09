@@ -1,3 +1,5 @@
+include libs/gmsl/gmsl
+
 # 'make' builds everything
 # 'make clean' deletes everything except source files and Makefile
 #
@@ -27,8 +29,6 @@ DAQ_CORES = axi_cfg_register_v1_0 axis_variable_v1_0 pdm_multiplexer_v1_0 \
   axis_red_pitaya_dac_v1_0 dio_v1_0 shift_by_n_v1_0 \
   axis_select_v1_0 divide_by_two_v1_0 signal_generator_v1_0 \
   axi_sts_register_v1_0 fourier_synthesizer_v1_0
-  
-DAQ_CORES_BASE = 
 
 DAQ_PARTS = xc7z010clg400-1 xc7z020clg400-1
 
@@ -75,8 +75,13 @@ linux: daq_bitfiles $(LINUX_BUILD_DIR)/tmp/$(NAME).bit $(LINUX_BUILD_DIR)/boot.b
 
 blinker_cores: $(addprefix tmp/cores/, $(BLINKER_CORES))
 
+#$(subst $(SPACE),_,$(wordlist 1,$(call subtract,$(words $(subst _, ,$(1))),2),$(subst _, ,$(1)))) # Doesn't work yet
+define strip_core_version
+$(shell python -c "print('_'.join('$(1)'.split('_')[:-2]))")
+endef
+
 define GEN_DAQ_CORE_RULE
-$(FPGA_BUILD_DIR)/${daq_part}/cores/$(daq_core).xpr: src/fpga/cores/$(daq_core)/core_config.tcl src/fpga/cores/$(daq_core)/*.v
+$(FPGA_BUILD_DIR)/${daq_part}/cores/$(call strip_core_version,$(daq_core)).xpr: src/fpga/cores/$(daq_core)/core_config.tcl src/fpga/cores/$(daq_core)/*.v
 	#mkdir -p $(@D)
 	$(VIVADO)  -source scripts/core.tcl -tclargs ${daq_core} ${daq_part}
 endef
@@ -88,7 +93,7 @@ $(eval $(GEN_DAQ_CORE_RULE)) \
 )
 
 define GEN_DAQ_CORES_PART_RULE
-daq_cores_${daq_part}: $(addsuffix .xpr, $(addprefix $(FPGA_BUILD_DIR)/${daq_part}/cores/, $(DAQ_CORES)))
+daq_cores_${daq_part}: $(addsuffix .xpr, $(addprefix $(FPGA_BUILD_DIR)/${daq_part}/cores/, $(foreach daq_core,$(DAQ_CORES),$(call strip_core_version,$(daq_core)))))
 endef
 
 $(foreach daq_part,$(DAQ_PARTS), \
