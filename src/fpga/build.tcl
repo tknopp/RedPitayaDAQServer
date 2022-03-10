@@ -27,6 +27,9 @@ set_property ip_repo_paths build/fpga/$part_name/cores [current_project]
 update_ip_catalog
 
 # Recreate blockdesign
+source src/fpga/bd/waveform_gen.tcl
+source src/fpga/bd/signal_comp_slice.tcl
+source src/fpga/bd/signal_comp_compose.tcl
 source src/fpga/bd/bd.tcl
 
 # Create HDL wrapper for blockdesign
