@@ -162,10 +162,6 @@ pavel-demin:user:axis_variable:1.0\
 xilinx.com:ip:cic_compiler:4.0\
 jbeuke:user:divide_by_two:1.0\
 xilinx.com:ip:fir_compiler:7.2\
-xilinx.com:ip:c_addsub:12.0\
-xilinx.com:ip:dds_compiler:6.0\
-xilinx.com:ip:mult_gen:12.0\
-jbeuke:user:signal_generator:1.0\
 "
 
    set list_ips_missing ""
@@ -259,645 +255,6 @@ if { $bCheckIPsPassed != 1 } {
 # DESIGN PROCs
 ##################################################################
 
-
-# Hierarchical cell: signal_gen3
-proc create_hier_cell_signal_gen3 { parentCell nameHier } {
-
-  variable script_folder
-
-  if { $parentCell eq "" || $nameHier eq "" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2092 -severity "ERROR" "create_hier_cell_signal_gen3() - Empty argument(s)!"}
-     return
-  }
-
-  # Get object for parentCell
-  set parentObj [get_bd_cells $parentCell]
-  if { $parentObj == "" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2090 -severity "ERROR" "Unable to find parent cell <$parentCell>!"}
-     return
-  }
-
-  # Make sure parentObj is hier blk
-  set parentType [get_property TYPE $parentObj]
-  if { $parentType ne "hier" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2091 -severity "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
-     return
-  }
-
-  # Save current instance; Restore later
-  set oldCurInst [current_bd_instance .]
-
-  # Set parent object as current
-  current_bd_instance $parentObj
-
-  # Create cell and set as current instance
-  set hier_obj [create_bd_cell -type hier $nameHier]
-  current_bd_instance $hier_obj
-
-  # Create interface pins
-
-  # Create pins
-  create_bd_pin -dir I -from 111 -to 0 Din
-  create_bd_pin -dir I -type clk aclk
-  create_bd_pin -dir I -type rst aresetn
-  create_bd_pin -dir O -from 15 -to 0 m_axis_data_tdata_1
-  create_bd_pin -dir O m_axis_data_tvalid_1
-
-  # Create instance: amplitude_A_channel_1_slice1, and set properties
-  set amplitude_A_channel_1_slice1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_A_channel_1_slice1 ]
-  set_property -dict [ list \
-   CONFIG.DIN_FROM {15} \
-   CONFIG.DIN_TO {0} \
-   CONFIG.DIN_WIDTH {112} \
-   CONFIG.DOUT_WIDTH {16} \
- ] $amplitude_A_channel_1_slice1
-
-  # Create instance: axis_variable_A_channel_1, and set properties
-  set axis_variable_A_channel_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_1 ]
-  set_property -dict [ list \
-   CONFIG.AXIS_TDATA_WIDTH {96} \
- ] $axis_variable_A_channel_1
-
-  # Create instance: dds_compiler_A_channel_1, and set properties
-  set dds_compiler_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_A_channel_1 ]
-  set_property -dict [ list \
-   CONFIG.Amplitude_Mode {Full_Range} \
-   CONFIG.DATA_Has_TLAST {Not_Required} \
-   CONFIG.DDS_Clock_Rate {125} \
-   CONFIG.Frequency_Resolution {4.440893e-7} \
-   CONFIG.Has_ARESETn {true} \
-   CONFIG.Has_Phase_Out {false} \
-   CONFIG.Has_TREADY {false} \
-   CONFIG.Latency {9} \
-   CONFIG.Latency_Configuration {Auto} \
-   CONFIG.M_DATA_Has_TUSER {Not_Required} \
-   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-   CONFIG.Noise_Shaping {Phase_Dithering} \
-   CONFIG.Output_Frequency1 {0} \
-   CONFIG.Output_Selection {Sine} \
-   CONFIG.Output_Width {14} \
-   CONFIG.PINC1 {0} \
-   CONFIG.POFF1 {0} \
-   CONFIG.Parameter_Entry {System_Parameters} \
-   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-   CONFIG.Phase_Increment {Programmable} \
-   CONFIG.Phase_Offset_Angles1 {0} \
-   CONFIG.Phase_Width {48} \
-   CONFIG.Phase_offset {Programmable} \
-   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-   CONFIG.Spurious_Free_Dynamic_Range {84} \
- ] $dds_compiler_A_channel_1
-
-  # Create instance: freq_A_channel_1_slice, and set properties
-  set freq_A_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_A_channel_1_slice ]
-  set_property -dict [ list \
-   CONFIG.DIN_FROM {63} \
-   CONFIG.DIN_TO {16} \
-   CONFIG.DIN_WIDTH {112} \
-   CONFIG.DOUT_WIDTH {1} \
- ] $freq_A_channel_1_slice
-
-  # Create instance: mult_gen_0, and set properties
-  set mult_gen_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:mult_gen:12.0 mult_gen_0 ]
-  set_property -dict [ list \
-   CONFIG.Multiplier_Construction {Use_Mults} \
-   CONFIG.OutputWidthHigh {28} \
-   CONFIG.OutputWidthLow {13} \
-   CONFIG.PortAWidth {16} \
-   CONFIG.PortBWidth {16} \
-   CONFIG.SyncClear {false} \
-   CONFIG.Use_Custom_Output_Width {true} \
- ] $mult_gen_0
-
-  # Create instance: phase_A_channel_1_slice, and set properties
-  set phase_A_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_A_channel_1_slice ]
-  set_property -dict [ list \
-   CONFIG.DIN_FROM {111} \
-   CONFIG.DIN_TO {64} \
-   CONFIG.DIN_WIDTH {112} \
-   CONFIG.DOUT_WIDTH {1} \
- ] $phase_A_channel_1_slice
-
-  # Create instance: xlconcat_A_channel_1, and set properties
-  set xlconcat_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_A_channel_1 ]
-  set_property -dict [ list \
-   CONFIG.IN0_WIDTH {48} \
-   CONFIG.IN1_WIDTH {48} \
- ] $xlconcat_A_channel_1
-
-  # Create interface connections
-  connect_bd_intf_net -intf_net axis_variable_A_channel_1_M_AXIS [get_bd_intf_pins axis_variable_A_channel_1/M_AXIS] [get_bd_intf_pins dds_compiler_A_channel_1/S_AXIS_CONFIG]
-
-  # Create port connections
-  connect_bd_net -net Din_2 [get_bd_pins Din] [get_bd_pins amplitude_A_channel_1_slice1/Din] [get_bd_pins freq_A_channel_1_slice/Din] [get_bd_pins phase_A_channel_1_slice/Din]
-  connect_bd_net -net amplitude_A_channel_1_slice1_Dout [get_bd_pins amplitude_A_channel_1_slice1/Dout] [get_bd_pins mult_gen_0/A]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_variable_A_channel_1/aclk] [get_bd_pins dds_compiler_A_channel_1/aclk] [get_bd_pins mult_gen_0/CLK]
-  connect_bd_net -net dds_compiler_A_channel_1_m_axis_data_tdata [get_bd_pins dds_compiler_A_channel_1/m_axis_data_tdata] [get_bd_pins mult_gen_0/B]
-  connect_bd_net -net dds_compiler_A_channel_1_m_axis_data_tvalid [get_bd_pins m_axis_data_tvalid_1] [get_bd_pins dds_compiler_A_channel_1/m_axis_data_tvalid]
-  connect_bd_net -net freq_A_channel_1_slice_Dout [get_bd_pins freq_A_channel_1_slice/Dout] [get_bd_pins xlconcat_A_channel_1/In0]
-  connect_bd_net -net mult_gen_0_P [get_bd_pins m_axis_data_tdata_1] [get_bd_pins mult_gen_0/P]
-  connect_bd_net -net phase_A_channel_1_slice_Dout [get_bd_pins phase_A_channel_1_slice/Dout] [get_bd_pins xlconcat_A_channel_1/In1]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_variable_A_channel_1/aresetn] [get_bd_pins dds_compiler_A_channel_1/aresetn]
-  connect_bd_net -net xlconcat_A_channel_1_dout [get_bd_pins axis_variable_A_channel_1/cfg_data] [get_bd_pins xlconcat_A_channel_1/dout]
-
-  # Restore current instance
-  current_bd_instance $oldCurInst
-}
-
-# Hierarchical cell: signal_gen2
-proc create_hier_cell_signal_gen2 { parentCell nameHier } {
-
-  variable script_folder
-
-  if { $parentCell eq "" || $nameHier eq "" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2092 -severity "ERROR" "create_hier_cell_signal_gen2() - Empty argument(s)!"}
-     return
-  }
-
-  # Get object for parentCell
-  set parentObj [get_bd_cells $parentCell]
-  if { $parentObj == "" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2090 -severity "ERROR" "Unable to find parent cell <$parentCell>!"}
-     return
-  }
-
-  # Make sure parentObj is hier blk
-  set parentType [get_property TYPE $parentObj]
-  if { $parentType ne "hier" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2091 -severity "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
-     return
-  }
-
-  # Save current instance; Restore later
-  set oldCurInst [current_bd_instance .]
-
-  # Set parent object as current
-  current_bd_instance $parentObj
-
-  # Create cell and set as current instance
-  set hier_obj [create_bd_cell -type hier $nameHier]
-  current_bd_instance $hier_obj
-
-  # Create interface pins
-
-  # Create pins
-  create_bd_pin -dir I -from 111 -to 0 Din
-  create_bd_pin -dir I -type clk aclk
-  create_bd_pin -dir I -type rst aresetn
-  create_bd_pin -dir O -from 15 -to 0 m_axis_data_tdata_1
-  create_bd_pin -dir O m_axis_data_tvalid_1
-
-  # Create instance: amplitude_A_channel_1_slice1, and set properties
-  set amplitude_A_channel_1_slice1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_A_channel_1_slice1 ]
-  set_property -dict [ list \
-   CONFIG.DIN_FROM {15} \
-   CONFIG.DIN_TO {0} \
-   CONFIG.DIN_WIDTH {112} \
-   CONFIG.DOUT_WIDTH {16} \
- ] $amplitude_A_channel_1_slice1
-
-  # Create instance: axis_variable_A_channel_1, and set properties
-  set axis_variable_A_channel_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_1 ]
-  set_property -dict [ list \
-   CONFIG.AXIS_TDATA_WIDTH {96} \
- ] $axis_variable_A_channel_1
-
-  # Create instance: dds_compiler_A_channel_1, and set properties
-  set dds_compiler_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_A_channel_1 ]
-  set_property -dict [ list \
-   CONFIG.Amplitude_Mode {Full_Range} \
-   CONFIG.DATA_Has_TLAST {Not_Required} \
-   CONFIG.DDS_Clock_Rate {125} \
-   CONFIG.Frequency_Resolution {4.440893e-7} \
-   CONFIG.Has_ARESETn {true} \
-   CONFIG.Has_Phase_Out {false} \
-   CONFIG.Has_TREADY {false} \
-   CONFIG.Latency {9} \
-   CONFIG.Latency_Configuration {Auto} \
-   CONFIG.M_DATA_Has_TUSER {Not_Required} \
-   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-   CONFIG.Noise_Shaping {Phase_Dithering} \
-   CONFIG.Output_Frequency1 {0} \
-   CONFIG.Output_Selection {Sine} \
-   CONFIG.Output_Width {14} \
-   CONFIG.PINC1 {0} \
-   CONFIG.POFF1 {0} \
-   CONFIG.Parameter_Entry {System_Parameters} \
-   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-   CONFIG.Phase_Increment {Programmable} \
-   CONFIG.Phase_Offset_Angles1 {0} \
-   CONFIG.Phase_Width {48} \
-   CONFIG.Phase_offset {Programmable} \
-   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-   CONFIG.Spurious_Free_Dynamic_Range {84} \
- ] $dds_compiler_A_channel_1
-
-  # Create instance: freq_A_channel_1_slice, and set properties
-  set freq_A_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_A_channel_1_slice ]
-  set_property -dict [ list \
-   CONFIG.DIN_FROM {63} \
-   CONFIG.DIN_TO {16} \
-   CONFIG.DIN_WIDTH {112} \
-   CONFIG.DOUT_WIDTH {1} \
- ] $freq_A_channel_1_slice
-
-  # Create instance: mult_gen_0, and set properties
-  set mult_gen_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:mult_gen:12.0 mult_gen_0 ]
-  set_property -dict [ list \
-   CONFIG.Multiplier_Construction {Use_Mults} \
-   CONFIG.OutputWidthHigh {28} \
-   CONFIG.OutputWidthLow {13} \
-   CONFIG.PortAWidth {16} \
-   CONFIG.PortBWidth {16} \
-   CONFIG.SyncClear {false} \
-   CONFIG.Use_Custom_Output_Width {true} \
- ] $mult_gen_0
-
-  # Create instance: phase_A_channel_1_slice, and set properties
-  set phase_A_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_A_channel_1_slice ]
-  set_property -dict [ list \
-   CONFIG.DIN_FROM {111} \
-   CONFIG.DIN_TO {64} \
-   CONFIG.DIN_WIDTH {112} \
-   CONFIG.DOUT_WIDTH {1} \
- ] $phase_A_channel_1_slice
-
-  # Create instance: xlconcat_A_channel_1, and set properties
-  set xlconcat_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_A_channel_1 ]
-  set_property -dict [ list \
-   CONFIG.IN0_WIDTH {48} \
-   CONFIG.IN1_WIDTH {48} \
- ] $xlconcat_A_channel_1
-
-  # Create interface connections
-  connect_bd_intf_net -intf_net axis_variable_A_channel_1_M_AXIS [get_bd_intf_pins axis_variable_A_channel_1/M_AXIS] [get_bd_intf_pins dds_compiler_A_channel_1/S_AXIS_CONFIG]
-
-  # Create port connections
-  connect_bd_net -net Din_2 [get_bd_pins Din] [get_bd_pins amplitude_A_channel_1_slice1/Din] [get_bd_pins freq_A_channel_1_slice/Din] [get_bd_pins phase_A_channel_1_slice/Din]
-  connect_bd_net -net amplitude_A_channel_1_slice1_Dout [get_bd_pins amplitude_A_channel_1_slice1/Dout] [get_bd_pins mult_gen_0/A]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_variable_A_channel_1/aclk] [get_bd_pins dds_compiler_A_channel_1/aclk] [get_bd_pins mult_gen_0/CLK]
-  connect_bd_net -net dds_compiler_A_channel_1_m_axis_data_tdata [get_bd_pins dds_compiler_A_channel_1/m_axis_data_tdata] [get_bd_pins mult_gen_0/B]
-  connect_bd_net -net dds_compiler_A_channel_1_m_axis_data_tvalid [get_bd_pins m_axis_data_tvalid_1] [get_bd_pins dds_compiler_A_channel_1/m_axis_data_tvalid]
-  connect_bd_net -net freq_A_channel_1_slice_Dout [get_bd_pins freq_A_channel_1_slice/Dout] [get_bd_pins xlconcat_A_channel_1/In0]
-  connect_bd_net -net mult_gen_0_P [get_bd_pins m_axis_data_tdata_1] [get_bd_pins mult_gen_0/P]
-  connect_bd_net -net phase_A_channel_1_slice_Dout [get_bd_pins phase_A_channel_1_slice/Dout] [get_bd_pins xlconcat_A_channel_1/In1]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_variable_A_channel_1/aresetn] [get_bd_pins dds_compiler_A_channel_1/aresetn]
-  connect_bd_net -net xlconcat_A_channel_1_dout [get_bd_pins axis_variable_A_channel_1/cfg_data] [get_bd_pins xlconcat_A_channel_1/dout]
-
-  # Restore current instance
-  current_bd_instance $oldCurInst
-}
-
-# Hierarchical cell: signal_gen1
-proc create_hier_cell_signal_gen1 { parentCell nameHier } {
-
-  variable script_folder
-
-  if { $parentCell eq "" || $nameHier eq "" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2092 -severity "ERROR" "create_hier_cell_signal_gen1() - Empty argument(s)!"}
-     return
-  }
-
-  # Get object for parentCell
-  set parentObj [get_bd_cells $parentCell]
-  if { $parentObj == "" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2090 -severity "ERROR" "Unable to find parent cell <$parentCell>!"}
-     return
-  }
-
-  # Make sure parentObj is hier blk
-  set parentType [get_property TYPE $parentObj]
-  if { $parentType ne "hier" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2091 -severity "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
-     return
-  }
-
-  # Save current instance; Restore later
-  set oldCurInst [current_bd_instance .]
-
-  # Set parent object as current
-  current_bd_instance $parentObj
-
-  # Create cell and set as current instance
-  set hier_obj [create_bd_cell -type hier $nameHier]
-  current_bd_instance $hier_obj
-
-  # Create interface pins
-
-  # Create pins
-  create_bd_pin -dir I -from 111 -to 0 Din
-  create_bd_pin -dir I -type clk aclk
-  create_bd_pin -dir I -type rst aresetn
-  create_bd_pin -dir O -from 15 -to 0 m_axis_data_tdata_1
-  create_bd_pin -dir O m_axis_data_tvalid_1
-
-  # Create instance: amplitude_A_channel_1_slice1, and set properties
-  set amplitude_A_channel_1_slice1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_A_channel_1_slice1 ]
-  set_property -dict [ list \
-   CONFIG.DIN_FROM {15} \
-   CONFIG.DIN_TO {0} \
-   CONFIG.DIN_WIDTH {112} \
-   CONFIG.DOUT_WIDTH {16} \
- ] $amplitude_A_channel_1_slice1
-
-  # Create instance: axis_variable_A_channel_1, and set properties
-  set axis_variable_A_channel_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_1 ]
-  set_property -dict [ list \
-   CONFIG.AXIS_TDATA_WIDTH {96} \
- ] $axis_variable_A_channel_1
-
-  # Create instance: dds_compiler_A_channel_1, and set properties
-  set dds_compiler_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_A_channel_1 ]
-  set_property -dict [ list \
-   CONFIG.Amplitude_Mode {Full_Range} \
-   CONFIG.DATA_Has_TLAST {Not_Required} \
-   CONFIG.DDS_Clock_Rate {125} \
-   CONFIG.Frequency_Resolution {4.440893e-7} \
-   CONFIG.Has_ARESETn {true} \
-   CONFIG.Has_Phase_Out {false} \
-   CONFIG.Has_TREADY {false} \
-   CONFIG.Latency {9} \
-   CONFIG.Latency_Configuration {Auto} \
-   CONFIG.M_DATA_Has_TUSER {Not_Required} \
-   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-   CONFIG.Noise_Shaping {Phase_Dithering} \
-   CONFIG.Output_Frequency1 {0} \
-   CONFIG.Output_Selection {Sine} \
-   CONFIG.Output_Width {14} \
-   CONFIG.PINC1 {0} \
-   CONFIG.POFF1 {0} \
-   CONFIG.Parameter_Entry {System_Parameters} \
-   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-   CONFIG.Phase_Increment {Programmable} \
-   CONFIG.Phase_Offset_Angles1 {0} \
-   CONFIG.Phase_Width {48} \
-   CONFIG.Phase_offset {Programmable} \
-   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-   CONFIG.Spurious_Free_Dynamic_Range {84} \
- ] $dds_compiler_A_channel_1
-
-  # Create instance: freq_A_channel_1_slice, and set properties
-  set freq_A_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_A_channel_1_slice ]
-  set_property -dict [ list \
-   CONFIG.DIN_FROM {63} \
-   CONFIG.DIN_TO {16} \
-   CONFIG.DIN_WIDTH {112} \
-   CONFIG.DOUT_WIDTH {1} \
- ] $freq_A_channel_1_slice
-
-  # Create instance: mult_gen_0, and set properties
-  set mult_gen_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:mult_gen:12.0 mult_gen_0 ]
-  set_property -dict [ list \
-   CONFIG.Multiplier_Construction {Use_Mults} \
-   CONFIG.OutputWidthHigh {28} \
-   CONFIG.OutputWidthLow {13} \
-   CONFIG.PortAWidth {16} \
-   CONFIG.PortBWidth {16} \
-   CONFIG.SyncClear {false} \
-   CONFIG.Use_Custom_Output_Width {true} \
- ] $mult_gen_0
-
-  # Create instance: phase_A_channel_1_slice, and set properties
-  set phase_A_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_A_channel_1_slice ]
-  set_property -dict [ list \
-   CONFIG.DIN_FROM {111} \
-   CONFIG.DIN_TO {64} \
-   CONFIG.DIN_WIDTH {112} \
-   CONFIG.DOUT_WIDTH {1} \
- ] $phase_A_channel_1_slice
-
-  # Create instance: xlconcat_A_channel_1, and set properties
-  set xlconcat_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_A_channel_1 ]
-  set_property -dict [ list \
-   CONFIG.IN0_WIDTH {48} \
-   CONFIG.IN1_WIDTH {48} \
- ] $xlconcat_A_channel_1
-
-  # Create interface connections
-  connect_bd_intf_net -intf_net axis_variable_A_channel_1_M_AXIS [get_bd_intf_pins axis_variable_A_channel_1/M_AXIS] [get_bd_intf_pins dds_compiler_A_channel_1/S_AXIS_CONFIG]
-
-  # Create port connections
-  connect_bd_net -net Din_2 [get_bd_pins Din] [get_bd_pins amplitude_A_channel_1_slice1/Din] [get_bd_pins freq_A_channel_1_slice/Din] [get_bd_pins phase_A_channel_1_slice/Din]
-  connect_bd_net -net amplitude_A_channel_1_slice1_Dout [get_bd_pins amplitude_A_channel_1_slice1/Dout] [get_bd_pins mult_gen_0/A]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_variable_A_channel_1/aclk] [get_bd_pins dds_compiler_A_channel_1/aclk] [get_bd_pins mult_gen_0/CLK]
-  connect_bd_net -net dds_compiler_A_channel_1_m_axis_data_tdata [get_bd_pins dds_compiler_A_channel_1/m_axis_data_tdata] [get_bd_pins mult_gen_0/B]
-  connect_bd_net -net dds_compiler_A_channel_1_m_axis_data_tvalid [get_bd_pins m_axis_data_tvalid_1] [get_bd_pins dds_compiler_A_channel_1/m_axis_data_tvalid]
-  connect_bd_net -net freq_A_channel_1_slice_Dout [get_bd_pins freq_A_channel_1_slice/Dout] [get_bd_pins xlconcat_A_channel_1/In0]
-  connect_bd_net -net mult_gen_0_P [get_bd_pins m_axis_data_tdata_1] [get_bd_pins mult_gen_0/P]
-  connect_bd_net -net phase_A_channel_1_slice_Dout [get_bd_pins phase_A_channel_1_slice/Dout] [get_bd_pins xlconcat_A_channel_1/In1]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_variable_A_channel_1/aresetn] [get_bd_pins dds_compiler_A_channel_1/aresetn]
-  connect_bd_net -net xlconcat_A_channel_1_dout [get_bd_pins axis_variable_A_channel_1/cfg_data] [get_bd_pins xlconcat_A_channel_1/dout]
-
-  # Restore current instance
-  current_bd_instance $oldCurInst
-}
-
-# Hierarchical cell: signal_gen
-proc create_hier_cell_signal_gen { parentCell nameHier } {
-
-  variable script_folder
-
-  if { $parentCell eq "" || $nameHier eq "" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2092 -severity "ERROR" "create_hier_cell_signal_gen() - Empty argument(s)!"}
-     return
-  }
-
-  # Get object for parentCell
-  set parentObj [get_bd_cells $parentCell]
-  if { $parentObj == "" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2090 -severity "ERROR" "Unable to find parent cell <$parentCell>!"}
-     return
-  }
-
-  # Make sure parentObj is hier blk
-  set parentType [get_property TYPE $parentObj]
-  if { $parentType ne "hier" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2091 -severity "ERROR" "Parent <$parentObj> has TYPE = <$parentType>. Expected to be <hier>."}
-     return
-  }
-
-  # Save current instance; Restore later
-  set oldCurInst [current_bd_instance .]
-
-  # Set parent object as current
-  current_bd_instance $parentObj
-
-  # Create cell and set as current instance
-  set hier_obj [create_bd_cell -type hier $nameHier]
-  current_bd_instance $hier_obj
-
-  # Create interface pins
-
-  # Create pins
-  create_bd_pin -dir I -from 191 -to 0 Din
-  create_bd_pin -dir I -type clk aclk
-  create_bd_pin -dir I -type rst aresetn
-  create_bd_pin -dir I disable_dac
-  create_bd_pin -dir I dyn_offset_disable
-  create_bd_pin -dir O -from 15 -to 0 m_axis_data_tdata_1
-  create_bd_pin -dir O m_axis_data_tvalid_1
-  create_bd_pin -dir I -from 15 -to 0 offset
-
-  # Create instance: amplitude_A_channel_1_slice1, and set properties
-  set amplitude_A_channel_1_slice1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 amplitude_A_channel_1_slice1 ]
-  set_property -dict [ list \
-   CONFIG.DIN_FROM {95} \
-   CONFIG.DIN_TO {80} \
-   CONFIG.DIN_WIDTH {192} \
-   CONFIG.DOUT_WIDTH {1} \
- ] $amplitude_A_channel_1_slice1
-
-  # Create instance: axis_variable_A_channel_1, and set properties
-  set axis_variable_A_channel_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_1 ]
-  set_property -dict [ list \
-   CONFIG.AXIS_TDATA_WIDTH {96} \
- ] $axis_variable_A_channel_1
-
-  # Create instance: c_addsub_0, and set properties
-  set c_addsub_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:c_addsub:12.0 c_addsub_0 ]
-  set_property -dict [ list \
-   CONFIG.A_Width {16} \
-   CONFIG.B_Value {0000000000000000} \
-   CONFIG.B_Width {16} \
-   CONFIG.CE {false} \
-   CONFIG.Latency {1} \
-   CONFIG.Out_Width {16} \
-   CONFIG.SCLR {true} \
- ] $c_addsub_0
-
-  # Create instance: c_addsub_1, and set properties
-  set c_addsub_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:c_addsub:12.0 c_addsub_1 ]
-  set_property -dict [ list \
-   CONFIG.A_Type {Signed} \
-   CONFIG.A_Width {16} \
-   CONFIG.B_Type {Signed} \
-   CONFIG.B_Value {0000000000000000} \
-   CONFIG.B_Width {16} \
-   CONFIG.Bypass {true} \
-   CONFIG.CE {false} \
-   CONFIG.Latency {1} \
-   CONFIG.Out_Width {16} \
- ] $c_addsub_1
-
-  # Create instance: dds_compiler_A_channel_1, and set properties
-  set dds_compiler_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_A_channel_1 ]
-  set_property -dict [ list \
-   CONFIG.Amplitude_Mode {Full_Range} \
-   CONFIG.DATA_Has_TLAST {Not_Required} \
-   CONFIG.DDS_Clock_Rate {125} \
-   CONFIG.Frequency_Resolution {4.440893e-7} \
-   CONFIG.Has_ARESETn {true} \
-   CONFIG.Has_Phase_Out {true} \
-   CONFIG.Has_TREADY {false} \
-   CONFIG.Latency {9} \
-   CONFIG.Latency_Configuration {Auto} \
-   CONFIG.M_DATA_Has_TUSER {Not_Required} \
-   CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-   CONFIG.Noise_Shaping {Phase_Dithering} \
-   CONFIG.Output_Frequency1 {0} \
-   CONFIG.Output_Selection {Sine} \
-   CONFIG.Output_Width {14} \
-   CONFIG.PINC1 {0} \
-   CONFIG.POFF1 {0} \
-   CONFIG.Parameter_Entry {System_Parameters} \
-   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-   CONFIG.Phase_Increment {Programmable} \
-   CONFIG.Phase_Offset_Angles1 {0} \
-   CONFIG.Phase_Width {48} \
-   CONFIG.Phase_offset {Programmable} \
-   CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-   CONFIG.Spurious_Free_Dynamic_Range {84} \
- ] $dds_compiler_A_channel_1
-
-  # Create instance: freq_A_channel_1_slice, and set properties
-  set freq_A_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 freq_A_channel_1_slice ]
-  set_property -dict [ list \
-   CONFIG.DIN_FROM {143} \
-   CONFIG.DIN_TO {96} \
-   CONFIG.DIN_WIDTH {192} \
-   CONFIG.DOUT_WIDTH {1} \
- ] $freq_A_channel_1_slice
-
-  # Create instance: mult_gen_0, and set properties
-  set mult_gen_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:mult_gen:12.0 mult_gen_0 ]
-  set_property -dict [ list \
-   CONFIG.Multiplier_Construction {Use_Mults} \
-   CONFIG.OutputWidthHigh {28} \
-   CONFIG.OutputWidthLow {13} \
-   CONFIG.PortAWidth {16} \
-   CONFIG.PortBWidth {16} \
-   CONFIG.SyncClear {false} \
-   CONFIG.Use_Custom_Output_Width {true} \
- ] $mult_gen_0
-
-  # Create instance: offset_A_channel_1_slice, and set properties
-  set offset_A_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 offset_A_channel_1_slice ]
-  set_property -dict [ list \
-   CONFIG.DIN_FROM {15} \
-   CONFIG.DIN_TO {0} \
-   CONFIG.DIN_WIDTH {192} \
-   CONFIG.DOUT_WIDTH {16} \
- ] $offset_A_channel_1_slice
-
-  # Create instance: phase_A_channel_1_slice, and set properties
-  set phase_A_channel_1_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_A_channel_1_slice ]
-  set_property -dict [ list \
-   CONFIG.DIN_FROM {191} \
-   CONFIG.DIN_TO {144} \
-   CONFIG.DIN_WIDTH {192} \
-   CONFIG.DOUT_WIDTH {1} \
- ] $phase_A_channel_1_slice
-
-  # Create instance: phase_A_channel_1_slice1, and set properties
-  set phase_A_channel_1_slice1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 phase_A_channel_1_slice1 ]
-  set_property -dict [ list \
-   CONFIG.DIN_FROM {79} \
-   CONFIG.DIN_TO {16} \
-   CONFIG.DIN_WIDTH {192} \
-   CONFIG.DOUT_WIDTH {1} \
- ] $phase_A_channel_1_slice1
-
-  # Create instance: signal_generator_0, and set properties
-  set signal_generator_0 [ create_bd_cell -type ip -vlnv jbeuke:user:signal_generator:1.0 signal_generator_0 ]
-  set_property -dict [ list \
-   CONFIG.AXIS_TDATA_PHASE_WIDTH {48} \
-   CONFIG.CFG_DATA_WIDTH {64} \
- ] $signal_generator_0
-
-  # Create instance: xlconcat_A_channel_1, and set properties
-  set xlconcat_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_A_channel_1 ]
-  set_property -dict [ list \
-   CONFIG.IN0_WIDTH {48} \
-   CONFIG.IN1_WIDTH {48} \
- ] $xlconcat_A_channel_1
-
-  # Create interface connections
-  connect_bd_intf_net -intf_net axis_variable_A_channel_1_M_AXIS [get_bd_intf_pins axis_variable_A_channel_1/M_AXIS] [get_bd_intf_pins dds_compiler_A_channel_1/S_AXIS_CONFIG]
-  connect_bd_intf_net -intf_net dds_compiler_A_channel_1_M_AXIS_DATA [get_bd_intf_pins dds_compiler_A_channel_1/M_AXIS_DATA] [get_bd_intf_pins signal_generator_0/s_axis]
-  connect_bd_intf_net -intf_net dds_compiler_A_channel_1_M_AXIS_PHASE [get_bd_intf_pins dds_compiler_A_channel_1/M_AXIS_PHASE] [get_bd_intf_pins signal_generator_0/s_axis_phase]
-
-  # Create port connections
-  connect_bd_net -net Din_2 [get_bd_pins Din] [get_bd_pins amplitude_A_channel_1_slice1/Din] [get_bd_pins freq_A_channel_1_slice/Din] [get_bd_pins offset_A_channel_1_slice/Din] [get_bd_pins phase_A_channel_1_slice/Din] [get_bd_pins phase_A_channel_1_slice1/Din]
-  connect_bd_net -net amplitude_A_channel_1_slice1_Dout [get_bd_pins amplitude_A_channel_1_slice1/Dout] [get_bd_pins mult_gen_0/A]
-  connect_bd_net -net c_addsub_0_S [get_bd_pins m_axis_data_tdata_1] [get_bd_pins c_addsub_0/S]
-  connect_bd_net -net c_addsub_1_S [get_bd_pins c_addsub_0/B] [get_bd_pins c_addsub_1/S]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_variable_A_channel_1/aclk] [get_bd_pins c_addsub_0/CLK] [get_bd_pins c_addsub_1/CLK] [get_bd_pins dds_compiler_A_channel_1/aclk] [get_bd_pins mult_gen_0/CLK] [get_bd_pins signal_generator_0/clk]
-  connect_bd_net -net disable_dac_1 [get_bd_pins disable_dac] [get_bd_pins c_addsub_0/SCLR]
-  connect_bd_net -net dyn_offset_disable_1 [get_bd_pins dyn_offset_disable] [get_bd_pins c_addsub_1/BYPASS]
-  connect_bd_net -net freq_A_channel_1_slice_Dout [get_bd_pins freq_A_channel_1_slice/Dout] [get_bd_pins xlconcat_A_channel_1/In0]
-  connect_bd_net -net mult_gen_0_P [get_bd_pins c_addsub_0/A] [get_bd_pins mult_gen_0/P]
-  connect_bd_net -net offset_1 [get_bd_pins offset] [get_bd_pins c_addsub_1/A]
-  connect_bd_net -net offset_A_channel_1_slice_Dout [get_bd_pins c_addsub_1/B] [get_bd_pins offset_A_channel_1_slice/Dout]
-  connect_bd_net -net phase_A_channel_1_slice1_Dout [get_bd_pins phase_A_channel_1_slice1/Dout] [get_bd_pins signal_generator_0/cfg_data]
-  connect_bd_net -net phase_A_channel_1_slice_Dout [get_bd_pins phase_A_channel_1_slice/Dout] [get_bd_pins xlconcat_A_channel_1/In1]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_variable_A_channel_1/aresetn] [get_bd_pins dds_compiler_A_channel_1/aresetn] [get_bd_pins signal_generator_0/aresetn]
-  connect_bd_net -net signal_generator_0_m_axis_tdata [get_bd_pins mult_gen_0/B] [get_bd_pins signal_generator_0/m_axis_tdata]
-  connect_bd_net -net signal_generator_0_m_axis_tvalid [get_bd_pins m_axis_data_tvalid_1] [get_bd_pins signal_generator_0/m_axis_tvalid]
-  connect_bd_net -net xlconcat_A_channel_1_dout [get_bd_pins axis_variable_A_channel_1/cfg_data] [get_bd_pins xlconcat_A_channel_1/dout]
-
-  # Restore current instance
-  current_bd_instance $oldCurInst
-}
 
 # Hierarchical cell: sign_extend_B
 proc create_hier_cell_sign_extend_B { parentCell nameHier } {
@@ -1221,115 +578,115 @@ proc create_hier_cell_signal_compose { parentCell nameHier } {
   # Create interface pins
 
   # Create pins
-  create_bd_pin -dir I -from 527 -to 0 Din
+  create_bd_pin -dir I -from 719 -to 0 Din
   create_bd_pin -dir O -from 15 -to 0 -type data S
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type rst aresetn
   create_bd_pin -dir I disable_dac
   create_bd_pin -dir I dyn_offset_disable
-  create_bd_pin -dir O m_axis_data_tvalid_1
+  create_bd_pin -dir O -from 0 -to 0 m_axis_data_tvalid_1
   create_bd_pin -dir I -from 15 -to 0 offset
 
-  # Create instance: c_addsub_0, and set properties
-  set c_addsub_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:c_addsub:12.0 c_addsub_0 ]
+  # Create instance: signal_comp_compose_0, and set properties
+  set signal_comp_compose_0 [ create_bd_cell -type container -reference signal_comp_compose signal_comp_compose_0 ]
   set_property -dict [ list \
-   CONFIG.A_Width {16} \
-   CONFIG.B_Value {0000000000000000} \
-   CONFIG.B_Width {16} \
-   CONFIG.CE {false} \
-   CONFIG.Latency {1} \
-   CONFIG.Out_Width {16} \
- ] $c_addsub_0
+   CONFIG.ACTIVE_SIM_BD {signal_comp_compose.bd} \
+   CONFIG.ACTIVE_SYNTH_BD {signal_comp_compose.bd} \
+   CONFIG.ENABLE_DFX {0} \
+   CONFIG.LIST_SIM_BD {signal_comp_compose.bd} \
+   CONFIG.LIST_SYNTH_BD {signal_comp_compose.bd} \
+   CONFIG.LOCK_PROPAGATE {0} \
+ ] $signal_comp_compose_0
 
-  # Create instance: c_addsub_1, and set properties
-  set c_addsub_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:c_addsub:12.0 c_addsub_1 ]
+  # Create instance: signal_comp_slice_0, and set properties
+  set signal_comp_slice_0 [ create_bd_cell -type container -reference signal_comp_slice signal_comp_slice_0 ]
   set_property -dict [ list \
-   CONFIG.A_Width {16} \
-   CONFIG.B_Value {0000000000000000} \
-   CONFIG.B_Width {16} \
-   CONFIG.CE {false} \
-   CONFIG.Latency {1} \
-   CONFIG.Out_Width {16} \
- ] $c_addsub_1
+   CONFIG.ACTIVE_SIM_BD {signal_comp_slice.bd} \
+   CONFIG.ACTIVE_SYNTH_BD {signal_comp_slice.bd} \
+   CONFIG.ENABLE_DFX {0} \
+   CONFIG.LIST_SIM_BD {signal_comp_slice.bd} \
+   CONFIG.LIST_SYNTH_BD {signal_comp_slice.bd} \
+   CONFIG.LOCK_PROPAGATE {0} \
+ ] $signal_comp_slice_0
 
-  # Create instance: c_addsub_2, and set properties
-  set c_addsub_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:c_addsub:12.0 c_addsub_2 ]
+  # Create instance: waveform_gen_0, and set properties
+  set waveform_gen_0 [ create_bd_cell -type container -reference waveform_gen waveform_gen_0 ]
   set_property -dict [ list \
-   CONFIG.A_Width {16} \
-   CONFIG.B_Value {0000000000000000} \
-   CONFIG.B_Width {16} \
-   CONFIG.CE {false} \
-   CONFIG.Latency {1} \
-   CONFIG.Out_Width {16} \
- ] $c_addsub_2
+   CONFIG.ACTIVE_SIM_BD {waveform_gen.bd} \
+   CONFIG.ACTIVE_SYNTH_BD {waveform_gen.bd} \
+   CONFIG.ENABLE_DFX {0} \
+   CONFIG.LIST_SIM_BD {waveform_gen.bd} \
+   CONFIG.LIST_SYNTH_BD {waveform_gen.bd} \
+   CONFIG.LOCK_PROPAGATE {0} \
+ ] $waveform_gen_0
 
-  # Create instance: signal_gen
-  create_hier_cell_signal_gen $hier_obj signal_gen
-
-  # Create instance: signal_gen1
-  create_hier_cell_signal_gen1 $hier_obj signal_gen1
-
-  # Create instance: signal_gen2
-  create_hier_cell_signal_gen2 $hier_obj signal_gen2
-
-  # Create instance: signal_gen3
-  create_hier_cell_signal_gen3 $hier_obj signal_gen3
-
-  # Create instance: xlslice_0, and set properties
-  set xlslice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_0 ]
+  # Create instance: waveform_gen_1, and set properties
+  set waveform_gen_1 [ create_bd_cell -type container -reference waveform_gen waveform_gen_1 ]
   set_property -dict [ list \
-   CONFIG.DIN_FROM {191} \
-   CONFIG.DIN_TO {0} \
-   CONFIG.DIN_WIDTH {528} \
-   CONFIG.DOUT_WIDTH {1} \
- ] $xlslice_0
+   CONFIG.ACTIVE_SIM_BD {waveform_gen.bd} \
+   CONFIG.ACTIVE_SYNTH_BD {waveform_gen.bd} \
+   CONFIG.ENABLE_DFX {0} \
+   CONFIG.LIST_SIM_BD {waveform_gen.bd} \
+   CONFIG.LIST_SYNTH_BD {waveform_gen.bd} \
+   CONFIG.LOCK_PROPAGATE {0} \
+ ] $waveform_gen_1
 
-  # Create instance: xlslice_1, and set properties
-  set xlslice_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_1 ]
+  # Create instance: waveform_gen_2, and set properties
+  set waveform_gen_2 [ create_bd_cell -type container -reference waveform_gen waveform_gen_2 ]
   set_property -dict [ list \
-   CONFIG.DIN_FROM {303} \
-   CONFIG.DIN_TO {192} \
-   CONFIG.DIN_WIDTH {528} \
-   CONFIG.DOUT_WIDTH {1} \
- ] $xlslice_1
+   CONFIG.ACTIVE_SIM_BD {waveform_gen.bd} \
+   CONFIG.ACTIVE_SYNTH_BD {waveform_gen.bd} \
+   CONFIG.ENABLE_DFX {0} \
+   CONFIG.LIST_SIM_BD {waveform_gen.bd} \
+   CONFIG.LIST_SYNTH_BD {waveform_gen.bd} \
+   CONFIG.LOCK_PROPAGATE {0} \
+ ] $waveform_gen_2
 
-  # Create instance: xlslice_2, and set properties
-  set xlslice_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_2 ]
+  # Create instance: waveform_gen_3, and set properties
+  set waveform_gen_3 [ create_bd_cell -type container -reference waveform_gen waveform_gen_3 ]
   set_property -dict [ list \
-   CONFIG.DIN_FROM {415} \
-   CONFIG.DIN_TO {304} \
-   CONFIG.DIN_WIDTH {528} \
-   CONFIG.DOUT_WIDTH {1} \
- ] $xlslice_2
-
-  # Create instance: xlslice_3, and set properties
-  set xlslice_3 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_3 ]
-  set_property -dict [ list \
-   CONFIG.DIN_FROM {527} \
-   CONFIG.DIN_TO {416} \
-   CONFIG.DIN_WIDTH {528} \
-   CONFIG.DOUT_WIDTH {1} \
- ] $xlslice_3
+   CONFIG.ACTIVE_SIM_BD {waveform_gen.bd} \
+   CONFIG.ACTIVE_SYNTH_BD {waveform_gen.bd} \
+   CONFIG.ENABLE_DFX {0} \
+   CONFIG.LIST_SIM_BD {waveform_gen.bd} \
+   CONFIG.LIST_SYNTH_BD {waveform_gen.bd} \
+   CONFIG.LOCK_PROPAGATE {0} \
+ ] $waveform_gen_3
 
   # Create port connections
-  connect_bd_net -net Din_1 [get_bd_pins signal_gen/Din] [get_bd_pins xlslice_0/Dout]
-  connect_bd_net -net Din_2 [get_bd_pins Din] [get_bd_pins xlslice_0/Din] [get_bd_pins xlslice_1/Din] [get_bd_pins xlslice_2/Din] [get_bd_pins xlslice_3/Din]
-  connect_bd_net -net Din_3 [get_bd_pins signal_gen3/Din] [get_bd_pins xlslice_3/Dout]
-  connect_bd_net -net c_addsub_0_S [get_bd_pins c_addsub_0/S] [get_bd_pins c_addsub_2/A]
-  connect_bd_net -net c_addsub_1_S [get_bd_pins c_addsub_1/S] [get_bd_pins c_addsub_2/B]
-  connect_bd_net -net c_addsub_2_S [get_bd_pins S] [get_bd_pins c_addsub_2/S]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins c_addsub_0/CLK] [get_bd_pins c_addsub_1/CLK] [get_bd_pins c_addsub_2/CLK] [get_bd_pins signal_gen/aclk] [get_bd_pins signal_gen1/aclk] [get_bd_pins signal_gen2/aclk] [get_bd_pins signal_gen3/aclk]
-  connect_bd_net -net disable_dac_1 [get_bd_pins disable_dac] [get_bd_pins signal_gen/disable_dac]
-  connect_bd_net -net dyn_offset_disable_1 [get_bd_pins dyn_offset_disable] [get_bd_pins signal_gen/dyn_offset_disable]
-  connect_bd_net -net offset_ampl_1 [get_bd_pins offset] [get_bd_pins signal_gen/offset]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins signal_gen/aresetn] [get_bd_pins signal_gen1/aresetn] [get_bd_pins signal_gen2/aresetn] [get_bd_pins signal_gen3/aresetn]
-  connect_bd_net -net signal_gen1_m_axis_data_tdata_1 [get_bd_pins c_addsub_1/A] [get_bd_pins signal_gen1/m_axis_data_tdata_1]
-  connect_bd_net -net signal_gen2_m_axis_data_tdata_1 [get_bd_pins c_addsub_0/A] [get_bd_pins signal_gen2/m_axis_data_tdata_1]
-  connect_bd_net -net signal_gen3_m_axis_data_tdata_1 [get_bd_pins c_addsub_0/B] [get_bd_pins signal_gen3/m_axis_data_tdata_1]
-  connect_bd_net -net signal_gen_m_axis_data_tdata_1 [get_bd_pins c_addsub_1/B] [get_bd_pins signal_gen/m_axis_data_tdata_1]
-  connect_bd_net -net signal_gen_m_axis_data_tvalid_1 [get_bd_pins m_axis_data_tvalid_1] [get_bd_pins signal_gen/m_axis_data_tvalid_1]
-  connect_bd_net -net xlslice_1_Dout [get_bd_pins signal_gen1/Din] [get_bd_pins xlslice_1/Dout]
-  connect_bd_net -net xlslice_2_Dout [get_bd_pins signal_gen2/Din] [get_bd_pins xlslice_2/Dout]
+  connect_bd_net -net Din_1 [get_bd_pins Din] [get_bd_pins signal_comp_slice_0/Din]
+  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins signal_comp_compose_0/aclk] [get_bd_pins waveform_gen_0/aclk] [get_bd_pins waveform_gen_1/aclk] [get_bd_pins waveform_gen_2/aclk] [get_bd_pins waveform_gen_3/aclk]
+  connect_bd_net -net aresetn_1 [get_bd_pins aresetn] [get_bd_pins waveform_gen_0/aresetn] [get_bd_pins waveform_gen_1/aresetn] [get_bd_pins waveform_gen_2/aresetn] [get_bd_pins waveform_gen_3/aresetn]
+  connect_bd_net -net disable_dac_1 [get_bd_pins disable_dac] [get_bd_pins signal_comp_compose_0/disable_dac]
+  connect_bd_net -net dyn_offset_disable_1 [get_bd_pins dyn_offset_disable] [get_bd_pins signal_comp_compose_0/dyn_offset_disable]
+  connect_bd_net -net offset_1 [get_bd_pins offset] [get_bd_pins signal_comp_compose_0/seq]
+  connect_bd_net -net signal_comp_compose_0_S [get_bd_pins S] [get_bd_pins signal_comp_compose_0/S]
+  connect_bd_net -net signal_comp_compose_0_m_axis_data_tvalid_1 [get_bd_pins m_axis_data_tvalid_1] [get_bd_pins signal_comp_compose_0/m_axis_data_tvalid_1]
+  connect_bd_net -net signal_comp_slice_0_comp_0_amp [get_bd_pins signal_comp_slice_0/comp_0_amp] [get_bd_pins waveform_gen_0/amplitude]
+  connect_bd_net -net signal_comp_slice_0_comp_0_cfg [get_bd_pins signal_comp_slice_0/comp_0_cfg] [get_bd_pins waveform_gen_0/cfg_data]
+  connect_bd_net -net signal_comp_slice_0_comp_0_freq [get_bd_pins signal_comp_slice_0/comp_0_freq] [get_bd_pins waveform_gen_0/freq]
+  connect_bd_net -net signal_comp_slice_0_comp_0_phase [get_bd_pins signal_comp_slice_0/comp_0_phase] [get_bd_pins waveform_gen_0/phase]
+  connect_bd_net -net signal_comp_slice_0_comp_1_amp [get_bd_pins signal_comp_slice_0/comp_1_amp] [get_bd_pins waveform_gen_1/amplitude]
+  connect_bd_net -net signal_comp_slice_0_comp_1_cfg [get_bd_pins signal_comp_slice_0/comp_1_cfg] [get_bd_pins waveform_gen_1/cfg_data]
+  connect_bd_net -net signal_comp_slice_0_comp_1_freq [get_bd_pins signal_comp_slice_0/comp_1_freq] [get_bd_pins waveform_gen_1/freq]
+  connect_bd_net -net signal_comp_slice_0_comp_1_phase [get_bd_pins signal_comp_slice_0/comp_1_phase] [get_bd_pins waveform_gen_1/phase]
+  connect_bd_net -net signal_comp_slice_0_comp_2_amp [get_bd_pins signal_comp_slice_0/comp_2_amp] [get_bd_pins waveform_gen_2/amplitude]
+  connect_bd_net -net signal_comp_slice_0_comp_2_cfg [get_bd_pins signal_comp_slice_0/comp_2_cfg] [get_bd_pins waveform_gen_2/cfg_data]
+  connect_bd_net -net signal_comp_slice_0_comp_2_freq [get_bd_pins signal_comp_slice_0/comp_2_freq] [get_bd_pins waveform_gen_2/freq]
+  connect_bd_net -net signal_comp_slice_0_comp_2_phase [get_bd_pins signal_comp_slice_0/comp_2_phase] [get_bd_pins waveform_gen_2/phase]
+  connect_bd_net -net signal_comp_slice_0_comp_3_amp [get_bd_pins signal_comp_slice_0/comp_3_amp] [get_bd_pins waveform_gen_3/amplitude]
+  connect_bd_net -net signal_comp_slice_0_comp_3_cfg [get_bd_pins signal_comp_slice_0/comp_3_cfg] [get_bd_pins waveform_gen_3/cfg_data]
+  connect_bd_net -net signal_comp_slice_0_comp_3_freq [get_bd_pins signal_comp_slice_0/comp_3_freq] [get_bd_pins waveform_gen_3/freq]
+  connect_bd_net -net signal_comp_slice_0_comp_3_phase [get_bd_pins signal_comp_slice_0/comp_3_phase] [get_bd_pins waveform_gen_3/phase]
+  connect_bd_net -net signal_comp_slice_0_offset [get_bd_pins signal_comp_compose_0/offset] [get_bd_pins signal_comp_slice_0/offset]
+  connect_bd_net -net waveform_gen_0_m_axis_data_tvalid_1 [get_bd_pins signal_comp_compose_0/valid0] [get_bd_pins waveform_gen_0/m_axis_data_tvalid_1]
+  connect_bd_net -net waveform_gen_0_wave [get_bd_pins signal_comp_compose_0/wave0] [get_bd_pins waveform_gen_0/wave]
+  connect_bd_net -net waveform_gen_1_m_axis_data_tvalid_1 [get_bd_pins signal_comp_compose_0/valid1] [get_bd_pins waveform_gen_1/m_axis_data_tvalid_1]
+  connect_bd_net -net waveform_gen_1_wave [get_bd_pins signal_comp_compose_0/wave1] [get_bd_pins waveform_gen_1/wave]
+  connect_bd_net -net waveform_gen_2_m_axis_data_tvalid_1 [get_bd_pins signal_comp_compose_0/valid2] [get_bd_pins waveform_gen_2/m_axis_data_tvalid_1]
+  connect_bd_net -net waveform_gen_2_wave [get_bd_pins signal_comp_compose_0/wave2] [get_bd_pins waveform_gen_2/wave]
+  connect_bd_net -net waveform_gen_3_m_axis_data_tvalid_1 [get_bd_pins signal_comp_compose_0/valid3] [get_bd_pins waveform_gen_3/m_axis_data_tvalid_1]
+  connect_bd_net -net waveform_gen_3_wave [get_bd_pins signal_comp_compose_0/wave3] [get_bd_pins waveform_gen_3/wave]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -1702,7 +1059,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   create_bd_pin -dir I -type rst aresetn
   create_bd_pin -dir O -from 95 -to 0 cfg_data
   create_bd_pin -dir I -from 63 -to 0 curr_pdm_values
-  create_bd_pin -dir O -from 1055 -to 0 dac_cfg
+  create_bd_pin -dir O -from 1439 -to 0 dac_cfg
   create_bd_pin -dir I dcm_locked
   create_bd_pin -dir O -from 8191 -to 0 pdm_data
   create_bd_pin -dir O -from 0 -to 0 -type rst peripheral_aresetn
@@ -1720,7 +1077,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   set axi_cfg_register_dac [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 axi_cfg_register_dac ]
   set_property -dict [ list \
    CONFIG.AXI_ADDR_WIDTH {32} \
-   CONFIG.CFG_DATA_WIDTH {1056} \
+   CONFIG.CFG_DATA_WIDTH {1440} \
  ] $axi_cfg_register_dac
 
   # Create instance: axi_cfg_register_pdm, and set properties
@@ -2545,7 +1902,7 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type rst aresetn
-  create_bd_pin -dir I -from 1055 -to 0 cfg_data
+  create_bd_pin -dir I -from 1439 -to 0 cfg_data
   create_bd_pin -dir I dyn_offset_enable
   create_bd_pin -dir I -from 1 -to 0 enable_dac
   create_bd_pin -dir I -from 31 -to 0 oa_dac
@@ -2586,10 +1943,10 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
   # Create instance: xlslice_0, and set properties
   set xlslice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_0 ]
   set_property -dict [ list \
-   CONFIG.DIN_FROM {527} \
+   CONFIG.DIN_FROM {719} \
    CONFIG.DIN_TO {0} \
-   CONFIG.DIN_WIDTH {1056} \
-   CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DIN_WIDTH {1440} \
+   CONFIG.DOUT_WIDTH {720} \
  ] $xlslice_0
 
   # Create instance: xlslice_1, and set properties
@@ -3128,6 +2485,7 @@ proc create_root_design { parentCell } {
   # Restore current instance
   current_bd_instance $oldCurInst
 
+  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -3139,6 +2497,4 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
-
-common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
