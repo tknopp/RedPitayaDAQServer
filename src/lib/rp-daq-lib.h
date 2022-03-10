@@ -13,6 +13,15 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 
+#define CHANNEL_OFFSET 90
+#define COMPONENT_OFFSET 22
+#define COMPONENT_START_OFFSET 2 // Offset Size 2
+#define SIGNAL_TYPE_OFFSET 0
+#define A_OFFSET SIGNAL_TYPE_OFFSET + 2
+#define INCR_OFFSET A_OFFSET + 2
+#define AMPLITUDE_OFFSET 8 // CFG Size 8
+#define FREQ_OFFSET AMPLITUDE_OFFSET + 2 // Amplitude Size 2
+#define PHASE_OFFSET FREQ_OFFSET + 6 // Freq Size 6
 
 #define BASE_FREQUENCY 125000000
 #define ADC_BUFF_NUM_BITS 24 
@@ -72,10 +81,10 @@ extern double getPhase(int, int);
 extern int setPhase(double, int, int);
 extern int setDACMode(int);
 extern int getDACMode();
-extern int getSignalType(int);
-extern int setSignalType(int, int);
-extern float getJumpSharpness(int);
-extern int setJumpSharpness(int, float);
+extern int getSignalType(int, int);
+extern int setSignalType(int, int, int);
+extern float getJumpSharpness(int, int);
+extern int setJumpSharpness(float, int, int);
 
 // fast ADC
 extern int setDecimation(uint16_t decimation);
