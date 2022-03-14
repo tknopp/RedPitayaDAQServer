@@ -304,10 +304,10 @@ julia> jumpSharpnessDAC(rp, 1)
 0.01
 ```
 """
-function jumpSharpnessDAC(rp::RedPitaya, channel)
-  return query(rp, scpiCommand(jumpSharpnessDAC, channel), scpiReturn(jumpSharpnessDAC))
+function jumpSharpnessDAC(rp::RedPitaya, channel, component)
+  return query(rp, scpiCommand(jumpSharpnessDAC, channel, component), scpiReturn(jumpSharpnessDAC))
 end
-scpiCommand(::typeof(jumpSharpnessDAC), channel) = string("RP:DAC:CH", Int(channel)-1, ":JUMPsharpness?")
+scpiCommand(::typeof(jumpSharpnessDAC), channel, component) = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1,":JUMPsharpness?")
 scpiReturn(::typeof(jumpSharpnessDAC)) = Float64
 """
     jumpSharpnessDAC!(rp::RedPitaya, channel, value)
@@ -325,10 +325,10 @@ julia> jumpSharpnessDAC(rp, 1)
 0.01
 ```
 """
-function jumpSharpnessDAC!(rp::RedPitaya, channel, value)
-  return query(rp, scpiCommand(jumpSharpnessDAC!, channel, value), scpiReturn(jumpSharpnessDAC!))
+function jumpSharpnessDAC!(rp::RedPitaya, channel, component, value)
+  return query(rp, scpiCommand(jumpSharpnessDAC!, channel, component, value), scpiReturn(jumpSharpnessDAC!))
 end
-scpiCommand(::typeof(jumpSharpnessDAC!), channel, value) = string("RP:DAC:CH", Int(channel)-1, ":JUMPsharpness ", Float64(value))
+scpiCommand(::typeof(jumpSharpnessDAC!), channel, component, value) = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":JUMPsharpness ", Float64(value))
 scpiReturn(::typeof(jumpSharpnessDAC!)) = Bool
 
 function jumpSharpnessDACSeq!(rp::RedPitaya, channel, value)
@@ -356,17 +356,17 @@ julia> signalTypeDAC(rp, 1)
 SINE
 ```
 """
-function signalTypeDAC(rp::RedPitaya, channel)
-  command = scpiCommand(signalTypeDAC, channel)
+function signalTypeDAC(rp::RedPitaya, channel, component)
+  command = scpiCommand(signalTypeDAC, channel, component)
   return stringToEnum(SignalType, strip(query(rp, command), '\"'))
 end
-scpiCommand(::typeof(signalTypeDAC), channel) = string("RP:DAC:CH", Int(channel)-1, ":SIGnaltype?")
+scpiCommand(::typeof(signalTypeDAC), channel, component) = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":SIGnaltype?")
 scpiReturn(::typeof(signalTypeDAC)) = SignalType
 parseReturn(::typeof(signalTypeDAC), ret) = stringToEnum(SignalType, strip(ret, '\"'))
 
 
-function signalTypeDAC!(rp::RedPitaya, channel, sigType::String)
-  return signalTypeDAC!(rp, channel, stringToEnum(SignalType, sigType))
+function signalTypeDAC!(rp::RedPitaya, channel, component, sigType::String)
+  return signalTypeDAC!(rp, channel, component, stringToEnum(SignalType, sigType))
 end
 """
     signalTypeDAC!(rp::RedPitaya, channel, value)
@@ -384,10 +384,10 @@ julia> signalTypeDAC(rp, 1)
 SINE
 ```
 """
-function signalTypeDAC!(rp::RedPitaya, channel, sigType::SignalType)
-  return query(rp, scpiCommand(signalTypeDAC!, channel, sigType), scpiReturn(signalTypeDAC!))
+function signalTypeDAC!(rp::RedPitaya, channel, component, sigType::SignalType)
+  return query(rp, scpiCommand(signalTypeDAC!, channel, component, sigType), scpiReturn(signalTypeDAC!))
 end
-scpiCommand(::typeof(signalTypeDAC!), channel, sigType) = string("RP:DAC:CH", Int(channel)-1, ":SIGnaltype ", string(sigType))
+scpiCommand(::typeof(signalTypeDAC!), channel, component, sigType) = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":SIGnaltype ", string(sigType))
 scpiReturn(::typeof(signalTypeDAC!)) = Bool
 
 function signalTypeDACSeq!(rp::RedPitaya, channel, sigType::String)

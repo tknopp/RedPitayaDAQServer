@@ -371,9 +371,10 @@ scpi_choice_def_t signal_types[] = {
 };
 
 static scpi_result_t RP_DAC_SetSignalType(scpi_t * context) {
-	int32_t numbers[1];
-	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int32_t numbers[2];
+	SCPI_CommandNumbers(context, numbers, 2, 1);
 	int channel = numbers[0];
+	int component = numbers[1];
 
 	int32_t signal_type_selection;
 
@@ -381,7 +382,7 @@ static scpi_result_t RP_DAC_SetSignalType(scpi_t * context) {
 		return returnSCPIBool(context, false);
 	}
 
-	int result = setSignalType(channel, signal_type_selection);
+	int result = setSignalType(signal_type_selection, channel, component);
 	if (result < 0) {
 		return returnSCPIBool(context, false);
 	}
@@ -414,39 +415,42 @@ static scpi_result_t RP_DAC_SetSequenceSignalType(scpi_t * context) {
 }
 
 static scpi_result_t RP_DAC_GetSignalType(scpi_t * context) {
-	int32_t numbers[1];
-	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int32_t numbers[2];
+	SCPI_CommandNumbers(context, numbers, 2, 1);
 	int channel = numbers[0];
+	int component = numbers[1];
 
 	const char * name;
 
-	SCPI_ChoiceToName(signal_types, getSignalType(channel), &name);
+	SCPI_ChoiceToName(signal_types, getSignalType(channel, component), &name);
 	SCPI_ResultText(context, name);
 
 	return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_DAC_GetJumpSharpness(scpi_t * context) {
-	int32_t numbers[1];
-	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int32_t numbers[2];
+	SCPI_CommandNumbers(context, numbers, 2, 1);
 	int channel = numbers[0];
+	int component = numbers[1];
 
-	SCPI_ResultDouble(context, getJumpSharpness(channel));
+	SCPI_ResultDouble(context, getJumpSharpness(channel, component));
 
 	return SCPI_RES_OK;
 }
 
 static scpi_result_t RP_DAC_SetJumpSharpness(scpi_t * context) {
-	int32_t numbers[1];
-	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int32_t numbers[2];
+	SCPI_CommandNumbers(context, numbers, 2, 1);
 	int channel = numbers[0];
-
+	int component = numbers[1];
+	
 	double percentage;
 	if (!SCPI_ParamDouble(context, &percentage, TRUE)) {
 		return returnSCPIBool(context, false);
 	}
 
-	int result = setJumpSharpness(channel, percentage);
+	int result = setJumpSharpness(percentage, channel, component);
 	if (result < 0) {
 		return returnSCPIBool(context, false);
 	}
@@ -1713,10 +1717,10 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:PHAse", .callback = RP_DAC_SetPhase,},
 	//{.pattern = "RP:DAC:MODe", .callback = RP_DAC_SetDACMode,},
 	//{.pattern = "RP:DAC:MODe?", .callback = RP_DAC_GetDACMode,},
-	{.pattern = "RP:DAC:CHannel#:SIGnaltype", .callback = RP_DAC_SetSignalType,},
-	{.pattern = "RP:DAC:CHannel#:SIGnaltype?", .callback = RP_DAC_GetSignalType,},
-	{.pattern = "RP:DAC:CHannel#:JUMPsharpness", .callback = RP_DAC_SetJumpSharpness,},
-	{.pattern = "RP:DAC:CHannel#:JUMPsharpness?", .callback = RP_DAC_GetJumpSharpness,},
+	{.pattern = "RP:DAC:CHannel#:COMPonent#:SIGnaltype", .callback = RP_DAC_SetSignalType,},
+	{.pattern = "RP:DAC:CHannel#:COMPonent#:SIGnaltype?", .callback = RP_DAC_GetSignalType,},
+	{.pattern = "RP:DAC:CHannel#:COMPonent#:JUMPsharpness", .callback = RP_DAC_SetJumpSharpness,},
+	{.pattern = "RP:DAC:CHannel#:COMPonent#:JUMPsharpness?", .callback = RP_DAC_GetJumpSharpness,},
 	// Sequences
 	{.pattern = "RP:DAC:SEQ:CLocKdivider", .callback = RP_ADC_SetSeqClockDivider,},
 	{.pattern = "RP:DAC:SEQ:CLocKdivider?", .callback = RP_ADC_GetSeqClockDivider,},
