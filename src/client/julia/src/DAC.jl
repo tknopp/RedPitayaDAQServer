@@ -531,7 +531,7 @@ scpiReturn(::typeof(samplesPerStep!)) = Bool
 Return the number of steps per sequence repetitions.
 """
 stepsPerRepetition(rp::RedPitaya) = query(rp, scpiCommand(stepsPerRepetition), scpiReturn(stepsPerRepetition))
-scpiCommand(::typeof(stepsPerRepetition)) = "RP:DAC:SEQ:STEPs:REPetition?"
+scpiCommand(::typeof(stepsPerRepetition)) = "RP:DAC:SEQ:STEPs?"
 scpiReturn(::typeof(stepsPerRepetition)) = Int64
 """
     stepsPerRepetition!(rp::RedPitaya)
@@ -541,7 +541,7 @@ Set the number of steps per sequence repetitions. Return `true` if the command w
 function stepsPerRepetition!(rp::RedPitaya, value)
   return query(rp, scpiCommand(stepsPerRepetition!, value), scpiReturn(stepsPerRepetition!))
 end
-scpiCommand(::typeof(stepsPerRepetition!), value) = string("RP:DAC:SEQ:STEPs:REPetition ", value)
+scpiCommand(::typeof(stepsPerRepetition!), value) = string("RP:DAC:SEQ:STEPs ", value)
 scpiReturn(::typeof(stepsPerRepetition!)) = Bool
 
 function prepareSteps!(rp::RedPitaya, samplesPerStep, stepsPerSequence, numOfChan)
