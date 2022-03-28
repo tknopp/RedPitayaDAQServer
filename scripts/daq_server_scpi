@@ -1,0 +1,21 @@
+
+#!/sbin/openrc-run
+
+name=$RC_SVCNAME
+description="Daemon for performing measurements with the Red Pitaya"
+cfgfile="/etc/$RC_SVCNAME/$RC_SVCNAME.conf"
+command="/media/mmcblk0p1/apps/RedPitayaDAQServer/build/server/daq_server_scpi"
+command_args=""
+#command_user="root"
+pidfile="/run/$RC_SVCNAME/$RC_SVCNAME.pid"
+#start_stop_daemon_args="--quiet"
+command_background="yes"
+
+depend() {
+        need net
+}
+
+start_pre() {
+        checkpath --directory --owner $command_user:$command_user --mode 0775 \
+                /run/$RC_SVCNAME /var/log/$RC_SVCNAME
+}
