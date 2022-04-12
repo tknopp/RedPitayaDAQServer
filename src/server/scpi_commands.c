@@ -182,7 +182,22 @@ static scpi_result_t RP_DAC_SetSequenceOffset(scpi_t * context) {
 	return returnSCPIBool(context, true);
 }
 
+static scpi_result_t RP_DAC_SetRampingFast(scpi_t * context) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
 
+	double period;
+	if (!SCPI_ParamDouble(context, &period, TRUE)) {
+		return returnSCPIBool(context, false);
+	}
+
+	int result = setRampingPeriod(period, channel);
+	if (result < 0) {
+		return returnSCPIBool(context, false)
+	}
+	return returnSCPIBool(context, true);
+}
 
 static scpi_result_t RP_DAC_GetFrequency(scpi_t * context) {
 	int32_t numbers[2];
@@ -1711,6 +1726,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude", .callback = RP_DAC_SetAmplitude,},
 	{.pattern = "RP:DAC:CHannel#:OFFset?", .callback = RP_DAC_GetOffset,},
 	{.pattern = "RP:DAC:CHannel#:OFFset", .callback = RP_DAC_SetOffset,},
+	{.pattern = "RP:DAC:CHannel#:RAMPing", .callback = RP_DAC_SetRampingFast,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency?", .callback = RP_DAC_GetFrequency,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency", .callback = RP_DAC_SetFrequency,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:PHAse?", .callback = RP_DAC_GetPhase,},

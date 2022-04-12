@@ -402,6 +402,14 @@ function signalTypeDACSeq!(config::DACConfig, channel, sigType::String)
   config.signalTypes[channel] = sigType
 end
 
+
+function rampingDAC!(rp::RedPitaya, channel, value)
+  command = scpiCommand(rampingDAC!, channel, value)
+  return query(rp, command, Bool)
+end
+scpiCommand(::typeof(rampingDAC!), channel, value) = string("RP:DAC:CH", Int(channel)-1, ":RAMP ", Float64(value))
+scpiReturn(::typeof(rampingDAC!)) = Bool
+
 function configureFastDACSeq!(rp::RedPitaya, config::DACConfig)
   result = true
   for ch = 1:2
