@@ -40,14 +40,14 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# reset_manager
+# reset_manager, signal_cfg_slice, signal_composer, signal_cfg_slice, signal_composer
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
 
 # The design that will be created by this Tcl script contains the following 
 # block design container source references:
-# signal_comp_compose, signal_comp_slice, waveform_gen
+# signal_ramp, waveform_gen
 
 # Please add the sources before sourcing this Tcl script.
 
@@ -188,6 +188,10 @@ set bCheckModules 1
 if { $bCheckModules == 1 } {
    set list_check_mods "\ 
 reset_manager\
+signal_cfg_slice\
+signal_composer\
+signal_cfg_slice\
+signal_composer\
 "
 
    set list_mods_missing ""
@@ -210,7 +214,7 @@ reset_manager\
 # CHECK Block Design Container Sources
 ##################################################################
 set bCheckSources 1
-set list_bdc_active "signal_comp_compose, signal_comp_slice, waveform_gen"
+set list_bdc_active "signal_ramp, waveform_gen"
 
 array set map_bdc_missing {}
 set map_bdc_missing(ACTIVE) ""
@@ -218,8 +222,7 @@ set map_bdc_missing(BDC) ""
 
 if { $bCheckSources == 1 } {
    set list_check_srcs "\ 
-signal_comp_compose \
-signal_comp_slice \
+signal_ramp \
 waveform_gen \
 "
 
@@ -427,7 +430,7 @@ proc create_hier_cell_signal_compose1 { parentCell nameHier } {
   # Create interface pins
 
   # Create pins
-  create_bd_pin -dir I -from 719 -to 0 Din
+  create_bd_pin -dir I -from 847 -to 0 Din
   create_bd_pin -dir O -from 15 -to 0 -type data S
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type rst aresetn
@@ -436,28 +439,28 @@ proc create_hier_cell_signal_compose1 { parentCell nameHier } {
   create_bd_pin -dir O -from 0 -to 0 m_axis_data_tvalid_1
   create_bd_pin -dir I -from 15 -to 0 offset
 
-  # Create instance: signal_comp, and set properties
-  set signal_comp [ create_bd_cell -type container -reference signal_comp_compose signal_comp ]
-  set_property -dict [ list \
-   CONFIG.ACTIVE_SIM_BD {signal_comp_compose.bd} \
-   CONFIG.ACTIVE_SYNTH_BD {signal_comp_compose.bd} \
-   CONFIG.ENABLE_DFX {0} \
-   CONFIG.LIST_SIM_BD {signal_comp_compose.bd} \
-   CONFIG.LIST_SYNTH_BD {signal_comp_compose.bd} \
-   CONFIG.LOCK_PROPAGATE {0} \
- ] $signal_comp
-
-  # Create instance: signal_slice, and set properties
-  set signal_slice [ create_bd_cell -type container -reference signal_comp_slice signal_slice ]
-  set_property -dict [ list \
-   CONFIG.ACTIVE_SIM_BD {signal_comp_slice.bd} \
-   CONFIG.ACTIVE_SYNTH_BD {signal_comp_slice.bd} \
-   CONFIG.ENABLE_DFX {0} \
-   CONFIG.LIST_SIM_BD {signal_comp_slice.bd} \
-   CONFIG.LIST_SYNTH_BD {signal_comp_slice.bd} \
-   CONFIG.LOCK_PROPAGATE {0} \
- ] $signal_slice
-
+  # Create instance: signal_cfg_slice_0, and set properties
+  set block_name signal_cfg_slice
+  set block_cell_name signal_cfg_slice_0
+  if { [catch {set signal_cfg_slice_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $signal_cfg_slice_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
+  # Create instance: signal_composer_0, and set properties
+  set block_name signal_composer
+  set block_cell_name signal_composer_0
+  if { [catch {set signal_composer_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $signal_composer_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
   # Create instance: waveform_gen_0, and set properties
   set waveform_gen_0 [ create_bd_cell -type container -reference waveform_gen waveform_gen_0 ]
   set_property -dict [ list \
@@ -503,39 +506,39 @@ proc create_hier_cell_signal_compose1 { parentCell nameHier } {
  ] $waveform_gen_3
 
   # Create port connections
-  connect_bd_net -net Din_2 [get_bd_pins Din] [get_bd_pins signal_slice/Din]
-  connect_bd_net -net amplitude_A_channel_1_slice1_Dout [get_bd_pins signal_slice/comp_0_amp] [get_bd_pins waveform_gen_0/amplitude]
-  connect_bd_net -net amplitude_A_comp_1_slice_Dout [get_bd_pins signal_slice/comp_1_amp] [get_bd_pins waveform_gen_1/amplitude]
-  connect_bd_net -net amplitude_A_comp_2_slice_Dout [get_bd_pins signal_slice/comp_2_amp] [get_bd_pins waveform_gen_2/amplitude]
-  connect_bd_net -net amplitude_A_comp_3_slice_Dout [get_bd_pins signal_slice/comp_3_amp] [get_bd_pins waveform_gen_3/amplitude]
-  connect_bd_net -net c_addsub_4_S [get_bd_pins S] [get_bd_pins signal_comp/S]
-  connect_bd_net -net cfg_A_comp_1_slice_Dout [get_bd_pins signal_slice/comp_1_cfg] [get_bd_pins waveform_gen_1/cfg_data]
-  connect_bd_net -net cfg_A_comp_2_slice_Dout [get_bd_pins signal_slice/comp_2_cfg] [get_bd_pins waveform_gen_2/cfg_data]
-  connect_bd_net -net cfg_A_comp_3_slice_Dout [get_bd_pins signal_slice/comp_3_cfg] [get_bd_pins waveform_gen_3/cfg_data]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins signal_comp/aclk] [get_bd_pins waveform_gen_0/aclk] [get_bd_pins waveform_gen_1/aclk] [get_bd_pins waveform_gen_2/aclk] [get_bd_pins waveform_gen_3/aclk]
-  connect_bd_net -net disable_dac_1 [get_bd_pins disable_dac] [get_bd_pins signal_comp/disable_dac]
-  connect_bd_net -net dyn_offset_disable_1 [get_bd_pins dyn_offset_disable] [get_bd_pins signal_comp/dyn_offset_disable]
-  connect_bd_net -net freq_A_channel_1_slice_Dout [get_bd_pins signal_slice/comp_0_freq] [get_bd_pins waveform_gen_0/freq]
-  connect_bd_net -net freq_A_comp_1_slice_Dout [get_bd_pins signal_slice/comp_1_freq] [get_bd_pins waveform_gen_1/freq]
-  connect_bd_net -net freq_A_comp_3_slice_Dout [get_bd_pins signal_slice/comp_3_freq] [get_bd_pins waveform_gen_3/freq]
-  connect_bd_net -net offset_1 [get_bd_pins offset] [get_bd_pins signal_comp/seq]
-  connect_bd_net -net phase_A_channel_1_slice1_Dout [get_bd_pins signal_slice/comp_0_cfg] [get_bd_pins waveform_gen_0/cfg_data]
-  connect_bd_net -net phase_A_channel_1_slice_Dout [get_bd_pins signal_slice/comp_0_phase] [get_bd_pins waveform_gen_0/phase]
-  connect_bd_net -net phase_A_comp_1_slice_Dout [get_bd_pins signal_slice/comp_1_phase] [get_bd_pins waveform_gen_1/phase]
-  connect_bd_net -net phase_A_comp_2_slice_Dout [get_bd_pins signal_slice/comp_3_phase] [get_bd_pins waveform_gen_2/phase]
-  connect_bd_net -net phase_A_comp_3_slice_Dout [get_bd_pins signal_slice/comp_2_phase] [get_bd_pins waveform_gen_3/phase]
+  connect_bd_net -net Din_1 [get_bd_pins Din] [get_bd_pins signal_cfg_slice_0/cfg_data]
+  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins signal_composer_0/clk] [get_bd_pins waveform_gen_0/aclk] [get_bd_pins waveform_gen_1/aclk] [get_bd_pins waveform_gen_2/aclk] [get_bd_pins waveform_gen_3/aclk]
+  connect_bd_net -net disable_dac_1 [get_bd_pins disable_dac] [get_bd_pins signal_composer_0/disable_dac]
+  connect_bd_net -net dyn_offset_disable_1 [get_bd_pins dyn_offset_disable] [get_bd_pins signal_composer_0/dyn_offset_disable]
+  connect_bd_net -net offset_1 [get_bd_pins offset] [get_bd_pins signal_composer_0/seq]
   connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins waveform_gen_0/aresetn] [get_bd_pins waveform_gen_1/aresetn] [get_bd_pins waveform_gen_2/aresetn] [get_bd_pins waveform_gen_3/aresetn]
-  connect_bd_net -net signal_slice_comp_2_freq [get_bd_pins signal_slice/comp_2_freq] [get_bd_pins waveform_gen_2/freq]
-  connect_bd_net -net util_vector_logic_2_Res [get_bd_pins m_axis_data_tvalid_1] [get_bd_pins signal_comp/m_axis_data_tvalid_1]
-  connect_bd_net -net waveform_gen_0_m_axis_data_tvalid_1 [get_bd_pins signal_comp/valid0] [get_bd_pins waveform_gen_0/m_axis_data_tvalid_1]
-  connect_bd_net -net waveform_gen_0_wave [get_bd_pins signal_comp/wave0] [get_bd_pins waveform_gen_0/wave]
-  connect_bd_net -net waveform_gen_1_m_axis_data_tvalid_1 [get_bd_pins signal_comp/valid1] [get_bd_pins waveform_gen_1/m_axis_data_tvalid_1]
-  connect_bd_net -net waveform_gen_1_wave [get_bd_pins signal_comp/wave1] [get_bd_pins waveform_gen_1/wave]
-  connect_bd_net -net waveform_gen_2_m_axis_data_tvalid_1 [get_bd_pins signal_comp/valid3] [get_bd_pins waveform_gen_2/m_axis_data_tvalid_1]
-  connect_bd_net -net waveform_gen_2_wave [get_bd_pins signal_comp/wave2] [get_bd_pins waveform_gen_2/wave]
-  connect_bd_net -net waveform_gen_3_m_axis_data_tvalid_1 [get_bd_pins signal_comp/valid2] [get_bd_pins waveform_gen_3/m_axis_data_tvalid_1]
-  connect_bd_net -net waveform_gen_3_wave [get_bd_pins signal_comp/wave3] [get_bd_pins waveform_gen_3/wave]
-  connect_bd_net -net xlslice_4_Dout [get_bd_pins signal_comp/offset] [get_bd_pins signal_slice/offset]
+  connect_bd_net -net signal_cfg_slice_0_comp_0_amp [get_bd_pins signal_cfg_slice_0/comp_0_amp] [get_bd_pins waveform_gen_0/amplitude]
+  connect_bd_net -net signal_cfg_slice_0_comp_0_cfg [get_bd_pins signal_cfg_slice_0/comp_0_cfg] [get_bd_pins waveform_gen_0/cfg_data]
+  connect_bd_net -net signal_cfg_slice_0_comp_0_freq [get_bd_pins signal_cfg_slice_0/comp_0_freq] [get_bd_pins waveform_gen_0/freq]
+  connect_bd_net -net signal_cfg_slice_0_comp_0_phase [get_bd_pins signal_cfg_slice_0/comp_0_phase] [get_bd_pins waveform_gen_0/phase]
+  connect_bd_net -net signal_cfg_slice_0_comp_1_amp [get_bd_pins signal_cfg_slice_0/comp_1_amp] [get_bd_pins waveform_gen_1/amplitude]
+  connect_bd_net -net signal_cfg_slice_0_comp_1_cfg [get_bd_pins signal_cfg_slice_0/comp_1_cfg] [get_bd_pins waveform_gen_1/cfg_data]
+  connect_bd_net -net signal_cfg_slice_0_comp_1_freq [get_bd_pins signal_cfg_slice_0/comp_1_freq] [get_bd_pins waveform_gen_1/freq]
+  connect_bd_net -net signal_cfg_slice_0_comp_1_phase [get_bd_pins signal_cfg_slice_0/comp_1_phase] [get_bd_pins waveform_gen_1/phase]
+  connect_bd_net -net signal_cfg_slice_0_comp_2_amp [get_bd_pins signal_cfg_slice_0/comp_2_amp] [get_bd_pins waveform_gen_2/amplitude]
+  connect_bd_net -net signal_cfg_slice_0_comp_2_cfg [get_bd_pins signal_cfg_slice_0/comp_2_cfg] [get_bd_pins waveform_gen_2/cfg_data]
+  connect_bd_net -net signal_cfg_slice_0_comp_2_freq [get_bd_pins signal_cfg_slice_0/comp_2_freq] [get_bd_pins waveform_gen_2/freq]
+  connect_bd_net -net signal_cfg_slice_0_comp_2_phase [get_bd_pins signal_cfg_slice_0/comp_2_phase] [get_bd_pins waveform_gen_2/phase]
+  connect_bd_net -net signal_cfg_slice_0_comp_3_amp [get_bd_pins signal_cfg_slice_0/comp_3_amp] [get_bd_pins waveform_gen_3/amplitude]
+  connect_bd_net -net signal_cfg_slice_0_comp_3_cfg [get_bd_pins signal_cfg_slice_0/comp_3_cfg] [get_bd_pins waveform_gen_3/cfg_data]
+  connect_bd_net -net signal_cfg_slice_0_comp_3_freq [get_bd_pins signal_cfg_slice_0/comp_3_freq] [get_bd_pins waveform_gen_3/freq]
+  connect_bd_net -net signal_cfg_slice_0_comp_3_phase [get_bd_pins signal_cfg_slice_0/comp_3_phase] [get_bd_pins waveform_gen_3/phase]
+  connect_bd_net -net signal_cfg_slice_0_offset [get_bd_pins signal_cfg_slice_0/offset] [get_bd_pins signal_composer_0/offset]
+  connect_bd_net -net signal_composer_0_signal [get_bd_pins S] [get_bd_pins signal_composer_0/signal_out]
+  connect_bd_net -net signal_composer_0_signal_valid [get_bd_pins m_axis_data_tvalid_1] [get_bd_pins signal_composer_0/signal_valid]
+  connect_bd_net -net waveform_gen_0_m_axis_data_tvalid_1 [get_bd_pins signal_composer_0/valid0] [get_bd_pins waveform_gen_0/m_axis_data_tvalid_1]
+  connect_bd_net -net waveform_gen_0_wave [get_bd_pins signal_composer_0/wave0] [get_bd_pins waveform_gen_0/wave]
+  connect_bd_net -net waveform_gen_1_m_axis_data_tvalid_1 [get_bd_pins signal_composer_0/valid1] [get_bd_pins waveform_gen_1/m_axis_data_tvalid_1]
+  connect_bd_net -net waveform_gen_1_wave [get_bd_pins signal_composer_0/wave1] [get_bd_pins waveform_gen_1/wave]
+  connect_bd_net -net waveform_gen_2_m_axis_data_tvalid_1 [get_bd_pins signal_composer_0/valid2] [get_bd_pins waveform_gen_2/m_axis_data_tvalid_1]
+  connect_bd_net -net waveform_gen_2_wave [get_bd_pins signal_composer_0/wave2] [get_bd_pins waveform_gen_2/wave]
+  connect_bd_net -net waveform_gen_3_m_axis_data_tvalid_1 [get_bd_pins signal_composer_0/valid3] [get_bd_pins waveform_gen_3/m_axis_data_tvalid_1]
+  connect_bd_net -net waveform_gen_3_wave [get_bd_pins signal_composer_0/wave3] [get_bd_pins waveform_gen_3/wave]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -578,7 +581,7 @@ proc create_hier_cell_signal_compose { parentCell nameHier } {
   # Create interface pins
 
   # Create pins
-  create_bd_pin -dir I -from 719 -to 0 Din
+  create_bd_pin -dir I -from 847 -to 0 Din
   create_bd_pin -dir O -from 15 -to 0 -type data S
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type rst aresetn
@@ -587,27 +590,38 @@ proc create_hier_cell_signal_compose { parentCell nameHier } {
   create_bd_pin -dir O -from 0 -to 0 m_axis_data_tvalid_1
   create_bd_pin -dir I -from 15 -to 0 offset
 
-  # Create instance: signal_comp_compose_0, and set properties
-  set signal_comp_compose_0 [ create_bd_cell -type container -reference signal_comp_compose signal_comp_compose_0 ]
+  # Create instance: signal_cfg_slice_0, and set properties
+  set block_name signal_cfg_slice
+  set block_cell_name signal_cfg_slice_0
+  if { [catch {set signal_cfg_slice_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $signal_cfg_slice_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
+  # Create instance: signal_composer_0, and set properties
+  set block_name signal_composer
+  set block_cell_name signal_composer_0
+  if { [catch {set signal_composer_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $signal_composer_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
+  # Create instance: signal_ramp, and set properties
+  set signal_ramp [ create_bd_cell -type container -reference signal_ramp signal_ramp ]
   set_property -dict [ list \
-   CONFIG.ACTIVE_SIM_BD {signal_comp_compose.bd} \
-   CONFIG.ACTIVE_SYNTH_BD {signal_comp_compose.bd} \
+   CONFIG.ACTIVE_SIM_BD {signal_ramp.bd} \
+   CONFIG.ACTIVE_SYNTH_BD {signal_ramp.bd} \
    CONFIG.ENABLE_DFX {0} \
-   CONFIG.LIST_SIM_BD {signal_comp_compose.bd} \
-   CONFIG.LIST_SYNTH_BD {signal_comp_compose.bd} \
+   CONFIG.LIST_SIM_BD {signal_ramp.bd} \
+   CONFIG.LIST_SYNTH_BD {signal_ramp.bd} \
    CONFIG.LOCK_PROPAGATE {0} \
- ] $signal_comp_compose_0
-
-  # Create instance: signal_comp_slice_0, and set properties
-  set signal_comp_slice_0 [ create_bd_cell -type container -reference signal_comp_slice signal_comp_slice_0 ]
-  set_property -dict [ list \
-   CONFIG.ACTIVE_SIM_BD {signal_comp_slice.bd} \
-   CONFIG.ACTIVE_SYNTH_BD {signal_comp_slice.bd} \
-   CONFIG.ENABLE_DFX {0} \
-   CONFIG.LIST_SIM_BD {signal_comp_slice.bd} \
-   CONFIG.LIST_SYNTH_BD {signal_comp_slice.bd} \
-   CONFIG.LOCK_PROPAGATE {0} \
- ] $signal_comp_slice_0
+ ] $signal_ramp
 
   # Create instance: waveform_gen_0, and set properties
   set waveform_gen_0 [ create_bd_cell -type container -reference waveform_gen waveform_gen_0 ]
@@ -654,39 +668,40 @@ proc create_hier_cell_signal_compose { parentCell nameHier } {
  ] $waveform_gen_3
 
   # Create port connections
-  connect_bd_net -net Din_1 [get_bd_pins Din] [get_bd_pins signal_comp_slice_0/Din]
-  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins signal_comp_compose_0/aclk] [get_bd_pins waveform_gen_0/aclk] [get_bd_pins waveform_gen_1/aclk] [get_bd_pins waveform_gen_2/aclk] [get_bd_pins waveform_gen_3/aclk]
-  connect_bd_net -net aresetn_1 [get_bd_pins aresetn] [get_bd_pins waveform_gen_0/aresetn] [get_bd_pins waveform_gen_1/aresetn] [get_bd_pins waveform_gen_2/aresetn] [get_bd_pins waveform_gen_3/aresetn]
-  connect_bd_net -net disable_dac_1 [get_bd_pins disable_dac] [get_bd_pins signal_comp_compose_0/disable_dac]
-  connect_bd_net -net dyn_offset_disable_1 [get_bd_pins dyn_offset_disable] [get_bd_pins signal_comp_compose_0/dyn_offset_disable]
-  connect_bd_net -net offset_1 [get_bd_pins offset] [get_bd_pins signal_comp_compose_0/seq]
-  connect_bd_net -net signal_comp_compose_0_S [get_bd_pins S] [get_bd_pins signal_comp_compose_0/S]
-  connect_bd_net -net signal_comp_compose_0_m_axis_data_tvalid_1 [get_bd_pins m_axis_data_tvalid_1] [get_bd_pins signal_comp_compose_0/m_axis_data_tvalid_1]
-  connect_bd_net -net signal_comp_slice_0_comp_0_amp [get_bd_pins signal_comp_slice_0/comp_0_amp] [get_bd_pins waveform_gen_0/amplitude]
-  connect_bd_net -net signal_comp_slice_0_comp_0_cfg [get_bd_pins signal_comp_slice_0/comp_0_cfg] [get_bd_pins waveform_gen_0/cfg_data]
-  connect_bd_net -net signal_comp_slice_0_comp_0_freq [get_bd_pins signal_comp_slice_0/comp_0_freq] [get_bd_pins waveform_gen_0/freq]
-  connect_bd_net -net signal_comp_slice_0_comp_0_phase [get_bd_pins signal_comp_slice_0/comp_0_phase] [get_bd_pins waveform_gen_0/phase]
-  connect_bd_net -net signal_comp_slice_0_comp_1_amp [get_bd_pins signal_comp_slice_0/comp_1_amp] [get_bd_pins waveform_gen_1/amplitude]
-  connect_bd_net -net signal_comp_slice_0_comp_1_cfg [get_bd_pins signal_comp_slice_0/comp_1_cfg] [get_bd_pins waveform_gen_1/cfg_data]
-  connect_bd_net -net signal_comp_slice_0_comp_1_freq [get_bd_pins signal_comp_slice_0/comp_1_freq] [get_bd_pins waveform_gen_1/freq]
-  connect_bd_net -net signal_comp_slice_0_comp_1_phase [get_bd_pins signal_comp_slice_0/comp_1_phase] [get_bd_pins waveform_gen_1/phase]
-  connect_bd_net -net signal_comp_slice_0_comp_2_amp [get_bd_pins signal_comp_slice_0/comp_2_amp] [get_bd_pins waveform_gen_2/amplitude]
-  connect_bd_net -net signal_comp_slice_0_comp_2_cfg [get_bd_pins signal_comp_slice_0/comp_2_cfg] [get_bd_pins waveform_gen_2/cfg_data]
-  connect_bd_net -net signal_comp_slice_0_comp_2_freq [get_bd_pins signal_comp_slice_0/comp_2_freq] [get_bd_pins waveform_gen_2/freq]
-  connect_bd_net -net signal_comp_slice_0_comp_2_phase [get_bd_pins signal_comp_slice_0/comp_2_phase] [get_bd_pins waveform_gen_2/phase]
-  connect_bd_net -net signal_comp_slice_0_comp_3_amp [get_bd_pins signal_comp_slice_0/comp_3_amp] [get_bd_pins waveform_gen_3/amplitude]
-  connect_bd_net -net signal_comp_slice_0_comp_3_cfg [get_bd_pins signal_comp_slice_0/comp_3_cfg] [get_bd_pins waveform_gen_3/cfg_data]
-  connect_bd_net -net signal_comp_slice_0_comp_3_freq [get_bd_pins signal_comp_slice_0/comp_3_freq] [get_bd_pins waveform_gen_3/freq]
-  connect_bd_net -net signal_comp_slice_0_comp_3_phase [get_bd_pins signal_comp_slice_0/comp_3_phase] [get_bd_pins waveform_gen_3/phase]
-  connect_bd_net -net signal_comp_slice_0_offset [get_bd_pins signal_comp_compose_0/offset] [get_bd_pins signal_comp_slice_0/offset]
-  connect_bd_net -net waveform_gen_0_m_axis_data_tvalid_1 [get_bd_pins signal_comp_compose_0/valid0] [get_bd_pins waveform_gen_0/m_axis_data_tvalid_1]
-  connect_bd_net -net waveform_gen_0_wave [get_bd_pins signal_comp_compose_0/wave0] [get_bd_pins waveform_gen_0/wave]
-  connect_bd_net -net waveform_gen_1_m_axis_data_tvalid_1 [get_bd_pins signal_comp_compose_0/valid1] [get_bd_pins waveform_gen_1/m_axis_data_tvalid_1]
-  connect_bd_net -net waveform_gen_1_wave [get_bd_pins signal_comp_compose_0/wave1] [get_bd_pins waveform_gen_1/wave]
-  connect_bd_net -net waveform_gen_2_m_axis_data_tvalid_1 [get_bd_pins signal_comp_compose_0/valid2] [get_bd_pins waveform_gen_2/m_axis_data_tvalid_1]
-  connect_bd_net -net waveform_gen_2_wave [get_bd_pins signal_comp_compose_0/wave2] [get_bd_pins waveform_gen_2/wave]
-  connect_bd_net -net waveform_gen_3_m_axis_data_tvalid_1 [get_bd_pins signal_comp_compose_0/valid3] [get_bd_pins waveform_gen_3/m_axis_data_tvalid_1]
-  connect_bd_net -net waveform_gen_3_wave [get_bd_pins signal_comp_compose_0/wave3] [get_bd_pins waveform_gen_3/wave]
+  connect_bd_net -net Din_1 [get_bd_pins Din] [get_bd_pins signal_cfg_slice_0/cfg_data]
+  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins signal_composer_0/clk] [get_bd_pins signal_ramp/aclk] [get_bd_pins waveform_gen_0/aclk] [get_bd_pins waveform_gen_1/aclk] [get_bd_pins waveform_gen_2/aclk] [get_bd_pins waveform_gen_3/aclk]
+  connect_bd_net -net aresetn_1 [get_bd_pins aresetn] [get_bd_pins signal_ramp/aresetn] [get_bd_pins waveform_gen_0/aresetn] [get_bd_pins waveform_gen_1/aresetn] [get_bd_pins waveform_gen_2/aresetn] [get_bd_pins waveform_gen_3/aresetn]
+  connect_bd_net -net disable_dac_1 [get_bd_pins disable_dac] [get_bd_pins signal_composer_0/disable_dac]
+  connect_bd_net -net dyn_offset_disable_1 [get_bd_pins dyn_offset_disable] [get_bd_pins signal_composer_0/dyn_offset_disable]
+  connect_bd_net -net mult_gen_0_P [get_bd_pins S] [get_bd_pins signal_ramp/signal_out]
+  connect_bd_net -net offset_1 [get_bd_pins offset] [get_bd_pins signal_composer_0/seq]
+  connect_bd_net -net signal_cfg_slice_0_comp_0_amp [get_bd_pins signal_cfg_slice_0/comp_0_amp] [get_bd_pins waveform_gen_0/amplitude]
+  connect_bd_net -net signal_cfg_slice_0_comp_0_cfg [get_bd_pins signal_cfg_slice_0/comp_0_cfg] [get_bd_pins waveform_gen_0/cfg_data]
+  connect_bd_net -net signal_cfg_slice_0_comp_0_freq [get_bd_pins signal_cfg_slice_0/comp_0_freq] [get_bd_pins waveform_gen_0/freq]
+  connect_bd_net -net signal_cfg_slice_0_comp_0_phase [get_bd_pins signal_cfg_slice_0/comp_0_phase] [get_bd_pins waveform_gen_0/phase]
+  connect_bd_net -net signal_cfg_slice_0_comp_1_amp [get_bd_pins signal_cfg_slice_0/comp_1_amp] [get_bd_pins waveform_gen_1/amplitude]
+  connect_bd_net -net signal_cfg_slice_0_comp_1_cfg [get_bd_pins signal_cfg_slice_0/comp_1_cfg] [get_bd_pins waveform_gen_1/cfg_data]
+  connect_bd_net -net signal_cfg_slice_0_comp_1_freq [get_bd_pins signal_cfg_slice_0/comp_1_freq] [get_bd_pins waveform_gen_1/freq]
+  connect_bd_net -net signal_cfg_slice_0_comp_1_phase [get_bd_pins signal_cfg_slice_0/comp_1_phase] [get_bd_pins waveform_gen_1/phase]
+  connect_bd_net -net signal_cfg_slice_0_comp_2_amp [get_bd_pins signal_cfg_slice_0/comp_2_amp] [get_bd_pins waveform_gen_2/amplitude]
+  connect_bd_net -net signal_cfg_slice_0_comp_2_cfg [get_bd_pins signal_cfg_slice_0/comp_2_cfg] [get_bd_pins waveform_gen_2/cfg_data]
+  connect_bd_net -net signal_cfg_slice_0_comp_2_freq [get_bd_pins signal_cfg_slice_0/comp_2_freq] [get_bd_pins waveform_gen_2/freq]
+  connect_bd_net -net signal_cfg_slice_0_comp_2_phase [get_bd_pins signal_cfg_slice_0/comp_2_phase] [get_bd_pins waveform_gen_2/phase]
+  connect_bd_net -net signal_cfg_slice_0_comp_3_amp [get_bd_pins signal_cfg_slice_0/comp_3_amp] [get_bd_pins waveform_gen_3/amplitude]
+  connect_bd_net -net signal_cfg_slice_0_comp_3_cfg [get_bd_pins signal_cfg_slice_0/comp_3_cfg] [get_bd_pins waveform_gen_3/cfg_data]
+  connect_bd_net -net signal_cfg_slice_0_comp_3_freq [get_bd_pins signal_cfg_slice_0/comp_3_freq] [get_bd_pins waveform_gen_3/freq]
+  connect_bd_net -net signal_cfg_slice_0_comp_3_phase [get_bd_pins signal_cfg_slice_0/comp_3_phase] [get_bd_pins waveform_gen_3/phase]
+  connect_bd_net -net signal_cfg_slice_0_offset [get_bd_pins signal_cfg_slice_0/offset] [get_bd_pins signal_composer_0/offset]
+  connect_bd_net -net signal_composer_0_signal_out [get_bd_pins signal_composer_0/signal_out] [get_bd_pins signal_ramp/signal_in]
+  connect_bd_net -net signal_composer_0_signal_valid [get_bd_pins m_axis_data_tvalid_1] [get_bd_pins signal_composer_0/signal_valid]
+  connect_bd_net -net waveform_gen_0_m_axis_data_tvalid_1 [get_bd_pins signal_composer_0/valid0] [get_bd_pins waveform_gen_0/m_axis_data_tvalid_1]
+  connect_bd_net -net waveform_gen_0_wave [get_bd_pins signal_composer_0/wave0] [get_bd_pins waveform_gen_0/wave]
+  connect_bd_net -net waveform_gen_1_m_axis_data_tvalid_1 [get_bd_pins signal_composer_0/valid1] [get_bd_pins waveform_gen_1/m_axis_data_tvalid_1]
+  connect_bd_net -net waveform_gen_1_wave [get_bd_pins signal_composer_0/wave1] [get_bd_pins waveform_gen_1/wave]
+  connect_bd_net -net waveform_gen_2_m_axis_data_tvalid_1 [get_bd_pins signal_composer_0/valid2] [get_bd_pins waveform_gen_2/m_axis_data_tvalid_1]
+  connect_bd_net -net waveform_gen_2_wave [get_bd_pins signal_composer_0/wave2] [get_bd_pins waveform_gen_2/wave]
+  connect_bd_net -net waveform_gen_3_m_axis_data_tvalid_1 [get_bd_pins signal_composer_0/valid3] [get_bd_pins waveform_gen_3/m_axis_data_tvalid_1]
+  connect_bd_net -net waveform_gen_3_wave [get_bd_pins signal_composer_0/wave3] [get_bd_pins waveform_gen_3/wave]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -1059,7 +1074,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   create_bd_pin -dir I -type rst aresetn
   create_bd_pin -dir O -from 95 -to 0 cfg_data
   create_bd_pin -dir I -from 63 -to 0 curr_pdm_values
-  create_bd_pin -dir O -from 1439 -to 0 dac_cfg
+  create_bd_pin -dir O -from 1695 -to 0 dac_cfg
   create_bd_pin -dir I dcm_locked
   create_bd_pin -dir O -from 8191 -to 0 pdm_data
   create_bd_pin -dir O -from 0 -to 0 -type rst peripheral_aresetn
@@ -1077,7 +1092,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   set axi_cfg_register_dac [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 axi_cfg_register_dac ]
   set_property -dict [ list \
    CONFIG.AXI_ADDR_WIDTH {32} \
-   CONFIG.CFG_DATA_WIDTH {1440} \
+   CONFIG.CFG_DATA_WIDTH {1696} \
  ] $axi_cfg_register_dac
 
   # Create instance: axi_cfg_register_pdm, and set properties
@@ -1902,7 +1917,7 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type rst aresetn
-  create_bd_pin -dir I -from 1439 -to 0 cfg_data
+  create_bd_pin -dir I -from 1695 -to 0 cfg_data
   create_bd_pin -dir I dyn_offset_enable
   create_bd_pin -dir I -from 1 -to 0 enable_dac
   create_bd_pin -dir I -from 31 -to 0 oa_dac
@@ -1943,19 +1958,19 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
   # Create instance: xlslice_0, and set properties
   set xlslice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_0 ]
   set_property -dict [ list \
-   CONFIG.DIN_FROM {719} \
+   CONFIG.DIN_FROM {847} \
    CONFIG.DIN_TO {0} \
-   CONFIG.DIN_WIDTH {1440} \
-   CONFIG.DOUT_WIDTH {720} \
+   CONFIG.DIN_WIDTH {1696} \
+   CONFIG.DOUT_WIDTH {848} \
  ] $xlslice_0
 
   # Create instance: xlslice_1, and set properties
   set xlslice_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_1 ]
   set_property -dict [ list \
-   CONFIG.DIN_FROM {1439} \
-   CONFIG.DIN_TO {720} \
-   CONFIG.DIN_WIDTH {1440} \
-   CONFIG.DOUT_WIDTH {720} \
+   CONFIG.DIN_FROM {1695} \
+   CONFIG.DIN_TO {848} \
+   CONFIG.DIN_WIDTH {1696} \
+   CONFIG.DOUT_WIDTH {848} \
  ] $xlslice_1
 
   # Create instance: xlslice_2, and set properties
@@ -2485,7 +2500,6 @@ proc create_root_design { parentCell } {
   # Restore current instance
   current_bd_instance $oldCurInst
 
-  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -2497,4 +2511,6 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
+
+common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
