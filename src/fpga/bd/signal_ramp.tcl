@@ -225,7 +225,6 @@ proc create_root_design { parentCell } {
   # Create ports
   set aclk [ create_bd_port -dir I -type clk -freq_hz 125000000 aclk ]
   set_property -dict [ list \
-   CONFIG.ASSOCIATED_BUSIF {} \
    CONFIG.ASSOCIATED_RESET {aresetn} \
  ] $aclk
   set aresetn [ create_bd_port -dir I -type rst aresetn ]

@@ -430,7 +430,7 @@ proc create_hier_cell_signal_compose1 { parentCell nameHier } {
   # Create interface pins
 
   # Create pins
-  create_bd_pin -dir I -from 847 -to 0 Din
+  create_bd_pin -dir I -from 831 -to 0 Din
   create_bd_pin -dir O -from 15 -to 0 -type data S
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type rst aresetn
@@ -581,7 +581,7 @@ proc create_hier_cell_signal_compose { parentCell nameHier } {
   # Create interface pins
 
   # Create pins
-  create_bd_pin -dir I -from 847 -to 0 Din
+  create_bd_pin -dir I -from 831 -to 0 Din
   create_bd_pin -dir O -from 15 -to 0 -type data S
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type rst aresetn
@@ -667,6 +667,15 @@ proc create_hier_cell_signal_compose { parentCell nameHier } {
    CONFIG.LOCK_PROPAGATE {0} \
  ] $waveform_gen_3
 
+  # Create instance: xlconstant_0, and set properties
+  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
+
+  # Create instance: xlconstant_1, and set properties
+  set xlconstant_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_1 ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {0} \
+ ] $xlconstant_1
+
   # Create port connections
   connect_bd_net -net Din_1 [get_bd_pins Din] [get_bd_pins signal_cfg_slice_0/cfg_data]
   connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins signal_composer_0/clk] [get_bd_pins signal_ramp/aclk] [get_bd_pins waveform_gen_0/aclk] [get_bd_pins waveform_gen_1/aclk] [get_bd_pins waveform_gen_2/aclk] [get_bd_pins waveform_gen_3/aclk]
@@ -692,6 +701,7 @@ proc create_hier_cell_signal_compose { parentCell nameHier } {
   connect_bd_net -net signal_cfg_slice_0_comp_3_freq [get_bd_pins signal_cfg_slice_0/comp_3_freq] [get_bd_pins waveform_gen_3/freq]
   connect_bd_net -net signal_cfg_slice_0_comp_3_phase [get_bd_pins signal_cfg_slice_0/comp_3_phase] [get_bd_pins waveform_gen_3/phase]
   connect_bd_net -net signal_cfg_slice_0_offset [get_bd_pins signal_cfg_slice_0/offset] [get_bd_pins signal_composer_0/offset]
+  connect_bd_net -net signal_cfg_slice_0_ramp_freq [get_bd_pins signal_cfg_slice_0/ramp_freq] [get_bd_pins signal_ramp/freq]
   connect_bd_net -net signal_composer_0_signal_out [get_bd_pins signal_composer_0/signal_out] [get_bd_pins signal_ramp/signal_in]
   connect_bd_net -net signal_composer_0_signal_valid [get_bd_pins m_axis_data_tvalid_1] [get_bd_pins signal_composer_0/signal_valid]
   connect_bd_net -net waveform_gen_0_m_axis_data_tvalid_1 [get_bd_pins signal_composer_0/valid0] [get_bd_pins waveform_gen_0/m_axis_data_tvalid_1]
@@ -702,6 +712,8 @@ proc create_hier_cell_signal_compose { parentCell nameHier } {
   connect_bd_net -net waveform_gen_2_wave [get_bd_pins signal_composer_0/wave2] [get_bd_pins waveform_gen_2/wave]
   connect_bd_net -net waveform_gen_3_m_axis_data_tvalid_1 [get_bd_pins signal_composer_0/valid3] [get_bd_pins waveform_gen_3/m_axis_data_tvalid_1]
   connect_bd_net -net waveform_gen_3_wave [get_bd_pins signal_composer_0/wave3] [get_bd_pins waveform_gen_3/wave]
+  connect_bd_net -net xlconstant_0_dout [get_bd_pins signal_ramp/enableRamping] [get_bd_pins xlconstant_0/dout]
+  connect_bd_net -net xlconstant_1_dout [get_bd_pins signal_ramp/startRampDown] [get_bd_pins xlconstant_1/dout]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -1074,7 +1086,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   create_bd_pin -dir I -type rst aresetn
   create_bd_pin -dir O -from 95 -to 0 cfg_data
   create_bd_pin -dir I -from 63 -to 0 curr_pdm_values
-  create_bd_pin -dir O -from 1695 -to 0 dac_cfg
+  create_bd_pin -dir O -from 1663 -to 0 dac_cfg
   create_bd_pin -dir I dcm_locked
   create_bd_pin -dir O -from 8191 -to 0 pdm_data
   create_bd_pin -dir O -from 0 -to 0 -type rst peripheral_aresetn
@@ -1092,7 +1104,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   set axi_cfg_register_dac [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 axi_cfg_register_dac ]
   set_property -dict [ list \
    CONFIG.AXI_ADDR_WIDTH {32} \
-   CONFIG.CFG_DATA_WIDTH {1696} \
+   CONFIG.CFG_DATA_WIDTH {1664} \
  ] $axi_cfg_register_dac
 
   # Create instance: axi_cfg_register_pdm, and set properties
@@ -1917,7 +1929,7 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -type clk aclk
   create_bd_pin -dir I -type rst aresetn
-  create_bd_pin -dir I -from 1695 -to 0 cfg_data
+  create_bd_pin -dir I -from 1663 -to 0 cfg_data
   create_bd_pin -dir I dyn_offset_enable
   create_bd_pin -dir I -from 1 -to 0 enable_dac
   create_bd_pin -dir I -from 31 -to 0 oa_dac
@@ -1958,19 +1970,19 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
   # Create instance: xlslice_0, and set properties
   set xlslice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_0 ]
   set_property -dict [ list \
-   CONFIG.DIN_FROM {847} \
+   CONFIG.DIN_FROM {831} \
    CONFIG.DIN_TO {0} \
-   CONFIG.DIN_WIDTH {1696} \
-   CONFIG.DOUT_WIDTH {848} \
+   CONFIG.DIN_WIDTH {1664} \
+   CONFIG.DOUT_WIDTH {832} \
  ] $xlslice_0
 
   # Create instance: xlslice_1, and set properties
   set xlslice_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_1 ]
   set_property -dict [ list \
-   CONFIG.DIN_FROM {1695} \
-   CONFIG.DIN_TO {848} \
-   CONFIG.DIN_WIDTH {1696} \
-   CONFIG.DOUT_WIDTH {848} \
+   CONFIG.DIN_FROM {1663} \
+   CONFIG.DIN_TO {832} \
+   CONFIG.DIN_WIDTH {1664} \
+   CONFIG.DOUT_WIDTH {832} \
  ] $xlslice_1
 
   # Create instance: xlslice_2, and set properties
@@ -2500,6 +2512,7 @@ proc create_root_design { parentCell } {
   # Restore current instance
   current_bd_instance $oldCurInst
 
+  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -2511,6 +2524,4 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
-
-common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 

@@ -195,12 +195,11 @@ proc create_root_design { parentCell } {
   # Create ports
   set aclk [ create_bd_port -dir I -type clk -freq_hz 125000000 aclk ]
   set_property -dict [ list \
-   CONFIG.ASSOCIATED_BUSIF {} \
    CONFIG.ASSOCIATED_RESET {aresetn} \
  ] $aclk
   set amplitude [ create_bd_port -dir I -from 15 -to 0 -type data amplitude ]
   set aresetn [ create_bd_port -dir I -type rst aresetn ]
-  set cfg_data [ create_bd_port -dir I -from 63 -to 0 cfg_data ]
+  set cfg_data [ create_bd_port -dir I -from 47 -to 0 cfg_data ]
   set freq [ create_bd_port -dir I -from 47 -to 0 freq ]
   set m_axis_data_tvalid_1 [ create_bd_port -dir O m_axis_data_tvalid_1 ]
   set phase [ create_bd_port -dir I -from 47 -to 0 phase ]
@@ -258,7 +257,7 @@ proc create_root_design { parentCell } {
   set signal_generator_0 [ create_bd_cell -type ip -vlnv jbeuke:user:signal_generator:1.0 signal_generator_0 ]
   set_property -dict [ list \
    CONFIG.AXIS_TDATA_PHASE_WIDTH {48} \
-   CONFIG.CFG_DATA_WIDTH {64} \
+   CONFIG.CFG_DATA_WIDTH {48} \
  ] $signal_generator_0
 
   # Create instance: xlconcat_A_channel_1, and set properties
@@ -276,10 +275,10 @@ proc create_root_design { parentCell } {
   # Create port connections
   connect_bd_net -net amplitude_A_channel_1_slice1_Dout [get_bd_ports amplitude] [get_bd_pins mult_gen_0/A]
   connect_bd_net -net clk_wiz_0_clk_internal [get_bd_ports aclk] [get_bd_pins axis_variable_A_channel_1/aclk] [get_bd_pins dds_compiler_A_channel_1/aclk] [get_bd_pins mult_gen_0/CLK] [get_bd_pins signal_generator_0/clk]
-  connect_bd_net -net freq_A_channel_1_slice_Dout [get_bd_ports freq] [get_bd_pins xlconcat_A_channel_1/In0]
+  connect_bd_net -net freq_1 [get_bd_ports freq] [get_bd_pins xlconcat_A_channel_1/In0]
   connect_bd_net -net mult_gen_0_P [get_bd_ports wave] [get_bd_pins mult_gen_0/P]
+  connect_bd_net -net phase_1 [get_bd_ports phase] [get_bd_pins xlconcat_A_channel_1/In1]
   connect_bd_net -net phase_A_channel_1_slice1_Dout [get_bd_ports cfg_data] [get_bd_pins signal_generator_0/cfg_data]
-  connect_bd_net -net phase_A_channel_1_slice_Dout [get_bd_ports phase] [get_bd_pins xlconcat_A_channel_1/In1]
   connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_ports aresetn] [get_bd_pins axis_variable_A_channel_1/aresetn] [get_bd_pins dds_compiler_A_channel_1/aresetn] [get_bd_pins signal_generator_0/aresetn]
   connect_bd_net -net signal_generator_0_m_axis_tdata [get_bd_pins mult_gen_0/B] [get_bd_pins signal_generator_0/m_axis_tdata]
   connect_bd_net -net signal_generator_0_m_axis_tvalid [get_bd_ports m_axis_data_tvalid_1] [get_bd_pins signal_generator_0/m_axis_tvalid]

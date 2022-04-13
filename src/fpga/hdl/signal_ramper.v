@@ -17,20 +17,19 @@ reg phaseRisingDelay;
 
 reg [2:0] state;
 localparam [2:0]
-    stateRampUp = 2'b000,
-    stateNormal = 2'b001,
-    stateReqDown = 2'b010,
-    stateRampDown = 2'b011,
-    stateDone = 2'b100;
+    stateRampUp = 3'b000,
+    stateNormal = 3'b001,
+    stateReqDown = 3'b010,
+    stateRampDown = 3'b011,
+    stateDone = 3'b100;
 
 reg [15:0] rampTemp0;
 reg [15:0] rampTemp1;
 
-assign phase[12:0] = s_axis_tdata_phase[47:35];
-assign phaseRising = (phasePrev <= phase);
-
 always @(posedge clk)
 begin
+    phase[12:0] <= s_axis_tdata_phase[47:35];
+    phaseRising <= (phasePrev <= phase);
     phasePrev <= phase;
     phaseRisingDelay <= phaseRising;
     if (~aresetn)
