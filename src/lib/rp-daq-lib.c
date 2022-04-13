@@ -441,7 +441,11 @@ int setSignalType(int signal_type, int channel, int component) {
 			&& (signal_type != SIGNAL_TYPE_SAWTOOTH)) {
 		return -2;
 	}
-	//*((int16_t *)(dac_cfg + COMPONENT_START_OFFSET + SIGNAL_TYPE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) = signal_type;
+	
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET * channel);
+	uint64_t mask = 0x000000000000ffff;
+	register_value = (register_value & ~mask) | (signal_type & mask);
+	*(dac_cfg + COMPONENT_START_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET * channel) = register_value;
 
 	return 0;
 }
@@ -455,9 +459,10 @@ int getSignalType(int channel, int component) {
 		return -4;
 	}
 
-	//int value = (int) (*((int16_t *)(dac_cfg + COMPONENT_START_OFFSET + SIGNAL_TYPE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)));
-	//return value;
-	return 0;
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET * channel);
+	uint64_t mask = 0x000000000000ffff;
+	int value = (int) (register_value & mask);
+	return value;
 }
 
 int setJumpSharpness(float percentage, int channel, int component) {
@@ -469,9 +474,14 @@ int setJumpSharpness(float percentage, int channel, int component) {
 		return -4;
 	}
 
-	//int16_t A = (int16_t) (8191*percentage);
-	//*((int16_t *)(dac_cfg + COMPONENT_START_OFFSET + A_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) = A;
-	//*((int16_t *)(dac_cfg + COMPONENT_START_OFFSET + INCR_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) = (int16_t) (8191/A);
+	int16_t A = (int16_t) (8191*percentage);
+	int16_t A_incr = (int16_t) (8191/A);
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET * channel);
+	uint64_t mask = 0x00000000ffff0000;
+	register_value = (register_value & ~mask) | (A & mask);
+	mask = 0x0000ffff00000000;
+	register_value = (register_value & ~mask) | (A_incr & mask);
+	*(dac_cfg + COMPONENT_START_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET * channel) = register_value;
 
 	return 0;
 }
@@ -485,9 +495,11 @@ float getJumpSharpness(int channel, int component) {
 		return -4;
 	}
 
-	//int16_t value = (*((int16_t *)( dac_cfg + COMPONENT_START_OFFSET + A_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)));
-	//return ((float)value)/8191.0;
-	return 0.0;
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET * channel);
+	uint64_t mask = 0x00000000ffff0000;
+	int value = (int) ((register_value & mask) >> 16);
+
+	return ((float)value)/8191.0;
 }
 
 
