@@ -194,7 +194,7 @@ static scpi_result_t RP_DAC_SetRampingFast(scpi_t * context) {
 
 	int result = setRampingPeriod(period, channel);
 	if (result < 0) {
-		return returnSCPIBool(context, false)
+		return returnSCPIBool(context, false);
 	}
 	return returnSCPIBool(context, true);
 }
