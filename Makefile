@@ -1,5 +1,3 @@
-#include libs/gmsl/gmsl
-
 # 'make' builds everything
 # 'make clean' deletes everything except source files and Makefile
 #
@@ -205,7 +203,6 @@ server:
 	@$(MAKE) -C libs/scpi-parser
 	@$(MAKE) -C src/lib
 	@$(MAKE) -C src/server
-	@$(MAKE) -C src/test
 	cp scripts/daq_server_scpi /etc/init.d/
 	chmod +x /etc/init.d/daq_server_scpi
 	rc-update add daq_server_scpi default
