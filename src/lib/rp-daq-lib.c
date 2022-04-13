@@ -236,8 +236,8 @@ int setAmplitude(uint16_t amplitude, int channel, int component) {
 		return -4;
 	}
 
-	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel);
-	register_value = (register_value & MASK_LOWER_48) | ((newOffset << 48) & ~MASK_LOWER_48);
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + AMPLITUDE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel);
+	register_value = (register_value & MASK_LOWER_48) | ((amplitude << 48) & ~MASK_LOWER_48);
 	*(dac_cfg + COMPONENT_START_OFFSET + AMPLITUDE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = register_value;
 
 	return 0;
@@ -287,7 +287,7 @@ double getFrequency(int channel, int component) {
 		return -4;
 	}
 
-	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) & MASK_LOWER_48;
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
 	double frequency = -1;
 	if(getDACMode() == DAC_MODE_STANDARD) {
 		// Calculate frequency from phase increment
@@ -359,7 +359,7 @@ double getPhase(int channel, int component)
 	}
 
 	// Get register value
-	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) & MASK_LOWER_48;
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
 	double phase_factor = -1;
 	if(getDACMode() == DAC_MODE_STANDARD) {
 		// Calculate phase factor from phase offset
@@ -394,20 +394,11 @@ int setPhase(double phase, int channel, int component)
 			printf("phase_offset for %f*2*pi rad is %08llx.\n", phase_factor, phase_offset);
 		}
 
-		uint64_t mask = 0x0000ffffffffffff;
-		uint64_t register_value = *((uint64_t *)(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel));
-<<<<<<< HEAD
-		//printf("Test\n");
-		*((uint64_t *)(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) =
-			(register_value & ~mask) | (phase_offset & mask);
-=======
-
 		// ATM phase/frequency do not share memory with other data
 		//uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
 		//register_value = (register_value & ~MASK_LOWER_48) | ( phase_offset & ~MASK_LOWER_48);
 		//*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = register_value;
 		*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = phase_offset;
->>>>>>> 4e12af55c4e2c0693290a67106b779b0aa864ae5
 
 	} else {
 		// TODO AWG
@@ -450,7 +441,7 @@ int setSignalType(int signal_type, int channel, int component) {
 			&& (signal_type != SIGNAL_TYPE_SAWTOOTH)) {
 		return -2;
 	}
-	*((int16_t *)(dac_cfg + COMPONENT_START_OFFSET + SIGNAL_TYPE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) = signal_type;
+	//*((int16_t *)(dac_cfg + COMPONENT_START_OFFSET + SIGNAL_TYPE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) = signal_type;
 
 	return 0;
 }
@@ -464,8 +455,9 @@ int getSignalType(int channel, int component) {
 		return -4;
 	}
 
-	int value = (int) (*((int16_t *)(dac_cfg + COMPONENT_START_OFFSET + SIGNAL_TYPE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)));
-	return value;
+	//int value = (int) (*((int16_t *)(dac_cfg + COMPONENT_START_OFFSET + SIGNAL_TYPE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)));
+	//return value;
+	return 0;
 }
 
 int setJumpSharpness(float percentage, int channel, int component) {
@@ -477,9 +469,9 @@ int setJumpSharpness(float percentage, int channel, int component) {
 		return -4;
 	}
 
-	int16_t A = (int16_t) (8191*percentage);
-	*((int16_t *)(dac_cfg + COMPONENT_START_OFFSET + A_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) = A;
-	*((int16_t *)(dac_cfg + COMPONENT_START_OFFSET + INCR_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) = (int16_t) (8191/A);
+	//int16_t A = (int16_t) (8191*percentage);
+	//*((int16_t *)(dac_cfg + COMPONENT_START_OFFSET + A_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) = A;
+	//*((int16_t *)(dac_cfg + COMPONENT_START_OFFSET + INCR_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) = (int16_t) (8191/A);
 
 	return 0;
 }
@@ -493,8 +485,9 @@ float getJumpSharpness(int channel, int component) {
 		return -4;
 	}
 
-	int16_t value = (*((int16_t *)( dac_cfg + COMPONENT_START_OFFSET + A_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)));
-	return ((float)value)/8191.0;
+	//int16_t value = (*((int16_t *)( dac_cfg + COMPONENT_START_OFFSET + A_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)));
+	//return ((float)value)/8191.0;
+	return 0.0;
 }
 
 
