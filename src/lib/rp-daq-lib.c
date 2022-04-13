@@ -237,7 +237,7 @@ int setAmplitude(uint16_t amplitude, int channel, int component) {
 	}
 
 	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + AMPLITUDE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel);
-	register_value = (register_value & MASK_LOWER_48) | ((amplitude << 48) & ~MASK_LOWER_48);
+	register_value = (register_value & MASK_LOWER_48) | ((amplitude >> 48) & ~MASK_LOWER_48);
 	*(dac_cfg + COMPONENT_START_OFFSET + AMPLITUDE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = register_value;
 
 	return 0;
@@ -271,7 +271,7 @@ int setOffset(int16_t offset, int channel) {
 	int16_t newOffset = offset + calibOffset;
 
 	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel);
-	register_value = (register_value & MASK_LOWER_48) | ((newOffset << 48) & ~MASK_LOWER_48);
+	register_value = (register_value & MASK_LOWER_48) | ((newOffset >> 48) & ~MASK_LOWER_48);
 
 	*(dac_cfg + CHANNEL_OFFSET*channel) = register_value;
 
