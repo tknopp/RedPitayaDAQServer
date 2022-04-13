@@ -13,16 +13,16 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 
-#define CHANNEL_OFFSET 112
-#define COMPONENT_OFFSET 22
-#define COMPONENT_START_OFFSET 2 // Offset Size 2
+#define MASK_LOWER_48 0x0000ffffffffffff
+#define CHANNEL_OFFSET 10
+#define COMPONENT_OFFSET 3
+#define COMPONENT_START_OFFSET 1 
 #define SIGNAL_TYPE_OFFSET 0
-#define A_OFFSET SIGNAL_TYPE_OFFSET + 2
-#define INCR_OFFSET A_OFFSET + 2
-#define AMPLITUDE_OFFSET 8 // CFG Size 8
-#define FREQ_OFFSET AMPLITUDE_OFFSET + 2 // Amplitude Size 2
-#define PHASE_OFFSET FREQ_OFFSET + 8 // Freq Size 8
-#define RAMP_OFFSET PHASE_OFFSET + 8 // Phase Size 8
+#define A_OFFSET SIGNAL_TYPE_OFFSET 0 
+#define INCR_OFFSET A_OFFSET 0
+#define AMPLITUDE_OFFSET  0 
+#define FREQ_OFFSET 1
+#define PHASE_OFFSET 2
 
 #define BASE_FREQUENCY 125000000
 #define ADC_BUFF_NUM_BITS 24 

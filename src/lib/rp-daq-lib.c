@@ -21,7 +21,8 @@ bool verbose = false;
 int mmapfd;
 volatile uint32_t *slcr, *axi_hp0;
 void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *dio_sts;
-char *pdm_cfg, *dac_cfg;
+char *pdm_cfg;
+uint64_t *dac_cfg;
 volatile int32_t *xadc;
 
 // static const uint32_t ANALOG_OUT_MASK            = 0xFF;
@@ -212,8 +213,8 @@ uint16_t getAmplitude(int channel, int component) {
 		return -4;
 	}
 
-	uint16_t amplitude = *((uint16_t *)(dac_cfg + COMPONENT_START_OFFSET + AMPLITUDE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel));
-
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + AMPLITUDE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel);
+	uint16_t amplitude = (uint16_t)(register_value >> 48);
 	return amplitude;
 }
 
@@ -235,7 +236,9 @@ int setAmplitude(uint16_t amplitude, int channel, int component) {
 		return -4;
 	}
 
-	*((uint16_t *)(dac_cfg + COMPONENT_START_OFFSET + AMPLITUDE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) = amplitude;
+	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel);
+	register_value = (register_value & MASK_LOWER_48) | ((newOffset << 48) & ~MASK_LOWER_48);
+	*(dac_cfg + COMPONENT_START_OFFSET + AMPLITUDE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = register_value;
 
 	return 0;
 }
@@ -245,7 +248,8 @@ int16_t getOffset(int channel) {
 		return -3;
 	}
 
-	int16_t offset = *((int16_t *)(dac_cfg + CHANNEL_OFFSET*channel));
+	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel);
+	int16_t offset = (int16_t)(register_value >> 48);
 
 	return offset - getCalibDACOffset(channel);
 }
@@ -264,8 +268,12 @@ int setOffset(int16_t offset, int channel) {
 	}
 
 	int16_t calibOffset = getCalibDACOffset(channel);
+	int16_t newOffset = offset + calibOffset;
 
-	*((int16_t *)(dac_cfg + CHANNEL_OFFSET*channel)) = offset + calibOffset;
+	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel);
+	register_value = (register_value & MASK_LOWER_48) | ((newOffset << 48) & ~MASK_LOWER_48);
+
+	*(dac_cfg + CHANNEL_OFFSET*channel) = register_value;
 
 	return 0;
 }
@@ -279,8 +287,7 @@ double getFrequency(int channel, int component) {
 		return -4;
 	}
 
-	uint64_t mask = 0x0000ffffffffffff;
-	uint64_t register_value = *((uint64_t *)(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) & mask;
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) & MASK_LOWER_48;
 	double frequency = -1;
 	if(getDACMode() == DAC_MODE_STANDARD) {
 		// Calculate frequency from phase increment
@@ -315,11 +322,11 @@ int setFrequency(double frequency, int channel, int component)
 		}
 
 
-		uint64_t mask = 0x0000ffffffffffff;
-		uint64_t register_value = *((uint64_t *)(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel));
-
-		*((uint64_t *)(dac_cfg + COMPONENT_START_OFFSET + RAMP_OFFSET + COMPONENT_OFFSET*3 + CHANNEL_OFFSET*channel)) =
-			(register_value & ~mask) | (phase_increment & mask);
+		// ATM phase/frequency do not share memory with other data
+		//uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
+		//register_value = (register_value & ~MASK_LOWER_48) | ( phase_increment & ~MASK_LOWER_48);
+		//*(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = register_value;
+		*(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = phase_increment;
 
 	} else {
 		// TODO AWG
@@ -335,12 +342,9 @@ int setRampingPeriod(double period, int channel) {
 
 	uint64_t phase_increment = (uint64_t)round(period*pow(2, 48)/((double)BASE_FREQUENCY));
 
-	uint64_t mask = 0x0000ffffffffffff;
-	uint64_t register_value = *((uint64_t *)(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*3 + CHANNEL_OFFSET*channel));
-
-	*((uint64_t *)(dac_cfg + COMPONENT_START_OFFSET + RAMP_OFFSET + COMPONENT_OFFSET*3 + CHANNEL_OFFSET*channel)) =
-			(register_value & ~mask) | (phase_increment & mask);
-
+	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel);
+	register_value = (register_value & ~MASK_LOWER_48) | (phase_increment & MASK_LOWER_48);
+	*(dac_cfg + CHANNEL_OFFSET*channel) = phase_increment;
 	return 0;
 }
 
@@ -355,8 +359,7 @@ double getPhase(int channel, int component)
 	}
 
 	// Get register value
-	uint64_t mask = 0x0000ffffffffffff;
-	uint64_t register_value = *((uint64_t *)(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) & mask;
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) & MASK_LOWER_48;
 	double phase_factor = -1;
 	if(getDACMode() == DAC_MODE_STANDARD) {
 		// Calculate phase factor from phase offset
@@ -394,8 +397,11 @@ int setPhase(double phase, int channel, int component)
 		uint64_t mask = 0x0000ffffffffffff;
 		uint64_t register_value = *((uint64_t *)(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel));
 
-		*((uint64_t *)(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel)) =
-			(register_value & ~mask) | (phase_offset & mask);
+		// ATM phase/frequency do not share memory with other data
+		//uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
+		//register_value = (register_value & ~MASK_LOWER_48) | ( phase_offset & ~MASK_LOWER_48);
+		//*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = register_value;
+		*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = phase_offset;
 
 	} else {
 		// TODO AWG
