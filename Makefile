@@ -1,4 +1,4 @@
-include libs/gmsl/gmsl
+#include libs/gmsl/gmsl
 
 # 'make' builds everything
 # 'make clean' deletes everything except source files and Makefile
@@ -10,8 +10,8 @@ include libs/gmsl/gmsl
 # solution taken from http://www.googoolia.com/wp/2015/04/21/awk-symbol-lookup-error-awk-undefined-symbol-mpfr_z_sub/
 LD_LIBRARY_PATH =
 
-NPROCS = $(shell grep -c 'processor' /proc/cpuinfo)
-MAKEFLAGS += -j$(NPROCS)
+#NPROCS = $(shell grep -c 'processor' /proc/cpuinfo)
+#MAKEFLAGS += -j$(NPROCS)
 
 LINUX_BUILD_DIR = build/linux-image
 FPGA_BUILD_DIR = build/fpga
@@ -60,7 +60,7 @@ RTL8192_URL = https://github.com/pvaret/rtl8192cu-fixes/archive/master.tar.gz
 
 .PRECIOUS: $(LINUX_BUILD_DIR)/tmp/cores/% $(LINUX_BUILD_DIR)/tmp/%.xpr $(LINUX_BUILD_DIR)/tmp/%.xsa $(LINUX_BUILD_DIR)/tmp/%.bit $(LINUX_BUILD_DIR)/tmp/%.fsbl/executable.elf $(LINUX_BUILD_DIR)/tmp/%.tree/system-top.dts
 
-all: daq_bitfiles $(LINUX_BUILD_DIR)/tmp/$(NAME).bit $(LINUX_BUILD_DIR)/boot.bin $(LINUX_BUILD_DIR)/uImage $(LINUX_BUILD_DIR)/devicetree.dtb linux
+all: linux
 
 daq_bitfiles: $(addsuffix .bit, $(addprefix bitfiles/daq_,$(DAQ_PARTS)))
 
@@ -213,6 +213,8 @@ server:
 clean:
 	$(RM) $(LINUX_BUILD_DIR)/uImage $(LINUX_BUILD_DIR)/boot.bin $(LINUX_BUILD_DIR)/devicetree.dtb $(LINUX_BUILD_DIR)/tmp
 	$(RM) -r bitfiles
+	$(RM) -r build/fpga
+	$(RM) red-pitaya*.zip
 	$(RM) .Xil usage_statistics_webtalk.html usage_statistics_webtalk.xml
 	$(RM) vivado*.jou vivado*.log vivado*.str
 	$(RM) webtalk*.jou webtalk*.log
