@@ -1121,7 +1121,7 @@ static scpi_result_t RP_SetMasterTrigger(scpi_t * context) {
 	return returnSCPIBool(context, true);
 }
 
-static scpi_result_t RP_DAC_SetEnableRamping(scpi_t *conext) {
+static scpi_result_t RP_DAC_SetEnableRamping(scpi_t *context) {
 	if (getServerMode() != ACQUISITION) {
 		return returnSCPIBool(context, false);
 	}
@@ -1141,7 +1141,7 @@ static scpi_result_t RP_DAC_SetEnableRamping(scpi_t *conext) {
 
 }
 
-static scpi_result_t RP_DAC_GetEnableRamping(scpi_t *conext) {
+static scpi_result_t RP_DAC_GetEnableRamping(scpi_t *context) {
 	const char * name;
 
 	SCPI_ChoiceToName(onoff_modes, getEnableRamping(), &name);
