@@ -29,12 +29,14 @@ reg [15:0] rampTemp1;
 always @(posedge clk)
 begin
     phase[12:0] <= s_axis_tdata_phase[47:35];
-    phaseRising <= (phasePrev <= phase);
+    phaseRising <= (phasePrev < phase);
     phasePrev <= phase;
     phaseRisingDelay <= phaseRising;
     if (~aresetn)
     begin
-        state = stateRampUp;
+        state <= stateRampUp;
+    end else begin
+        state <= state;
     end
 end
 
@@ -43,6 +45,7 @@ begin
     case(state)
     stateDone : begin 
         rampTemp0 <= 0;
+        state <= state;
     end
     stateRampUp : begin 
         rampTemp0 <= phase;

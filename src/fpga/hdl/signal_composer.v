@@ -29,7 +29,7 @@ reg valid_int = 0;
 reg valid_temp0 = 0;
 reg valid_temp1 = 0;
 
-always @(posedge clk)
+always @*
 begin
     signal_temp0 <= wave0 + wave1;
     signal_temp1 <= wave2 + wave3;
@@ -59,7 +59,7 @@ begin
     end
 end
 
-always @* 
+always @(posedge clk)
 begin
     signal_int <= signal_temp5;
     valid_int <= valid_temp0 & valid_temp1;

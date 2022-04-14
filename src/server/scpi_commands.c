@@ -1121,6 +1121,35 @@ static scpi_result_t RP_SetMasterTrigger(scpi_t * context) {
 	return returnSCPIBool(context, true);
 }
 
+static scpi_result_t RP_DAC_SetEnableRamping(scpi_t *conext) {
+	if (getServerMode() != ACQUISITION) {
+		return returnSCPIBool(context, false);
+	}
+
+	int32_t ramping_selection;
+
+	if (!SCPI_ParamChoice(context, onoff_modes, &ramping_selection, TRUE)) {
+		return returnSCPIBool(context, false);
+	}
+
+	int result = setEnableRamping(ramping_selection);
+	if (result < 0) {
+		return returnSCPIBool(context, false);
+	}
+
+	return returnSCPIBool(context, true);
+
+}
+
+static scpi_result_t RP_DAC_GetEnableRamping(scpi_t *conext) {
+	const char * name;
+
+	SCPI_ChoiceToName(onoff_modes, getEnableRamping(), &name);
+	SCPI_ResultText(context, name);
+
+	return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_GetKeepAliveReset(scpi_t * context) {
 	const char * name;
 
@@ -1726,7 +1755,6 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:AMPlitude", .callback = RP_DAC_SetAmplitude,},
 	{.pattern = "RP:DAC:CHannel#:OFFset?", .callback = RP_DAC_GetOffset,},
 	{.pattern = "RP:DAC:CHannel#:OFFset", .callback = RP_DAC_SetOffset,},
-	{.pattern = "RP:DAC:CHannel#:RAMPing", .callback = RP_DAC_SetRampingFast,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency?", .callback = RP_DAC_GetFrequency,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:FREQuency", .callback = RP_DAC_SetFrequency,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:PHAse?", .callback = RP_DAC_GetPhase,},
@@ -1737,6 +1765,10 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:SIGnaltype?", .callback = RP_DAC_GetSignalType,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:JUMPsharpness", .callback = RP_DAC_SetJumpSharpness,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:JUMPsharpness?", .callback = RP_DAC_GetJumpSharpness,},
+	// Ramping
+	{.pattern = "RP:DAC:CHannel#:RAMPing", .callback = RP_DAC_SetRampingFast,},
+	{.pattern = "RP:DAC:RAMPing:ENaBle", .callback = RP_DAC_SetEnableRamping,},
+	{.pattern = "RP:DAC:RAMPing:ENaBle?", .callback = RP_DAC_GetEnableRamping,},
 	// Sequences
 	{.pattern = "RP:DAC:SEQ:CLocKdivider", .callback = RP_ADC_SetSeqClockDivider,},
 	{.pattern = "RP:DAC:SEQ:CLocKdivider?", .callback = RP_ADC_GetSeqClockDivider,},

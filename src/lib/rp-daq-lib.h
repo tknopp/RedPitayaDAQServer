@@ -89,6 +89,8 @@ extern float getJumpSharpness(int, int);
 extern int setJumpSharpness(float, int, int);
 extern int setRampingPeriod(double, int);
 //extern int getRampingPeriod(int);
+extern int getEnableRamping();
+extern int setEnableRamping(int mode);
 
 // fast ADC
 extern int setDecimation(uint16_t decimation);

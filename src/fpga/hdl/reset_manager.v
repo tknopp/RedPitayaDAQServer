@@ -22,6 +22,7 @@ module reset_manager #
     output pdm_aresetn,
     output [31:0] reset_sts,
     output [7:0] led,
+    output ramping_enable,
     inout reset_ack,
     inout alive_signal,
     inout master_trigger
@@ -31,7 +32,7 @@ module reset_manager #
 reset_cfg:
 Bit 0 => 0: continuous mode; 1: trigger mode
 Bit 1 => 0: no watchdog; 1: watchdog mode
-Bit 2 => not used atm
+Bit 2 => Ramping enable
 Bit 3 => instant reset mode: 0: disabled; 1: enabled
 Bit 4 => 0: internal trigger 1: external trigger
 Bit 5 => internal trigger enable/disable, output over DIO5_P
@@ -263,6 +264,8 @@ assign reset_ack_out = watchdog_in; // Acknowledge received watchdog signal
 
 assign alive_signal_out = alive_signal_int;
 assign master_trigger_out = masterTriggerState;
+
+assign ramping_enable = reset_cfg[2];
 
 
 endmodule

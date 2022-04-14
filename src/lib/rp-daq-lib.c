@@ -855,6 +855,32 @@ int setMasterTrigger(int mode) {
 	return 0;
 }
 
+int getEnableRamping() {
+	int value;
+
+	value = ((int)(*((uint8_t *)(cfg + 1))) & 0x04);
+
+	if(value == 0) {
+		return OFF;
+	} else if(value == 1) {
+		return ON;
+	}
+	return -1;
+}
+
+int setEnableRamping(int mode) {
+	if (mode != OFF && mode != ON) {
+		return -1;
+	}
+	if (mode == OFF) {
+		*((uint8_t *)(cfg + 1)) &= ~(1 << 2);
+	}
+	else {
+		*((uint8_t *)(cfg + 1)) |= (1 << 2);
+	}
+	return 0;
+}
+
 int getInstantResetMode() {
 	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x08) >> 3);
 
