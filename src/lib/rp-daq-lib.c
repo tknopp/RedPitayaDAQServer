@@ -858,7 +858,7 @@ int setMasterTrigger(int mode) {
 int getEnableRamping() {
 	int value;
 
-	value = ((int)(*((uint8_t *)(cfg + 1))) & 0x04);
+	value = (((int)(*((uint8_t *)(cfg + 1))) & 0x04) >> 2);
 
 	if(value == 0) {
 		return OFF;
