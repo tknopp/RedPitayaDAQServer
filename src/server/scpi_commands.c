@@ -1122,7 +1122,7 @@ static scpi_result_t RP_SetMasterTrigger(scpi_t * context) {
 }
 
 static scpi_result_t RP_DAC_SetEnableRamping(scpi_t *context) {
-	if (getServerMode() != ACQUISITION) {
+	if (getServerMode() != CONFIGURATION) {
 		return returnSCPIBool(context, false);
 	}
 
