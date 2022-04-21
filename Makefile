@@ -8,7 +8,7 @@
 # solution taken from http://www.googoolia.com/wp/2015/04/21/awk-symbol-lookup-error-awk-undefined-symbol-mpfr_z_sub/
 LD_LIBRARY_PATH =
 
-#NPROCS = $(shell grep -c 'processor' /proc/cpuinfo)
+NPROCS = $(shell grep -c 'processor' /proc/cpuinfo)
 #MAKEFLAGS += -j$(NPROCS)
 
 LINUX_BUILD_DIR = build/linux-image
@@ -198,6 +198,8 @@ $(LINUX_BUILD_DIR)/tmp/%.tree/system-top.dts: $(LINUX_BUILD_DIR)/tmp/%.xsa $(DTR
 	patch -d $(@D) < linux-image/patches/devicetree.patch
 	
 server: 
+	git config --global --add safe.directory /home/rpdev/RedPitayaDAQServer
+	git config --global --add safe.directory /home/rpdev/RedPitayaDAQServer/libs/scpi-parser
 	git submodule update --init
 	@$(MAKE) install -C libs/scpi-parser
 	@$(MAKE) -C libs/scpi-parser
