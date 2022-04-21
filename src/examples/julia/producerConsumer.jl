@@ -70,7 +70,9 @@ producer = @tspawnat 2 readPipelinedSamples(rp, 0, Int64(numFrames * samples_per
 bind(channel, producer)
 # Consumer
 buffer = zeros(Float32, samples_per_period, 2, periods_per_frame, Int64(numFrames))
+performance = Vector{Vector{PerformanceData}}()
 consumer = @tspawnat 3 begin
+    lostData = false
     sampleBuffer = nothing
     fr = 1
     to = 1
@@ -91,9 +93,12 @@ consumer = @tspawnat 3 begin
             perfs = chunk.performance
             for (i, p) in enumerate(perfs)
                 if p.status.overwritten || p.status.corrupted
-                    @warn "RedPitaya $i lost data"
+                    #@warn "RedPitaya $i lost data"
+                    lostData = true
                 end
             end
+            perfs = chunk.performance
+            push!(performance, perfs)          
 
             # Convert samples to frames if enough samples were transmitted
             frames = nothing
@@ -116,9 +121,16 @@ consumer = @tspawnat 3 begin
                 fr = to + 1
             end
         end
-        wait(channel)
+        try 
+            wait(channel)
+        catch e
+            # NOP
+        end
     end
     @info "End Consumer"
+    if lostData
+        @info "Consumer lost data"
+    end
     masterTrigger!(rp, false)
     serverMode!(rp, CONFIGURATION)
 end
