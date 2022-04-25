@@ -4,7 +4,7 @@ frequencyDAC, frequencyDAC!, frequencyDACSeq!, phaseDAC, phaseDAC!, phaseDACSeq!
 jumpSharpnessDAC, jumpSharpnessDAC!, jumpSharpnessDACSeq!, signalTypeDAC, signalTypeDAC!, signalTypeDACSeq!,
 configureFastDACSeq!, numSeqChan, numSeqChan!,samplesPerStep, samplesPerStep!,
 stepsPerRepetition, stepsPerRepetition!, prepareSteps!, stepsPerFrame!, 
-rampingDAC!, enableRamping!, enableRamping, ramping!, rampUp!, rampDown!, rampingSteps, rampingSteps!, rampingTotalSteps, rampingTotalSteps!,
+rampingDAC!, rampingDAC, enableRamping!, enableRamping, ramping!, rampUp!, rampDown!, rampingSteps, rampingSteps!, rampingTotalSteps, rampingTotalSteps!,
 rampUpSteps, rampUpSteps!, rampUpTotalSteps, rampUpTotalSteps!, rampDownSteps, rampDownSteps!, rampDownTotalSteps, rampDownTotalSteps!, 
 popSequence!, clearSequences!, appendSequence!, prepareSequences!, AbstractSequence, ArbitrarySequence, enableLUT,
 fastDACConfig, resetAfterSequence!
@@ -405,10 +405,17 @@ end
 
 function rampingDAC!(rp::RedPitaya, channel, value)
   command = scpiCommand(rampingDAC!, channel, value)
-  return query(rp, command, Bool)
+  return query(rp, command, scpiReturn(rampingDAC!))
 end
 scpiCommand(::typeof(rampingDAC!), channel, value) = string("RP:DAC:CH", Int(channel)-1, ":RAMP ", Float64(value))
 scpiReturn(::typeof(rampingDAC!)) = Bool
+
+function rampingDAC(rp::RedPitaya, channel)
+  command = scpiCommand(rampingDAC, channel)
+  return query(rp, command, scpiReturn(rampingDAC))
+end
+scpiCommand(::typeof(rampingDAC), channel) = string("RP:DAC:CH", Int(channel)-1, ":RAMP?")
+scpiReturn(::typeof(rampingDAC)) = Float64
 
 function enableRamping!(rp::RedPitaya, value)
   return query(rp, scpiCommand(enableRamping!, value), scpiReturn(enableRamping!))
