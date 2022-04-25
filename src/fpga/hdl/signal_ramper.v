@@ -23,8 +23,9 @@ localparam [2:0]
     stateRampDown = 3'b011,
     stateDone = 3'b100;
 
-reg [15:0] rampTemp0;
-reg [15:0] rampTemp1;
+reg signed [15:0] rampTemp0;
+reg signed [15:0] rampTemp1;
+
 
 always @(posedge clk)
 begin
@@ -54,19 +55,19 @@ begin
         end
     end
     stateNormal : begin
-        rampTemp0 <= 8192;
+        rampTemp0 <= 8191;
         if (startRampDown) begin
             state <= stateReqDown;
         end
     end
     stateReqDown : begin
-        rampTemp0 <= 8192;
+        rampTemp0 <= 8191;
         if (~phaseRisingDelay & phaseRising) begin
             state <= stateRampDown;
         end
     end
     stateRampDown : begin
-        rampTemp0 <= 8192 - phase;
+        rampTemp0 <= 8191 - phase;
         if (~phaseRising) begin
             state <= stateDone;
         end
@@ -80,7 +81,7 @@ begin
     begin
         rampTemp1 <= rampTemp0;
     end else begin
-        rampTemp1 <= 8192;
+        rampTemp1 <= 8191;
     end
 end
 
