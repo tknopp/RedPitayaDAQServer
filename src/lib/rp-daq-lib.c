@@ -348,7 +348,7 @@ int setRampingPeriod(double period, int channel) {
 
 	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel);
 	register_value = (register_value & ~MASK_LOWER_48) | (phase_increment & MASK_LOWER_48);
-	*(dac_cfg + CHANNEL_OFFSET*channel) = phase_increment;
+	*(dac_cfg + CHANNEL_OFFSET*channel) = register_value;
 	return 0;
 }
 
@@ -357,8 +357,8 @@ double getRampingPeriod(int channel) {
 		return -3;
 	}
 	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
-	double period_factor = register_value/pow(2, 48)
-	return period_factor*2*M_PI;
+	double period_factor = register_value*((double)BASE_FREQUENCY)/pow(2, 48);
+	return period_factor;
 }
 
 double getPhase(int channel, int component)
