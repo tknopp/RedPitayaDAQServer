@@ -336,6 +336,10 @@ int setFrequency(double frequency, int channel, int component)
 }
 
 int setRampingPeriod(double period, int channel) {
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
+	
 	if(period < 0.03 || period >= ((double)BASE_FREQUENCY)) {
 		return -2;
 	}
@@ -346,6 +350,15 @@ int setRampingPeriod(double period, int channel) {
 	register_value = (register_value & ~MASK_LOWER_48) | (phase_increment & MASK_LOWER_48);
 	*(dac_cfg + CHANNEL_OFFSET*channel) = phase_increment;
 	return 0;
+}
+
+double getRampingPeriod(int channel) {
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
+	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
+	double period_factor = register_value/pow(2, 48)
+	return period_factor*2*M_PI;
 }
 
 double getPhase(int channel, int component)

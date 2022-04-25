@@ -88,6 +88,7 @@ extern int setSignalType(int, int, int);
 extern float getJumpSharpness(int, int);
 extern int setJumpSharpness(float, int, int);
 extern int setRampingPeriod(double, int);
+extern double getRampingPeriod(int channel);
 //extern int getRampingPeriod(int);
 extern int getEnableRamping();
 extern int setEnableRamping(int mode);
