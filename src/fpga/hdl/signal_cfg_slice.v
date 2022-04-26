@@ -22,8 +22,8 @@ module signal_cfg_slice(
     output [47:0] comp_3_phase
     );
 
-assign offset[15:0] = cfg_data[47:0];
-assign ramp_freq[47:0] = cfg_data[63:48];
+assign ramp_freq[47:0] = cfg_data[47:0];
+assign offset[15:0] = cfg_data[63:48];
 
 // 0 bit gap
 assign comp_0_cfg[47:0] = cfg_data[111:64];

@@ -29,17 +29,13 @@ reg valid_int = 0;
 reg valid_temp0 = 0;
 reg valid_temp1 = 0;
 
-always @*
+always @(posedge clk)
 begin
     signal_temp0 <= wave0 + wave1;
     signal_temp1 <= wave2 + wave3;
     signal_temp2 <= seq + offset;
     valid_temp0 <= valid0 & valid1;
     valid_temp1 <= valid2 & valid3;
-end
-
-always @*
-begin
     signal_temp3 <= signal_temp0 + signal_temp1;
     if (~dyn_offset_disable)
     begin
@@ -47,20 +43,12 @@ begin
     end else begin
         signal_temp4 <= 0;
     end
-end
-
-always @*
-begin
     if  (~disable_dac)
     begin
         signal_temp5 <= signal_temp3 + signal_temp4;
     end else begin
         signal_temp5 <= 0;
     end
-end
-
-always @(posedge clk)
-begin
     signal_int <= signal_temp5;
     valid_int <= valid_temp0 & valid_temp1;
 end
