@@ -414,7 +414,7 @@ function enableRamping!(rp::RedPitaya, value)
   return query(rp, scpiCommand(enableRamping!, value), scpiReturn(enableRamping!))
 end
 scpiCommand(::typeof(enableRamping!), val::Bool) = scpiCommand(enableRamping!, val ? "ON" : "OFF")
-scpiCommand(::typeof(enableRamping!), valStr) = string("RP:DAC:RAMP:ENB ", valStr)
+scpiCommand(::typeof(enableRamping!), valStr) = string("RP:DAC:RAMPing:ENaBle ", valStr)
 scpiReturn(::typeof(enableRamping!)) = Bool
 
 enableRamping(rp::RedPitaya) = occursin("ON", query(rp, scpiCommand(enableRamping)))

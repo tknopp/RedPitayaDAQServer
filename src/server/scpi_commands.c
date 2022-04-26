@@ -199,6 +199,16 @@ static scpi_result_t RP_DAC_SetRampingFast(scpi_t * context) {
 	return returnSCPIBool(context, true);
 }
 
+static scpi_result_t RP_DAC_GetRampingFast(scpi_t * context) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	double period = getRampingPeriod(channel);
+	SCPI_ResultDouble(context, period);
+	return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_DAC_GetFrequency(scpi_t * context) {
 	int32_t numbers[2];
 	SCPI_CommandNumbers(context, numbers, 2, 1);
@@ -1767,6 +1777,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:JUMPsharpness?", .callback = RP_DAC_GetJumpSharpness,},
 	// Ramping
 	{.pattern = "RP:DAC:CHannel#:RAMPing", .callback = RP_DAC_SetRampingFast,},
+	{.pattern = "RP:DAC:CHannel#:RAMPing?", .callback = RP_DAC_GetRampingFast,},
 	{.pattern = "RP:DAC:RAMPing:ENaBle", .callback = RP_DAC_SetEnableRamping,},
 	{.pattern = "RP:DAC:RAMPing:ENaBle?", .callback = RP_DAC_GetEnableRamping,},
 	// Sequences
