@@ -7,8 +7,8 @@ module signal_ramper (
     input aresetn,
     input enableRamping,
     input startRampDown,
-    output [15:0] ramp,
-    output signed [15:0] rampState
+    output [15:0] ramp
+    //output signed [15:0] rampState
 );
 
 reg [12:0] phase; // 0...8191
@@ -90,33 +90,33 @@ end
 
 always @*
 begin
-    //if (enableRamping)
-    //begin
-    //    rampTemp1 <= rampTemp0;
-    //end else begin
-    //    rampTemp1 <= 8191;
-    //end
-    rampTemp1 <= phase;
-    case(state)
-        stateDone : begin
-            rampStateTemp <= 4000;
-        end
-        stateRampUp : begin 
-            rampStateTemp <= 2000;
-        end
-        stateNormal : begin
-            rampStateTemp <= 0;
-        end
-        stateReqDown : begin
-            rampStateTemp <= -2000;
-        end
-        stateRampDown : begin
-            rampStateTemp <= -4000;
-        end
-    endcase
+    if (enableRamping)
+    begin
+        rampTemp1 <= rampTemp0;
+    end else begin
+        rampTemp1 <= 8191;
+    end
+    //rampTemp1 <= phase;
+    //case(state)
+    //    stateDone : begin
+    //        rampStateTemp <= 4000;
+    //    end
+    //    stateRampUp : begin 
+    //        rampStateTemp <= 2000;
+    //    end
+    //    stateNormal : begin
+    //        rampStateTemp <= 0;
+    //    end
+    //    stateReqDown : begin
+    //        rampStateTemp <= -2000;
+    //    end
+    //    stateRampDown : begin
+    //        rampStateTemp <= -4000;
+    //    end
+    //endcase
 end
 
 assign ramp = rampTemp1;
-assign rampState = rampStateTemp;
+//assign rampState = rampStateTemp;
 
 endmodule
