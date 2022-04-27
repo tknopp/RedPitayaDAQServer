@@ -22,7 +22,11 @@ module reset_manager #
     output pdm_aresetn,
     output [31:0] reset_sts,
     output [7:0] led,
-    output ramping_enable,
+    input [7:0] ramping_cfg,
+    input [2:0] ramp_state_0,
+    input [2:0] ramp_state_1,
+    output [1:0] ramping_enable,
+    output [1:0] start_ramp_down,
     inout reset_ack,
     inout alive_signal,
     inout master_trigger
@@ -32,14 +36,23 @@ module reset_manager #
 reset_cfg:
 Bit 0 => 0: continuous mode; 1: trigger mode
 Bit 1 => 0: no watchdog; 1: watchdog mode
-Bit 2 => Ramping enable
+Bit 2 => unused
 Bit 3 => instant reset mode: 0: disabled; 1: enabled
 Bit 4 => 0: internal trigger 1: external trigger
 Bit 5 => internal trigger enable/disable, output over DIO5_P
 Bit 6 => keep alive reset
-
+Bit 7 => unused
 
 reset_ack: high if reset active (either watchdog failed or instant reset)
+*/
+
+/*
+ramping_cfg:
+Bit 0 => enable ramping channel 0
+Bit 1 => enable ramping channel 1
+Bit 2 => start ramp down channel 0
+Bit 3 => Start ramp down channel 1
+Bit 4-7 => unused
 */
 
 localparam integer ALIVE_SIGNAL_LOW_TIME_CYCLES = 12500000;//(125000000/ALIVE_SIGNAL_LOW_TIME)*1000;
@@ -256,7 +269,12 @@ assign reset_sts[5] = trigger_in_int;
 assign reset_sts[6] = watchdog_in_int;
 assign reset_sts[7] = instant_reset_in_int;
 assign reset_sts[8] = triggerState;
-assign reset_sts[31:9] = 23'b0;
+assign reset_sts[15:9] = 7'b0;
+assign reset_sts[16] = ramping_cfg[0];
+assign reset_sts[19:17] = ramp_state_0[2:0];
+assign reset_sts[20] = ramping_cfg[1];
+assign reset_sts[23:21] = ramp_state_1[2:0];
+assign reset_sts[31:24] = 8'b0;
 
 assign led[7:0] = reset_sts[7:0];
 
@@ -265,7 +283,10 @@ assign reset_ack_out = watchdog_in; // Acknowledge received watchdog signal
 assign alive_signal_out = alive_signal_int;
 assign master_trigger_out = masterTriggerState;
 
-assign ramping_enable = reset_cfg[2];
+assign ramping_enable[0] = ramping_cfg[0];
+assign ramping_enable[1] = ramping_cfg[1];
+assign start_ramp_down[0] = ramping_cfg[2];
+assign start_ramp_down[1] = ramping_cfg[3];
 
 
 endmodule

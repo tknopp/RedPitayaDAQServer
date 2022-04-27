@@ -247,6 +247,7 @@ proc create_root_design { parentCell } {
    CONFIG.Multiplier_Construction {Use_Mults} \
    CONFIG.OutputWidthHigh {28} \
    CONFIG.OutputWidthLow {13} \
+   CONFIG.PipeStages {1} \
    CONFIG.PortAWidth {16} \
    CONFIG.PortBWidth {16} \
    CONFIG.SyncClear {false} \

@@ -230,6 +230,7 @@ proc create_root_design { parentCell } {
   set aresetn [ create_bd_port -dir I -type rst aresetn ]
   set enableRamping [ create_bd_port -dir I enableRamping ]
   set freq [ create_bd_port -dir I -type data freq ]
+  set ramp_state [ create_bd_port -dir O -from 2 -to 0 ramp_state ]
   set signal_in [ create_bd_port -dir I -from 15 -to 0 -type data signal_in ]
   set signal_out [ create_bd_port -dir O -from 15 -to 0 -type data signal_out ]
   set startRampDown [ create_bd_port -dir I startRampDown ]
@@ -248,6 +249,7 @@ proc create_root_design { parentCell } {
    CONFIG.Frequency_Resolution {0.4} \
    CONFIG.Has_ARESETn {true} \
    CONFIG.Has_Phase_Out {true} \
+   CONFIG.Has_TREADY {false} \
    CONFIG.Latency {1} \
    CONFIG.M_DATA_Has_TUSER {Not_Required} \
    CONFIG.Noise_Shaping {None} \
@@ -258,6 +260,7 @@ proc create_root_design { parentCell } {
    CONFIG.PartsPresent {Phase_Generator_only} \
    CONFIG.Phase_Increment {Programmable} \
    CONFIG.Phase_Width {48} \
+   CONFIG.Phase_offset {None} \
    CONFIG.S_PHASE_Has_TUSER {Not_Required} \
  ] $dds_compiler_0
 
@@ -292,9 +295,10 @@ proc create_root_design { parentCell } {
   connect_bd_net -net aresetn_1 [get_bd_ports aresetn] [get_bd_pins axis_variable_0/aresetn] [get_bd_pins dds_compiler_0/aresetn] [get_bd_pins signal_ramper_0/aresetn]
   connect_bd_net -net enableRamping_1 [get_bd_ports enableRamping] [get_bd_pins signal_ramper_0/enableRamping]
   connect_bd_net -net freq_1 [get_bd_ports freq] [get_bd_pins axis_variable_0/cfg_data]
-  connect_bd_net -net mult_gen_0_P [get_bd_ports signal_out] [get_bd_pins mult_gen_0/P]
   connect_bd_net -net signal_composer_0_signal_out [get_bd_ports signal_in] [get_bd_pins mult_gen_0/A]
   connect_bd_net -net signal_ramper_0_ramp [get_bd_pins mult_gen_0/B] [get_bd_pins signal_ramper_0/ramp]
+  connect_bd_net -net signal_ramper_0_rampState [get_bd_ports signal_out] [get_bd_pins mult_gen_0/P]
+  connect_bd_net -net signal_ramper_0_rampState1 [get_bd_ports ramp_state] [get_bd_pins signal_ramper_0/rampState]
   connect_bd_net -net startRampDown_1 [get_bd_ports startRampDown] [get_bd_pins signal_ramper_0/startRampDown]
 
   # Create address segments

@@ -335,31 +335,6 @@ int setFrequency(double frequency, int channel, int component)
 	return 0;
 }
 
-int setRampingPeriod(double period, int channel) {
-	if(channel < 0 || channel > 1) {
-		return -3;
-	}
-	
-	if(period < 0.03 || period >= ((double)BASE_FREQUENCY)) {
-		return -2;
-	}
-
-	uint64_t phase_increment = (uint64_t)round(period*pow(2, 48)/((double)BASE_FREQUENCY));
-
-	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel);
-	register_value = (register_value & ~MASK_LOWER_48) | (phase_increment & MASK_LOWER_48);
-	*(dac_cfg + CHANNEL_OFFSET*channel) = register_value;
-	return 0;
-}
-
-double getRampingPeriod(int channel) {
-	if(channel < 0 || channel > 1) {
-		return -3;
-	}
-	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
-	double period_factor = register_value*((double)BASE_FREQUENCY)/pow(2, 48);
-	return period_factor;
-}
 
 double getPhase(int channel, int component)
 {
@@ -868,10 +843,13 @@ int setMasterTrigger(int mode) {
 	return 0;
 }
 
-int getEnableRamping() {
-	int value;
+// RAMPING
+int getEnableRamping(int channel) {
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
 
-	value = (((int)(*((uint8_t *)(cfg + 1))) & 0x04) >> 2);
+	int value = (int)((*((uint8_t *)(cfg + 10)) >> channel) & 1);
 
 	if(value == 0) {
 		return OFF;
@@ -881,17 +859,95 @@ int getEnableRamping() {
 	return -1;
 }
 
-int setEnableRamping(int mode) {
+int setEnableRamping(int mode, int channel) {
 	if (mode != OFF && mode != ON) {
 		return -1;
 	}
+
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
+
 	if (mode == OFF) {
-		*((uint8_t *)(cfg + 1)) &= ~(1 << 2);
+		*((uint8_t *)(cfg + 10)) &= ~(1 << channel);
 	}
 	else {
-		*((uint8_t *)(cfg + 1)) |= (1 << 2);
+		*((uint8_t *)(cfg + 10)) |= (1 << channel);
 	}
 	return 0;
+}
+
+int setEnableRampDown(int mode, int channel) {
+	if (mode != OFF && mode != ON) {
+		return -1;
+	}
+
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
+
+	if (mode == OFF) {
+		*((uint8_t *)(cfg + 10)) &= ~(1 << (channel + 2));
+	}
+	else {
+		*((uint8_t *)(cfg + 10)) |= (1 << (channel + 2));
+	}
+	return 0;
+}
+
+int getEnableRampDown(int channel) {
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
+
+	int value = (int)((*((uint8_t *)(cfg + 10)) >> (channel + 2)) & 1);
+
+	if(value == 0) {
+		return OFF;
+	} else if(value == 1) {
+		return ON;
+	}
+	return -1;	
+}
+
+int setRampingPeriod(double period, int channel) {
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
+	
+	if(period < 0.03 || period >= ((double)BASE_FREQUENCY)) {
+		return -2;
+	}
+
+	uint64_t phase_increment = (uint64_t)round(period*pow(2, 48)/((double)BASE_FREQUENCY));
+
+	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel);
+	register_value = (register_value & ~MASK_LOWER_48) | (phase_increment & MASK_LOWER_48);
+	*(dac_cfg + CHANNEL_OFFSET*channel) = register_value;
+	return 0;
+}
+
+double getRampingPeriod(int channel) {
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
+	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
+	double period_factor = register_value*((double)BASE_FREQUENCY)/pow(2, 48);
+	return period_factor;
+}
+
+uint8_t getRampingState(int channel) {
+	if(channel < 0 || channel > 1) {
+		return 0;
+	}
+	// Upper or lower half
+	uint8_t value = (*((uint8_t *)(reset_sts + 2)) >> (channel * 4)) 0xF;
+	return value;
+}
+
+uint8_t getRampingState() {
+	uint8_t value = *((uint8_t *)(reset_sts + 2));
+	return value;
 }
 
 int getInstantResetMode() {

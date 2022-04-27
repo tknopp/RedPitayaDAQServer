@@ -87,11 +87,17 @@ extern int getSignalType(int, int);
 extern int setSignalType(int, int, int);
 extern float getJumpSharpness(int, int);
 extern int setJumpSharpness(float, int, int);
+//extern int getRampingPeriod(int);
+
+// Ramping
+extern int getEnableRamping(int channel);
+extern int setEnableRamping(int mode, int channel);
 extern int setRampingPeriod(double, int);
 extern double getRampingPeriod(int channel);
-//extern int getRampingPeriod(int);
-extern int getEnableRamping();
-extern int setEnableRamping(int mode);
+extern int setEnableRampDown(int mode, int channel);
+extern int getEnableRampDown(int channel);
+extern uint8_t getRampingState(int channel);
+extern uint8_t getRampingState();
 
 // fast ADC
 extern int setDecimation(uint16_t decimation);

@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# reset_manager, signal_cfg_slice, signal_composer, signal_cfg_slice, signal_composer
+# reset_manager, enable_ramping_slice, signal_cfg_slice, signal_composer, signal_cfg_slice, signal_composer
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -188,6 +188,7 @@ set bCheckModules 1
 if { $bCheckModules == 1 } {
    set list_check_mods "\ 
 reset_manager\
+enable_ramping_slice\
 signal_cfg_slice\
 signal_composer\
 signal_cfg_slice\
@@ -439,6 +440,8 @@ proc create_hier_cell_signal_compose1 { parentCell nameHier } {
   create_bd_pin -dir I enable_ramping
   create_bd_pin -dir O -from 0 -to 0 m_axis_data_tvalid_1
   create_bd_pin -dir I -from 15 -to 0 offset
+  create_bd_pin -dir O -from 2 -to 0 ramp_state_1
+  create_bd_pin -dir I start_ramp_down
 
   # Create instance: signal_cfg_slice_0, and set properties
   set block_name signal_cfg_slice
@@ -591,6 +594,8 @@ proc create_hier_cell_signal_compose { parentCell nameHier } {
   create_bd_pin -dir I enable_ramping
   create_bd_pin -dir O -from 0 -to 0 m_axis_data_tvalid_1
   create_bd_pin -dir I -from 15 -to 0 offset
+  create_bd_pin -dir O -from 2 -to 0 ramp_state_0
+  create_bd_pin -dir I start_ramp_down
 
   # Create instance: signal_cfg_slice_0, and set properties
   set block_name signal_cfg_slice
@@ -619,7 +624,7 @@ proc create_hier_cell_signal_compose { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.ACTIVE_SIM_BD {signal_ramp.bd} \
    CONFIG.ACTIVE_SYNTH_BD {signal_ramp.bd} \
-   CONFIG.ENABLE_DFX {0} \
+   CONFIG.ENABLE_DFX {false} \
    CONFIG.LIST_SIM_BD {signal_ramp.bd} \
    CONFIG.LIST_SYNTH_BD {signal_ramp.bd} \
    CONFIG.LOCK_PROPAGATE {0} \
@@ -669,19 +674,12 @@ proc create_hier_cell_signal_compose { parentCell nameHier } {
    CONFIG.LOCK_PROPAGATE {0} \
  ] $waveform_gen_3
 
-  # Create instance: xlconstant_1, and set properties
-  set xlconstant_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_1 ]
-  set_property -dict [ list \
-   CONFIG.CONST_VAL {0} \
- ] $xlconstant_1
-
   # Create port connections
   connect_bd_net -net Din_1 [get_bd_pins Din] [get_bd_pins signal_cfg_slice_0/cfg_data]
   connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins signal_composer_0/clk] [get_bd_pins signal_ramp/aclk] [get_bd_pins waveform_gen_0/aclk] [get_bd_pins waveform_gen_1/aclk] [get_bd_pins waveform_gen_2/aclk] [get_bd_pins waveform_gen_3/aclk]
   connect_bd_net -net aresetn_1 [get_bd_pins aresetn] [get_bd_pins signal_ramp/aresetn] [get_bd_pins waveform_gen_0/aresetn] [get_bd_pins waveform_gen_1/aresetn] [get_bd_pins waveform_gen_2/aresetn] [get_bd_pins waveform_gen_3/aresetn]
   connect_bd_net -net disable_dac_1 [get_bd_pins disable_dac] [get_bd_pins signal_composer_0/disable_dac]
   connect_bd_net -net dyn_offset_disable_1 [get_bd_pins dyn_offset_disable] [get_bd_pins signal_composer_0/dyn_offset_disable]
-  connect_bd_net -net mult_gen_0_P [get_bd_pins S] [get_bd_pins signal_ramp/signal_out]
   connect_bd_net -net offset_1 [get_bd_pins offset] [get_bd_pins signal_composer_0/seq]
   connect_bd_net -net ramping_enable_1 [get_bd_pins enable_ramping] [get_bd_pins signal_ramp/enableRamping]
   connect_bd_net -net signal_cfg_slice_0_comp_0_amp [get_bd_pins signal_cfg_slice_0/comp_0_amp] [get_bd_pins waveform_gen_0/amplitude]
@@ -704,6 +702,9 @@ proc create_hier_cell_signal_compose { parentCell nameHier } {
   connect_bd_net -net signal_cfg_slice_0_ramp_freq [get_bd_pins signal_cfg_slice_0/ramp_freq] [get_bd_pins signal_ramp/freq]
   connect_bd_net -net signal_composer_0_signal_out [get_bd_pins signal_composer_0/signal_out] [get_bd_pins signal_ramp/signal_in]
   connect_bd_net -net signal_composer_0_signal_valid [get_bd_pins m_axis_data_tvalid_1] [get_bd_pins signal_composer_0/signal_valid]
+  connect_bd_net -net signal_ramp_ramp_state [get_bd_pins ramp_state_0] [get_bd_pins signal_ramp/ramp_state]
+  connect_bd_net -net signal_ramp_signal_out [get_bd_pins S] [get_bd_pins signal_ramp/signal_out]
+  connect_bd_net -net start_ramp_down_1 [get_bd_pins start_ramp_down] [get_bd_pins signal_ramp/startRampDown]
   connect_bd_net -net waveform_gen_0_m_axis_data_tvalid_1 [get_bd_pins signal_composer_0/valid0] [get_bd_pins waveform_gen_0/m_axis_data_tvalid_1]
   connect_bd_net -net waveform_gen_0_wave [get_bd_pins signal_composer_0/wave0] [get_bd_pins waveform_gen_0/wave]
   connect_bd_net -net waveform_gen_1_m_axis_data_tvalid_1 [get_bd_pins signal_composer_0/valid1] [get_bd_pins waveform_gen_1/m_axis_data_tvalid_1]
@@ -712,7 +713,6 @@ proc create_hier_cell_signal_compose { parentCell nameHier } {
   connect_bd_net -net waveform_gen_2_wave [get_bd_pins signal_composer_0/wave2] [get_bd_pins waveform_gen_2/wave]
   connect_bd_net -net waveform_gen_3_m_axis_data_tvalid_1 [get_bd_pins signal_composer_0/valid3] [get_bd_pins waveform_gen_3/m_axis_data_tvalid_1]
   connect_bd_net -net waveform_gen_3_wave [get_bd_pins signal_composer_0/wave3] [get_bd_pins waveform_gen_3/wave]
-  connect_bd_net -net xlconstant_1_dout [get_bd_pins signal_ramp/startRampDown] [get_bd_pins xlconstant_1/dout]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -1931,11 +1931,25 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
   create_bd_pin -dir I -from 1663 -to 0 cfg_data
   create_bd_pin -dir I dyn_offset_enable
   create_bd_pin -dir I -from 1 -to 0 enable_dac
-  create_bd_pin -dir I enable_ramping
+  create_bd_pin -dir I -from 1 -to 0 enable_ramping
   create_bd_pin -dir I -from 31 -to 0 oa_dac
+  create_bd_pin -dir O -from 2 -to 0 ramp_state_0
+  create_bd_pin -dir O -from 2 -to 0 ramp_state_1
+  create_bd_pin -dir I -from 1 -to 0 start_ramp_down
   create_bd_pin -dir O -from 31 -to 0 synth_tdata
   create_bd_pin -dir O -from 0 -to 0 synth_tvalid
 
+  # Create instance: enable_ramping_slice_0, and set properties
+  set block_name enable_ramping_slice
+  set block_cell_name enable_ramping_slice_0
+  if { [catch {set enable_ramping_slice_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $enable_ramping_slice_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
   # Create instance: signal_compose
   create_hier_cell_signal_compose $hier_obj signal_compose
 
@@ -2028,11 +2042,18 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
   connect_bd_net -net cfg_data_1 [get_bd_pins cfg_data] [get_bd_pins xlslice_0/Din] [get_bd_pins xlslice_1/Din]
   connect_bd_net -net dyn_offset_enable_1 [get_bd_pins dyn_offset_enable] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net enable_dac_1 [get_bd_pins enable_dac] [get_bd_pins util_vector_logic_2/Op1]
-  connect_bd_net -net enable_ramping_1 [get_bd_pins enable_ramping] [get_bd_pins signal_compose/enable_ramping] [get_bd_pins signal_compose1/enable_ramping]
+  connect_bd_net -net enable_ramping_1 [get_bd_pins enable_ramping] [get_bd_pins enable_ramping_slice_0/enable_ramping]
+  connect_bd_net -net enable_ramping_slice_0_enable_ramping_0 [get_bd_pins enable_ramping_slice_0/enable_ramping_0] [get_bd_pins signal_compose/enable_ramping]
+  connect_bd_net -net enable_ramping_slice_0_enable_ramping_1 [get_bd_pins enable_ramping_slice_0/enable_ramping_1] [get_bd_pins signal_compose1/enable_ramping]
+  connect_bd_net -net enable_ramping_slice_0_start_ramp_down_0 [get_bd_pins enable_ramping_slice_0/start_ramp_down_0] [get_bd_pins signal_compose/start_ramp_down]
+  connect_bd_net -net enable_ramping_slice_0_start_ramp_down_1 [get_bd_pins enable_ramping_slice_0/start_ramp_down_1] [get_bd_pins signal_compose1/start_ramp_down]
   connect_bd_net -net oa_dac_1 [get_bd_pins oa_dac] [get_bd_pins xlslice_2/Din] [get_bd_pins xlslice_3/Din]
   connect_bd_net -net signal_compose1_S [get_bd_pins signal_compose1/S] [get_bd_pins xlconcat_2/In1]
   connect_bd_net -net signal_compose1_m_axis_data_tvalid_1 [get_bd_pins signal_compose1/m_axis_data_tvalid_1] [get_bd_pins util_vector_logic_1/Op2]
+  connect_bd_net -net signal_compose1_ramp_state_1 [get_bd_pins ramp_state_1] [get_bd_pins signal_compose1/ramp_state_1]
+  connect_bd_net -net signal_compose_ramp_state_0 [get_bd_pins ramp_state_0] [get_bd_pins signal_compose/ramp_state_0]
   connect_bd_net -net signal_gen_m_axis_data_tvalid_1 [get_bd_pins signal_compose/m_axis_data_tvalid_1] [get_bd_pins util_vector_logic_1/Op1]
+  connect_bd_net -net start_ramp_down_1 [get_bd_pins start_ramp_down] [get_bd_pins enable_ramping_slice_0/start_ramp_down]
   connect_bd_net -net util_vector_logic_0_Res [get_bd_pins signal_compose/dyn_offset_disable] [get_bd_pins signal_compose1/dyn_offset_disable] [get_bd_pins util_vector_logic_0/Res]
   connect_bd_net -net util_vector_logic_1_Res [get_bd_pins synth_tvalid] [get_bd_pins util_vector_logic_1/Res]
   connect_bd_net -net util_vector_logic_2_Res [get_bd_pins util_vector_logic_2/Res] [get_bd_pins xlslice_4/Din] [get_bd_pins xlslice_5/Din]
@@ -2400,6 +2421,15 @@ proc create_root_design { parentCell } {
    CONFIG.DOUT_WIDTH {1} \
  ] $xlslice_5
 
+  # Create instance: xlslice_6, and set properties
+  set xlslice_6 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_6 ]
+  set_property -dict [ list \
+   CONFIG.DIN_FROM {87} \
+   CONFIG.DIN_TO {80} \
+   CONFIG.DIN_WIDTH {96} \
+   CONFIG.DOUT_WIDTH {8} \
+ ] $xlslice_6
+
   # Create interface connections
   connect_bd_intf_net -intf_net Vaux0_1 [get_bd_intf_ports Vaux0] [get_bd_intf_pins xadc_wiz_0/Vaux0]
   connect_bd_intf_net -intf_net Vaux1_1 [get_bd_intf_ports Vaux1] [get_bd_intf_pins xadc_wiz_0/Vaux1]
@@ -2456,6 +2486,8 @@ proc create_root_design { parentCell } {
   connect_bd_net -net dio_0_DIO_6_in [get_bd_pins dio_0/DIO_6_in] [get_bd_pins xlconcat_0/In6]
   connect_bd_net -net dio_0_DIO_7_in [get_bd_pins dio_0/DIO_7_in] [get_bd_pins xlconcat_0/In7]
   connect_bd_net -net ext_DIO0_N_1 [get_bd_ports ext_DIO0_N] [get_bd_pins util_vector_logic_0/Op1]
+  connect_bd_net -net fourier_synth_standard_ramp_state_0 [get_bd_pins fourier_synth_standard/ramp_state_0] [get_bd_pins reset_manager_0/ramp_state_0]
+  connect_bd_net -net fourier_synth_standard_ramp_state_1 [get_bd_pins fourier_synth_standard/ramp_state_1] [get_bd_pins reset_manager_0/ramp_state_1]
   connect_bd_net -net fourier_synth_standard_synth_tdata [get_bd_pins axis_red_pitaya_dac_0/s_axis_tdata] [get_bd_pins fourier_synth_standard/synth_tdata]
   connect_bd_net -net fourier_synth_standard_synth_tvalid [get_bd_pins axis_red_pitaya_dac_0/s_axis_tvalid] [get_bd_pins fourier_synth_standard/synth_tvalid]
   connect_bd_net -net pdm_oa_dac [get_bd_pins fourier_synth_standard/oa_dac] [get_bd_pins sequencer/oa_dac]
@@ -2469,6 +2501,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net reset_manager_0_pdm_aresetn [get_bd_pins proc_sys_reset_pdm/ext_reset_in] [get_bd_pins reset_manager_0/pdm_aresetn]
   connect_bd_net -net reset_manager_0_ramping_enable [get_bd_pins fourier_synth_standard/enable_ramping] [get_bd_pins reset_manager_0/ramping_enable]
   connect_bd_net -net reset_manager_0_reset_sts [get_bd_pins reset_manager_0/reset_sts] [get_bd_pins system/reset_sts]
+  connect_bd_net -net reset_manager_0_start_ramp_down [get_bd_pins fourier_synth_standard/start_ramp_down] [get_bd_pins reset_manager_0/start_ramp_down]
   connect_bd_net -net reset_manager_0_write_to_ram_aresetn [get_bd_pins proc_sys_reset_write_to_ram/ext_reset_in] [get_bd_pins reset_manager_0/write_to_ram_aresetn]
   connect_bd_net -net reset_manager_0_xadc_aresetn [get_bd_pins proc_sys_reset_xadc/ext_reset_in] [get_bd_pins reset_manager_0/xadc_aresetn]
   connect_bd_net -net selectio_wiz_1_data_out_to_pins_n [get_bd_ports daisy_n_o] [get_bd_pins selectio_wiz_1/data_out_to_pins_n]
@@ -2478,7 +2511,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net sequencer_seq_reset [get_bd_pins sequencer/seq_reset] [get_bd_pins util_vector_logic_2/Op2]
   connect_bd_net -net system_FCLK_RESET0_N [get_bd_pins system/FCLK_RESET0_N] [get_bd_pins util_vector_logic_1/Op1]
   connect_bd_net -net system_cfg_data [get_bd_pins fourier_synth_standard/cfg_data] [get_bd_pins system/dac_cfg]
-  connect_bd_net -net system_cfg_data1 [get_bd_pins system/cfg_data] [get_bd_pins xlslice_0/Din] [get_bd_pins xlslice_1/Din] [get_bd_pins xlslice_2/Din] [get_bd_pins xlslice_3/Din] [get_bd_pins xlslice_4/Din] [get_bd_pins xlslice_5/Din]
+  connect_bd_net -net system_cfg_data1 [get_bd_pins system/cfg_data] [get_bd_pins xlslice_0/Din] [get_bd_pins xlslice_1/Din] [get_bd_pins xlslice_2/Din] [get_bd_pins xlslice_3/Din] [get_bd_pins xlslice_4/Din] [get_bd_pins xlslice_5/Din] [get_bd_pins xlslice_6/Din]
   connect_bd_net -net system_peripheral_aresetn [get_bd_pins reset_manager_0/peripheral_aresetn] [get_bd_pins system/peripheral_aresetn]
   connect_bd_net -net util_ds_buf_0_OBUF_DS_N [get_bd_ports adc_enc_n_o] [get_bd_pins util_ds_buf_0/OBUF_DS_N]
   connect_bd_net -net util_ds_buf_0_OBUF_DS_P [get_bd_ports adc_enc_p_o] [get_bd_pins util_ds_buf_0/OBUF_DS_P]
@@ -2498,6 +2531,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net xlslice_3_Dout [get_bd_pins reset_manager_0/reset_cfg] [get_bd_pins xlslice_3/Dout]
   connect_bd_net -net xlslice_4_Dout [get_bd_pins dio_0/value] [get_bd_pins xlslice_4/Dout]
   connect_bd_net -net xlslice_5_Dout [get_bd_pins dio_0/state] [get_bd_pins xlslice_5/Dout]
+  connect_bd_net -net xlslice_6_Dout [get_bd_pins reset_manager_0/ramping_cfg] [get_bd_pins xlslice_6/Dout]
 
   # Create address segments
   assign_bd_address -offset 0x40004000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_cfg_register_cfg/s_axi/reg0] -force
@@ -2514,7 +2548,6 @@ proc create_root_design { parentCell } {
   # Restore current instance
   current_bd_instance $oldCurInst
 
-  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -2526,4 +2559,6 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
+
+common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
