@@ -23,7 +23,7 @@ struct DACPerformanceData
   minDeltaControl::UInt8
   maxDeltaSet::UInt8
 end
-@enum RampingState RAMPUP, NORMAL, REQDOWN, DOWN, DONE
+@enum RampingState RAMPUP NORMAL REQDOWN DOWN DONE
 struct RampingStatus
   enableCh1::Union{Bool, Nothing}
   enableCh2::Union{Bool, Nothing}
@@ -428,11 +428,11 @@ function enableRamping!(rp::RedPitaya, channel, value)
   return query(rp, scpiCommand(enableRamping!, channel, value), scpiReturn(enableRamping!))
 end
 scpiCommand(::typeof(enableRamping!), channel, val::Bool) = scpiCommand(enableRamping!, channel, val ? "ON" : "OFF")
-scpiCommand(::typeof(enableRamping!), channel, valStr) = string("RP:DAC:CH", Int(channel)-1":RAMPing:ENaBle ", valStr)
+scpiCommand(::typeof(enableRamping!), channel, valStr) = string("RP:DAC:CH", Int(channel)-1, ":RAMPing:ENaBle ", valStr)
 scpiReturn(::typeof(enableRamping!)) = Bool
 
 enableRamping(rp::RedPitaya, channel) = occursin("ON", query(rp, scpiCommand(enableRamping, channel)))
-scpiCommand(::typeof(enableRamping), channel) = string("RP:DAC:CH", Int(channel)-1":RAMPing:ENaBle?")
+scpiCommand(::typeof(enableRamping), channel) = string("RP:DAC:CH", Int(channel)-1, ":RAMPing:ENaBle?")
 scpiReturn(::typeof(enableRamping)) = String
 parseReturn(::typeof(enableRamping), ret) = occursin("ON", ret)
 
@@ -440,11 +440,11 @@ function enableRampDown!(rp::RedPitaya, channel, value)
   return query(rp, scpiCommand(enableRampDown!, channel, value), scpiReturn(enableRampDown!))
 end
 scpiCommand(::typeof(enableRampDown!), channel, val::Bool) = scpiCommand(enableRampDown!, channel, val ? "ON" : "OFF")
-scpiCommand(::typeof(enableRampDown!), channel, valStr) = string("RP:DAC:CH", Int(channel)-1":RAMPing:DoWN ", valStr)
+scpiCommand(::typeof(enableRampDown!), channel, valStr) = string("RP:DAC:CH", Int(channel)-1, ":RAMPing:DoWN ", valStr)
 scpiReturn(::typeof(enableRampDown!)) = Bool
 
 enableRampDown(rp::RedPitaya, channel) = occursin("ON", query(rp, scpiCommand(enableRampDown, channel)))
-scpiCommand(::typeof(enableRampDown), channel) = string("RP:DAC:CH", Int(channel)-1":RAMPing:DoWN?")
+scpiCommand(::typeof(enableRampDown), channel) = string("RP:DAC:CH", Int(channel)-1, ":RAMPing:DoWN?")
 scpiReturn(::typeof(enableRampDown)) = String
 parseReturn(::typeof(enableRampDown), ret) = occursin("ON", ret)
 
