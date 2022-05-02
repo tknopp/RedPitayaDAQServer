@@ -936,15 +936,6 @@ double getRampingPeriod(int channel) {
 	return period_factor;
 }
 
-uint8_t getRampingState(int channel) {
-	if(channel < 0 || channel > 1) {
-		return 0;
-	}
-	// Upper or lower half
-	uint8_t value = (*((uint8_t *)(reset_sts + 2)) >> (channel * 4)) 0xF;
-	return value;
-}
-
 uint8_t getRampingState() {
 	uint8_t value = *((uint8_t *)(reset_sts + 2));
 	return value;

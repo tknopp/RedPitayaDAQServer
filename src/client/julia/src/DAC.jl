@@ -7,7 +7,7 @@ stepsPerRepetition, stepsPerRepetition!, prepareSteps!, stepsPerFrame!,
 rampingDAC!, rampingDAC, enableRamping!, enableRamping, ramping!, rampUp!, rampDown!, rampingSteps, rampingSteps!, rampingTotalSteps, rampingTotalSteps!,
 rampUpSteps, rampUpSteps!, rampUpTotalSteps, rampUpTotalSteps!, rampDownSteps, rampDownSteps!, rampDownTotalSteps, rampDownTotalSteps!, 
 popSequence!, clearSequences!, appendSequence!, prepareSequences!, AbstractSequence, ArbitrarySequence, enableLUT,
-fastDACConfig, resetAfterSequence!
+fastDACConfig, resetAfterSequence!, enableRampDown, enableRampDown!, RampingState, RampingStatus, rampingStatus
 
 """
     SignalType
@@ -22,6 +22,13 @@ struct DACPerformanceData
   uDeltaSet::UInt8
   minDeltaControl::UInt8
   maxDeltaSet::UInt8
+end
+@enum RampingState RAMPUP, NORMAL, REQDOWN, DOWN, DONE
+struct RampingStatus
+  enableCh1::Union{Bool, Nothing}
+  enableCh2::Union{Bool, Nothing}
+  stateCh1::Union{RampingState, Nothing}
+  stateCh2::Union{RampingState, Nothing}
 end
 
 struct DACConfig
@@ -417,17 +424,38 @@ end
 scpiCommand(::typeof(rampingDAC), channel) = string("RP:DAC:CH", Int(channel)-1, ":RAMP?")
 scpiReturn(::typeof(rampingDAC)) = Float64
 
-function enableRamping!(rp::RedPitaya, value)
-  return query(rp, scpiCommand(enableRamping!, value), scpiReturn(enableRamping!))
+function enableRamping!(rp::RedPitaya, channel, value)
+  return query(rp, scpiCommand(enableRamping!, channel, value), scpiReturn(enableRamping!))
 end
-scpiCommand(::typeof(enableRamping!), val::Bool) = scpiCommand(enableRamping!, val ? "ON" : "OFF")
-scpiCommand(::typeof(enableRamping!), valStr) = string("RP:DAC:RAMPing:ENaBle ", valStr)
+scpiCommand(::typeof(enableRamping!), channel, val::Bool) = scpiCommand(enableRamping!, channel, val ? "ON" : "OFF")
+scpiCommand(::typeof(enableRamping!), channel, valStr) = string("RP:DAC:CH", Int(channel)-1":RAMPing:ENaBle ", valStr)
 scpiReturn(::typeof(enableRamping!)) = Bool
 
-enableRamping(rp::RedPitaya) = occursin("ON", query(rp, scpiCommand(enableRamping)))
-scpiCommand(::typeof(enableRamping)) = "RP:DAC:RAMPing:ENaBle?"
+enableRamping(rp::RedPitaya, channel) = occursin("ON", query(rp, scpiCommand(enableRamping, channel)))
+scpiCommand(::typeof(enableRamping), channel) = string("RP:DAC:CH", Int(channel)-1":RAMPing:ENaBle?")
 scpiReturn(::typeof(enableRamping)) = String
 parseReturn(::typeof(enableRamping), ret) = occursin("ON", ret)
+
+function enableRampDown!(rp::RedPitaya, channel, value)
+  return query(rp, scpiCommand(enableRampDown!, channel, value), scpiReturn(enableRampDown!))
+end
+scpiCommand(::typeof(enableRampDown!), channel, val::Bool) = scpiCommand(enableRampDown!, channel, val ? "ON" : "OFF")
+scpiCommand(::typeof(enableRampDown!), channel, valStr) = string("RP:DAC:CH", Int(channel)-1":RAMPing:DoWN ", valStr)
+scpiReturn(::typeof(enableRampDown!)) = Bool
+
+enableRampDown(rp::RedPitaya, channel) = occursin("ON", query(rp, scpiCommand(enableRampDown, channel)))
+scpiCommand(::typeof(enableRampDown), channel) = string("RP:DAC:CH", Int(channel)-1":RAMPing:DoWN?")
+scpiReturn(::typeof(enableRampDown)) = String
+parseReturn(::typeof(enableRampDown), ret) = occursin("ON", ret)
+
+function rampingStatus(rp::RedPitaya)
+  status = query(rp, scpiCommand(rampingStatus), scpiReturn(rampingStatus))
+  result = RampingStatus(status & 1, (status >> 4) & 1,
+      RampingState((status >> 1) & 0x7), RampingState((status >> 5) & 0x7))
+  return result
+end
+scpiCommand(::typeof(rampingStatus)) = "RP:DAC:RAMPing:STATus?"
+scpiReturn(::typeof(rampingStatus)) = UInt8
 
 function configureFastDACSeq!(rp::RedPitaya, config::DACConfig)
   result = true

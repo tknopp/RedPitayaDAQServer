@@ -96,7 +96,6 @@ extern int setRampingPeriod(double, int);
 extern double getRampingPeriod(int channel);
 extern int setEnableRampDown(int mode, int channel);
 extern int getEnableRampDown(int channel);
-extern uint8_t getRampingState(int channel);
 extern uint8_t getRampingState();
 
 // fast ADC

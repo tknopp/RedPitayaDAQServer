@@ -1136,13 +1136,17 @@ static scpi_result_t RP_DAC_SetEnableRamping(scpi_t *context) {
 		return returnSCPIBool(context, false);
 	}
 
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
 	int32_t ramping_selection;
 
 	if (!SCPI_ParamChoice(context, onoff_modes, &ramping_selection, TRUE)) {
 		return returnSCPIBool(context, false);
 	}
 
-	int result = setEnableRamping(ramping_selection);
+	int result = setEnableRamping(ramping_selection, channel);
 	if (result < 0) {
 		return returnSCPIBool(context, false);
 	}
@@ -1152,11 +1156,58 @@ static scpi_result_t RP_DAC_SetEnableRamping(scpi_t *context) {
 }
 
 static scpi_result_t RP_DAC_GetEnableRamping(scpi_t *context) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
 	const char * name;
 
-	SCPI_ChoiceToName(onoff_modes, getEnableRamping(), &name);
+	SCPI_ChoiceToName(onoff_modes, getEnableRamping(channel), &name);
 	SCPI_ResultText(context, name);
 
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_SetEnableRampDown(scpi_t *context) {
+	if (!(getServerMode() == ACQUISITION || getServerMode() == TRANSMISSION)) {
+		return returnSCPIBool(context, false);
+	}
+
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	int32_t ramping_selection;
+
+	if (!SCPI_ParamChoice(context, onoff_modes, &ramping_selection, TRUE)) {
+		return returnSCPIBool(context, false);
+	}
+
+	int result = setEnableRampDown(ramping_selection, channel);
+	if (result < 0) {
+		return returnSCPIBool(context, false);
+	}
+
+	return returnSCPIBool(context, true);
+
+}
+
+static scpi_result_t RP_DAC_GetEnableRampDown(scpi_t *context) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	const char * name;
+
+	SCPI_ChoiceToName(onoff_modes, getEnableRampDown(channel), &name);
+	SCPI_ResultText(context, name);
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DAC_GetRampingStatus(scpi_t *context) {
+	int status = getRampingState();
+	SCPI_ResultInt(context, status);
 	return SCPI_RES_OK;
 }
 
@@ -1778,8 +1829,12 @@ const scpi_command_t scpi_commands[] = {
 	// Ramping
 	{.pattern = "RP:DAC:CHannel#:RAMPing", .callback = RP_DAC_SetRampingFast,},
 	{.pattern = "RP:DAC:CHannel#:RAMPing?", .callback = RP_DAC_GetRampingFast,},
-	{.pattern = "RP:DAC:RAMPing:ENaBle", .callback = RP_DAC_SetEnableRamping,},
-	{.pattern = "RP:DAC:RAMPing:ENaBle?", .callback = RP_DAC_GetEnableRamping,},
+	{.pattern = "RP:DAC:CHannel#:RAMPing:ENaBle", .callback = RP_DAC_SetEnableRamping,},
+	{.pattern = "RP:DAC:CHannel#:RAMPing:ENaBle?", .callback = RP_DAC_GetEnableRamping,},
+	{.pattern = "RP:DAC:CHannel#:RAMPing:DoWN", .callback = RP_DAC_SetEnableRampDown,},
+	{.pattern = "RP:DAC:CHannel#:RAMPing:DoWN?", .callback = RP_DAC_GetEnableRampDown,},
+	//{.pattern = "RP:DAC:CHannel#:RAMPing:STATus?", .callback = RP_DAC_GetChannelRampingStatus,},
+	{.pattern = "RP:DAC:RAMPing:STATus?", .callback = RP_DAC_GetRampingStatus,},
 	// Sequences
 	{.pattern = "RP:DAC:SEQ:CLocKdivider", .callback = RP_ADC_SetSeqClockDivider,},
 	{.pattern = "RP:DAC:SEQ:CLocKdivider?", .callback = RP_ADC_GetSeqClockDivider,},
