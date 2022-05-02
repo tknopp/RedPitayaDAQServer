@@ -9,10 +9,10 @@ module enable_ramping_slice(
     output start_ramp_down_1
 );
 
-assign enable_ramping_ = enable_ramping[0];
-assign enable_ramping_ = enable_ramping[1];
-assign start_ramp_down_ = start_ramp_down[0];
-assign start_ramp_down_ = start_ramp_down[1];
+assign enable_ramping_0 = enable_ramping[0];
+assign enable_ramping_1 = enable_ramping[1];
+assign start_ramp_down_0 = start_ramp_down[0];
+assign start_ramp_down_1 = start_ramp_down[1];
 
 
 endmodule
