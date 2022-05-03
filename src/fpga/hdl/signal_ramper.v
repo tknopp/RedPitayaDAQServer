@@ -30,7 +30,7 @@ reg signed [15:0] rampStateTemp;
 
 always @(posedge clk)
 begin
-    phase <= (s_axis_tdata_phase >> 36);
+    phase <= (s_axis_tdata_phase >> 35);
     phaseRising <= (phasePrev <= phase);
     phasePrev <= phase;
     phaseRisingDelay <= phaseRising;
