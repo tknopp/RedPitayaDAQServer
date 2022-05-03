@@ -77,11 +77,12 @@ begin
             end
         end
         stateRampDown : begin
-            rampTemp0 <= 8191 - phase;
             if (~phaseRising) begin
+                rampTemp0 <= 0; // Otherwise last bit of rampDown would be 8191 - 0
                 stateNext <= stateDone;
             end
             else begin
+                rampTemp0 <= 8191 - phase;
                 stateNext <= stateRampDown;
             end
         end
