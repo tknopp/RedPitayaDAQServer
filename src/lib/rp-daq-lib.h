@@ -92,8 +92,8 @@ extern int setJumpSharpness(float, int, int);
 // Ramping
 extern int getEnableRamping(int channel);
 extern int setEnableRamping(int mode, int channel);
-extern int setRampingPeriod(double, int);
-extern double getRampingPeriod(int channel);
+extern int setRampingFrequency(double, int);
+extern double getRampingFrequency(int channel);
 extern int setEnableRampDown(int mode, int channel);
 extern int getEnableRampDown(int channel);
 extern uint8_t getRampingState();

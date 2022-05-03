@@ -910,7 +910,7 @@ int getEnableRampDown(int channel) {
 	return -1;	
 }
 
-int setRampingPeriod(double period, int channel) {
+int setRampingFrequency(double period, int channel) {
 	if(channel < 0 || channel > 1) {
 		return -3;
 	}
@@ -927,7 +927,7 @@ int setRampingPeriod(double period, int channel) {
 	return 0;
 }
 
-double getRampingPeriod(int channel) {
+double getRampingFrequency(int channel) {
 	if(channel < 0 || channel > 1) {
 		return -3;
 	}
