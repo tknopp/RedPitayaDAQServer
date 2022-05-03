@@ -1,5 +1,3 @@
-include libs/gmsl/gmsl
-
 # 'make' builds everything
 # 'make clean' deletes everything except source files and Makefile
 #
@@ -11,7 +9,7 @@ include libs/gmsl/gmsl
 LD_LIBRARY_PATH =
 
 NPROCS = $(shell grep -c 'processor' /proc/cpuinfo)
-MAKEFLAGS += -j$(NPROCS)
+#MAKEFLAGS += -j$(NPROCS)
 
 LINUX_BUILD_DIR = build/linux-image
 FPGA_BUILD_DIR = build/fpga
@@ -60,7 +58,7 @@ RTL8192_URL = https://github.com/pvaret/rtl8192cu-fixes/archive/master.tar.gz
 
 .PRECIOUS: $(LINUX_BUILD_DIR)/tmp/cores/% $(LINUX_BUILD_DIR)/tmp/%.xpr $(LINUX_BUILD_DIR)/tmp/%.xsa $(LINUX_BUILD_DIR)/tmp/%.bit $(LINUX_BUILD_DIR)/tmp/%.fsbl/executable.elf $(LINUX_BUILD_DIR)/tmp/%.tree/system-top.dts
 
-all: daq_bitfiles $(LINUX_BUILD_DIR)/tmp/$(NAME).bit $(LINUX_BUILD_DIR)/boot.bin $(LINUX_BUILD_DIR)/uImage $(LINUX_BUILD_DIR)/devicetree.dtb linux
+all: linux
 
 daq_bitfiles: $(addsuffix .bit, $(addprefix bitfiles/daq_,$(DAQ_PARTS)))
 
@@ -200,12 +198,13 @@ $(LINUX_BUILD_DIR)/tmp/%.tree/system-top.dts: $(LINUX_BUILD_DIR)/tmp/%.xsa $(DTR
 	patch -d $(@D) < linux-image/patches/devicetree.patch
 	
 server: 
+	git config --global --add safe.directory /home/rpdev/RedPitayaDAQServer
+	git config --global --add safe.directory /home/rpdev/RedPitayaDAQServer/libs/scpi-parser
 	git submodule update --init
 	@$(MAKE) install -C libs/scpi-parser
 	@$(MAKE) -C libs/scpi-parser
 	@$(MAKE) -C src/lib
 	@$(MAKE) -C src/server
-	@$(MAKE) -C src/test
 	cp scripts/daq_server_scpi /etc/init.d/
 	chmod +x /etc/init.d/daq_server_scpi
 	rc-update add daq_server_scpi default
@@ -213,6 +212,8 @@ server:
 clean:
 	$(RM) $(LINUX_BUILD_DIR)/uImage $(LINUX_BUILD_DIR)/boot.bin $(LINUX_BUILD_DIR)/devicetree.dtb $(LINUX_BUILD_DIR)/tmp
 	$(RM) -r bitfiles
+	$(RM) -r build/fpga
+	$(RM) red-pitaya*.zip
 	$(RM) .Xil usage_statistics_webtalk.html usage_statistics_webtalk.xml
 	$(RM) vivado*.jou vivado*.log vivado*.str
 	$(RM) webtalk*.jou webtalk*.log

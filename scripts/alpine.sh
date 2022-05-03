@@ -114,7 +114,9 @@ echo $alpine_url/community >> $root_dir/etc/apk/repositories
 chroot $root_dir /bin/sh <<- EOF_CHROOT
 
 apk update
-apk add openssh ucspi-tcp6 iw wpa_supplicant dhcpcd dnsmasq hostapd iptables avahi dbus dcron chrony gpsd libgfortran musl-dev fftw-dev libconfig-dev alsa-lib-dev alsa-utils curl wget less nano bc dos2unix patch make git build-base gfortran gdb htop
+apk add openssh ucspi-tcp6 iw wpa_supplicant dhcpcd dnsmasq hostapd iptables avahi dbus dcron chrony gpsd libgfortran musl-dev fftw-dev libconfig-dev alsa-lib-dev alsa-utils curl wget less nano bc dos2unix patch make git build-base gfortran gdb htop python3
+
+ln -sf python3 /usr/bin/python
 
 rc-update add bootmisc boot
 rc-update add hostname boot
@@ -183,7 +185,10 @@ lbu add root
 lbu delete etc/resolv.conf
 lbu delete root/.ash_history
 
-make -C /media/mmcblk0p1/apps/RedPitayaDAQServer clean
+git config --global --add safe.directory /media/mmcblk0p1/apps/RedPitayaDAQServer
+git config --global --add safe.directory /media/mmcblk0p1/apps/RedPitayaDAQServer/libs/scpi-parser
+
+#make -C /media/mmcblk0p1/apps/RedPitayaDAQServer clean
 make -C /media/mmcblk0p1/apps/RedPitayaDAQServer server
 
 lbu include /etc/init.d
@@ -207,3 +212,4 @@ rm -rf apps cache modloop red-pitaya.apkovl.tar.gz uInitrd wifi
 
 mv red-pitaya-alpine-3.14-armv7-`date +%Y%m%d`.zip ../../
 cd ../../
+echo "Finished building linux image"
