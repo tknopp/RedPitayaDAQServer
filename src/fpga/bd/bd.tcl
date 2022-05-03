@@ -465,6 +465,17 @@ proc create_hier_cell_signal_compose1 { parentCell nameHier } {
      return 1
    }
   
+  # Create instance: signal_ramp_0, and set properties
+  set signal_ramp_0 [ create_bd_cell -type container -reference signal_ramp signal_ramp_0 ]
+  set_property -dict [ list \
+   CONFIG.ACTIVE_SIM_BD {signal_ramp.bd} \
+   CONFIG.ACTIVE_SYNTH_BD {signal_ramp.bd} \
+   CONFIG.ENABLE_DFX {0} \
+   CONFIG.LIST_SIM_BD {signal_ramp.bd} \
+   CONFIG.LIST_SYNTH_BD {signal_ramp.bd} \
+   CONFIG.LOCK_PROPAGATE {0} \
+ ] $signal_ramp_0
+
   # Create instance: waveform_gen_0, and set properties
   set waveform_gen_0 [ create_bd_cell -type container -reference waveform_gen waveform_gen_0 ]
   set_property -dict [ list \
@@ -511,11 +522,12 @@ proc create_hier_cell_signal_compose1 { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net Din_1 [get_bd_pins Din] [get_bd_pins signal_cfg_slice_0/cfg_data]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins signal_composer_0/clk] [get_bd_pins waveform_gen_0/aclk] [get_bd_pins waveform_gen_1/aclk] [get_bd_pins waveform_gen_2/aclk] [get_bd_pins waveform_gen_3/aclk]
+  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins signal_composer_0/clk] [get_bd_pins signal_ramp_0/aclk] [get_bd_pins waveform_gen_0/aclk] [get_bd_pins waveform_gen_1/aclk] [get_bd_pins waveform_gen_2/aclk] [get_bd_pins waveform_gen_3/aclk]
   connect_bd_net -net disable_dac_1 [get_bd_pins disable_dac] [get_bd_pins signal_composer_0/disable_dac]
   connect_bd_net -net dyn_offset_disable_1 [get_bd_pins dyn_offset_disable] [get_bd_pins signal_composer_0/dyn_offset_disable]
+  connect_bd_net -net enable_ramping_1 [get_bd_pins enable_ramping] [get_bd_pins signal_ramp_0/enableRamping]
   connect_bd_net -net offset_1 [get_bd_pins offset] [get_bd_pins signal_composer_0/seq]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins waveform_gen_0/aresetn] [get_bd_pins waveform_gen_1/aresetn] [get_bd_pins waveform_gen_2/aresetn] [get_bd_pins waveform_gen_3/aresetn]
+  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins signal_ramp_0/aresetn] [get_bd_pins waveform_gen_0/aresetn] [get_bd_pins waveform_gen_1/aresetn] [get_bd_pins waveform_gen_2/aresetn] [get_bd_pins waveform_gen_3/aresetn]
   connect_bd_net -net signal_cfg_slice_0_comp_0_amp [get_bd_pins signal_cfg_slice_0/comp_0_amp] [get_bd_pins waveform_gen_0/amplitude]
   connect_bd_net -net signal_cfg_slice_0_comp_0_cfg [get_bd_pins signal_cfg_slice_0/comp_0_cfg] [get_bd_pins waveform_gen_0/cfg_data]
   connect_bd_net -net signal_cfg_slice_0_comp_0_freq [get_bd_pins signal_cfg_slice_0/comp_0_freq] [get_bd_pins waveform_gen_0/freq]
@@ -533,8 +545,12 @@ proc create_hier_cell_signal_compose1 { parentCell nameHier } {
   connect_bd_net -net signal_cfg_slice_0_comp_3_freq [get_bd_pins signal_cfg_slice_0/comp_3_freq] [get_bd_pins waveform_gen_3/freq]
   connect_bd_net -net signal_cfg_slice_0_comp_3_phase [get_bd_pins signal_cfg_slice_0/comp_3_phase] [get_bd_pins waveform_gen_3/phase]
   connect_bd_net -net signal_cfg_slice_0_offset [get_bd_pins signal_cfg_slice_0/offset] [get_bd_pins signal_composer_0/offset]
-  connect_bd_net -net signal_composer_0_signal [get_bd_pins S] [get_bd_pins signal_composer_0/signal_out]
+  connect_bd_net -net signal_cfg_slice_0_ramp_freq [get_bd_pins signal_cfg_slice_0/ramp_freq] [get_bd_pins signal_ramp_0/freq]
   connect_bd_net -net signal_composer_0_signal_valid [get_bd_pins m_axis_data_tvalid_1] [get_bd_pins signal_composer_0/signal_valid]
+  connect_bd_net -net signal_in_1 [get_bd_pins signal_composer_0/signal_out] [get_bd_pins signal_ramp_0/signal_in]
+  connect_bd_net -net signal_ramp_0_ramp_state [get_bd_pins ramp_state_1] [get_bd_pins signal_ramp_0/ramp_state]
+  connect_bd_net -net signal_ramp_0_signal_out [get_bd_pins S] [get_bd_pins signal_ramp_0/signal_out]
+  connect_bd_net -net start_ramp_down_1 [get_bd_pins start_ramp_down] [get_bd_pins signal_ramp_0/startRampDown]
   connect_bd_net -net waveform_gen_0_m_axis_data_tvalid_1 [get_bd_pins signal_composer_0/valid0] [get_bd_pins waveform_gen_0/m_axis_data_tvalid_1]
   connect_bd_net -net waveform_gen_0_wave [get_bd_pins signal_composer_0/wave0] [get_bd_pins waveform_gen_0/wave]
   connect_bd_net -net waveform_gen_1_m_axis_data_tvalid_1 [get_bd_pins signal_composer_0/valid1] [get_bd_pins waveform_gen_1/m_axis_data_tvalid_1]
