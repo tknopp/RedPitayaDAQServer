@@ -12,3 +12,4 @@ The project uses most but not all connections that are used in the original RedP
 * `DIO4_P` outputs a high for 10 ms after a 100 ms pause on low to provide an alive signal.
 * `DIO5_P` can be set to high via the configuration register to provide the mutual trigger signal.
 * `DIO7_P`, `DIO7_N`, `DIO6_P`, `DIO6_N`, `DIO5_N`, `DIO4_N`, `DIO3_N`, `DIO2_N` can be used as arbitrary outputs set via the server.
+* `DIO0_N` and `DIO1_N` are used for the clock selection in a cluster, see [Cluster](cluster.md).
