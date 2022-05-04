@@ -1,4 +1,4 @@
-export RedPitayaCluster, master, readDataPeriods, numChan, readDataSlow, readFrames, readPeriods, readPipelinedSamples, startPipelinedData, collectSamples!, readData, readDataPeriods, convertSamplesToFrames!, convertSamplesToFrames, SampleChunk
+export RedPitayaCluster, master, readDataPeriods, numChan, readDataSlow, readFrames, readPeriods, readPipelinedSamples, startPipelinedData, collectSamples!, readData, readDataPeriods, convertSamplesToFrames!, convertSamplesToFrames, SampleChunk, SampleBuffer
 
 import Base: length, iterate, getindex, firstindex, lastindex
 
@@ -208,7 +208,7 @@ for op in [:amplitudeDAC!, :frequencyDAC!, :phaseDAC!]
   end
 end
 
-for op in [:signalTypeDAC, :jumpSharpnessDAC, :offsetDAC]
+for op in [:signalTypeDAC, :jumpSharpnessDAC, :offsetDAC, :rampingDAC, :enableRamping, :enableRampDown]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster, chan::Integer)
@@ -222,10 +222,10 @@ for op in [:signalTypeDAC, :jumpSharpnessDAC, :offsetDAC]
       return $op(rpc[idxRP], chanRP)
     end
     batchIndices(::typeof($op), rpc::RedPitayaCluster, chan) = [div(chan -1, 2) + 1]
-    batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan, component) = [mod1(chan, 2), component]
+    batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan) = [mod1(chan, 2)]
   end
 end
-for op in [:signalTypeDAC!, :jumpSharpnessDAC!, :offsetDAC!]
+for op in [:signalTypeDAC!, :jumpSharpnessDAC!, :offsetDAC!, :rampingDAC!, :enableRamping!, :enableRampDown!]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster, chan::Integer, value)
@@ -239,7 +239,7 @@ for op in [:signalTypeDAC!, :jumpSharpnessDAC!, :offsetDAC!]
       return $op(rpc[idxRP], chanRP, value)
     end
     batchIndices(::typeof($op), rpc::RedPitayaCluster, chan, value) = [div(chan -1, 2) + 1]
-    batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan, component) = [mod1(chan, 2), component]
+    batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan) = [mod1(chan, 2)]
   end
 end
 
@@ -261,6 +261,15 @@ function passPDMToFastDAC(rpc::RedPitayaCluster)
   return result
 end
 batchIndices(::typeof(passPDMToFastDAC), rpc::RedPitayaCluster) = collect(1:length(rpc))
+
+function rampingStatus(rpc::RedPitayaCluster)
+  result = Array{RampingStatus}(undef, length(rpc))
+  @sync for (d, rp) in enumerate(rpc)
+    @async result[d] = rampingStatus(rp)
+  end
+  return result
+end
+batchIndices(::typeof(rampingStatus), rpc::RedPitayaCluster) = collect(1:length(rpc))
 
 computeRamping(rpc::RedPitayaCluster, stepsPerSeq, time, fraction) = computeRamping(master(rpc), stepsPerSeq, time, fraction)
 
@@ -458,7 +467,7 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
   wait(iterationDone)
   close(t)
   if timeoutHappened
-    @show done
+    @error "Timeout"
     error("Timout reached when reading from sockets")
   end
 

@@ -456,6 +456,12 @@ function rampingStatus(rp::RedPitaya)
 end
 scpiCommand(::typeof(rampingStatus)) = "RP:DAC:RAMPing:STATus?"
 scpiReturn(::typeof(rampingStatus)) = UInt8
+function parseReturn(::typeof(rampingStatus), ret)
+  status = parse(UInt8, ret)
+  result = RampingStatus(status & 1, (status >> 4) & 1,
+      RampingState((status >> 1) & 0x7), RampingState((status >> 5) & 0x7))
+  return result
+end
 
 function configureFastDACSeq!(rp::RedPitaya, config::DACConfig)
   result = true
