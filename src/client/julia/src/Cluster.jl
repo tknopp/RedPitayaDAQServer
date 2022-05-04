@@ -252,7 +252,6 @@ end
 batchIndices(::typeof(passPDMToFastDAC!), rpc::RedPitayaCluster, val) = collect(1:length(rpc))
 batchTransformArgs(::typeof(passPDMToFastDAC!), rpc::RedPitayaCluster, idx, val::Vector{Bool}) = [val[idx]]
 
-
 function passPDMToFastDAC(rpc::RedPitayaCluster)
   result = [false for rp in rpc]
   @sync for (d, rp) in enumerate(rpc)
@@ -321,7 +320,7 @@ Instruct all `RedPitaya`s to send `numSamples` samples from writepointer `reqWP`
 
 See [`readPipelinedSamples`](@ref)
 """
-function startPipelinedData(rpu::Union{RedPitayaCluster,RedPitayaClusterView}, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
+function startPipelinedData(rpu::Union{RedPitayaCluster, RedPitayaClusterView}, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
   @sync for rp in rpu
     @async startPipelinedData(rp, reqWP, numSamples, chunkSize)
   end
@@ -334,7 +333,7 @@ Request and receive `numOfRequestedSamples` samples from `wpStart` on in a pipel
 
 If `rpInfo` is set to a `RPInfo`, the `PerformanceData` sent after every `chunkSize` samples will be pushed into `rpInfo`.
 """
-function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
+function readPipelinedSamples(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
   numOfReceivedSamples = 0
   index = 1
   rawData = zeros(Int16, numChan(rpu), numOfRequestedSamples)
@@ -352,8 +351,7 @@ function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCl
 
 end
 
-
-function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpRead::Int64, chunk::Int64, rawData::Matrix{Int16}, chunkBuffer, index; rpInfo=nothing)
+function collectSamples!(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, wpRead::Int64, chunk::Int64, rawData::Matrix{Int16}, chunkBuffer, index; rpInfo=nothing)
   done = zeros(Bool, length(rpu))
   iterationDone = Condition()
   timeoutHappened = false
@@ -400,6 +398,7 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
     error("Timout reached when reading from sockets")
   end
 
+  return nothing
 end
 
 """
@@ -409,7 +408,7 @@ Request and receive `numOfRequestedSamples` samples from `wpStart` on in a pipel
 
 See [`SampleChunk`](@ref).
 """
-function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64, channel::Channel; chunkSize::Int64 = 25000)
+function readPipelinedSamples(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64, channel::Channel; chunkSize::Int64 = 25000)
   numOfReceivedSamples = 0
   chunkBuffer = zeros(Int16, chunkSize * 2, length(rpu))
 
@@ -421,15 +420,15 @@ function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCl
     numOfReceivedSamples += chunk
   end
 
+  return nothing
 end
 
-function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpRead::Int64, chunk::Int64, channel::Channel, chunkBuffer)
+function collectSamples!(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, wpRead::Int64, chunk::Int64, channel::Channel, chunkBuffer)
   done = zeros(Bool, length(rpu))
   iterationDone = Condition()
   timeoutHappened = false
   result = zeros(Int16, numChan(rpu), chunk)
   performances = Vector{PerformanceData}(undef, length(rpu))
-
 
   for (d, rp) in enumerate(rpu)
     @async begin
@@ -464,6 +463,7 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
 
   put!(channel, SampleChunk(result, performances))
 
+  return nothing
 end
 
 """
@@ -483,7 +483,7 @@ See [`readPipelinedSamples`](@ref), [`convertSamplesToFrames`](@ref), [`samplesP
 - `rpInfo=nothing`: see `readPipelinedSamples`
 - `useCalibration`: convert from Int16 samples to Float32 values based on `RedPitaya`s calibration
 """
-function readFrames(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; rpInfo=nothing, chunkSize = 50000, useCalibration = false)
+function readFrames(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; rpInfo=nothing, chunkSize = 50000, useCalibration = false)
   numSampPerPeriod = samplesPerPeriod(rpu)
   numPeriods = periodsPerFrame(rpu)
   numSampPerFrame = numSampPerPeriod * numPeriods
@@ -566,7 +566,7 @@ See [`readPipelinedSamples`](@ref), [`convertSamplesToPeriods!`](@ref), [`sample
 - `rpInfo=nothing`: see `readPipelinedSamples`
 - `useCalibration`: convert samples based on `RedPitaya`s calibration
 """
-function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startPeriod, numPeriods, numBlockAverages=1; rpInfo=nothing, chunkSize = 50000, useCalibration = false)
+function readPeriods(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, startPeriod, numPeriods, numBlockAverages=1; rpInfo=nothing, chunkSize = 50000, useCalibration = false)
   numSampPerPeriod = samplesPerPeriod(rpu)
 
   if rem(numSampPerPeriod,numBlockAverages) != 0
@@ -588,6 +588,7 @@ function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView
   else
     convertSamplesToPeriods!(rawSamples, data, numChan(rpu), numSampPerPeriod, numPeriods, numBlockAverages)
   end
+
   return data
 end
 
@@ -599,11 +600,13 @@ function convertSamplesToPeriods!(rpu::Union{RedPitaya, RedPitayaCluster, RedPit
     periods[:, d, :] .*= calib[1, d]
     periods[:, d, :] .+= calib[2, d]
   end
-  return periods
 
+  return periods
 end
+
 function convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages=1)
   temp = reshape(samples, numChan, numSampPerPeriod, numPeriods)
+
   for d = 1:div(numChan,2)
     u = temp[2*d-1:2*d, :, :]
     utmp1 = reshape(u,2,div(numSampPerPeriod,numBlockAverages), numBlockAverages, size(u,3))
@@ -611,4 +614,6 @@ function convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, n
     periods[:,2*d-1,:] = utmp2[1,:,1,:]
     periods[:,2*d,:] = utmp2[2,:,1,:]
   end
+
+  return nothing
 end
