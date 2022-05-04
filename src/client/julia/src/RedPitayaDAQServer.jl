@@ -48,7 +48,7 @@ iterate(rp::RedPitaya, state=1) = state > 1 ? nothing : (rp, state + 1)
 Send a command to the RedPitaya. Appends delimiter.
 """
 function send(rp::RedPitaya,cmd::String)
-  @debug "send command: " cmd
+  @debug "RP $(rp.host): $cmd"
   write(rp.socket,cmd*rp.delim)
 end
 
