@@ -7,7 +7,7 @@ stepsPerRepetition, stepsPerRepetition!, prepareSteps!, stepsPerFrame!,
 rampingDAC!, rampingDAC, enableRamping!, enableRamping, ramping!, rampUp!, rampDown!, rampingSteps, rampingSteps!, rampingTotalSteps, rampingTotalSteps!,
 rampUpSteps, rampUpSteps!, rampUpTotalSteps, rampUpTotalSteps!, rampDownSteps, rampDownSteps!, rampDownTotalSteps, rampDownTotalSteps!, 
 popSequence!, clearSequences!, appendSequence!, prepareSequences!, AbstractSequence, ArbitrarySequence, enableLUT,
-fastDACConfig, resetAfterSequence!, enableRampDown, enableRampDown!, RampingState, RampingStatus, rampingStatus
+fastDACConfig, resetAfterSequence!, enableRampDown, enableRampDown!, RampingState, RampingStatus, rampingStatus, rampDownDone, rampUpDone
 
 """
     SignalType
@@ -461,6 +461,18 @@ function parseReturn(::typeof(rampingStatus), ret)
   result = RampingStatus(status & 1, (status >> 4) & 1,
       RampingState((status >> 1) & 0x7), RampingState((status >> 5) & 0x7))
   return result
+end
+
+function rampDownDone(rp::RedPitaya)
+  done = false
+  status = rampingStatus(rp)
+  done = (!status.enableCh1 || status.stateCh1 == DONE) && (!status.enableCh2 || status.stateCh2 == DONE)
+end
+
+function rampUpDone(rp::RedPitaya)
+  done = false
+  status = rampingStatus(rp)
+  done = (!status.enableCh1 || status.stateCh1 != RAMPUP) && (!status.enableCh2 || status.stateCh2 != RAMPUP)
 end
 
 function configureFastDACSeq!(rp::RedPitaya, config::DACConfig)

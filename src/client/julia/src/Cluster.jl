@@ -173,7 +173,7 @@ function masterTrigger!(rpc::RedPitayaCluster, val::Bool)
 end
 
 
-for op in [:amplitudeDAC, :frequencyDAC, :phaseDAC]
+for op in [:signalTypeDAC, :jumpSharpnessDAC, :amplitudeDAC, :frequencyDAC, :phaseDAC]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster, chan::Integer, component::Integer)
@@ -190,7 +190,7 @@ for op in [:amplitudeDAC, :frequencyDAC, :phaseDAC]
     batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan, component) = [mod1(chan, 2), component]
   end
 end
-for op in [:amplitudeDAC!, :frequencyDAC!, :phaseDAC!]
+for op in [:signalTypeDAC!, :jumpSharpnessDAC!, :amplitudeDAC!, :frequencyDAC!, :phaseDAC!]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster, chan::Integer, component::Integer, value)
@@ -208,7 +208,7 @@ for op in [:amplitudeDAC!, :frequencyDAC!, :phaseDAC!]
   end
 end
 
-for op in [:signalTypeDAC, :jumpSharpnessDAC, :offsetDAC, :rampingDAC, :enableRamping, :enableRampDown]
+for op in [:jumpSharpnessDAC, :offsetDAC, :rampingDAC, :enableRamping, :enableRampDown]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster, chan::Integer)
@@ -225,7 +225,7 @@ for op in [:signalTypeDAC, :jumpSharpnessDAC, :offsetDAC, :rampingDAC, :enableRa
     batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan) = [mod1(chan, 2)]
   end
 end
-for op in [:signalTypeDAC!, :jumpSharpnessDAC!, :offsetDAC!, :rampingDAC!, :enableRamping!, :enableRampDown!]
+for op in [:offsetDAC!, :rampingDAC!, :enableRamping!, :enableRampDown!]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster, chan::Integer, value)
@@ -270,6 +270,18 @@ function rampingStatus(rpc::RedPitayaCluster)
   return result
 end
 batchIndices(::typeof(rampingStatus), rpc::RedPitayaCluster) = collect(1:length(rpc))
+
+for op in [:rampDownDone, :rampUpDone]
+  @eval begin
+    function $op(rpc::RedPitayaCluster)
+      result = [false for i = 1:length(rpc)]
+      @sync for (d, rp) in enumerate(rpc)
+        @async result[d] = $op(rp)
+      end
+      return all(result)    
+    end
+  end
+end
 
 computeRamping(rpc::RedPitayaCluster, stepsPerSeq, time, fraction) = computeRamping(master(rpc), stepsPerSeq, time, fraction)
 
