@@ -239,7 +239,7 @@ for op in [:offsetDAC!, :rampingDAC!, :enableRamping!, :enableRampDown!]
       return $op(rpc[idxRP], chanRP, value)
     end
     batchIndices(::typeof($op), rpc::RedPitayaCluster, chan, value) = [div(chan -1, 2) + 1]
-    batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan) = [mod1(chan, 2)]
+    batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan, value) = [mod1(chan, 2), value]
   end
 end
 
