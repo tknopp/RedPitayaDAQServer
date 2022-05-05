@@ -187,7 +187,7 @@ for op in [:signalTypeDAC, :jumpSharpnessDAC, :amplitudeDAC, :frequencyDAC, :pha
       return $op(rpc[idxRP], chanRP, component)
     end
     batchIndices(::typeof($op), rpc::RedPitayaCluster, chan, component) = [div(chan -1, 2) + 1]
-    batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan, component) = [mod1(chan, 2), component]
+    batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan, component) = (mod1(chan, 2), component)
   end
 end
 for op in [:signalTypeDAC!, :jumpSharpnessDAC!, :amplitudeDAC!, :frequencyDAC!, :phaseDAC!]
@@ -204,7 +204,7 @@ for op in [:signalTypeDAC!, :jumpSharpnessDAC!, :amplitudeDAC!, :frequencyDAC!, 
       return $op(rpc[idxRP], chanRP, component, value)
     end
     batchIndices(::typeof($op), rpc::RedPitayaCluster, chan, component, value) = [div(chan -1, 2) + 1]
-    batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan, component, value) = [mod1(chan, 2), component, value]
+    batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan, component, value) = (mod1(chan, 2), component, value)
   end
 end
 
@@ -222,7 +222,7 @@ for op in [:jumpSharpnessDAC, :offsetDAC, :rampingDAC, :enableRamping, :enableRa
       return $op(rpc[idxRP], chanRP)
     end
     batchIndices(::typeof($op), rpc::RedPitayaCluster, chan) = [div(chan -1, 2) + 1]
-    batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan) = [mod1(chan, 2)]
+    batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan) = (mod1(chan, 2))
   end
 end
 for op in [:offsetDAC!, :rampingDAC!, :enableRamping!, :enableRampDown!]
@@ -239,7 +239,7 @@ for op in [:offsetDAC!, :rampingDAC!, :enableRamping!, :enableRampDown!]
       return $op(rpc[idxRP], chanRP, value)
     end
     batchIndices(::typeof($op), rpc::RedPitayaCluster, chan, value) = [div(chan -1, 2) + 1]
-    batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan, value) = [mod1(chan, 2), value]
+    batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan, value) = (mod1(chan, 2), value)
   end
 end
 
@@ -250,7 +250,7 @@ function passPDMToFastDAC!(rpc::RedPitayaCluster, val::Vector{Bool})
   end
 end
 batchIndices(::typeof(passPDMToFastDAC!), rpc::RedPitayaCluster, val) = collect(1:length(rpc))
-batchTransformArgs(::typeof(passPDMToFastDAC!), rpc::RedPitayaCluster, idx, val::Vector{Bool}) = [val[idx]]
+batchTransformArgs(::typeof(passPDMToFastDAC!), rpc::RedPitayaCluster, idx, val::Vector{Bool}) = (val[idx])
 
 
 function passPDMToFastDAC(rpc::RedPitayaCluster)

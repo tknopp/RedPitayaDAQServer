@@ -50,7 +50,7 @@ function passPDMToFastDAC!(rp::RedPitaya, val::Bool)
   return query(rp, string("RP:DAC:PASStofast ", valStr), Bool)
 end
 scpiCommand(::typeof(passPDMToFastDAC!), val::Bool) = scpiCommand(passPDMToFastDAC!, val ? "ON" : "OFF")
-scpiCommand(::typeof(passPDMToFastDAC!), valStr::String) = string("RP:DAC:PASStofast ", valStr)
+scpiCommand(::typeof(passPDMToFastDAC!), val::String) = string("RP:DAC:PASStofast ", val)
 scpiReturn(::typeof(passPDMToFastDAC!)) = Bool
 
 passPDMToFastDAC(rp::RedPitaya) = occursin("ON", query(rp, scpiCommand(passPDMToFastDAC)))
@@ -428,7 +428,7 @@ function enableRamping!(rp::RedPitaya, channel, value)
   return query(rp, scpiCommand(enableRamping!, channel, value), scpiReturn(enableRamping!))
 end
 scpiCommand(::typeof(enableRamping!), channel, val::Bool) = scpiCommand(enableRamping!, channel, val ? "ON" : "OFF")
-scpiCommand(::typeof(enableRamping!), channel, valStr) = string("RP:DAC:CH", Int(channel)-1, ":RAMPing:ENaBle ", valStr)
+scpiCommand(::typeof(enableRamping!), channel, val::String) = string("RP:DAC:CH", Int(channel)-1, ":RAMPing:ENaBle ", val)
 scpiReturn(::typeof(enableRamping!)) = Bool
 
 enableRamping(rp::RedPitaya, channel) = occursin("ON", query(rp, scpiCommand(enableRamping, channel)))
@@ -440,7 +440,7 @@ function enableRampDown!(rp::RedPitaya, channel, value)
   return query(rp, scpiCommand(enableRampDown!, channel, value), scpiReturn(enableRampDown!))
 end
 scpiCommand(::typeof(enableRampDown!), channel, val::Bool) = scpiCommand(enableRampDown!, channel, val ? "ON" : "OFF")
-scpiCommand(::typeof(enableRampDown!), channel, valStr) = string("RP:DAC:CH", Int(channel)-1, ":RAMPing:DoWN ", valStr)
+scpiCommand(::typeof(enableRampDown!), channel, val::String) = string("RP:DAC:CH", Int(channel)-1, ":RAMPing:DoWN ", val)
 scpiReturn(::typeof(enableRampDown!)) = Bool
 
 enableRampDown(rp::RedPitaya, channel) = occursin("ON", query(rp, scpiCommand(enableRampDown, channel)))
@@ -689,7 +689,7 @@ function resetAfterSequence!(rp::RedPitaya, val::Bool)
   return query(rp, scpiCommand(resetAfterSequence!, val), scpiReturn(resetAfterSequence!))
 end
 scpiCommand(::typeof(resetAfterSequence!), val::Bool) = scpiCommand(resetAfterSequence!, val ? "ON" : "OFF")
-scpiCommand(::typeof(resetAfterSequence!), valStr::String) = string("RP:DAC:SEQ:RESETafter ", valStr)
+scpiCommand(::typeof(resetAfterSequence!), val::String) = string("RP:DAC:SEQ:RESETafter ", val)
 scpiReturn(::typeof(resetAfterSequence!)) = Bool
 resetAfterSequence(rp::RedPitaya) = occursin("ON", query(rp, scpiCommand(resetAfterSequence)))
 scpiCommand(::typeof(resetAfterSequence)) = "RP:DAC:SEQ:RESETafter?"
