@@ -270,7 +270,7 @@ proc create_root_design { parentCell } {
    CONFIG.Multiplier_Construction {Use_Mults} \
    CONFIG.OutputWidthHigh {28} \
    CONFIG.OutputWidthLow {13} \
-   CONFIG.PipeStages {1} \
+   CONFIG.PipeStages {3} \
    CONFIG.PortAWidth {16} \
    CONFIG.PortBWidth {16} \
    CONFIG.Use_Custom_Output_Width {true} \
@@ -296,7 +296,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net aresetn_1 [get_bd_ports aresetn] [get_bd_pins axis_variable_0/aresetn] [get_bd_pins dds_compiler_0/aresetn] [get_bd_pins signal_ramper_0/aresetn]
   connect_bd_net -net enableRamping_1 [get_bd_ports enableRamping] [get_bd_pins signal_ramper_0/enableRamping]
   connect_bd_net -net freq_1 [get_bd_ports freq] [get_bd_pins axis_variable_0/cfg_data]
-  connect_bd_net -net signal_composer_0_signal_out [get_bd_ports signal_in] [get_bd_pins mult_gen_0/A]
+  connect_bd_net -net signal_in_1 [get_bd_ports signal_in] [get_bd_pins mult_gen_0/A]
   connect_bd_net -net signal_ramper_0_ramp [get_bd_pins mult_gen_0/B] [get_bd_pins signal_ramper_0/ramp]
   connect_bd_net -net signal_ramper_0_rampState [get_bd_ports signal_out] [get_bd_pins mult_gen_0/P]
   connect_bd_net -net signal_ramper_0_rampState1 [get_bd_ports ramp_state] [get_bd_pins signal_ramper_0/rampState]
