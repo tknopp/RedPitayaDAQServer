@@ -1124,6 +1124,10 @@ static scpi_result_t RP_SetMasterTrigger(scpi_t * context) {
 	}
 
 	int result = setMasterTrigger(master_trigger_selection);
+	if (master_trigger_selection == OFF) {
+		setEnableRampDown(OFF, 0);
+		setEnableRampDown(OFF, 1);
+	}
 	if (result < 0) {
 		return returnSCPIBool(context, false);
 	}
@@ -1232,6 +1236,10 @@ static scpi_result_t RP_SetKeepAliveReset(scpi_t * context) {
 	}
 
 	int result = setKeepAliveReset(param);
+	if (param == OFF) {
+		setEnableRampDown(OFF, 0);
+		setEnableRampDown(OFF, 1);
+	}
 	if (result < 0) {
 		return returnSCPIBool(context, false);
 	}
