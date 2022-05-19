@@ -242,46 +242,6 @@ sequenceInterval_t computeInterval(sequenceData_t *seqData, int localRepetition,
 	}
 }
 
-static float rampingFunction(float numerator, float denominator) {
-	return (0.9640 + tanh(-2.0 + (numerator / denominator) * 4.0)) / 1.92806;
-}
-
-static float clamp(double val, double min, double max) {
-	double temp = val < min ? min : val;
-	return temp > max ? max : temp;
-}
-
-static float getFactor(sequenceData_t *seqData, int localRepetition, int localStep) {
-
-	switch(computeInterval(seqData, localRepetition, localStep)) {
-		case REGULAR:
-			return 1.0;
-		case RAMPUP:
-			; // Empty statement to allow declaration in switch
-			// Step in Ramp up so far = how many steps so far - when does ramp up start
-			int stepInRampUp = (seqData->numStepsPerRepetition * localRepetition + localStep) - 0;
-			return clamp(rampingFunction((float) stepInRampUp, (float) seqData->rampUpSteps - 1), 0.0, 1.0);
-		case RAMPDOWN:
-			; // See above
-			int stepsUpToRampDown = (seqData->numStepsPerRepetition * seqData->numRepetitions) + seqData->rampUpTotalSteps + (seqData->rampDownTotalSteps - seqData->rampDownSteps);
-			int stepsInRampDown = (seqData->numStepsPerRepetition * localRepetition + localStep) - stepsUpToRampDown;
-			//printf("stepsUpTo %d, rampDownSteps %d, stepsInRampDown %d\n", stepsUpToRampDown, seqData->rampDownSteps, stepsInRampDown);
-			return clamp(rampingFunction((float) (seqData->rampDownSteps - stepsInRampDown), (float) seqData->rampDownSteps - 1), 0.0, 1.0);
-		case DONE:
-		default:
-			return 0.0;
-	}
-}
-
-void setupRampingTiming(sequenceData_t *seqData, double rampUpTime, double rampUpFraction, double rampDownTime, double rampDownFraction) {
-	double bandwidth = 125e6 / getDecimation();
-	double period = (numSamplesPerStep * seqData->numStepsPerRepetition) / bandwidth;
-	seqData->rampUpTotalSteps = ceil(rampUpTime / (numSamplesPerStep / bandwidth));
-	seqData->rampUpSteps = ceil(rampUpTime * rampUpFraction / (numSamplesPerStep / bandwidth));
-	seqData->rampDownTotalSteps = ceil(rampDownTime / (numSamplesPerStep / bandwidth));
-	seqData->rampDownSteps = ceil(rampDownTime * rampDownFraction / (numSamplesPerStep / bandwidth));
-}
-
 static void initSlowDAC() {
 	// Compute Ramping timing	
 	//setupRampingTiming(&dacSequence.data, rampUpTime, rampUpFraction);
@@ -356,19 +316,19 @@ static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
 
 	// PDM Value
 	float val = getSequenceVal(sequence, localStep, channel);
-	float factor = getFactor(&sequence->data, localRepetition, localStep);
 	//printf("Step %d factor %f value %f interval %d \n", futureStep, factor, val, computeInterval(&(currentSequence->sequence).data, localRepetition, localStep));
-	if (setPDMValueVolt(factor * val, channel, currPDMIndex) != 0) {
+	if (setPDMValueVolt(val, channel, currPDMIndex) != 0) {
 		printf("Could not set AO[%d] voltage.\n", channel);	
 	}
 
 	// These set a specific bit, while the value abovie writes a whole 16 bit number. Setting needs to happen afterwards
 	// Enable Value
+	// TODO Check significance of being in REGULAR intervall
 	if (currentSequence->sequence.data.enableLUT != NULL && interval == REGULAR) {
 		bool temp = currentSequence->sequence.data.enableLUT[localStep * numSlowDACChan + channel];
 		setEnableDAC(temp, channel, currPDMIndex);
 	}
-
+	// TODO set ramp down request
 	setResetDAC(setReset, currPDMIndex);
 }
 

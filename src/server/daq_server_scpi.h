@@ -100,12 +100,7 @@ typedef struct {
 	int numStepsPerRepetition; // How many steps per repetition
 	float* LUT; // LUT for value function pointer
 	bool * enableLUT;
-	int rampUpRepetitions; // How many repetitions for both individually ramp up/down
-	int rampUpTotalSteps; // How many steps are in these repetitions
-	int rampUpSteps; // How many of those steps have a ramping factor
-	int rampDownRepetitions; 
-	int rampDownTotalSteps; 
-	int rampDownSteps;
+	int rampingRepetitions;
 	int numRepetitions; // How many regular repetitions are there
 	sequenceTypes_t type; // Sanity check for function pointer
 	bool resetAfter;
@@ -162,7 +157,6 @@ extern double rampUpFraction;
 extern double rampDownTime;
 extern double rampDownFraction;
 extern bool prepareSequences();
-extern void setupRampingTiming(sequenceData_t *seqData, double rampUpTime, double rampUpFraction, double rampDownTime, double rampDownFraction);
 extern void cleanUpSequence(sequenceData_t * seqData);
 extern void cleanUpSequenceList();
 extern sequenceInterval_t computeInterval(sequenceData_t *seqData, int repetition, int step);
@@ -227,4 +221,3 @@ extern void sendFileToClient(FILE*);
 extern void sendStatusToClient();
 
 #endif /* __DAQ_SERVER_SCPI_H_ */
-
