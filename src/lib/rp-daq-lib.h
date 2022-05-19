@@ -14,7 +14,7 @@
 #include <sys/ioctl.h>
 
 #define MASK_LOWER_48 0x0000ffffffffffff
-#define CHANNEL_OFFSET 10
+#define CHANNEL_OFFSET 13
 #define COMPONENT_OFFSET 3
 #define COMPONENT_START_OFFSET 1 
 #define SIGNAL_TYPE_OFFSET 0
