@@ -600,7 +600,7 @@ int setResetDAC(int8_t value, int index) {
 	return 0;
 }
 
-int setRampDownDAC(int8_t value, int channel) {
+int setRampDownDAC(int8_t value, int index, int channel) {
 	if(value < 0 || value >= 2) {
 		return -1;
 	}
