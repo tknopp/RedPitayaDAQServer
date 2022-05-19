@@ -111,7 +111,7 @@ extern void readADCData(uint32_t wp, uint32_t size, uint32_t* buffer);
 extern int resetRamWriter();
 extern int enableRamWriter();
 
-// slow IO
+// Sequence
 extern int getPDMClockDivider();
 extern int setPDMClockDivider(int);
 extern int setPDMRegisterValue(uint64_t, int);
@@ -130,6 +130,7 @@ extern float getXADCValueVolt(int);
 extern int setEnableDACAll(int8_t, int);
 extern int setEnableDAC(int8_t, int, int);
 extern int setResetDAC(int8_t, int);
+extern int setRampDownDAC(int8_t, int);
 
 // misc
 extern int getDIODirection(const char*);

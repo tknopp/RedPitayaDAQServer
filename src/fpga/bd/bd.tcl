@@ -1671,6 +1671,7 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   create_bd_pin -dir I -type rst keep_alive_aresetn
   create_bd_pin -dir O -from 31 -to 0 oa_dac
   create_bd_pin -dir O -from 63 -to 0 pdm_sts
+  create_bd_pin -dir O -from 1 -to 0 seq_ramp_down
   create_bd_pin -dir O -from 0 -to 0 seq_reset
 
   # Create instance: c_counter_binary_0, and set properties
@@ -1827,6 +1828,7 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   connect_bd_net -net sequence_slice_0_dac_value_0 [get_bd_pins sequence_slice_0/dac_value_0] [get_bd_pins xlconcat_1/In0]
   connect_bd_net -net sequence_slice_0_dac_value_1 [get_bd_pins sequence_slice_0/dac_value_1] [get_bd_pins xlconcat_1/In1]
   connect_bd_net -net sequence_slice_0_enable_dac [get_bd_pins enable_dac] [get_bd_pins sequence_slice_0/enable_dac]
+  connect_bd_net -net sequence_slice_0_enable_dac_ramp_down [get_bd_pins seq_ramp_down] [get_bd_pins sequence_slice_0/enable_dac_ramp_down]
   connect_bd_net -net sequence_slice_0_enable_pdm [get_bd_pins sequence_slice_0/enable_pdm] [get_bd_pins util_vector_logic_7/Op2]
   connect_bd_net -net sequence_slice_0_pdm_value_0 [get_bd_pins pdm_1/din] [get_bd_pins sequence_slice_0/pdm_value_0]
   connect_bd_net -net sequence_slice_0_pdm_value_1 [get_bd_pins pdm_2/din] [get_bd_pins sequence_slice_0/pdm_value_1]
@@ -2329,13 +2331,6 @@ proc create_root_design { parentCell } {
    CONFIG.CONST_WIDTH {24} \
  ] $xlconstant_1
 
-  # Create instance: xlconstant_2, and set properties
-  set xlconstant_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_2 ]
-  set_property -dict [ list \
-   CONFIG.CONST_VAL {0} \
-   CONFIG.CONST_WIDTH {2} \
- ] $xlconstant_2
-
   # Create instance: xlslice_0, and set properties
   set xlslice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_0 ]
   set_property -dict [ list \
@@ -2477,6 +2472,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net selectio_wiz_1_data_out_to_pins_p [get_bd_ports daisy_p_o] [get_bd_pins selectio_wiz_1/data_out_to_pins_p]
   connect_bd_net -net selectio_wiz_2_clk_out [get_bd_pins clk_wiz_1/clk_in1] [get_bd_pins selectio_wiz_2/clk_out]
   connect_bd_net -net sequencer_enable_dac [get_bd_pins fourier_synth_standard/enable_dac] [get_bd_pins sequencer/enable_dac]
+  connect_bd_net -net sequencer_seq_ramp_down [get_bd_pins fourier_synth_standard/seq_ramp_down] [get_bd_pins sequencer/seq_ramp_down]
   connect_bd_net -net sequencer_seq_reset [get_bd_pins sequencer/seq_reset] [get_bd_pins util_vector_logic_2/Op2]
   connect_bd_net -net system_FCLK_RESET0_N [get_bd_pins system/FCLK_RESET0_N] [get_bd_pins util_vector_logic_1/Op1]
   connect_bd_net -net system_cfg_data [get_bd_pins fourier_synth_standard/cfg_data] [get_bd_pins system/dac_cfg]
@@ -2491,7 +2487,6 @@ proc create_root_design { parentCell } {
   connect_bd_net -net xlconcat_0_dout2 [get_bd_pins system/sts_data] [get_bd_pins xlconcat_0/dout]
   connect_bd_net -net xlconstant_0_dout [get_bd_ports ext_DIO1_N] [get_bd_pins xlconstant_0/dout]
   connect_bd_net -net xlconstant_1_dout [get_bd_pins xlconcat_0/In8] [get_bd_pins xlconstant_1/dout]
-  connect_bd_net -net xlconstant_2_dout [get_bd_pins fourier_synth_standard/seq_ramp_down] [get_bd_pins xlconstant_2/dout]
   connect_bd_net -net xlconstant_5_dout [get_bd_pins clk_wiz_0/reset] [get_bd_pins clk_wiz_1/reset] [get_bd_pins util_vector_logic_1/Res]
   connect_bd_net -net xlslice_0_Dout [get_bd_pins sequencer/Din] [get_bd_pins system/pdm_data]
   connect_bd_net -net xlslice_0_Dout1 [get_bd_pins fourier_synth_standard/dyn_offset_enable] [get_bd_pins sequencer/dyn_offset_enable] [get_bd_pins xlslice_0/Dout]
