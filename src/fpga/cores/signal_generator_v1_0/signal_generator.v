@@ -29,23 +29,7 @@ module signal_generator #
     
     reg signed [AXIS_TDATA_WIDTH-1:0] dac_out;
     reg signed [AXIS_TDATA_WIDTH-1:0] dac_out_temp_0;
-	reg signed [AXIS_TDATA_WIDTH-1:0] dac_out_temp_1;
-	reg signed [AXIS_TDATA_WIDTH-1:0] dac_out_temp_2;
-	reg signed [AXIS_TDATA_WIDTH-1:0] dac_out_temp_3;
-	reg signed [AXIS_TDATA_WIDTH-1:0] dac_out_temp_4;
     reg signed [DAC_WIDTH-1:0] phase;
-    reg signed [DAC_WIDTH-1:0] phase_delayed;
-    reg signed [15:0] A, AIncrement;
-    
-    wire [4-1:0] trapezoidCond;
-	reg [4-1:0] lastTrapezoidCond;
-	
-	assign trapezoidCond[0] = (phase > -8191+A);
-	assign trapezoidCond[1] = (phase >= -A);
-	assign trapezoidCond[2] = (phase > A);
-	assign trapezoidCond[3] = (phase >= 8191-A);
-	
-	reg justChangedCond;
 
     always @(posedge clk)
     begin
@@ -53,85 +37,21 @@ module signal_generator #
         begin
             dac_out <= 0;
             dac_out_temp_0 <= 0;
-			dac_out_temp_1 <= -8191;
-			dac_out_temp_2 <= 0;
-			dac_out_temp_3 <= 8191;
-			dac_out_temp_4 <= 0;
             phase <= 0;
-            phase_delayed <= 0;
-            A <= cfg_data[31:16];
-            AIncrement <= cfg_data[47:32]; // 2*8191 / (2*A);
 	        signal_type <= cfg_data[3:0];
-	        lastTrapezoidCond <= 4'b0000;
-			justChangedCond <= 0;
         end
         else
         begin
-            phase <= (s_axis_tdata_phase >>> (AXIS_TDATA_PHASE_WIDTH-DAC_WIDTH));
-            phase_delayed <= phase;
-			
-			if (lastTrapezoidCond != trapezoidCond)
-			begin
-				justChangedCond <= 1;
-				lastTrapezoidCond <= trapezoidCond;
-			end
-			
-			if (justChangedCond == 1)
-			begin
-				justChangedCond <= 0;
-			end
+            phase <= (s_axis_tdata_phase >>> (AXIS_TDATA_PHASE_WIDTH-DAC_WIDTH));			
             
             case (signal_type)
             	0 : begin // Sine
             	    dac_out_temp_0 <= s_axis_tdata;
                     dac_out <= dac_out_temp_0;
             	end
-            	1 : begin // Trapezoid
-            	    case ({justChangedCond, lastTrapezoidCond})
-					5'b10000 : begin
-						dac_out_temp_0 <= -8191-phase_delayed;
-						dac_out <= AIncrement*dac_out_temp_4;
-					end
-					5'b00000 : begin
-						dac_out_temp_0 <= -8191-phase_delayed;
-						dac_out <= AIncrement*dac_out_temp_0;
-					end
-					5'b10001 : begin
-						//dac_out_temp_1 <= -8191;
-						dac_out <= AIncrement*dac_out_temp_0;
-					end
-					5'b00001 : begin
-						//dac_out_temp_1 <= -8191;
-						dac_out <= dac_out_temp_1;
-					end
-					5'b10011 : begin
-						dac_out_temp_2 <= phase_delayed;
-						dac_out <= dac_out_temp_1;
-					end
-					5'b00011 : begin
-						dac_out_temp_2 <= phase_delayed;
-						dac_out <= AIncrement*dac_out_temp_2;
-					end
-					5'b10111 : begin
-						//dac_out_temp_3 <= 8191;
-						dac_out <= AIncrement*dac_out_temp_2;
-					end
-					5'b00111 : begin
-						//dac_out_temp_3 <= 8191;
-						dac_out <= dac_out_temp_3;
-					end
-					5'b11111 : begin
-						dac_out_temp_4 <= 8191-phase_delayed;
-						dac_out <= dac_out_temp_3;
-					end
-					5'b01111 : begin
-						dac_out_temp_4 <= 8191-phase_delayed;
-						dac_out <= AIncrement*dac_out_temp_4;
-					end
-					default : begin
-						dac_out <= 0;
-					end
-				    endcase
+            	1 : begin // Sawtooth (reverse)
+            	    dac_out_temp_0 <= -phase;
+                    dac_out <= dac_out_temp_0;
             	end
             	2 : begin // Triangle
             	    dac_out_temp_0 <= (phase << 1);
@@ -153,10 +73,6 @@ module signal_generator #
             	    dac_out_temp_0 <= phase;
                     dac_out <= dac_out_temp_0;
             	end
-            	/*4 : begin // Sawtooth (reverse)
-            	    dac_out_temp_0 <= -phase;
-                    dac_out <= dac_out_temp_0;
-            	end*/
             endcase
        end
     end
