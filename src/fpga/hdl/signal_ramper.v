@@ -8,7 +8,7 @@ module signal_ramper (
     input enableRamping,
     input startRampDown,
     output [15:0] ramp,
-    output [2:0] rampState
+    output [1:0] rampState
 );
 
 reg [12:0] phase; // 0...8191
@@ -16,13 +16,12 @@ reg [12:0] phasePrev;
 reg phaseRising;
 reg phaseRisingDelay;
 
-reg [2:0] state, stateNext;
-localparam [2:0]
-    stateRampUp = 3'b000,
-    stateNormal = 3'b001,
-    stateReqDown = 3'b010,
-    stateRampDown = 3'b011,
-    stateDone = 3'b100;
+reg [1:0] state, stateNext;
+localparam [1:0]
+    stateRampUp = 2'b10,
+    stateNormal = 2'b00,
+    stateRampDown = 2'b11,
+    stateDone = 2'b01;
 
 reg signed [15:0] rampTemp0;
 reg signed [15:0] rampTemp1;
@@ -50,30 +49,22 @@ begin
             stateNext <= stateDone;
         end
         stateRampUp : begin 
-            rampTemp0 <= phase;
             if (~phaseRising) begin
+                rampTemp0 <= 8191;
                 stateNext <= stateNormal; 
             end
             else begin
+                rampTemp0 <= phase;
                 stateNext <= stateRampUp;
             end
         end
         stateNormal : begin
             rampTemp0 <= 8191;
             if (startRampDown) begin
-                stateNext <= stateReqDown;
-            end
-            else begin
-                stateNext <= stateNormal;
-            end
-        end
-        stateReqDown : begin
-            rampTemp0 <= 8191;
-            if (~phaseRising) begin
                 stateNext <= stateRampDown;
             end
             else begin
-                stateNext <= stateReqDown;
+                stateNext <= stateNormal;
             end
         end
         stateRampDown : begin

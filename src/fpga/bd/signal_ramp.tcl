@@ -133,6 +133,8 @@ if { $bCheckIPs == 1 } {
 pavel-demin:user:axis_variable:1.0\
 xilinx.com:ip:dds_compiler:6.0\
 xilinx.com:ip:mult_gen:12.0\
+xilinx.com:ip:util_vector_logic:2.0\
+xilinx.com:ip:xlslice:1.0\
 "
 
    set list_ips_missing ""
@@ -230,7 +232,7 @@ proc create_root_design { parentCell } {
   set aresetn [ create_bd_port -dir I -type rst aresetn ]
   set enableRamping [ create_bd_port -dir I enableRamping ]
   set freq [ create_bd_port -dir I -type data freq ]
-  set ramp_state [ create_bd_port -dir O -from 2 -to 0 ramp_state ]
+  set ramp_state [ create_bd_port -dir O -from 1 -to 0 ramp_state ]
   set signal_in [ create_bd_port -dir I -from 15 -to 0 -type data signal_in ]
   set signal_out [ create_bd_port -dir O -from 15 -to 0 -type data signal_out ]
   set startRampDown [ create_bd_port -dir I startRampDown ]
@@ -287,20 +289,37 @@ proc create_root_design { parentCell } {
      return 1
    }
   
+  # Create instance: util_vector_logic_0, and set properties
+  set util_vector_logic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_0 ]
+  set_property -dict [ list \
+   CONFIG.C_SIZE {1} \
+ ] $util_vector_logic_0
+
+  # Create instance: xlslice_0, and set properties
+  set xlslice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_0 ]
+  set_property -dict [ list \
+   CONFIG.DIN_FROM {1} \
+   CONFIG.DIN_TO {1} \
+   CONFIG.DIN_WIDTH {3} \
+   CONFIG.DOUT_WIDTH {1} \
+ ] $xlslice_0
+
   # Create interface connections
   connect_bd_intf_net -intf_net axis_variable_0_M_AXIS [get_bd_intf_pins axis_variable_0/M_AXIS] [get_bd_intf_pins dds_compiler_0/S_AXIS_CONFIG]
   connect_bd_intf_net -intf_net dds_compiler_0_M_AXIS_PHASE [get_bd_intf_pins dds_compiler_0/M_AXIS_PHASE] [get_bd_intf_pins signal_ramper_0/s_axis_phase]
 
   # Create port connections
   connect_bd_net -net aclk_1 [get_bd_ports aclk] [get_bd_pins axis_variable_0/aclk] [get_bd_pins dds_compiler_0/aclk] [get_bd_pins mult_gen_0/CLK] [get_bd_pins signal_ramper_0/clk]
-  connect_bd_net -net aresetn_1 [get_bd_ports aresetn] [get_bd_pins axis_variable_0/aresetn] [get_bd_pins dds_compiler_0/aresetn] [get_bd_pins signal_ramper_0/aresetn]
+  connect_bd_net -net aresetn_1 [get_bd_ports aresetn] [get_bd_pins axis_variable_0/aresetn] [get_bd_pins signal_ramper_0/aresetn] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net enableRamping_1 [get_bd_ports enableRamping] [get_bd_pins signal_ramper_0/enableRamping]
   connect_bd_net -net freq_1 [get_bd_ports freq] [get_bd_pins axis_variable_0/cfg_data]
   connect_bd_net -net signal_in_1 [get_bd_ports signal_in] [get_bd_pins mult_gen_0/A]
   connect_bd_net -net signal_ramper_0_ramp [get_bd_pins mult_gen_0/B] [get_bd_pins signal_ramper_0/ramp]
   connect_bd_net -net signal_ramper_0_rampState [get_bd_ports signal_out] [get_bd_pins mult_gen_0/P]
-  connect_bd_net -net signal_ramper_0_rampState1 [get_bd_ports ramp_state] [get_bd_pins signal_ramper_0/rampState]
+  connect_bd_net -net signal_ramper_0_rampState1 [get_bd_ports ramp_state] [get_bd_pins signal_ramper_0/rampState] [get_bd_pins xlslice_0/Din]
   connect_bd_net -net startRampDown_1 [get_bd_ports startRampDown] [get_bd_pins signal_ramper_0/startRampDown]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins dds_compiler_0/aresetn] [get_bd_pins util_vector_logic_0/Res]
+  connect_bd_net -net xlslice_0_Dout [get_bd_pins util_vector_logic_0/Op2] [get_bd_pins xlslice_0/Dout]
 
   # Create address segments
 

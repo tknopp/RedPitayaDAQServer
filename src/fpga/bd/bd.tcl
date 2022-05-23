@@ -441,7 +441,7 @@ proc create_hier_cell_signal_compose1 { parentCell nameHier } {
   create_bd_pin -dir I enable_ramping
   create_bd_pin -dir O -from 0 -to 0 m_axis_data_tvalid_1
   create_bd_pin -dir I -from 15 -to 0 offset
-  create_bd_pin -dir O -from 2 -to 0 ramp_state_1
+  create_bd_pin -dir O -from 1 -to 0 ramp_state_1
   create_bd_pin -dir I start_ramp_down
 
   # Create instance: signal_cfg_slice_0, and set properties
@@ -550,9 +550,10 @@ proc create_hier_cell_signal_compose1 { parentCell nameHier } {
   connect_bd_net -net signal_composer_0_signal_out [get_bd_pins signal_composer_0/signal_out] [get_bd_pins signal_ramp_0/signal_in]
   connect_bd_net -net signal_composer_0_signal_valid [get_bd_pins m_axis_data_tvalid_1] [get_bd_pins signal_composer_0/signal_valid]
   connect_bd_net -net signal_ramp_0_ramp_state [get_bd_pins ramp_state_1] [get_bd_pins signal_ramp_0/ramp_state]
+  connect_bd_net -net signal_ramp_0_signal_out [get_bd_pins S] [get_bd_pins signal_ramp_0/signal_out]
   connect_bd_net -net start_ramp_down_1 [get_bd_pins start_ramp_down] [get_bd_pins signal_ramp_0/startRampDown]
   connect_bd_net -net waveform_gen_0_m_axis_data_tvalid_1 [get_bd_pins signal_composer_0/valid0] [get_bd_pins waveform_gen_0/m_axis_data_tvalid_1]
-  connect_bd_net -net waveform_gen_0_wave [get_bd_pins S] [get_bd_pins signal_composer_0/wave0] [get_bd_pins waveform_gen_0/wave]
+  connect_bd_net -net waveform_gen_0_wave [get_bd_pins signal_composer_0/wave0] [get_bd_pins waveform_gen_0/wave]
   connect_bd_net -net waveform_gen_1_m_axis_data_tvalid_1 [get_bd_pins signal_composer_0/valid1] [get_bd_pins waveform_gen_1/m_axis_data_tvalid_1]
   connect_bd_net -net waveform_gen_1_wave [get_bd_pins signal_composer_0/wave1] [get_bd_pins waveform_gen_1/wave]
   connect_bd_net -net waveform_gen_2_m_axis_data_tvalid_1 [get_bd_pins signal_composer_0/valid2] [get_bd_pins waveform_gen_2/m_axis_data_tvalid_1]
@@ -610,7 +611,7 @@ proc create_hier_cell_signal_compose { parentCell nameHier } {
   create_bd_pin -dir I enable_ramping
   create_bd_pin -dir O -from 0 -to 0 m_axis_data_tvalid_1
   create_bd_pin -dir I -from 15 -to 0 offset
-  create_bd_pin -dir O -from 2 -to 0 ramp_state_0
+  create_bd_pin -dir O -from 1 -to 0 ramp_state_0
   create_bd_pin -dir I start_ramp_down
 
   # Create instance: signal_cfg_slice_0, and set properties
@@ -1895,8 +1896,8 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
   create_bd_pin -dir I -from 1 -to 0 enable_dac
   create_bd_pin -dir I -from 1 -to 0 enable_ramping
   create_bd_pin -dir I -from 31 -to 0 oa_dac
-  create_bd_pin -dir O -from 2 -to 0 ramp_state_0
-  create_bd_pin -dir O -from 2 -to 0 ramp_state_1
+  create_bd_pin -dir O -from 1 -to 0 ramp_state_0
+  create_bd_pin -dir O -from 1 -to 0 ramp_state_1
   create_bd_pin -dir I -from 1 -to 0 seq_ramp_down
   create_bd_pin -dir I -from 1 -to 0 start_ramp_down
   create_bd_pin -dir O -from 31 -to 0 synth_tdata
@@ -2513,7 +2514,6 @@ proc create_root_design { parentCell } {
   # Restore current instance
   current_bd_instance $oldCurInst
 
-  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -2525,4 +2525,6 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
+
+common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 

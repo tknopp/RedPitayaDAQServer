@@ -23,8 +23,8 @@ module reset_manager #
     output [31:0] reset_sts,
     output [7:0] led,
     input [7:0] ramping_cfg,
-    input [2:0] ramp_state_0,
-    input [2:0] ramp_state_1,
+    input [1:0] ramp_state_0,
+    input [1:0] ramp_state_1,
     output [1:0] ramping_enable,
     output [1:0] start_ramp_down,
     inout reset_ack,
@@ -271,9 +271,9 @@ assign reset_sts[7] = instant_reset_in_int;
 assign reset_sts[8] = triggerState;
 assign reset_sts[15:9] = 7'b0;
 assign reset_sts[16] = ramping_cfg[0];
-assign reset_sts[19:17] = ramp_state_0[2:0];
+assign reset_sts[18:17] = ramp_state_0[1:0];
 assign reset_sts[20] = ramping_cfg[1];
-assign reset_sts[23:21] = ramp_state_1[2:0];
+assign reset_sts[22:21] = ramp_state_1[1:0];
 assign reset_sts[31:24] = 8'b0;
 
 assign led[7:0] = reset_sts[7:0];
