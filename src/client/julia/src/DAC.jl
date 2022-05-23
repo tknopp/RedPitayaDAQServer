@@ -23,7 +23,7 @@ struct DACPerformanceData
   minDeltaControl::UInt8
   maxDeltaSet::UInt8
 end
-@enum RampingState RAMPUP NORMAL REQDOWN DOWN DONE
+@enum RampingState NORMAL DONE UP DOWN
 struct RampingStatus
   enableCh1::Union{Bool, Nothing}
   enableCh2::Union{Bool, Nothing}
@@ -472,7 +472,7 @@ end
 function rampUpDone(rp::RedPitaya)
   done = false
   status = rampingStatus(rp)
-  done = (!status.enableCh1 || status.stateCh1 != RAMPUP) && (!status.enableCh2 || status.stateCh2 != RAMPUP)
+  done = (!status.enableCh1 || status.stateCh1 != UP) && (!status.enableCh2 || status.stateCh2 != UP)
 end
 
 function configureFastDACSeq!(rp::RedPitaya, config::DACConfig)
