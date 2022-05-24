@@ -52,7 +52,7 @@ function send(rp::RedPitaya,cmd::String)
   write(rp.socket,cmd*rp.delim)
 end
 
-_timeout = 5.0
+const _timeout = Ref(5.0)
 const _scaleWarning = 0.1
 
 """
@@ -341,13 +341,13 @@ export setTimeout
 """
     Set the global timeout used in all functions of the package
 """
-setTimeout(_timeoutParam::T) where T <: Real = global _timeout = _timeoutParam
+setTimeout(_timeoutParam::T) where T <: Real = global _timeout[] = _timeoutParam
 
 export getTimeout
 """
     Get the global timeout used in all functions of the package
 """
-getTimeout() = _timeout
+getTimeout() = _timeout[]
 
 
 end # module
