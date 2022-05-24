@@ -1853,16 +1853,11 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:PASStofast", .callback = RP_SetPassPDMToFastDAC,},
 	{.pattern = "RP:DAC:PASStofast?", .callback = RP_GetPassPDMToFastDAC,},
 	// Specific/Current Sequence
-	{.pattern = "RP:DAC:SEQ:LUT:ARBITRARY", .callback = RP_DAC_SetArbitraryLUT,},
-	{.pattern = "RP:DAC:SEQ:LUT:CONSTANT", .callback = RP_DAC_SetConstantLUT,},
-	{.pattern = "RP:DAC:SEQ:LUT:PAUSE", .callback = RP_DAC_SetPauseLUT,},
-	{.pattern = "RP:DAC:SEQ:LUT:RANGE", .callback = RP_DAC_SetRangeLUT,},
-	{.pattern = "RP:DAC:SEQ:LUT:ENaBle", .callback = RP_DAC_SetEnableDACLUT,},
+	{.pattern = "RP:DAC:SEQ:LUT", .callback = RP_DAC_SetArbitraryLUT,},
 	//{.pattern = "RP:DAC:SEQ:LostSteps?", .callback = RP_DAC_GetSlowDACLostSteps,},
 	{.pattern = "RP:DAC:SEQ:STEPs:REPetition", .callback = RP_DAC_SetStepsPerRepetition,},
 	{.pattern = "RP:DAC:SEQ:STEPs:REPetition?", .callback = RP_DAC_GetStepsPerRepetition,},
 	{.pattern = "RP:DAC:SEQ:RaMPing", .callback = RP_DAC_SetRamping,},
-	// TODO RAMPING SCPI
 	{.pattern = "RP:DAC:SEQ:REPetitions", .callback = RP_DAC_SetSequenceRepetitions,},
 	{.pattern = "RP:DAC:SEQ:REPetitions?", .callback = RP_DAC_GetSequenceRepetitions,},
 	{.pattern = "RP:DAC:SEQ:RESETafter", .callback = RP_DAC_SetSequenceResetAfter,},
@@ -1872,12 +1867,6 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:SEQ:CLEAR", .callback = RP_DAC_ClearSequences,},
 	{.pattern = "RP:DAC:SEQ:PREPare", .callback = RP_DAC_PrepareSequences,},
 	// Sequences DAC Config
-	{.pattern = "RP:DAC:SEQ:CHannel#:COMPonent#:AMPlitude", .callback = RP_DAC_SetSequenceAmplitude,},
-	{.pattern = "RP:DAC:SEQ:CHannel#:OFFset", .callback = RP_DAC_SetSequenceOffset,},
-	{.pattern = "RP:DAC:SEQ:CHannel#:COMPonent#:FREQuency", .callback = RP_DAC_SetSequenceFrequency,},
-	{.pattern = "RP:DAC:SEQ:CHannel#:COMPonent#:PHAse", .callback = RP_DAC_SetSequencePhase,},
-	{.pattern = "RP:DAC:SEQ:CHannel#:SIGnaltype", .callback = RP_DAC_SetSequenceSignalType,},
-	{.pattern = "RP:DAC:SEQ:CHannel#:JUMPsharpness", .callback = RP_DAC_SetSequenceJumpSharpness,},
 	// ADC
 	//{.pattern = "RP:ADC:SlowADC", .callback = RP_ADC_SetNumSlowADCChan,},
 	//{.pattern = "RP:ADC:SlowADC?", .callback = RP_ADC_GetNumSlowADCChan,},
