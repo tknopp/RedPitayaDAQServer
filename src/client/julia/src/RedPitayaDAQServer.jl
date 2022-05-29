@@ -52,7 +52,7 @@ function send(rp::RedPitaya,cmd::String)
   write(rp.socket,cmd*rp.delim)
 end
 
-const _timeout = 5.0
+const _timeout = Ref(5.0)
 const _scaleWarning = 0.1
 
 """
@@ -336,6 +336,18 @@ end
 scpiCommand(f::Function, args...) = error("Function $(string(f)) does not support scpiCommand")
 scpiReturn(f::Function) = typeof(nothing)
 parseReturn(f::Function, ret) = parse(scpiReturn(f), ret)
+
+export setTimeout
+"""
+    Set the global timeout used in all functions of the package
+"""
+setTimeout(_timeoutParam::T) where T <: Real = global _timeout[] = _timeoutParam
+
+export getTimeout
+"""
+    Get the global timeout used in all functions of the package
+"""
+getTimeout() = _timeout[]
 
 
 end # module
