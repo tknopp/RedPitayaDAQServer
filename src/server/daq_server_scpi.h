@@ -103,12 +103,12 @@ typedef struct {
 } rampingData_t;
 
 typedef struct {
+	int numRepetitions; // How many regular repetitions are there
 	int numStepsPerRepetition; // How many steps per repetition
 	float* LUT; // LUT for value function pointer
 	bool * enableLUT;
 	rampingData_t* rampUp;
 	rampingData_t* rampDown;
-	int numRepetitions; // How many regular repetitions are there
 } sequenceData_t;
 
 // Global sequence settings
@@ -125,6 +125,7 @@ extern void freeSequence(sequenceData_t * seqData);
 extern rampingData_t *allocRamping();
 extern void freeRamping(rampingData_t *rampData);
 extern sequenceData_t* setSequence(sequenceData_t *seqData);
+extern void clearSequence();
 extern bool prepareSequence();
 extern sequenceInterval_t computeInterval(sequenceData_t *seqData, int step);
 extern bool isSequenceConfigurable();

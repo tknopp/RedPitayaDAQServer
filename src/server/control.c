@@ -87,6 +87,21 @@ sequenceData_t *setSequence(sequenceData_t *seq) {
 	return old;
 }
 
+void clearSequence() {
+	if (activeSequence != NULL) {
+		freeSequence(activeSequence);
+	}
+	
+	setPDMAllValuesVolt(0.0, 0);
+	setPDMAllValuesVolt(0.0, 1);
+	setPDMAllValuesVolt(0.0, 2);
+	setPDMAllValuesVolt(0.0, 3);
+
+	for(int d=0; d<4; d++) {
+		setEnableDACAll(1,d);
+	}
+}
+
 bool isSequenceConfigurable() {
 	return getServerMode() == CONFIGURATION && (seqState == CONFIG || seqState == PREPARED || seqState == FINISHED);
 }
