@@ -268,7 +268,7 @@ static void setLUTValuesFrom(uint64_t baseStep) {
 
 bool prepareSequence() {
 	if ((seqState == CONFIG || seqState == PREPARED)) {
-		if (!isSequenceListEmpty()) {
+		if (activeSequence != NULL) {
 			printf("Preparing Sequence\n");
 			initSlowDAC();
 			// Init Sequence Iteration

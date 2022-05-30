@@ -609,7 +609,7 @@ int setRampDownDAC(int8_t value, int index, int channel) {
 		return -2;
 	}
 
-	int bitpos = 14 + channel * 1 // 14 or 15
+	int bitpos = 14 + channel * 1; // 14 or 15
 	// Ramp Down bit is in the 3rd channel
 	// clear the bit
 	*((int16_t *)(pdm_cfg + 2*(2+4*index))) &= ~(1u << bitpos);

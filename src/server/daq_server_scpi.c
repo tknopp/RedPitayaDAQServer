@@ -73,9 +73,6 @@ void setServerMode(serverMode_t mode) {
 }
 
 sequenceState_t seqState;
-sequenceNode_t *head = NULL; 
-sequenceNode_t *tail = NULL;
-sequenceNode_t *configNode = NULL;
 
 // Transmission 
 transmissionState_t transmissionState;

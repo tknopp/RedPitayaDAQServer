@@ -1000,7 +1000,7 @@ static scpi_result_t RP_DAC_SetValueLUT(scpi_t * context) {
 	readyConfigSequence();
 
 	int stepsPerRepetition = 0;
-	if (!SCPI_ParamToUInt32(context, &stepsPerRepetition, TRUE)) {
+	if (!SCPI_ParamInt32(context, &stepsPerRepetition, TRUE)) {
 		return returnSCPIBool(context, false);
 	}
 
@@ -1064,7 +1064,7 @@ static scpi_result_t RP_DAC_SetUpLUT(scpi_t * context) {
 	readyConfigSequence();
 
 	int stepsPerRepetition = 0;
-	if (!SCPI_ParamToUInt32(context, &stepsPerRepetition, TRUE)) {
+	if (!SCPI_ParamInt32(context, &stepsPerRepetition, TRUE)) {
 		return returnSCPIBool(context, false);
 	}
 
@@ -1102,7 +1102,7 @@ static scpi_result_t RP_DAC_SetDownLUT(scpi_t * context) {
 	readyConfigSequence();
 
 	int stepsPerRepetition = 0;
-	if (!SCPI_ParamToUInt32(context, &stepsPerRepetition, TRUE)) {
+	if (!SCPI_ParamInt32(context, &stepsPerRepetition, TRUE)) {
 		return returnSCPIBool(context, false);
 	}
 
