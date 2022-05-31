@@ -52,7 +52,7 @@ function send(rp::RedPitaya,cmd::String)
   write(rp.socket,cmd*rp.delim)
 end
 
-const getTimeout() = Ref(5.0)
+const _timeout = Ref(5.0)
 const _scaleWarning = 0.1
 
 """
