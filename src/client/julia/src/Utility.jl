@@ -3,6 +3,7 @@ url = "https://github.com/tknopp/RedPitayaDAQServer/releases/download/v0.4.2/red
 using ProgressMeter
 using Downloads
 using Scratch
+using GitHub
 
 function downloadImage(url::String)
   p = Progress(100, 0.5, "Downloading image...")
@@ -16,3 +17,5 @@ function downloadImage(url::String)
   Downloads.download(url, output, progress=(total, now) -> update!(p, calcDownloadProgress(total, now)))
 end
 
+rels = releases("tknopp/RedPitayaDAQServer")
+@info rels[1][1].assets[1]["browser_download_url"]
