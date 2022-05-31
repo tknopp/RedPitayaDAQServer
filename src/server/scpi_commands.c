@@ -1165,7 +1165,7 @@ static scpi_result_t RP_DAC_ClearSequence(scpi_t * context) {
 static scpi_result_t RP_DAC_PrepareSequence(scpi_t * context) {
 	bool result = false;
 	if (isSequenceConfigurable() ) {
-		result = prepareSequences();
+		result = prepareSequence();
 	}
 	return returnSCPIBool(context, result);
 }
