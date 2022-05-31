@@ -1037,8 +1037,8 @@ static scpi_result_t RP_DAC_SetValueLUT(scpi_t * context) {
 	}
 }
 
-static scpi_result_t RP_DAC_SetEnableDACLUT(scpi_t * context) {
-
+static scpi_result_t RP_DAC_SetEnableLUT(scpi_t * context) {
+	
 	readyConfigSequence();
 
 	if(configSeq->LUT != NULL && numSlowDACChan > 0 && isSequenceConfigurable()) {
@@ -1485,6 +1485,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:PASStofast", .callback = RP_SetPassPDMToFastDAC,},
 	{.pattern = "RP:DAC:PASStofast?", .callback = RP_GetPassPDMToFastDAC,},
 	{.pattern = "RP:DAC:SEQ:LUT", .callback = RP_DAC_SetValueLUT,},
+	{.pattern = "RP:DAC:SEQ:LUT:ENaBle", .callback = RP_DAC_SetEnableLUT,},
 	{.pattern = "RP:DAC:SEQ:LUT:UP", .callback = RP_DAC_SetUpLUT,},
 	{.pattern = "RP:DAC:SEQ:LUT:DOWN", .callback = RP_DAC_SetDownLUT,},
 	{.pattern = "RP:DAC:SEQ:SET", .callback = RP_DAC_SetSequence,},

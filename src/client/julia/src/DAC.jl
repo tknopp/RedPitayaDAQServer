@@ -19,6 +19,12 @@ struct DACPerformanceData
   minDeltaControl::UInt8
   maxDeltaSet::UInt8
 end
+
+function readDACPerformanceData(rp::RedPitaya)
+  perf = read!(rp.dataSocket, Array{UInt8}(undef, 4))
+  return DACPerformanceData(perf[1], perf[2], perf[3], perf[4])
+end
+
 @enum RampingState NORMAL DONE UP DOWN
 struct RampingStatus
   enableCh1::Union{Bool, Nothing}

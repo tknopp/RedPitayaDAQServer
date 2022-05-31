@@ -21,22 +21,22 @@ samplesPerPeriod!(rp, samples_per_period)
 periodsPerFrame!(rp, periods_per_frame)
 
 frequencyDAC!(rp,1,1, base_frequency / modulus)
-signalTypeDAC!(rp, 1 , "SINE")
+signalTypeDAC!(rp, 1 , 1, "SINE")
 amplitudeDAC!(rp, 1, 1, 0.2)
 phaseDAC!(rp, 1, 1, 0.0 )
 triggerMode!(rp, INTERNAL)
 
 # Sequence Configuration
-clearSequences!(rp)
+clearSequence!(rp)
 passPDMToFastDAC!(rp, true) # if set the sequence will be output in DAC-out
 stepsPerFrame!(rp, steps_per_frame)
-numSeqChan!(rp, 1)
-lut = collect(range(0.1,0.7,length=steps_per_frame))
-seq = ArbitrarySequence(lut, nothing, 2, 0, 0, 0, 0)
-appendSequence!(rp, seq)
-prepareSequences!(rp)
+seqChan!(rp, 1)
+lut = collect(range(-0.5,0.5,length=steps_per_frame))
+seq = SimpleSequence(lut, 2)
+sequence!(rp, seq)
+prepareSequence!(rp)
 
-serverMode!(rp, MEASUREMENT)
+serverMode!(rp, ACQUISITION)
 masterTrigger!(rp, true)
 
 sleep(0.1)

@@ -130,7 +130,8 @@ struct SimpleSequence <: AbstractSequence
     return new(SequenceLUT(lut, repetitions), enable)
   end
 end
-SimpleSequence(lut::Array, repetitions, enable=nothing) = SimpleSequence(map(Float32, lut), repetitions, enable)
+SimpleSequence(lut::Array, repetitions::Integer, enable=nothing) = SimpleSequence(map(Float32, lut), repetitions, enable)
+SimpleSequence(lut::Vector, repetitions::Integer, enable=nothing) = SimpleSequence(reshape(lut, 1, :), repetitions, enable)
 
 enableLUT(seq::SimpleSequence) = seq.enable
 valueLUT(seq::SimpleSequence) = seq.lut
