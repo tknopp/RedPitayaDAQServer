@@ -52,7 +52,7 @@ function send(rp::RedPitaya,cmd::String)
   write(rp.socket,cmd*rp.delim)
 end
 
-const _timeout = Ref(5.0)
+const getTimeout() = Ref(5.0)
 const _scaleWarning = 0.1
 
 """
@@ -103,7 +103,7 @@ Waits for `timeout` seconds and checks every `timeout/N` seconds.
 
 See also [receive](@ref).
 """
-function query(rp::RedPitaya, cmd::String, timeout::Number=_timeout)
+function query(rp::RedPitaya, cmd::String, timeout::Number=getTimeout())
   send(rp,cmd)
   receive(rp, timeout)
 end
@@ -115,7 +115,7 @@ Send a query to the RedPitaya. Parse reply as `T`.
 
 Waits for `timeout` seconds and checks every `timeout/N` seconds.
 """
-function query(rp::RedPitaya,cmd::String,T::Type, timeout::Number=_timeout)
+function query(rp::RedPitaya,cmd::String,T::Type, timeout::Number=getTimeout())
   a = query(rp,cmd, timeout)
   return parse(T,a)
 end
@@ -138,8 +138,8 @@ end
 function connect(rp::RedPitaya)
   if !rp.isConnected
     begin
-      rp.socket = connect(rp.host, rp.port, _timeout)
-      rp.dataSocket = connect(rp.host, rp.dataPort, _timeout)
+      rp.socket = connect(rp.host, rp.port, getTimeout())
+      rp.dataSocket = connect(rp.host, rp.dataPort, getTimeout())
       rp.isConnected = true
       updateCalib!(rp)
       temp = findall([calibDACScale(rp, 1) < _scaleWarning, calibDACScale(rp, 2) < _scaleWarning])
@@ -283,7 +283,7 @@ function execute!(rp::RedPitaya, batch::ScpiBatch)
   result = []
   for (f, _) in batch.cmds
     if !isnothing(scpiReturn(f))
-      ret = receive(rp, _timeout)
+      ret = receive(rp, getTimeout())
       push!(result, parseReturn(f, ret))
     else
       push!(result, nothing)
