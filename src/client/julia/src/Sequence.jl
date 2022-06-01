@@ -1,4 +1,4 @@
-export seqChan, seqChan!, samplesPerStep, samplesPerStep!, stepsPerFrame!, AbstractSequence, SimpleSequence, sequence!, prepareSequence!, clearSequence!, HoldBorderSequence
+export seqChan, seqChan!, samplesPerStep, samplesPerStep!, stepsPerFrame!, AbstractSequence, SimpleSequence, sequence!, clearSequence!, HoldBorderRampingSequence
 
 """
   numSeqChan(rp::RedPitaya)
@@ -146,12 +146,21 @@ function timePerStep(rp::RedPitaya)
   return perStep/(125e6/dec)
 end
 
-struct HoldBorderSequence <: RampingSequence
+struct HoldBorderRampingSequence <: RampingSequence
   lut::SequenceLUT
   enable::Union{Array{Bool}, Nothing}
   rampUp::SequenceLUT
   rampDown::SequenceLUT
-  function HoldBorderSequence(lut::Array{Float32}, repetitions::Integer, rampingSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing)
+  """
+      HoldBorderRampingSequence(lut::Array{Float32}, repetitions::Integer, rampingSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing)
+
+  Constructor for `HoldBorderRampingSequence`.
+
+  # Arguments
+  - `lut`,`repetitions`,`enable` are used the same as for a `SimpleSequence`
+  - `rampingSteps` is the number of steps the first and last value of the given sequence are repeated before the sequence is started
+  """
+  function HoldBorderRampingSequence(lut::Array{Float32}, repetitions::Integer, rampingSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing)
     if !isnothing(enable) && size(lut) != size(enable)
       throw(DimensionMismatch("Size of enable LUT does not match size of value LUT"))
     end
@@ -161,25 +170,41 @@ struct HoldBorderSequence <: RampingSequence
   end
 end
 
-HoldBorderSequence(lut::Array, repetitions::Integer, rampingSteps::Integer, enable=nothing) = HoldBorderSequence(map(Float32, lut), repetitions, rampingSteps, enable)
-HoldBorderSequence(lut::Vector, repetitions::Integer, rampingSteps::Integer, enable=nothing) = HoldBorderSequence(reshape(lut, 1, :), repetitions, rampingSteps, enable)
+HoldBorderRampingSequence(lut::Array, repetitions::Integer, rampingSteps::Integer, enable=nothing) = HoldBorderRampingSequence(map(Float32, lut), repetitions, rampingSteps, enable)
+HoldBorderRampingSequence(lut::Vector, repetitions::Integer, rampingSteps::Integer, enable=nothing) = HoldBorderRampingSequence(reshape(lut, 1, :), repetitions, rampingSteps, enable)
 
-function HoldBorderSequence(rp::RedPitaya, lut, repetitions, enable=nothing)
+function HoldBorderRampingSequence(rp::RedPitaya, lut, repetitions, enable=nothing)
   rampTime = maximum([rampingDAC(rp,i) for i=1:2 if enableRamping(rp, i)])
   rampingSteps = Int64(ceil(rampTime/timePerStep(rp)))
-  @show rampTime
-  @show timePerStep(rp)
-  @show rampingSteps
-  return HoldBorderSequence(lut, repetitions, rampingSteps, enable)
+  return HoldBorderRampingSequence(lut, repetitions, rampingSteps, enable)
 end
 
+enableLUT(seq::HoldBorderRampingSequence) = seq.enable
+valueLUT(seq::HoldBorderRampingSequence) = seq.lut
+rampUpLUT(seq::HoldBorderRampingSequence) = seq.rampUp
+rampDownLUT(seq::HoldBorderRampingSequence) = seq.rampDown
 
-enableLUT(seq::HoldBorderSequence) = seq.enable
-valueLUT(seq::HoldBorderSequence) = seq.lut
-rampUpLUT(seq::HoldBorderSequence) = seq.rampUp
-rampDownLUT(seq::HoldBorderSequence) = seq.rampDown
+struct ConstantRampingSequence(seq::ConstantRampingSequence)
+  lut::SequenceLUT
+  enable::Union{Array{Bool}, Nothing}
+  ramping::SequenceLUT
+  function ConstantRampingSequence(lut::Array{Float32}, repetitions::Integer, rampingValue::Float32, rampingSteps, enable::Union{Array{Bool}, Nothing} = nothing)
+    if !isnothing(enable) && size(lut) != size(enable)
+      throw(DimensionMismatch("Size of enable LUT does not match size of value LUT"))
+    end
+    rampingLut = SequenceLUT([rampingValue], rampingSteps)
+    return new(SequenceLUT(lut, repetitions), enable, rampingLut)
+  end
+end
+
+ConstantRampingSequence(lut::Array, repetitions::Integer, rampingValue::Float32, rampingSteps::Integer, enable=nothing) = ConstantRampingSequence(map(Float32, lut), repetitions, rampingValue, rampingSteps, enable)
+ConstantRampingSequence(lut::Vector, repetitions::Integer, rampingValue::Float32, rampingSteps::Integer, enable=nothing) = ConstantRampingSequence(reshape(lut, 1, :), repetitions, rampingValue, rampingSteps, enable)
 
 
+enableLUT(seq::ConstantRampingSequence) = seq.enable
+valueLUT(seq::ConstantRampingSequence) = seq.lut
+rampUpLUT(seq::ConstantRampingSequence) = seq.ramping
+rampDownLUT(seq::ConstantRampingSequence) = seq.ramping
 
 function computeRamping(dec, samplesPerStep, stepsPerSeq, rampTime, rampFraction)
   bandwidth = 125e6/dec
@@ -206,6 +231,7 @@ function sequence!(rp::RedPitaya, seq::AbstractSequence)
   result &= rampUpLUT!(rp, rampUpLUT(seq))
   result &= rampDownLUT!(rp, rampDownLUT(seq))
   result &= setSequence!(rp)
+  result &= prepareSequence!(rp)
   return result
 end
 

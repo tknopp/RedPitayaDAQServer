@@ -34,7 +34,6 @@ seqChan!(rp, 1)
 lut = collect(range(-0.5,0.5,length=steps_per_frame))
 seq = SimpleSequence(lut, 2)
 sequence!(rp, seq)
-prepareSequence!(rp)
 
 serverMode!(rp, ACQUISITION)
 masterTrigger!(rp, true)

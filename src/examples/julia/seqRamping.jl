@@ -37,9 +37,8 @@ lut = collect(range(-0.5,0.5,length=steps_per_frame))
 
 # HoldBorderSequence holds the first and last value for the given amount of steps
 rampingSteps = steps_per_frame
-seq = HoldBorderSequence(lut, 1, rampingSteps)
+seq = HoldBorderRampingSequence(lut, 1, rampingSteps)
 sequence!(rp, seq)
-prepareSequence!(rp)
 
 
 serverMode!(rp, ACQUISITION)

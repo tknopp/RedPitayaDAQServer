@@ -49,7 +49,6 @@ enableLUT = collect( cat(lutEnableDACA,lutEnableDACB,dims=2)' )
 
 seq = SimpleSequence(lut, 1, enableLUT)
 sequence!(rp, seq)
-prepareSequence!(rp)
 
 serverMode!(rp, ACQUISITION)
 masterTrigger!(rp, true)
