@@ -22,22 +22,21 @@ samplesPerPeriod!(rp, samples_per_period)
 periodsPerFrame!(rp, periods_per_frame)
 
 frequencyDAC!(rp,1,1, base_frequency / modulus)
-signalTypeDAC!(rp, 1 , &quot;SINE&quot;)
+signalTypeDAC!(rp, 1 , 1, &quot;SINE&quot;)
 amplitudeDAC!(rp, 1, 1, 0.2)
 phaseDAC!(rp, 1, 1, 0.0 )
 triggerMode!(rp, INTERNAL)
 
 # Sequence Configuration
-clearSequences!(rp)
+clearSequence!(rp)
 passPDMToFastDAC!(rp, true) # if set the sequence will be output in DAC-out
 stepsPerFrame!(rp, steps_per_frame)
-numSeqChan!(rp, 1)
-lut = collect(range(0.1,0.7,length=steps_per_frame))
-seq = ArbitrarySequence(lut, nothing, 2, 0, 0, 0, 0)
-appendSequence!(rp, seq)
-prepareSequences!(rp)
+seqChan!(rp, 1)
+lut = collect(range(-0.5,0.5,length=steps_per_frame))
+seq = SimpleSequence(lut, 2)
+sequence!(rp, seq)
 
-serverMode!(rp, MEASUREMENT)
+serverMode!(rp, ACQUISITION)
 masterTrigger!(rp, true)
 
 sleep(0.1)
@@ -53,4 +52,4 @@ legend((&quot;Rx1&quot;, &quot;Rx2&quot;))
 masterTrigger!(rp, false)
 serverMode!(rp, CONFIGURATION)
 
-savefig(&quot;images/sequence.png&quot;)</code></pre><p><img src="../assets/sequence.png" alt="Simple Example Results"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="waveforms.html">« Waveforms</a><a class="docs-footer-nextpage" href="sequenceMultiChannel.html">Sequence Multi-Channel and Waveform Enable »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.18 on <span class="colophon-date" title="Tuesday 31 May 2022 14:44">Tuesday 31 May 2022</span>. Using Julia version 1.7.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
+savefig(&quot;images/sequence.png&quot;)</code></pre><p><img src="../assets/sequence.png" alt="Simple Example Results"/></p></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="waveforms.html">« Waveforms</a><a class="docs-footer-nextpage" href="sequenceMultiChannel.html">Sequence Multi-Channel and Waveform Enable »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.18 on <span class="colophon-date" title="Wednesday 1 June 2022 10:06">Wednesday 1 June 2022</span>. Using Julia version 1.7.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
