@@ -184,7 +184,7 @@ valueLUT(seq::HoldBorderRampingSequence) = seq.lut
 rampUpLUT(seq::HoldBorderRampingSequence) = seq.rampUp
 rampDownLUT(seq::HoldBorderRampingSequence) = seq.rampDown
 
-struct ConstantRampingSequence(seq::ConstantRampingSequence)
+struct ConstantRampingSequence <: RampingSequence
   lut::SequenceLUT
   enable::Union{Array{Bool}, Nothing}
   ramping::SequenceLUT
