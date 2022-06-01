@@ -1,4 +1,4 @@
-export SampleChunk, startPipelinedData, readPipelinedSamples, readFrames, readPeriods, convertSamplesToFrames, convertSamplesToFrames!, convertSamplesToPeriods!
+export SampleChunk, startPipelinedData, readSamples, readFrames, readPeriods, convertSamplesToFrames, convertSamplesToFrames!, convertSamplesToPeriods!
 """
     SampleChunk
 
@@ -18,7 +18,7 @@ end
 
 Instruct all `RedPitaya`s to send `numSamples` samples from writepointer `reqWP` in chunks of `chunkSize`.
 
-See [`readPipelinedSamples`](@ref)
+See [`readSamples`](@ref)
 """
 function startPipelinedData(rpu::Union{RedPitayaCluster,RedPitayaClusterView}, reqWP::Int64, numSamples::Int64, chunkSize::Int64)
   @sync for rp in rpu
@@ -27,13 +27,13 @@ function startPipelinedData(rpu::Union{RedPitayaCluster,RedPitayaClusterView}, r
 end
 
 """
-    readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
+    readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
 
 Request and receive `numOfRequestedSamples` samples from `wpStart` on in a pipelined fashion. Return a matrix of samples.
 
 If `rpInfo` is set to a `RPInfo`, the `PerformanceData` sent after every `chunkSize` samples will be pushed into `rpInfo`.
 """
-function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
+function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
   numOfReceivedSamples = 0
   index = 1
   rawData = zeros(Int16, numChan(rpu), numOfRequestedSamples)
@@ -102,13 +102,13 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
 end
 
 """
-    readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64, channel::Channel; chunkSize::Int64 = 25000)
+    readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64, channel::Channel; chunkSize::Int64 = 25000)
 
 Request and receive `numOfRequestedSamples` samples from `wpStart` on in a pipelined fashion. The samples and associated `PerformanceData` are pushed into `channel` as a `SampleChunk`.
 
 See [`SampleChunk`](@ref).
 """
-function readPipelinedSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64, channel::Channel; chunkSize::Int64 = 25000)
+function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64, channel::Channel; chunkSize::Int64 = 25000)
   numOfReceivedSamples = 0
   chunkBuffer = zeros(Int16, chunkSize * 2, length(rpu))
 
@@ -170,7 +170,7 @@ end
 
 Request and receive `numFrames` frames from `startFrame` on.
 
-See [`readPipelinedSamples`](@ref), [`convertSamplesToFrames`](@ref), [`samplesPerPeriod`](@ref), [`periodsPerFrame`](@ref), [`updateCalib!`](@ref).
+See [`readSamples`](@ref), [`convertSamplesToFrames`](@ref), [`samplesPerPeriod`](@ref), [`periodsPerFrame`](@ref), [`updateCalib!`](@ref).
 
 # Arguments
 - `rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}`: `RedPitaya`s to receive samples from.
@@ -178,8 +178,8 @@ See [`readPipelinedSamples`](@ref), [`convertSamplesToFrames`](@ref), [`samplesP
 - `numFrames`: number of frames to read
 - `numBlockAverages=1`: see `convertSamplesToFrames`
 - `numPeriodsPerPatch=1`: see `convertSamplesToFrames`
-- `chunkSize=50000`: see `readPipelinedSamples`
-- `rpInfo=nothing`: see `readPipelinedSamples`
+- `chunkSize=50000`: see `readSamples`
+- `rpInfo=nothing`: see `readSamples`
 - `useCalibration`: convert from Int16 samples to Float32 values based on `RedPitaya`s calibration
 """
 function readFrames(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; rpInfo=nothing, chunkSize = 50000, useCalibration = false)
@@ -195,7 +195,7 @@ function readFrames(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}
   numOfRequestedSamples = numFrames * numSampPerFrame
 
   # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
-  rawSamples = readPipelinedSamples(rpu, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
+  rawSamples = readSamples(rpu, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
 
   # Reshape/Avg Data
   if useCalibration
@@ -254,15 +254,15 @@ end
 
 Request and receive `numPeriods` Periods from `startPeriod` on.
 
-See [`readPipelinedSamples`](@ref), [`convertSamplesToPeriods!`](@ref), [`samplesPerPeriod`](@ref).
+See [`readSamples`](@ref), [`convertSamplesToPeriods!`](@ref), [`samplesPerPeriod`](@ref).
 
 # Arguments
 - `rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}`: `RedPitaya`s to receive samples from.
 - `startPeriod`: period from which to start transmitting
 - `numPeriods`: number of periods to read
 - `numBlockAverages=1`: see `convertSamplesToPeriods`
-- `chunkSize=50000`: see `readPipelinedSamples`
-- `rpInfo=nothing`: see `readPipelinedSamples`
+- `chunkSize=50000`: see `readSamples`
+- `rpInfo=nothing`: see `readSamples`
 - `useCalibration`: convert samples based on `RedPitaya`s calibration
 """
 function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startPeriod, numPeriods, numBlockAverages=1; rpInfo=nothing, chunkSize = 50000, useCalibration = false)
@@ -279,7 +279,7 @@ function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView
   numOfRequestedSamples = numPeriods * numSampPerPeriod
 
   # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
-  rawSamples = readPipelinedSamples(rpu, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
+  rawSamples = readSamples(rpu, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo)
 
   # Reshape/Avg Data
   if useCalibration
