@@ -476,5 +476,3 @@ function rampUpDone(rp::RedPitaya)
   status = rampingStatus(rp)
   done = (!status.enableCh1 || status.stateCh1 != UP) && (!status.enableCh2 || status.stateCh2 != UP)
 end
-
- include("Sequence.jl")

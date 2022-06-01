@@ -294,8 +294,11 @@ function execute!(rp::RedPitaya, batch::ScpiBatch)
 end
 
 include("DAC.jl")
+include("Sequence.jl")
 include("ADC.jl")
 include("Cluster.jl")
+include("ClusterView.jl")
+include("Acquisition.jl")
 include("SlowIO.jl")
 include("EEPROM.jl")
 
