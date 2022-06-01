@@ -4,6 +4,8 @@ module signal_cfg_slice(
     input [831:0] cfg_data,
     output [47:0] ramp_freq,
     output [15:0] offset,
+    output [15:0] calib_scale,
+    output [15:0] calib_offset,
     output [47:0] comp_0_cfg,
     output [15:0] comp_0_amp,
     output [47:0] comp_0_freq,
@@ -29,10 +31,10 @@ assign offset[15:0] = cfg_data[63:48];
 assign comp_0_cfg[47:0] = cfg_data[111:64];
 assign comp_0_amp[15:0] = cfg_data[127:112];
 assign comp_0_freq[47:0] = cfg_data[175:128];
-// 15 bit gap
+assign calib_scale[15:0] = cfg_data[191:176];
 assign comp_0_phase[47:0] = cfg_data[239:192];
+assign calib_offset[15:0] = cfg_data[255:240];
 
-// 15 bit gap
 assign comp_1_cfg[47:0] = cfg_data[303:256];
 assign comp_1_amp[15:0] = cfg_data[319:304];
 assign comp_1_freq[47:0] = cfg_data[367:320];
