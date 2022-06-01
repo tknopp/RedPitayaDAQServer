@@ -51,3 +51,7 @@ function clusterToView(rpcv::RedPitayaClusterView, chan::Integer)
     end
     return nothing
 end
+
+function currentWP(rpcv::RedPitayaClusterView)
+    return currentWP(rpcv.rpc)
+end

@@ -39,6 +39,10 @@ function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView
   rawData = zeros(Int16, numChan(rpu), numOfRequestedSamples)
   chunkBuffer = zeros(Int16, chunkSize * 2, length(rpu))
 
+  while currentWP(rpu) < wpStart
+    # Current WP query as a heartbeat to avoid timeouts with "distant" wpStarts
+  end
+
   startPipelinedData(rpu, wpStart, numOfRequestedSamples, chunkSize)
   while numOfReceivedSamples < numOfRequestedSamples
     wpRead = wpStart + numOfReceivedSamples
@@ -86,7 +90,7 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
   end
 
   # Setup Timeout
-  t = Timer(_timeout)
+  t = Timer(getTimeout())
   @async begin
     wait(t)
     notify(iterationDone)
@@ -111,6 +115,10 @@ See [`SampleChunk`](@ref).
 function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64, channel::Channel; chunkSize::Int64 = 25000)
   numOfReceivedSamples = 0
   chunkBuffer = zeros(Int16, chunkSize * 2, length(rpu))
+
+  while currentWP(rpu) < wpStart
+    # Current WP query as a heartbeat to avoid timeouts with "distant" wpStarts
+  end
 
   startPipelinedData(rpu, wpStart, numOfRequestedSamples, chunkSize)
   while numOfReceivedSamples < numOfRequestedSamples
@@ -147,7 +155,7 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
   end
 
   # Setup Timeout
-  t = Timer(_timeout)
+  t = Timer(getTimeout())
   @async begin
     wait(t)
     notify(iterationDone)
