@@ -9,7 +9,7 @@
 LD_LIBRARY_PATH =
 
 NPROCS = $(shell grep -c 'processor' /proc/cpuinfo)
-MAKEFLAGS += -j$(NPROCS)
+#MAKEFLAGS += -j$(NPROCS)
 
 LINUX_BUILD_DIR = build/linux-image
 FPGA_BUILD_DIR = build/fpga
@@ -27,8 +27,6 @@ DAQ_CORES = axi_cfg_register_v1_0 axis_variable_v1_0 pdm_multiplexer_v1_0 \
   axis_red_pitaya_dac_v1_0 dio_v1_0 shift_by_n_v1_0 \
   axis_select_v1_0 divide_by_two_v1_0 signal_generator_v1_0 \
   axi_sts_register_v1_0 fourier_synthesizer_v1_0
-  
-DAQ_CORES_BASE = 
 
 DAQ_PARTS = xc7z010clg400-1 xc7z020clg400-1
 
@@ -60,7 +58,7 @@ RTL8192_URL = https://github.com/pvaret/rtl8192cu-fixes/archive/master.tar.gz
 
 .PRECIOUS: $(LINUX_BUILD_DIR)/tmp/cores/% $(LINUX_BUILD_DIR)/tmp/%.xpr $(LINUX_BUILD_DIR)/tmp/%.xsa $(LINUX_BUILD_DIR)/tmp/%.bit $(LINUX_BUILD_DIR)/tmp/%.fsbl/executable.elf $(LINUX_BUILD_DIR)/tmp/%.tree/system-top.dts
 
-all: daq_bitfiles $(LINUX_BUILD_DIR)/tmp/$(NAME).bit $(LINUX_BUILD_DIR)/boot.bin $(LINUX_BUILD_DIR)/uImage $(LINUX_BUILD_DIR)/devicetree.dtb linux
+all: linux
 
 daq_bitfiles: $(addsuffix .bit, $(addprefix bitfiles/daq_,$(DAQ_PARTS)))
 
@@ -75,8 +73,13 @@ linux: daq_bitfiles $(LINUX_BUILD_DIR)/tmp/$(NAME).bit $(LINUX_BUILD_DIR)/boot.b
 
 blinker_cores: $(addprefix tmp/cores/, $(BLINKER_CORES))
 
+#$(subst $(SPACE),_,$(wordlist 1,$(call subtract,$(words $(subst _, ,$(1))),2),$(subst _, ,$(1)))) # Doesn't work yet
+define strip_core_version
+$(shell python -c "print('_'.join('$(1)'.split('_')[:-2]))")
+endef
+
 define GEN_DAQ_CORE_RULE
-$(FPGA_BUILD_DIR)/${daq_part}/cores/$(daq_core).xpr: src/fpga/cores/$(daq_core)/core_config.tcl src/fpga/cores/$(daq_core)/*.v
+$(FPGA_BUILD_DIR)/${daq_part}/cores/$(call strip_core_version,$(daq_core)).xpr: src/fpga/cores/$(daq_core)/core_config.tcl src/fpga/cores/$(daq_core)/*.v
 	#mkdir -p $(@D)
 	$(VIVADO)  -source scripts/core.tcl -tclargs ${daq_core} ${daq_part}
 endef
@@ -88,7 +91,7 @@ $(eval $(GEN_DAQ_CORE_RULE)) \
 )
 
 define GEN_DAQ_CORES_PART_RULE
-daq_cores_${daq_part}: $(addsuffix .xpr, $(addprefix $(FPGA_BUILD_DIR)/${daq_part}/cores/, $(DAQ_CORES)))
+daq_cores_${daq_part}: $(addsuffix .xpr, $(addprefix $(FPGA_BUILD_DIR)/${daq_part}/cores/, $(foreach daq_core,$(DAQ_CORES),$(call strip_core_version,$(daq_core)))))
 endef
 
 $(foreach daq_part,$(DAQ_PARTS), \
@@ -195,12 +198,13 @@ $(LINUX_BUILD_DIR)/tmp/%.tree/system-top.dts: $(LINUX_BUILD_DIR)/tmp/%.xsa $(DTR
 	patch -d $(@D) < linux-image/patches/devicetree.patch
 	
 server: 
+	git config --global --add safe.directory /home/rpdev/RedPitayaDAQServer
+	git config --global --add safe.directory /home/rpdev/RedPitayaDAQServer/libs/scpi-parser
 	git submodule update --init
 	@$(MAKE) install -C libs/scpi-parser
 	@$(MAKE) -C libs/scpi-parser
 	@$(MAKE) -C src/lib
 	@$(MAKE) -C src/server
-	@$(MAKE) -C src/test
 	cp scripts/daq_server_scpi /etc/init.d/
 	chmod +x /etc/init.d/daq_server_scpi
 	rc-update add daq_server_scpi default
@@ -208,6 +212,8 @@ server:
 clean:
 	$(RM) $(LINUX_BUILD_DIR)/uImage $(LINUX_BUILD_DIR)/boot.bin $(LINUX_BUILD_DIR)/devicetree.dtb $(LINUX_BUILD_DIR)/tmp
 	$(RM) -r bitfiles
+	$(RM) -r build/fpga
+	$(RM) red-pitaya*.zip
 	$(RM) .Xil usage_statistics_webtalk.html usage_statistics_webtalk.xml
 	$(RM) vivado*.jou vivado*.log vivado*.str
 	$(RM) webtalk*.jou webtalk*.log
