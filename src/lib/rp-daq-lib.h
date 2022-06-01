@@ -51,6 +51,8 @@
 #define IN 0
 #define OUT 1
 
+#define CALIB_VERSION 1
+
 extern bool verbose;
 
 extern int mmapfd;
@@ -87,6 +89,8 @@ extern int getSignalType(int, int);
 extern int setSignalType(int, int, int);
 extern float getJumpSharpness(int, int);
 extern int setJumpSharpness(float, int, int);
+extern int setCalibDACScale(float, int);
+extern int setCalibDACOffset(float, int);
 //extern int getRampingPeriod(int);
 
 // Ramping
@@ -167,18 +171,23 @@ extern void stopTx();
  * Calibration parameters, stored in the EEPROM device
  */
 typedef struct {
-    float dac_ch1_offs;
-    float dac_ch1_fs;
-    float dac_ch2_offs;
-    float dac_ch2_fs;
+    char id[3+1];
+    int version;
+    uint8_t set_flags;
     float adc_ch1_fs;
     float adc_ch1_offs;
     float adc_ch2_fs;
     float adc_ch2_offs;
+    float dac_ch1_fs;
+    float dac_ch1_offs;
+    float dac_ch2_fs;
+    float dac_ch2_offs;
 } rp_calib_params_t;
 
 extern int calib_Init();
 extern int calib_Release();
+extern int calib_validate(rp_calib_params_t * calib_params);
+extern int calib_apply();
 
 extern rp_calib_params_t calib_GetParams();
 extern rp_calib_params_t calib_GetDefaultCalib();

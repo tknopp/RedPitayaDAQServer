@@ -144,6 +144,9 @@ int init() {
 	xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
 
 	calib_Init(); // Load calibration from EEPROM
+	calib_validate(&calib);
+	printf("Using calibration version %d with: %u\n", calib.version, calib.set_flags);
+	calib_apply();
 	loadBitstream();
 
 	// Set HP0 bus width to 64 bits
@@ -219,8 +222,7 @@ uint16_t getAmplitude(int channel, int component) {
 }
 
 int setAmplitudeVolt(double amplitude, int channel, int component) {
-	uint16_t calibratedAmplitude = (uint16_t)(amplitude * getCalibDACScale(channel, false)*8192.0);
-	return setAmplitude(calibratedAmplitude, channel, component);
+	return setAmplitude((uint16_t)(amplitude*8192.0), channel, component);
 }
 
 int setAmplitude(uint16_t amplitude, int channel, int component) {
@@ -251,12 +253,11 @@ int16_t getOffset(int channel) {
 	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel);
 	int16_t offset = (int16_t)(register_value >> 48);
 
-	return offset - getCalibDACOffset(channel);
+	return offset;
 }
 
 int setOffsetVolt(double offset, int channel) {
-	int16_t calibratedOffset = (int16_t)(offset * getCalibDACScale(channel, false)*8192.0);
-	return setOffset(calibratedOffset, channel);
+	return setOffset((int16_t)(offset*8192.0), channel);
 }
 int setOffset(int16_t offset, int channel) {
 	if(offset < -8191 || offset >= 8192) {
@@ -267,11 +268,8 @@ int setOffset(int16_t offset, int channel) {
 		return -3;
 	}
 
-	int16_t calibOffset = getCalibDACOffset(channel);
-	int16_t newOffset = offset + calibOffset;
-
 	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel);
-	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) newOffset) << 48) & ~MASK_LOWER_48);
+	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) offset) << 48) & ~MASK_LOWER_48);
 
 	*(dac_cfg + CHANNEL_OFFSET*channel) = register_value;
 
@@ -323,10 +321,9 @@ int setFrequency(double frequency, int channel, int component)
 
 
 		// ATM phase/frequency do not share memory with other data
-		//uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
-		//register_value = (register_value & ~MASK_LOWER_48) | ( phase_increment & ~MASK_LOWER_48);
-		//*(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = register_value;
-		*(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = phase_increment;
+		uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
+		register_value = (register_value & ~MASK_LOWER_48) | ( phase_increment & MASK_LOWER_48);
+		*(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = register_value;
 
 	} else {
 		// TODO AWG
@@ -382,12 +379,10 @@ int setPhase(double phase, int channel, int component)
 			printf("phase_offset for %f*2*pi rad is %08llx.\n", phase_factor, phase_offset);
 		}
 
-		// ATM phase/frequency do not share memory with other data
-		//uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
-		//register_value = (register_value & ~MASK_LOWER_48) | ( phase_offset & ~MASK_LOWER_48);
-		//*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = register_value;
-		*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = phase_offset;
-
+		uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
+		register_value = (register_value & ~MASK_LOWER_48) | ( phase_offset & MASK_LOWER_48);
+		*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = register_value;
+		
 	} else {
 		// TODO AWG
 	}
@@ -488,6 +483,29 @@ float getJumpSharpness(int channel, int component) {
 	int value = (int) ((register_value & mask) >> 16);
 
 	return ((float)value)/8191.0;
+}
+
+int setCalibDACScale(float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+
+	// Config scale is stored in first component freq
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel);
+	register_value = (register_value & MASK_LOWER_48) | ((((uint64_t) value) << 48) & ~MASK_LOWER_48);
+	*(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel) = register_value;	return 0;
+}
+
+int setCalibDACOffset(float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+
+	// Config offset is stored in first component phase
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel);
+	register_value = (register_value & MASK_LOWER_48) | ((((uint64_t) value) << 48) & ~MASK_LOWER_48);
+	*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel) = register_value;
+	return 0;
 }
 
 
@@ -673,7 +691,7 @@ int setPDMValueVolt(float voltage, int channel, int index) {
 	} else {
 		if (voltage > 1) voltage = 1;
 		if (voltage < -1) voltage = -1;
-		val = voltage * 8192. * getCalibDACScale(channel, false);
+		val = voltage * 8192.;
 	}
 
 	//printf("set val %04x.\n", val);
@@ -1341,6 +1359,12 @@ int calib_SetParams(rp_calib_params_t calib_params){
 
 rp_calib_params_t getDefaultCalib(){
     rp_calib_params_t calib;
+		calib.id[0] = 'D';
+		calib.id[1] = 'A';
+		calib.id[2] = 'Q';
+		calib.id[3] = '\0'; 		
+		calib.version = CALIB_VERSION;
+		calib.set_flags = 0;
 		calib.dac_ch1_offs = 0.0;
 		calib.dac_ch1_fs = 1.0;
 		calib.dac_ch2_offs = 0.0;
@@ -1350,6 +1374,62 @@ rp_calib_params_t getDefaultCalib(){
 		calib.adc_ch2_fs = 1.0;
 		calib.adc_ch2_offs = 0.0;
     return calib;
+}
+
+int calib_validate(rp_calib_params_t * calib_params) {
+	rp_calib_params_t def = getDefaultCalib();
+	// If unknown EEPROM data or not set, we use default values
+	bool useDefault = (strncmp(def.id, calib_params->id, 4) != 0 || calib_params->version != CALIB_VERSION);
+	// Update Header
+	if (useDefault) {
+		strncpy(calib_params->id, def.id, 4);
+		calib_params->version = CALIB_VERSION;
+	}
+	
+	// ADC Calibration
+	if (useDefault || !(calib_params->set_flags & (1 << 0))) {
+		calib_params->adc_ch1_fs = def.adc_ch1_fs;
+		calib_params->set_flags &= ~(1 << 0);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 1))) {
+		calib_params->adc_ch1_offs = def.adc_ch1_offs;
+		calib_params->set_flags &= ~(1 << 1);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 2))) {
+		calib_params->adc_ch2_fs = def.adc_ch2_fs;
+		calib_params->set_flags &= ~(1 << 2);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 3))) {
+		calib_params->adc_ch2_offs = def.adc_ch2_offs;
+		calib_params->set_flags &= ~(1 << 3);
+	}
+
+	// DAC Calibration
+	if (useDefault || !(calib_params->set_flags & (1 << 4))) {
+		calib_params->dac_ch1_fs = def.dac_ch1_fs;
+		calib_params->set_flags &= ~(1 << 4);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 5))) {
+		calib_params->dac_ch1_offs = def.dac_ch1_offs;
+		calib_params->set_flags &= ~(1 << 5);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 6))) {
+		calib_params->dac_ch2_fs = def.dac_ch2_fs;
+		calib_params->set_flags &= ~(1 << 6);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 7))) {
+		calib_params->dac_ch2_offs = def.dac_ch2_offs;
+		calib_params->set_flags &= ~(1 << 7);
+	}
+	return 0;
+}
+
+int calib_apply() {
+	setCalibDACScale(calib.dac_ch1_fs, 0);
+	setCalibDACOffset(calib.dac_ch1_offs, 0);
+	setCalibDACScale(calib.dac_ch2_fs, 1);
+	setCalibDACOffset(calib.dac_ch2_offs, 1);
+	return 0;
 }
 
 void calib_SetToZero() {
