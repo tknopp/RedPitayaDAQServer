@@ -191,10 +191,6 @@ proc create_root_design { parentCell } {
 
   # Create ports
   set aclk [ create_bd_port -dir I -type clk -freq_hz 125000000 aclk ]
-  set_property -dict [ list \
-   CONFIG.ASSOCIATED_BUSIF {} \
-   CONFIG.ASSOCIATED_RESET {} \
- ] $aclk
   set calib_offset [ create_bd_port -dir I -from 15 -to 0 calib_offset ]
   set calib_scale [ create_bd_port -dir I -from 15 -to 0 calib_scale ]
   set signal_in [ create_bd_port -dir I -from 15 -to 0 signal_in ]
@@ -207,6 +203,7 @@ proc create_root_design { parentCell } {
    CONFIG.B_Value {0000000000000000} \
    CONFIG.B_Width {16} \
    CONFIG.CE {false} \
+   CONFIG.Implementation {DSP48} \
    CONFIG.Latency {1} \
    CONFIG.Out_Width {16} \
  ] $c_addsub_0
