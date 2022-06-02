@@ -1241,7 +1241,7 @@ static scpi_result_t RP_Calib_DAC_SetOffset(scpi_t* context) {
 	float calibOffset;
 
 	SCPI_ParamFloat(context, &calibOffset, true);
-	if (!calib_setDACOffset(&calib_params, calibOffset, channel)) {
+	if (calib_setDACOffset(&calib_params, calibOffset, channel)) {
  		return returnSCPIBool(context, false);
 	}
 
@@ -1267,10 +1267,6 @@ static scpi_result_t RP_Calib_DAC_GetScale(scpi_t* context) {
 		SCPI_ResultFloat(context, NAN);
  		return SCPI_RES_ERR;
 	}
-
-
-	calib_WriteParams(calib_params, false);	
-	calib_Init(); // Reload from cache from EEPROM
 	return SCPI_RES_OK;
 }
 
@@ -1283,7 +1279,7 @@ static scpi_result_t RP_Calib_DAC_SetScale(scpi_t* context) {
 	float scale;
 
 	SCPI_ParamFloat(context, &scale, true);
-	if (!calib_setDACScale(&calib_params, scale, channel)) {
+	if (calib_setDACScale(&calib_params, scale, channel)) {
  		return returnSCPIBool(context, false);
 	}
 
@@ -1326,7 +1322,7 @@ static scpi_result_t RP_Calib_ADC_SetOffset(scpi_t* context) {
 	float offset;
 
 	SCPI_ParamFloat(context, &offset, true);
-	if (!calib_setADCOffset(&calib_params, offset, channel)) {
+	if (calib_setADCOffset(&calib_params, offset, channel)) {
  		return returnSCPIBool(context, false);
 	}
 
@@ -1352,10 +1348,6 @@ static scpi_result_t RP_Calib_ADC_GetScale(scpi_t* context) {
 		SCPI_ResultFloat(context, NAN);
  		return SCPI_RES_ERR;
 	}
-
-
-	calib_WriteParams(calib_params, false);	
-	calib_Init(); // Reload from cache from EEPROM
 	return SCPI_RES_OK;
 }
 
@@ -1372,7 +1364,7 @@ static scpi_result_t RP_Calib_ADC_SetScale(scpi_t* context) {
 	float scale;
 
 	SCPI_ParamFloat(context, &scale, true);
-	if (!calib_setADCScale(&calib_params, scale, channel)) {
+	if (calib_setADCScale(&calib_params, scale, channel)) {
  		return returnSCPIBool(context, false);
 	}
 
@@ -1384,7 +1376,7 @@ static scpi_result_t RP_Calib_ADC_SetScale(scpi_t* context) {
 
 static scpi_result_t RP_Calib_GetFlags(scpi_t* context) {
 	rp_calib_params_t calib = calib_GetParams();
-	SCPI_ParamInt(context, calib.set_flags, true);
+	SCPI_ResultInt32(context, (int) calib.set_flags);
 	return SCPI_RES_OK;
 }
 
@@ -1521,7 +1513,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:CALib:ADC:CHannel#:OFFset", .callback = RP_Calib_ADC_SetOffset,},
 	{.pattern = "RP:CALib:ADC:CHannel#:SCAle?", .callback = RP_Calib_ADC_GetScale,},
 	{.pattern = "RP:CALib:ADC:CHannel#:SCAle", .callback = RP_Calib_ADC_SetScale,},
-	{.pattern = "RP:CALib:FLAGs", .callback = RP_Calib_GetFlags,}
+	{.pattern = "RP:CALib:FLAGs", .callback = RP_Calib_GetFlags,},
 	{.pattern = "RP:CALib:RESet", .callback = RP_ResetCalibration,},
 
 	SCPI_CMD_LIST_END
