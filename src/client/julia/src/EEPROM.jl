@@ -32,7 +32,7 @@ This value is used by the server to scale the output voltage.
 function calibDACScale!(rp::RedPitaya, channel::Integer, val)
   return query(rp, scpiCommand(calibDACScale!, channel, val), scpiReturn(calibDACScale!))
 end
-scpiCommand(::typeof(calibDACScale!), channel, val) = string("RP:CALib:DAC:CH", Int(channel) - 1, ":SCA $(Float32(val))")
+scpiCommand(::typeof(calibDACScale!), channel::Integer, val) = string("RP:CALib:DAC:CH", Int(channel) - 1, ":SCA $(Float32(val))")
 scpiReturn(::typeof(calibDACScale!)) = Bool
 """
     calibDACScale(rp::RedPitaya, channel::Integer)
@@ -40,7 +40,7 @@ scpiReturn(::typeof(calibDACScale!)) = Bool
 Retrieve the calibration DAC scale for given channel from the RedPitayas EEPROM.
 """
 calibDACScale(rp::RedPitaya, channel::Integer) = query(rp, scpiCommand(calibDACScale, channel), scpiReturn(calibDACScale))
-scpiCommand(::typeof(calibDACScale), channel) = string("RP:CALib:DAC:CH", Int(channel) - 1, ":SCA?")
+scpiCommand(::typeof(calibDACScale), channel::Integer) = string("RP:CALib:DAC:CH", Int(channel) - 1, ":SCA?")
 scpiReturn(::typeof(calibDACScale)) = Float64
 
 """
@@ -58,7 +58,7 @@ function calibADCOffset!(rp::RedPitaya, channel::Integer, val)
   rp.calib[2, channel] = Float32(val)
   return query(rp, scpiCommand(calibADCOffset!, channel, val), scpiReturn(calibADCOffset!))
 end
-scpiCommand(::typeof(calibADCOffset!)) = string("RP:CALib:ADC:CH", Int(channel) - 1, ":OFF $(Float32(val))")
+scpiCommand(::typeof(calibADCOffset!), channel::Integer, val) = string("RP:CALib:ADC:CH", Int(channel) - 1, ":OFF $(Float32(val))")
 scpiReturn(::typeof(calibADCOffset!)) = Bool
 """
     calibADCOffset(rp::RedPitaya, channel::Integer)
@@ -68,7 +68,7 @@ Retrieve the calibration ADC offset for given channel from the RedPitayas EEPROM
 See also [convertSamplesToPeriods](@ref),[convertSamplesToFrames](@ref).
 """
 calibADCOffset(rp::RedPitaya, channel::Integer) = query(rp, scpiCommand(calibADCOffset, channel), scpiReturn(calibADCOffset))
-scpiCommand(::typeof(calibADCOffset), channel) = string("RP:CALib:ADC:CH", Int(channel) - 1, ":OFF?")
+scpiCommand(::typeof(calibADCOffset), channel::Integer) = string("RP:CALib:ADC:CH", Int(channel) - 1, ":OFF?")
 scpiReturn(::typeof(calibADCOffset)) = Float64
 
 """
@@ -79,7 +79,7 @@ See also [convertSamplesToPeriods](@ref),[convertSamplesToFrames](@ref).
 """
 function calibADCScale!(rp::RedPitaya, channel::Integer, val)
   rp.calib[1, channel] = Float32(val)
-  return query(rp, scpiCommand(calibADCScale!, channel, val), scpiReturn(calibADCScale!))
+  return query(rp, scpiCommand(calibADCScale!, channel::Integer, val), scpiReturn(calibADCScale!))
 end
 scpiCommand(::typeof(calibADCScale!), channel, val) = string("RP:CALib:ADC:CH", Int(channel) - 1, ":SCA $(Float32(val))")
 scpiReturn(::typeof(calibADCScale!)) = Bool
@@ -91,7 +91,7 @@ Retrieve the calibration ADC scale for given channel from the RedPitayas EEPROM.
 See also [convertSamplesToPeriods](@ref),[convertSamplesToFrames](@ref).
 """
 calibADCScale(rp::RedPitaya, channel::Integer) = query(rp, scpiCommand(calibADCScale, channel), scpiReturn(calibADCScale))
-scpiCommand(::typeof(calibADCScale), channel) = string("RP:CALib:ADC:CH", Int(channel) - 1, ":SCA?")
+scpiCommand(::typeof(calibADCScale), channel::Integer) = string("RP:CALib:ADC:CH", Int(channel) - 1, ":SCA?")
 scpiReturn(::typeof(calibADCScale)) = Float64
 
 calibFlags(rp::RedPitaya) = query(rp, scpiCommand(calibFlags), scpiReturn(calibFlags))
