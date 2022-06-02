@@ -143,11 +143,12 @@ int init() {
 	ram = mmap(NULL, sizeof(int32_t)*ADC_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, ADC_BUFF_MEM_ADDRESS);
 	xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
 
+	loadBitstream();
+	
 	calib_Init(); // Load calibration from EEPROM
 	calib_validate(&calib);
 	printf("Using calibration version %d with: %u\n", calib.version, calib.set_flags);
 	calib_apply();
-	loadBitstream();
 
 	// Set HP0 bus width to 64 bits
 	slcr[2] = 0xDF0D;
@@ -319,9 +320,7 @@ int setFrequency(double frequency, int channel, int component)
 			printf("Phase_increment for frequency %f Hz is %08llx.\n", frequency, phase_increment);
 		}
 
-
-		// ATM phase/frequency do not share memory with other data
-		uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
+		uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel);
 		register_value = (register_value & ~MASK_LOWER_48) | ( phase_increment & MASK_LOWER_48);
 		*(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = register_value;
 
@@ -379,7 +378,7 @@ int setPhase(double phase, int channel, int component)
 			printf("phase_offset for %f*2*pi rad is %08llx.\n", phase_factor, phase_offset);
 		}
 
-		uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
+		uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel);
 		register_value = (register_value & ~MASK_LOWER_48) | ( phase_offset & MASK_LOWER_48);
 		*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = register_value;
 		
@@ -490,20 +489,29 @@ int setCalibDACScale(float value, int channel) {
 		return -3;
 	}
 
+	int16_t scale = (int16_t)(value*8191.0);
+	if (scale < -8191 || scale >= 8192) {
+		return -2;
+	}
 	// Config scale is stored in first component freq
 	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel);
-	register_value = (register_value & MASK_LOWER_48) | ((((uint64_t) value) << 48) & ~MASK_LOWER_48);
-	*(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel) = register_value;	return 0;
+	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) scale) << 48) & ~MASK_LOWER_48);
+	*(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel) = register_value;
+	return 0;
 }
 
 int setCalibDACOffset(float value, int channel) {
 	if (channel < 0 || channel > 1) {
 		return -3;
 	}
-
+	
+	int16_t offset = (int16_t)(value*8191.0);
+	if (offset < -8191 || offset >= 8192) {
+		return -2;
+	}
 	// Config offset is stored in first component phase
 	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel);
-	register_value = (register_value & MASK_LOWER_48) | ((((uint64_t) value) << 48) & ~MASK_LOWER_48);
+	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) offset) << 48) & ~MASK_LOWER_48);
 	*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel) = register_value;
 	return 0;
 }
