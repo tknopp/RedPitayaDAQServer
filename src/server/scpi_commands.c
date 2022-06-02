@@ -1239,24 +1239,15 @@ static scpi_result_t RP_Calib_DAC_SetOffset(scpi_t* context) {
 
 	rp_calib_params_t calib_params = calib_GetParams();
 	float calibOffset;
-	int16_t offset = 0;
 
 	SCPI_ParamFloat(context, &calibOffset, true);
-	if (channel == 0) {
-		offset = getOffset(channel);
-		calib_params.dac_ch1_offs = calibOffset;
-	} 
-	else if (channel == 1) {
-		offset = getOffset(channel);
-		calib_params.dac_ch2_offs = calibOffset;
-	}
-	else {
+	if (!calib_setDACOffset(&calib_params, calibOffset, channel)) {
  		return returnSCPIBool(context, false);
 	}
 
 	calib_WriteParams(calib_params, false);	
 	calib_Init(); // Reload from cache from EEPROM
-	setOffset(offset, channel); // Set offset with new calib
+	calib_apply();
 	return returnSCPIBool(context, true);
 }
 
@@ -1292,19 +1283,13 @@ static scpi_result_t RP_Calib_DAC_SetScale(scpi_t* context) {
 	float scale;
 
 	SCPI_ParamFloat(context, &scale, true);
-	if (channel == 0) {
-		calib_params.dac_ch1_fs = scale;
-	}
-	else if (channel == 1) {
-		calib_params.dac_ch2_fs = scale;	
-	}
-	else {
+	if (!calib_setDACScale(&calib_params, scale, channel)) {
  		return returnSCPIBool(context, false);
 	}
 
-
 	calib_WriteParams(calib_params, false);	
 	calib_Init(); // Reload from cache from EEPROM
+	calib_apply();
 	return returnSCPIBool(context, true);
 }
 
@@ -1341,18 +1326,13 @@ static scpi_result_t RP_Calib_ADC_SetOffset(scpi_t* context) {
 	float offset;
 
 	SCPI_ParamFloat(context, &offset, true);
-	if (channel == 0) {
-		calib_params.adc_ch1_offs = offset;
-	} 
-	else if (channel == 1) {
-		calib_params.adc_ch2_offs = offset;	}
-	else {
+	if (!calib_setADCOffset(&calib_params, offset, channel)) {
  		return returnSCPIBool(context, false);
 	}
 
-	
 	calib_WriteParams(calib_params, false);	
 	calib_Init(); // Reload from cache from EEPROM
+	calib_apply();
 	return returnSCPIBool(context, true);
 }
 
@@ -1392,22 +1372,21 @@ static scpi_result_t RP_Calib_ADC_SetScale(scpi_t* context) {
 	float scale;
 
 	SCPI_ParamFloat(context, &scale, true);
-	if (channel == 0) {
-		calib_params.adc_ch1_fs = scale;
-	}
-	else if (channel == 1) {
-		calib_params.adc_ch2_fs = scale;	
-	}
-	else {
+	if (!calib_setADCScale(&calib_params, scale, channel)) {
  		return returnSCPIBool(context, false);
 	}
 
-
 	calib_WriteParams(calib_params, false);	
 	calib_Init(); // Reload from cache from EEPROM
+	calib_apply();
 	return returnSCPIBool(context, true);
 }
 
+static scpi_result_t RP_Calib_GetFlags(scpi_t* context) {
+	rp_calib_params_t calib = calib_GetParams();
+	SCPI_ParamInt(context, calib.set_flags, true);
+	return SCPI_RES_OK;
+}
 
 static scpi_result_t RP_ResetCalibration(scpi_t * context) {
   calib_LoadFromFactoryZone();
@@ -1542,6 +1521,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:CALib:ADC:CHannel#:OFFset", .callback = RP_Calib_ADC_SetOffset,},
 	{.pattern = "RP:CALib:ADC:CHannel#:SCAle?", .callback = RP_Calib_ADC_GetScale,},
 	{.pattern = "RP:CALib:ADC:CHannel#:SCAle", .callback = RP_Calib_ADC_SetScale,},
+	{.pattern = "RP:CALib:FLAGs", .callback = RP_Calib_GetFlags,}
 	{.pattern = "RP:CALib:RESet", .callback = RP_ResetCalibration,},
 
 	SCPI_CMD_LIST_END

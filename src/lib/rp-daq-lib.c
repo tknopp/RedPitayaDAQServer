@@ -1432,6 +1432,67 @@ int calib_apply() {
 	return 0;
 }
 
+int calib_setADCOffset(rp_calib_params_t * calib_params, float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	if (channel == 0) {
+		calib_params->adc_ch1_offs = value;
+		calib_params->set_flags |= (1 << 1);
+	}
+	else if (channel == 1) {
+		calib_params->adc_ch2_offs = value;
+		calib_params->set_flags |= (1 << 3);
+	}
+	return 0;
+}
+
+int calib_setADCScale(rp_calib_params_t * calib_params, float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	if (channel == 0) {
+		calib_params->adc_ch1_fs = value;
+		calib_params->set_flags |= (1 << 0);
+	}
+	else if (channel == 1) {
+		calib_params->adc_ch2_fs = value;
+		calib_params->set_flags |= (1 << 2);
+	}
+	return 0;
+}
+
+int calib_setDACOffset(rp_calib_params_t * calib_params, float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	if (channel == 0) {
+		calib_params->dac_ch1_offs = value;
+		calib_params->set_flags |= (1 << 5);
+	}
+	else if (channel == 1) {
+		calib_params->dac_ch2_offs = value;
+		calib_params->set_flags |= (1 << 7);
+	}
+	return 0;
+}
+
+int calib_setDACScale(rp_calib_params_t * calib_params, float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	if (channel == 0) {
+		calib_params->dac_ch1_fs = value;
+		calib_params->set_flags |= (1 << 4);
+	}
+	else if (channel == 1) {
+		calib_params->dac_ch2_fs = value;
+		calib_params->set_flags |= (1 << 6);
+	}
+	return 0;
+}
+
+
 void calib_SetToZero() {
     calib = getDefaultCalib();
 }

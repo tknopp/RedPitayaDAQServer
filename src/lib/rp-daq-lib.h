@@ -189,6 +189,11 @@ extern int calib_Release();
 extern int calib_validate(rp_calib_params_t * calib_params);
 extern int calib_apply();
 
+extern int calib_setADCOffset(rp_calib_params_t * calib_params, float value, int channel);
+extern int calib_setADCScale(rp_calib_params_t * calib_params, float value, int channel);
+extern int calib_setDACOffset(rp_calib_params_t * calib_params, float value, int channel);
+extern int calib_setDACScale(rp_calib_params_t * calib_params, float value, int channel);
+
 extern rp_calib_params_t calib_GetParams();
 extern rp_calib_params_t calib_GetDefaultCalib();
 extern double getCalibDACScale(int channel, bool isPDM);
