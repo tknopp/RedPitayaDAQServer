@@ -13,6 +13,16 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 
+#define MASK_LOWER_48 0x0000ffffffffffff
+#define CHANNEL_OFFSET 13
+#define COMPONENT_OFFSET 3
+#define COMPONENT_START_OFFSET 1 
+#define SIGNAL_TYPE_OFFSET 0
+#define A_OFFSET SIGNAL_TYPE_OFFSET 0 
+#define INCR_OFFSET A_OFFSET 0
+#define AMPLITUDE_OFFSET  0 
+#define FREQ_OFFSET 1
+#define PHASE_OFFSET 2
 
 #define BASE_FREQUENCY 125000000
 #define ADC_BUFF_NUM_BITS 24 
@@ -41,13 +51,16 @@
 #define IN 0
 #define OUT 1
 
+#define CALIB_VERSION 1
+
 extern bool verbose;
 
 extern int mmapfd;
 extern volatile uint32_t *slcr, *axi_hp0;
 // FPGA registers that are memory mapped
 extern void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *buf, *dio_sts;
-extern char *pdm_cfg, *dac_cfg; 
+extern char *pdm_cfg;
+extern uint64_t *dac_cfg; 
 
 // init routines
 extern uint32_t getFPGAId();
@@ -72,10 +85,22 @@ extern double getPhase(int, int);
 extern int setPhase(double, int, int);
 extern int setDACMode(int);
 extern int getDACMode();
-extern int getSignalType(int);
-extern int setSignalType(int, int);
-extern float getJumpSharpness(int);
-extern int setJumpSharpness(int, float);
+extern int getSignalType(int, int);
+extern int setSignalType(int, int, int);
+extern float getJumpSharpness(int, int);
+extern int setJumpSharpness(float, int, int);
+extern int setCalibDACScale(float, int);
+extern int setCalibDACOffset(float, int);
+//extern int getRampingPeriod(int);
+
+// Ramping
+extern int getEnableRamping(int channel);
+extern int setEnableRamping(int mode, int channel);
+extern int setRampingFrequency(double, int);
+extern double getRampingFrequency(int channel);
+extern int setEnableRampDown(int mode, int channel);
+extern int getEnableRampDown(int channel);
+extern uint8_t getRampingState();
 
 // fast ADC
 extern int setDecimation(uint16_t decimation);
@@ -90,7 +115,7 @@ extern void readADCData(uint32_t wp, uint32_t size, uint32_t* buffer);
 extern int resetRamWriter();
 extern int enableRamWriter();
 
-// slow IO
+// Sequence
 extern int getPDMClockDivider();
 extern int setPDMClockDivider(int);
 extern int setPDMRegisterValue(uint64_t, int);
@@ -109,6 +134,7 @@ extern float getXADCValueVolt(int);
 extern int setEnableDACAll(int8_t, int);
 extern int setEnableDAC(int8_t, int, int);
 extern int setResetDAC(int8_t, int);
+extern int setRampDownDAC(int8_t, int, int);
 
 // misc
 extern int getDIODirection(const char*);
@@ -145,18 +171,28 @@ extern void stopTx();
  * Calibration parameters, stored in the EEPROM device
  */
 typedef struct {
-    float dac_ch1_offs;
-    float dac_ch1_fs;
-    float dac_ch2_offs;
-    float dac_ch2_fs;
+    char id[3+1];
+    int version;
+    uint8_t set_flags;
     float adc_ch1_fs;
     float adc_ch1_offs;
     float adc_ch2_fs;
     float adc_ch2_offs;
+    float dac_ch1_fs;
+    float dac_ch1_offs;
+    float dac_ch2_fs;
+    float dac_ch2_offs;
 } rp_calib_params_t;
 
 extern int calib_Init();
 extern int calib_Release();
+extern int calib_validate(rp_calib_params_t * calib_params);
+extern int calib_apply();
+
+extern int calib_setADCOffset(rp_calib_params_t * calib_params, float value, int channel);
+extern int calib_setADCScale(rp_calib_params_t * calib_params, float value, int channel);
+extern int calib_setDACOffset(rp_calib_params_t * calib_params, float value, int channel);
+extern int calib_setDACScale(rp_calib_params_t * calib_params, float value, int channel);
 
 extern rp_calib_params_t calib_GetParams();
 extern rp_calib_params_t calib_GetDefaultCalib();

@@ -24,19 +24,18 @@ triggerMode!(rp, INTERNAL)
 
 # Square waveform on first channel
 frequencyDAC!(rp,1,1, base_frequency / modulus)
-jumpSharpnessDAC!(rp, 1, 0.01)
-signalTypeDAC!(rp, 1 , SQUARE)
-phaseDAC!(rp, 1, 1, 0.0 )
+signalTypeDAC!(rp, 1, 1, SINE)
+phaseDAC!(rp, 1, 1, 0.0)
 amplitudeDAC!(rp, 1, 1, 0.1)
 
 # No waveform on second channel
 amplitudeDAC!(rp, 2, 1, 0.0)
 
 passPDMToFastDAC!(rp, true)
-clearSequences!(rp)
+clearSequence!(rp)
 
 # Climbing offset for first channel, fixed offset for second channel
-numSeqChan!(rp, 2)
+seqChan!(rp, 2)
 lutA = collect(range(0,0.3,length=steps_per_frame))
 lutB = collect(ones(steps_per_frame))
 lut = collect(cat(lutA,lutB*0.1,dims=2)')
@@ -48,11 +47,10 @@ lutEnableDACB = ones(Bool, steps_per_frame)
 lutEnableDACB[2:2:end] .= false
 enableLUT = collect( cat(lutEnableDACA,lutEnableDACB,dims=2)' )
 
-seq = ArbitrarySequence(lut, enableLUT, 1, 0.0, 0.0, 0.0, 0.0)
-appendSequence!(rp, seq)
-prepareSequences!(rp)
+seq = SimpleSequence(lut, 1, enableLUT)
+sequence!(rp, seq)
 
-serverMode!(rp, MEASUREMENT)
+serverMode!(rp, ACQUISITION)
 masterTrigger!(rp, true)
 
 uCurrentPeriod = readFrames(rp, 0, 1)

@@ -229,7 +229,7 @@ function masterTrigger!(rp::RedPitaya, val)
   return query(rp, scpiCommand(masterTrigger!, val), scpiReturn(masterTrigger!))
 end
 scpiCommand(::typeof(masterTrigger!), val::Bool) = scpiCommand(masterTrigger!, val ? "ON" : "OFF")
-scpiCommand(::typeof(masterTrigger!), valStr) = string("RP:TRIGger ", valStr)
+scpiCommand(::typeof(masterTrigger!), val::String) = string("RP:TRIGger ", val)
 scpiReturn(::typeof(masterTrigger!)) = Bool
 """
     masterTrigger(rp::RedPitaya)
@@ -257,7 +257,7 @@ function keepAliveReset!(rp::RedPitaya, val::Bool)
   return query(rp, scpiCommand(keepAliveReset!, val), scpiReturn(keepAliveReset!))
 end
 scpiCommand(::typeof(keepAliveReset!), val::Bool) = scpiCommand(keepAliveReset!, val ? "ON" : "OFF")
-scpiCommand(::typeof(keepAliveReset!), valStr::String) = string("RP:TRIGger:ALiVe ", valStr)
+scpiCommand(::typeof(keepAliveReset!), val::String) = string("RP:TRIGger:ALiVe ", val)
 scpiReturn(::typeof(keepAliveReset!)) = Bool
 """
     keepAliveReset(rp::RedPitaya)
@@ -357,14 +357,14 @@ end
 
 # Low level read, reads samples, error and perf. Values need to be already requested
 function readSamplesChunk_(rp::RedPitaya, reqWP::Int64, numSamples::Int64, into=nothing)
-  @debug "read samples chunk ..."
+  #@debug "read samples chunk ..."
   if isnothing(into)
     into = Array{Int16}(undef, 2 * Int64(numSamples))
   end
   data = read!(rp.dataSocket, into)
   status = readServerStatus(rp)
   (adc, dac) = readPerformanceData(rp, numSamples)
-  @debug "read samples chunk ..."
+  #@debug "read samples chunk ..."
   perf = PerformanceData(UInt64(reqWP), adc, dac, status)
   return (data, perf)
 end

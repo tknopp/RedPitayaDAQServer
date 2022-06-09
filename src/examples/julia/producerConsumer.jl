@@ -65,7 +65,7 @@ samples_per_frame = samples_per_period * periods_per_frame
 channel = Channel{SampleChunk}(32)
 # Start producer
 @info "Start Producer"
-producer = @tspawnat 2 readPipelinedSamples(rp, 0, Int64(numFrames * samples_per_frame), channel)
+producer = @tspawnat 2 readSamples(rp, 0, Int64(numFrames * samples_per_frame), channel)
 # Associate life time of channel with execution time of producer
 bind(channel, producer)
 # Consumer

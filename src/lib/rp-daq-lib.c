@@ -21,7 +21,8 @@ bool verbose = false;
 int mmapfd;
 volatile uint32_t *slcr, *axi_hp0;
 void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *dio_sts;
-char *pdm_cfg, *dac_cfg;
+char *pdm_cfg;
+uint64_t *dac_cfg;
 volatile int32_t *xadc;
 
 // static const uint32_t ANALOG_OUT_MASK            = 0xFF;
@@ -142,8 +143,12 @@ int init() {
 	ram = mmap(NULL, sizeof(int32_t)*ADC_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, ADC_BUFF_MEM_ADDRESS);
 	xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
 
-	calib_Init(); // Load calibration from EEPROM
 	loadBitstream();
+	
+	calib_Init(); // Load calibration from EEPROM
+	calib_validate(&calib);
+	printf("Using calibration version %d with: %u\n", calib.version, calib.set_flags);
+	calib_apply();
 
 	// Set HP0 bus width to 64 bits
 	slcr[2] = 0xDF0D;
@@ -212,14 +217,13 @@ uint16_t getAmplitude(int channel, int component) {
 		return -4;
 	}
 
-	uint16_t amplitude = *((uint16_t *)(dac_cfg + 10 + 14*component + 66*channel));
-
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + AMPLITUDE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel);
+	uint16_t amplitude = (uint16_t)(register_value >> 48);
 	return amplitude;
 }
 
 int setAmplitudeVolt(double amplitude, int channel, int component) {
-	uint16_t calibratedAmplitude = (uint16_t)(amplitude * getCalibDACScale(channel, false)*8192.0);
-	return setAmplitude(calibratedAmplitude, channel, component);
+	return setAmplitude((uint16_t)(amplitude*8192.0), channel, component);
 }
 
 int setAmplitude(uint16_t amplitude, int channel, int component) {
@@ -235,7 +239,9 @@ int setAmplitude(uint16_t amplitude, int channel, int component) {
 		return -4;
 	}
 
-	*((uint16_t *)(dac_cfg + 10 + 14*component + 66*channel)) = amplitude;
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + AMPLITUDE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel);
+	register_value = (register_value & MASK_LOWER_48) | ((((uint64_t) amplitude) << 48) & ~MASK_LOWER_48);
+	*(dac_cfg + COMPONENT_START_OFFSET + AMPLITUDE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = register_value;
 
 	return 0;
 }
@@ -245,14 +251,14 @@ int16_t getOffset(int channel) {
 		return -3;
 	}
 
-	int16_t offset = *((int16_t *)(dac_cfg + 66*channel));
+	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel);
+	int16_t offset = (int16_t)(register_value >> 48);
 
-	return offset - getCalibDACOffset(channel);
+	return offset;
 }
 
 int setOffsetVolt(double offset, int channel) {
-	int16_t calibratedOffset = (int16_t)(offset * getCalibDACScale(channel, false)*8192.0);
-	return setOffset(calibratedOffset, channel);
+	return setOffset((int16_t)(offset*8192.0), channel);
 }
 int setOffset(int16_t offset, int channel) {
 	if(offset < -8191 || offset >= 8192) {
@@ -263,9 +269,10 @@ int setOffset(int16_t offset, int channel) {
 		return -3;
 	}
 
-	int16_t calibOffset = getCalibDACOffset(channel);
+	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel);
+	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) offset) << 48) & ~MASK_LOWER_48);
 
-	*((int16_t *)(dac_cfg + 66*channel)) = offset + calibOffset;
+	*(dac_cfg + CHANNEL_OFFSET*channel) = register_value;
 
 	return 0;
 }
@@ -279,8 +286,7 @@ double getFrequency(int channel, int component) {
 		return -4;
 	}
 
-	uint64_t mask = 0x0000ffffffffffff;
-	uint64_t register_value = *((uint64_t *)(dac_cfg + 12 + 14*component + 66*channel)) & mask;
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
 	double frequency = -1;
 	if(getDACMode() == DAC_MODE_STANDARD) {
 		// Calculate frequency from phase increment
@@ -314,12 +320,9 @@ int setFrequency(double frequency, int channel, int component)
 			printf("Phase_increment for frequency %f Hz is %08llx.\n", frequency, phase_increment);
 		}
 
-
-		uint64_t mask = 0x0000ffffffffffff;
-		uint64_t register_value = *((uint64_t *)(dac_cfg + 12 + 14*component + 66*channel));
-
-		*((uint64_t *)(dac_cfg + 12 + 14*component + 66*channel)) =
-			(register_value & ~mask) | (phase_increment & mask);
+		uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel);
+		register_value = (register_value & ~MASK_LOWER_48) | ( phase_increment & MASK_LOWER_48);
+		*(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = register_value;
 
 	} else {
 		// TODO AWG
@@ -327,6 +330,7 @@ int setFrequency(double frequency, int channel, int component)
 
 	return 0;
 }
+
 
 double getPhase(int channel, int component)
 {
@@ -339,8 +343,7 @@ double getPhase(int channel, int component)
 	}
 
 	// Get register value
-	uint64_t mask = 0x0000ffffffffffff;
-	uint64_t register_value = *((uint64_t *)(dac_cfg + 18 + 14*component + 66*channel)) & mask;
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
 	double phase_factor = -1;
 	if(getDACMode() == DAC_MODE_STANDARD) {
 		// Calculate phase factor from phase offset
@@ -375,12 +378,10 @@ int setPhase(double phase, int channel, int component)
 			printf("phase_offset for %f*2*pi rad is %08llx.\n", phase_factor, phase_offset);
 		}
 
-		uint64_t mask = 0x0000ffffffffffff;
-		uint64_t register_value = *((uint64_t *)(dac_cfg + 18 + 14*component + 66*channel));
-
-		*((uint64_t *)(dac_cfg + 18 + 14*component + 66*channel)) =
-			(register_value & ~mask) | (phase_offset & mask);
-
+		uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel);
+		register_value = (register_value & ~MASK_LOWER_48) | ( phase_offset & MASK_LOWER_48);
+		*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) = register_value;
+		
 	} else {
 		// TODO AWG
 	}
@@ -407,9 +408,13 @@ int getDACMode() {
 	//return ((register_value & 0x00000008) >> 3);
 }
 
-int setSignalType(int channel, int signal_type) {
+int setSignalType(int signal_type, int channel, int component) {
 	if(channel < 0 || channel > 1) {
 		return -3;
+	}
+
+	if(component < 0 || component > 3) {
+		return -4;
 	}
 
 	if((signal_type != SIGNAL_TYPE_SINE)
@@ -418,38 +423,97 @@ int setSignalType(int channel, int signal_type) {
 			&& (signal_type != SIGNAL_TYPE_SAWTOOTH)) {
 		return -2;
 	}
-	*((int16_t *)(dac_cfg + 2 + 66*channel)) = signal_type;
+	
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET * channel);
+	uint64_t mask = 0x000000000000ffff;
+	register_value = (register_value & ~mask) | (signal_type & mask);
+	*(dac_cfg + COMPONENT_START_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET * channel) = register_value;
 
 	return 0;
 }
 
-int getSignalType(int channel) {
+int getSignalType(int channel, int component) {
 	if(channel < 0 || channel > 1) {
 		return -3;
 	}
 
-	int value = (int) (*((int16_t *)( dac_cfg + 2 + 66*channel)));
+	if(component < 0 || component > 3) {
+		return -4;
+	}
+
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET * channel);
+	uint64_t mask = 0x000000000000ffff;
+	int value = (int) (register_value & mask);
 	return value;
 }
 
-int setJumpSharpness(int channel, float percentage) {
+int setJumpSharpness(float percentage, int channel, int component) {
 	if(channel < 0 || channel > 1 || percentage == 0.0) {
 		return -3;
 	}
+
+	if(component < 0 || component > 3) {
+		return -4;
+	}
+
 	int16_t A = (int16_t) (8191*percentage);
-	*((int16_t *)(dac_cfg + 4 + 66*channel)) = A;
-	*((int16_t *)(dac_cfg + 6 + 66*channel)) = (int16_t) (8191/A);
+	int16_t A_incr = (int16_t) (8191/A);
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET * channel);
+	uint64_t mask = 0x00000000ffff0000;
+	register_value = (register_value & ~mask) | (A & mask);
+	mask = 0x0000ffff00000000;
+	register_value = (register_value & ~mask) | (A_incr & mask);
+	*(dac_cfg + COMPONENT_START_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET * channel) = register_value;
 
 	return 0;
 }
 
-float getJumpSharpness(int channel) {
+float getJumpSharpness(int channel, int component) {
 	if(channel < 0 || channel > 1) {
 		return -3;
 	}
 
-	int16_t value = (*((int16_t *)( dac_cfg + 4 + 66*channel)));
+	if(component < 0 || component > 3) {
+		return -4;
+	}
+
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET * channel);
+	uint64_t mask = 0x00000000ffff0000;
+	int value = (int) ((register_value & mask) >> 16);
+
 	return ((float)value)/8191.0;
+}
+
+int setCalibDACScale(float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+
+	int16_t scale = (int16_t)(value*8191.0);
+	if (scale < -8191 || scale >= 8192) {
+		return -2;
+	}
+	// Config scale is stored in first component freq
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel);
+	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) scale) << 48) & ~MASK_LOWER_48);
+	*(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel) = register_value;
+	return 0;
+}
+
+int setCalibDACOffset(float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	
+	int16_t offset = (int16_t)(value*8191.0);
+	if (offset < -8191 || offset >= 8192) {
+		return -2;
+	}
+	// Config offset is stored in first component phase
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel);
+	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) offset) << 48) & ~MASK_LOWER_48);
+	*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel) = register_value;
+	return 0;
 }
 
 
@@ -551,14 +615,32 @@ int setResetDAC(int8_t value, int index) {
 	if (value < 0 || value >= 2)
 		return -1;
 
-	printf("%d before reset pdm\n", *((int16_t *)(pdm_cfg + 2*(0+4*index))));
+	//printf("%d before reset pdm\n", *((int16_t *)(pdm_cfg + 2*(0+4*index))));
 	int bitpos = 14;
 	// Reset bit is in the 1-th channel
 	// clear the bit
 	*((int16_t *)(pdm_cfg + 2*(0+4*index))) &= ~(1u << bitpos);
 	// set the bit
 	*((int16_t *)(pdm_cfg + 2*(0+4*index))) |= (value << bitpos);
-	printf("%d reset pdm\n", *((int16_t *)(pdm_cfg + 2*(0+4*index))));
+	//printf("%d reset pdm\n", *((int16_t *)(pdm_cfg + 2*(0+4*index))));
+	return 0;
+}
+
+int setRampDownDAC(int8_t value, int channel, int index) {
+	if(value < 0 || value >= 2) {
+		return -1;
+	}
+
+	if(channel < 0 || channel > 1) {
+		return -2;
+	}
+
+	int bitpos = 14 + channel * 1; // 14 or 15
+	// Ramp Down bit is in the 3rd channel
+	// clear the bit
+	*((int16_t *)(pdm_cfg + 2*(2+4*index))) &= ~(1u << bitpos);
+	// set the bit
+	*((int16_t *)(pdm_cfg + 2*(2+4*index))) |= (value << bitpos);
 	return 0;
 }
 
@@ -617,7 +699,7 @@ int setPDMValueVolt(float voltage, int channel, int index) {
 	} else {
 		if (voltage > 1) voltage = 1;
 		if (voltage < -1) voltage = -1;
-		val = voltage * 8192. * getCalibDACScale(channel, false);
+		val = voltage * 8192.;
 	}
 
 	//printf("set val %04x.\n", val);
@@ -803,6 +885,104 @@ int setMasterTrigger(int mode) {
 	}
 
 	return 0;
+}
+
+// RAMPING
+int getEnableRamping(int channel) {
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
+
+	int value = (int)((*((uint8_t *)(cfg + 10)) >> channel) & 1);
+
+	if(value == 0) {
+		return OFF;
+	} else if(value == 1) {
+		return ON;
+	}
+	return -1;
+}
+
+int setEnableRamping(int mode, int channel) {
+	if (mode != OFF && mode != ON) {
+		return -1;
+	}
+
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
+
+	if (mode == OFF) {
+		*((uint8_t *)(cfg + 10)) &= ~(1 << channel);
+	}
+	else {
+		*((uint8_t *)(cfg + 10)) |= (1 << channel);
+	}
+	return 0;
+}
+
+int setEnableRampDown(int mode, int channel) {
+	if (mode != OFF && mode != ON) {
+		return -1;
+	}
+
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
+
+	if (mode == OFF) {
+		*((uint8_t *)(cfg + 10)) &= ~(1 << (channel + 2));
+	}
+	else {
+		*((uint8_t *)(cfg + 10)) |= (1 << (channel + 2));
+	}
+	return 0;
+}
+
+int getEnableRampDown(int channel) {
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
+
+	int value = (int)((*((uint8_t *)(cfg + 10)) >> (channel + 2)) & 1);
+
+	if(value == 0) {
+		return OFF;
+	} else if(value == 1) {
+		return ON;
+	}
+	return -1;	
+}
+
+int setRampingFrequency(double period, int channel) {
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
+	
+	if(period < 0.03 || period >= ((double)BASE_FREQUENCY)) {
+		return -2;
+	}
+
+	uint64_t phase_increment = (uint64_t)round(period*pow(2, 48)/((double)BASE_FREQUENCY));
+
+	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel);
+	register_value = (register_value & ~MASK_LOWER_48) | (phase_increment & MASK_LOWER_48);
+	*(dac_cfg + CHANNEL_OFFSET*channel) = register_value;
+	return 0;
+}
+
+double getRampingFrequency(int channel) {
+	if(channel < 0 || channel > 1) {
+		return -3;
+	}
+	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
+	double period_factor = register_value*((double)BASE_FREQUENCY)/pow(2, 48);
+	return period_factor;
+}
+
+uint8_t getRampingState() {
+	uint8_t value = *((uint8_t *)(reset_sts + 2));
+	return value;
 }
 
 int getInstantResetMode() {
@@ -1187,16 +1367,139 @@ int calib_SetParams(rp_calib_params_t calib_params){
 
 rp_calib_params_t getDefaultCalib(){
     rp_calib_params_t calib;
+		calib.id[0] = 'D';
+		calib.id[1] = 'A';
+		calib.id[2] = 'Q';
+		calib.id[3] = '\0'; 		
+		calib.version = CALIB_VERSION;
+		calib.set_flags = 0;
 		calib.dac_ch1_offs = 0.0;
 		calib.dac_ch1_fs = 1.0;
 		calib.dac_ch2_offs = 0.0;
 		calib.dac_ch2_fs = 1.0;
-		calib.adc_ch1_fs = 1.0;
+		calib.adc_ch1_fs = 1.0/8192.0;
 		calib.adc_ch1_offs = 0.0;
-		calib.adc_ch2_fs = 1.0;
+		calib.adc_ch2_fs = 1.0/8192.0;
 		calib.adc_ch2_offs = 0.0;
     return calib;
 }
+
+int calib_validate(rp_calib_params_t * calib_params) {
+	rp_calib_params_t def = getDefaultCalib();
+	// If unknown EEPROM data or not set, we use default values
+	bool useDefault = (strncmp(def.id, calib_params->id, 4) != 0 || calib_params->version != CALIB_VERSION);
+	// Update Header
+	if (useDefault) {
+		strncpy(calib_params->id, def.id, 4);
+		calib_params->version = CALIB_VERSION;
+	}
+	
+	// ADC Calibration
+	if (useDefault || !(calib_params->set_flags & (1 << 0))) {
+		calib_params->adc_ch1_fs = def.adc_ch1_fs;
+		calib_params->set_flags &= ~(1 << 0);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 1))) {
+		calib_params->adc_ch1_offs = def.adc_ch1_offs;
+		calib_params->set_flags &= ~(1 << 1);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 2))) {
+		calib_params->adc_ch2_fs = def.adc_ch2_fs;
+		calib_params->set_flags &= ~(1 << 2);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 3))) {
+		calib_params->adc_ch2_offs = def.adc_ch2_offs;
+		calib_params->set_flags &= ~(1 << 3);
+	}
+
+	// DAC Calibration
+	if (useDefault || !(calib_params->set_flags & (1 << 4))) {
+		calib_params->dac_ch1_fs = def.dac_ch1_fs;
+		calib_params->set_flags &= ~(1 << 4);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 5))) {
+		calib_params->dac_ch1_offs = def.dac_ch1_offs;
+		calib_params->set_flags &= ~(1 << 5);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 6))) {
+		calib_params->dac_ch2_fs = def.dac_ch2_fs;
+		calib_params->set_flags &= ~(1 << 6);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 7))) {
+		calib_params->dac_ch2_offs = def.dac_ch2_offs;
+		calib_params->set_flags &= ~(1 << 7);
+	}
+	return 0;
+}
+
+int calib_apply() {
+	setCalibDACScale(calib.dac_ch1_fs, 0);
+	setCalibDACOffset(calib.dac_ch1_offs, 0);
+	setCalibDACScale(calib.dac_ch2_fs, 1);
+	setCalibDACOffset(calib.dac_ch2_offs, 1);
+	return 0;
+}
+
+int calib_setADCOffset(rp_calib_params_t * calib_params, float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	if (channel == 0) {
+		calib_params->adc_ch1_offs = value;
+		calib_params->set_flags |= (1 << 1);
+	}
+	else if (channel == 1) {
+		calib_params->adc_ch2_offs = value;
+		calib_params->set_flags |= (1 << 3);
+	}
+	return 0;
+}
+
+int calib_setADCScale(rp_calib_params_t * calib_params, float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	if (channel == 0) {
+		calib_params->adc_ch1_fs = value;
+		calib_params->set_flags |= (1 << 0);
+	}
+	else if (channel == 1) {
+		calib_params->adc_ch2_fs = value;
+		calib_params->set_flags |= (1 << 2);
+	}
+	return 0;
+}
+
+int calib_setDACOffset(rp_calib_params_t * calib_params, float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	if (channel == 0) {
+		calib_params->dac_ch1_offs = value;
+		calib_params->set_flags |= (1 << 5);
+	}
+	else if (channel == 1) {
+		calib_params->dac_ch2_offs = value;
+		calib_params->set_flags |= (1 << 7);
+	}
+	return 0;
+}
+
+int calib_setDACScale(rp_calib_params_t * calib_params, float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	if (channel == 0) {
+		calib_params->dac_ch1_fs = value;
+		calib_params->set_flags |= (1 << 4);
+	}
+	else if (channel == 1) {
+		calib_params->dac_ch2_fs = value;
+		calib_params->set_flags |= (1 << 6);
+	}
+	return 0;
+}
+
 
 void calib_SetToZero() {
     calib = getDefaultCalib();
