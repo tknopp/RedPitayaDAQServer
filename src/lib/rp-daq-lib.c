@@ -1377,9 +1377,9 @@ rp_calib_params_t getDefaultCalib(){
 		calib.dac_ch1_fs = 1.0;
 		calib.dac_ch2_offs = 0.0;
 		calib.dac_ch2_fs = 1.0;
-		calib.adc_ch1_fs = 1.0;
+		calib.adc_ch1_fs = 1.0/8192.0;
 		calib.adc_ch1_offs = 0.0;
-		calib.adc_ch2_fs = 1.0;
+		calib.adc_ch2_fs = 1.0/8192.0;
 		calib.adc_ch2_offs = 0.0;
     return calib;
 }
