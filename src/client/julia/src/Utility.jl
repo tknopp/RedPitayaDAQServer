@@ -115,13 +115,33 @@ function update!(ip::String, tagName::String)
   projectPath = joinpath(imagePath, "apps", "RedPitayaDAQServer")
   keyPath = joinpath(projectPath, "rootkey")
 
+  # Prepare folder for RPs without internet connection
+  argument = Cmd(["config", "--global", "--add", "safe.directory", projectPath])
+  run(`git $argument`)
+  argument = Cmd(["config", "--global", "--add", "safe.directory", joinpath(projectPath, "libs", "scpi-parser")])
+  run(`git $argument`)
+  argument = Cmd(["submodule", "update", "--init", "--force", "--remote"])
+  run(setenv(`git $argument`, dir=projectPath))
+
   # Remove old folder
   argument = Cmd(["-i", keyPath, "root@$(ip)", "rm -r /media/mmcblk0p1/apps/RedPitayaDAQServer"])
   run(`$(ssh()) $argument`)
 
+  # Create new folder
+  argument = Cmd(["-i", keyPath, "root@$(ip)", "mkdir /media/mmcblk0p1/apps/RedPitayaDAQServer"])
+  run(`$(ssh()) $argument`)
+
   # Upload new folder
-  argument = Cmd(["-i", keyPath, "-r", projectPath, "root@$(ip):/media/mmcblk0p1/apps"])
+  argument = Cmd(["-i", keyPath, "-rp", "$projectPath/*", "root@$(ip):/media/mmcblk0p1/apps/RedPitayaDAQServer"])
   run(`$(scp()) $argument`)
+
+  # Upload hidden folders
+  argument = Cmd(["-i", keyPath, "-rp", "$projectPath/.*", "root@$(ip):/media/mmcblk0p1/apps/RedPitayaDAQServer"])
+  run(`$(scp()) $argument`)
+
+  # Run make on RP, since we do not necessarily have all set-up to do a cross-compile
+  argument = Cmd(["-i", keyPath, "root@$(ip)", "cd /media/mmcblk0p1/apps/RedPitayaDAQServer && make server"])
+  run(`$(ssh()) $argument`)
 end
 update!(rp::RedPitaya, tagName::String) = update!(rp.host, tagName::String)
 update!(rpc::RedPitayaCluster) = [update!(rp) for rp in rpc]
