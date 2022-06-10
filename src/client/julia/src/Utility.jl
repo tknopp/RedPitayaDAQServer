@@ -88,14 +88,40 @@ end
 
 extractedImagePath(tagName::String) = joinpath(@get_scratch!("rp"), tagName, "extracted")
 
+export uploadBitfile
+function uploadBitfile(ip::String, bitfilePath::String)
+  imagePath = extractedImagePath(tagName)
+  keyPath = joinpath(imagePath, "apps", "RedPitayaDAQServer", "rootkey")
+  argument = Cmd(["-i", keyPath, bitfile, "root@$(ip):/media/mmcblk0p1/apps/RedPitayaDAQServer/bitfiles"])
+  run(`$(scp()) $argument`)
+end
+
 function uploadBitfiles(ip::String, tagName::String)
   imagePath = extractedImagePath(tagName)
   bitfilePath = joinpath(imagePath, "apps", "RedPitayaDAQServer", "bitfiles")
   bitfiles = [joinpath(bitfilePath, bitfile) for bitfile in readdir(bitfilePath)]
-  keyPath = joinpath(imagePath, "apps", "RedPitayaDAQServer", "rootkey")
-
+  
   for bitfile in bitfiles
-    argument = Cmd(["-i", keyPath, bitfile, "root@$(ip):/media/mmcblk0p1/apps/RedPitayaDAQServer/bitfiles"])
-    run(`$(scp()) $argument`)
+    uploadBitfile(ip, bitfile)
   end
 end
+
+export update!
+"""
+Update the Red Pitaya with the release from the given tag.
+"""
+function update!(ip::String, tagName::String)
+  imagePath = downloadAndExtractImage(tagName)
+  projectPath = joinpath(imagePath, "apps", "RedPitayaDAQServer")
+  keyPath = joinpath(projectPath, "rootkey")
+
+  # Remove old folder
+  argument = Cmd(["-i", keyPath, "root@$(ip)", "rm -r /media/mmcblk0p1/apps/RedPitayaDAQServer"])
+  run(`$(ssh()) $argument`)
+
+  # Upload new folder
+  argument = Cmd(["-i", keyPath, "-r", projectPath, "root@$(ip):/media/mmcblk0p1/apps"])
+  run(`$(scp()) $argument`)
+end
+update!(rp::RedPitaya, tagName::String) = update!(rp.host, tagName::String)
+update!(rpc::RedPitayaCluster) = [update!(rp) for rp in rpc]
