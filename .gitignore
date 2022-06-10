@@ -30,3 +30,5 @@ uImage
 .vscode
 vivado*
 .Xil
+rootkey
+rootkey.pub

@@ -154,6 +154,9 @@ sed -i 's/^SAVE_ON_STOP=.*/SAVE_ON_STOP="no"/;s/^IPFORWARD=.*/IPFORWARD="yes"/' 
 sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' etc/ssh/sshd_config
 chmod 400 /etc/ssh/*
 
+ssh-keygen -t rsa -b 2048 -m PEM -f /media/mmcblk0p1/apps/RedPitayaDAQServer/rootkey  -q -N ""
+/media/mmcblk0p1/apps/RedPitayaDAQServer/scripts/add_key
+
 echo root:$passwd | chpasswd
 
 setup-hostname red-pitaya
