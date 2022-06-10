@@ -20,6 +20,7 @@ using GitHub
 using URIs
 using ZipFile
 using OpenSSH_jll
+using LibGit2
 
 """
     RedPitaya

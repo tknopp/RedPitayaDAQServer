@@ -85,3 +85,17 @@ function downloadAndExtractImage(tagName::String; force=false)
     return unzip(imageZipPath, exdir=imagePath)
   end
 end
+
+extractedImagePath(tagName::String) = joinpath(@get_scratch!("rp"), tagName, "extracted")
+
+function uploadBitfiles(ip::String, tagName::String)
+  imagePath = extractedImagePath(tagName)
+  bitfilePath = joinpath(imagePath, "apps", "RedPitayaDAQServer", "bitfiles")
+  bitfiles = [joinpath(bitfilePath, bitfile) for bitfile in readdir(bitfilePath)]
+  keyPath = joinpath(imagePath, "apps", "RedPitayaDAQServer", "rootkey")
+
+  for bitfile in bitfiles
+    argument = Cmd(["-i", keyPath, bitfile, "root@$(ip):/media/mmcblk0p1/apps/RedPitayaDAQServer/bitfiles"])
+    run(`$(scp()) $argument`)
+  end
+end

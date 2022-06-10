@@ -104,6 +104,11 @@ mkdir -p $root_dir/media/mmcblk0p1/apps
 # Copy current status of RedPitayaDAQServer directory
 rsync -av -q ../../ $root_dir/media/mmcblk0p1/apps/RedPitayaDAQServer --exclude build --exclude .Xil --exclude "red-pitaya-alpine*.zip"
 
+# Reset repository
+git remote set-url origin https://github.com/tknopp/RedPitayaDAQServer.git
+git config user.name "rp_local"
+git config user.email "n.a."
+
 cp -r alpine-apk/sbin $root_dir/
 
 chroot $root_dir /sbin/apk.static --repository $alpine_url/main --update-cache --allow-untrusted --initdb add alpine-base
@@ -114,7 +119,7 @@ echo $alpine_url/community >> $root_dir/etc/apk/repositories
 chroot $root_dir /bin/sh <<- EOF_CHROOT
 
 apk update
-apk add openssh ucspi-tcp6 iw wpa_supplicant dhcpcd dnsmasq hostapd iptables avahi dbus dcron chrony gpsd libgfortran musl-dev fftw-dev libconfig-dev alsa-lib-dev alsa-utils curl wget less nano bc dos2unix patch make git build-base gfortran gdb htop python3
+apk add openssh ucspi-tcp6 iw wpa_supplicant dhcpcd dnsmasq hostapd iptables avahi dbus dcron chrony gpsd libgfortran musl-dev fftw-dev libconfig-dev alsa-lib-dev alsa-utils curl wget less nano bc dos2unix patch make git build-base gfortran gdb htop python3 expect
 
 ln -sf python3 /usr/bin/python
 
