@@ -252,7 +252,6 @@ end
 batchIndices(::typeof(passPDMToFastDAC!), rpc::RedPitayaCluster, val) = collect(1:length(rpc))
 batchTransformArgs(::typeof(passPDMToFastDAC!), rpc::RedPitayaCluster, idx, val::Vector{Bool}) = (val[idx])
 
-
 function passPDMToFastDAC(rpc::RedPitayaCluster)
   result = [false for rp in rpc]
   @sync for (d, rp) in enumerate(rpc)
@@ -278,7 +277,7 @@ for op in [:rampDownDone, :rampUpDone]
       @sync for (d, rp) in enumerate(rpc)
         @async result[d] = $op(rp)
       end
-      return all(result)    
+      return all(result)
     end
   end
 end

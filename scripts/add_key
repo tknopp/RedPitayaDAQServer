@@ -1,0 +1,5 @@
+#!/usr/bin/expect -f
+spawn ssh-copy-id -i /media/mmcblk0p1/apps/RedPitayaDAQServer/rootkey -f -o StrictHostKeyChecking=no root@localhost
+expect "password:"
+send "root\n"
+expect eof

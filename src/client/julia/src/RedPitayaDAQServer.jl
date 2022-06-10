@@ -13,6 +13,15 @@ import Base: reset, iterate, length, push!, pop!
 
 export RedPitaya, send, receive, query, start, stop, disconnect, ServerMode, serverMode, serverMode!, CONFIGURATION, ACQUISITION, TRANSMISSION, getLog, ScpiBatch, execute!, clear!
 
+using ProgressMeter
+using Downloads
+using Scratch
+using GitHub
+using URIs
+using ZipFile
+using OpenSSH_jll
+using LibGit2
+
 """
     RedPitaya
 
@@ -301,6 +310,7 @@ include("ClusterView.jl")
 include("Acquisition.jl")
 include("SlowIO.jl")
 include("EEPROM.jl")
+include("Utility.jl")
 
 function destroy(rp::RedPitaya)
   disconnect(rp)
