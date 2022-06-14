@@ -306,7 +306,7 @@ function execute!(rpc::RedPitayaCluster, batch::ScpiBatch)
     @sync for idx in indices
       @async begin
         if !isnothing(scpiReturn(f))
-          ret = parseReturn(f, receive(rpc[idx], _timeout))
+          ret = parseReturn(f, receive(rpc[idx], getTimeout()))
           result[idx] = ret
         end
       end
