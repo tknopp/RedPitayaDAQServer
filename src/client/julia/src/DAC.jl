@@ -340,15 +340,6 @@ end
 scpiCommand(::typeof(jumpSharpnessDAC!), channel, component, value) = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":JUMPsharpness ", Float64(value))
 scpiReturn(::typeof(jumpSharpnessDAC!)) = Bool
 
-function jumpSharpnessDACSeq!(rp::RedPitaya, channel, value)
-  return query(rp, scpiCommand(jumpSharpnessDACSeq!, channel, value), scpiReturn(jumpSharpnessDACSeq!))
-end
-scpiCommand(::typeof(jumpSharpnessDACSeq!), channel, value) = string("RP:DAC:SEQ:CH", Int(channel)-1, ":JUMPsharpness ", Float64(value))
-scpiReturn(::typeof(jumpSharpnessDACSeq!)) = Float64
-function jumpSharpnessDACSeq!(config::DACConfig, channel, value)
-  config.jumpSharpness[channel] = value
-end
-
 """
     signalTypeDAC!(rp::RedPitaya, channel, value)
 
