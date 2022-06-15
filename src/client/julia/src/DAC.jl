@@ -1,8 +1,6 @@
 export SignalType, SINE, SQUARE, TRIANGLE, SAWTOOTH, DACPerformanceData, DACConfig, passPDMToFastDAC, passPDMToFastDAC!,
 amplitudeDAC, amplitudeDAC!,offsetDAC, offsetDAC!,
-frequencyDAC, frequencyDAC!, phaseDAC, phaseDAC!,
-jumpSharpnessDAC, jumpSharpnessDAC!, signalTypeDAC, signalTypeDAC!, numSeqChan, numSeqChan!, samplesPerStep, samplesPerStep!,
-prepareSteps!, stepsPerFrame!, 
+frequencyDAC, frequencyDAC!, phaseDAC, phaseDAC!, signalTypeDAC, signalTypeDAC!,
 rampingDAC!, rampingDAC, enableRamping!, enableRamping, enableRampDown, enableRampDown!, RampingState, RampingStatus, rampingStatus, rampDownDone, rampUpDone
 
 """
@@ -296,49 +294,6 @@ scpiReturn(::typeof(phaseDACSeq!)) = Bool
 function phaseDACSeq!(config::DACConfig, channel, component, value)
   config.phases[channel, component] = value
 end
-
-"""
-    jumpSharpnessDAC(rp::RedPitaya, channel, value)
-
-Return the jumpSharpness of composite waveform for `channel`.
-
-See [`jumpSharpnessDAC!`](@ref).
-
-# Examples
-```julia
-julia> jumpSharpnessDAC!(rp, 1, 0.01);
-true
-
-julia> jumpSharpnessDAC(rp, 1)
-0.01
-```
-"""
-function jumpSharpnessDAC(rp::RedPitaya, channel, component)
-  return query(rp, scpiCommand(jumpSharpnessDAC, channel, component), scpiReturn(jumpSharpnessDAC))
-end
-scpiCommand(::typeof(jumpSharpnessDAC), channel, component) = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1,":JUMPsharpness?")
-scpiReturn(::typeof(jumpSharpnessDAC)) = Float64
-"""
-    jumpSharpnessDAC!(rp::RedPitaya, channel, value)
-
-Set the jumpSharpness of composite waveform for `channel`. Return `true` if the command was successful.
-
-See [`jumpSharpnessDAC`](@ref).
-
-# Examples
-```julia
-julia> jumpSharpnessDAC!(rp, 1, 0.01);
-true
-
-julia> jumpSharpnessDAC(rp, 1)
-0.01
-```
-"""
-function jumpSharpnessDAC!(rp::RedPitaya, channel, component, value)
-  return query(rp, scpiCommand(jumpSharpnessDAC!, channel, component, value), scpiReturn(jumpSharpnessDAC!))
-end
-scpiCommand(::typeof(jumpSharpnessDAC!), channel, component, value) = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":JUMPsharpness ", Float64(value))
-scpiReturn(::typeof(jumpSharpnessDAC!)) = Bool
 
 """
     signalTypeDAC!(rp::RedPitaya, channel, value)
