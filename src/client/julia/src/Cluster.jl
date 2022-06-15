@@ -84,8 +84,8 @@ function RPInfo(rpc::RedPitayaCluster)
   return RPInfo([RPPerformance([]) for i = 1:length(rpc)])
 end
 
-for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset, :sequenceRepetitions,
-           :triggerMode, :samplesPerStep, :stepsPerFrame, :serverMode, :masterTrigger]
+for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset,
+           :triggerMode, :samplesPerStep, :serverMode, :masterTrigger]
 
   @eval begin
     @doc """
@@ -98,7 +98,7 @@ for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samples
   end
 end
 
-for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :samplesPerStep!, :stepsPerFrame!,
+for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :samplesPerStep!,
            :keepAliveReset!, :serverMode!]
   @eval begin
     @doc """
@@ -117,7 +117,7 @@ for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :
   end
 end
 
-for op in [:clearSequence!, :sequence!, :prepareSequences!]
+for op in [:clearSequence!, :sequence!]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster, value)
@@ -314,4 +314,14 @@ function execute!(rpc::RedPitayaCluster, batch::ScpiBatch)
     push!(results, result)
   end
   return results
+end
+
+function execute!(f::Function, rp::Union{RedPitaya, RedPitayaCluster})
+  scpiBatch = ScpiBatch()
+  try
+    f(scpiBatch)
+  catch ex
+    rethrow()
+  end
+  return execute!(rp, scpiBatch)
 end
