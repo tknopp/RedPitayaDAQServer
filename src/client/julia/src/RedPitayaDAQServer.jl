@@ -11,7 +11,7 @@ using LinearAlgebra
 
 import Base: reset, iterate, length, push!, pop!
 
-export RedPitaya, send, receive, query, start, stop, disconnect, ServerMode, serverMode, serverMode!, CONFIGURATION, ACQUISITION, TRANSMISSION, getLog, ScpiBatch, execute!, clear!
+export RedPitaya, send, receive, query, start, stop, disconnect, ServerMode, serverMode, serverMode!, CONFIGURATION, ACQUISITION, TRANSMISSION, getLog, ScpiBatch, execute!, clear!, @add_batch
 
 using ProgressMeter
 using Downloads
@@ -301,6 +301,20 @@ function execute!(rp::RedPitaya, batch::ScpiBatch)
   end
   return result
 end
+
+macro add_batch(batch::Symbol, expr::Expr)
+  if expr.head != :call
+    throw(ArgumentError("$expr is not a function call"))
+  end
+  func = expr.args[1]
+  tuple = Expr(:call)
+  push!(tuple.args, :tuple)
+  for arg in expr.args[3:end]
+    push!(tuple.args, :($(esc(arg))))
+  end
+  return :(push!($(esc(batch)), $func => $tuple))
+end
+
 
 include("DAC.jl")
 include("Sequence.jl")
