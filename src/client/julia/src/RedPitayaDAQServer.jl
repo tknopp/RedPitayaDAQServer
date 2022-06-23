@@ -274,9 +274,31 @@ struct ScpiBatch
 end
 ScpiBatch() = ScpiBatch([])
 
+"""
+    push!(batch::ScpiBatch, cmd::Pair{K, T}) where {K<:Function, T<:Tuple}
+
+Add the given function and arguments to the batch
+# Examples
+```julia
+julia> batch = ScpiBatch() 
+
+julia> push!(batch, amplitudeDAC! => (1, 1, 0.2))
+```  
+"""
 push!(batch::ScpiBatch, cmd::Pair{K, T}) where {K<:Function, T<:Tuple} = push!(batch.cmds, cmd)
 push!(batch::ScpiBatch, cmd::Pair{K, T}) where {K<:Function, T<:Any} = push!(batch, cmd.first => (cmd.second,))
+"""
+    pop!(batch::ScpiBatch)
+
+Remove the last added command from the batch
+"""
 pop!(batch::ScpiBatch) = pop!(batch.cmds)
+
+"""
+    clear!(batch::ScpiBatch)
+
+Remove all commands from the batch
+"""
 function clear!(batch::ScpiBatch)
   batch.cmds = []
 end
@@ -306,6 +328,20 @@ function execute!(rp::RedPitaya, batch::ScpiBatch)
   return result
 end
 
+"""
+    @add_batch batch cmd
+
+Append a usual RedPitaya function to the given batch instead of evaluating it directly.
+
+See also [`ScpiBatch`](@ref), [`push!`](@ref), [`execute!`](@ref)
+
+# Examples
+```julia
+julia>  execute!(rp) do b
+          @add_batch b serverMode!(rp, CONFIGURATION)
+        end
+```
+"""
 macro add_batch(batch::Symbol, expr::Expr)
   if expr.head != :call
     throw(ArgumentError("$expr is not a function call"))
