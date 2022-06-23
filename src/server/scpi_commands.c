@@ -1149,7 +1149,7 @@ static scpi_result_t RP_DAC_SetSequence(scpi_t * context) {
 		configSeq = NULL;
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIBool(context, prepareSequence());
 }
 
 static scpi_result_t RP_DAC_ClearSequence(scpi_t * context) {
@@ -1271,6 +1271,10 @@ static scpi_result_t RP_Calib_DAC_GetScale(scpi_t* context) {
 }
 
 static scpi_result_t RP_Calib_DAC_SetScale(scpi_t* context) {
+	if (getServerMode() != CONFIGURATION) {
+		return returnSCPIBool(context, false);
+	}
+
 	int32_t numbers[1];
 	SCPI_CommandNumbers(context, numbers, 1, 1);
 	int channel = numbers[0];
@@ -1461,7 +1465,6 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:SEQ:LUT:DOWN", .callback = RP_DAC_SetDownLUT,},
 	{.pattern = "RP:DAC:SEQ:SET", .callback = RP_DAC_SetSequence,},
 	{.pattern = "RP:DAC:SEQ:CLEAR", .callback = RP_DAC_ClearSequence,},
-	{.pattern = "RP:DAC:SEQ:PREPare", .callback = RP_DAC_PrepareSequence,},
 	// ADC
 	//{.pattern = "RP:ADC:SlowADC", .callback = RP_ADC_SetNumSlowADCChan,},
 	//{.pattern = "RP:ADC:SlowADC?", .callback = RP_ADC_GetNumSlowADCChan,},

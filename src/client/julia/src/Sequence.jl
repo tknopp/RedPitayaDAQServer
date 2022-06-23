@@ -73,16 +73,6 @@ clearSequence!(rp::RedPitaya) = query(rp, scpiCommand(clearSequence!), scpiRetur
 scpiCommand(::typeof(clearSequence!)) = "RP:DAC:SEQ:CLEAR"
 scpiReturn(::typeof(clearSequence!)) = Bool
 
-"""
-    prepareSequences!(rp::RedPitaya)
-
-Instruct the server to prepare the currently added sequences.
-Return `true` if the command was successful.
-"""
-prepareSequence!(rp::RedPitaya) = query(rp, scpiCommand(prepareSequence!), scpiReturn(prepareSequence!))
-scpiCommand(::typeof(prepareSequence!)) = "RP:DAC:SEQ:PREPare"
-scpiReturn(::typeof(prepareSequence!)) = Bool
-
 # Helper function for sequences
 struct SequenceLUT
   values::Array{Float32}
@@ -282,7 +272,6 @@ function sequence!(rp::RedPitaya, seq::AbstractSequence)
   result &= rampUpLUT!(rp, rampUpLUT(seq))
   result &= rampDownLUT!(rp, rampDownLUT(seq))
   result &= setSequence!(rp)
-  result &= prepareSequence!(rp)
   return result
 end
 
