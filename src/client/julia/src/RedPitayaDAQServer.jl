@@ -115,6 +115,7 @@ See also [receive](@ref).
 """
 function query(rp::RedPitaya, cmd::String, timeout::Number=getTimeout())
   send(rp,cmd)
+  Sockets.quickack(rp.socket, true)
   receive(rp, timeout)
 end
 
@@ -287,16 +288,19 @@ Executes all commands of the given batch. Returns an array of the results in the
 An element is `nothing` if the command has no return value.
 """
 function execute!(rp::RedPitaya, batch::ScpiBatch)
-  for (f, args) in batch.cmds
-    send(rp, scpiCommand(f, args...))
-  end
-  result = []
-  for (f, _) in batch.cmds
+  # Send everything first
+  cmds = join([scpiCommand(f, args...) for (f, args) in batch.cmds], rp.delim)
+  send(rp, cmds)
+  # Then receive
+  Sockets.quickack(rp.socket, true)
+  result = Array{Any}(undef, length(batch.cmds))
+  for (i, (f, _)) in enumerate(batch.cmds)
     if !isnothing(scpiReturn(f))
       ret = receive(rp, getTimeout())
-      push!(result, parseReturn(f, ret))
+      Sockets.quickack(rp.socket, true) # quickack can be reset after tcp operations
+      result[i] = parseReturn(f, ret)
     else
-      push!(result, nothing)
+      result[i] = nothing
     end
   end
   return result

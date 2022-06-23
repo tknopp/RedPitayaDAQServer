@@ -292,21 +292,32 @@ An element of an inner array is `nothing` if the command has no return value.
 """
 function execute!(rpc::RedPitayaCluster, batch::ScpiBatch)
   # Send cmd after cmd to each "affected" RedPitaya
+  cmds = [Vector{String}() for i =1:length(rpc)]
   for (f, args) in batch.cmds
     indices = batchIndices(f, rpc, args...)
-    @sync for idx in indices
-      @async send(rpc[idx], scpiCommand(f, batchTransformArgs(f, rpc, idx, args...)...))
+    for idx in indices
+      push!(cmds[idx], scpiCommand(f, batchTransformArgs(f, rpc, idx, args...)...))
+    end
+  end
+  @sync for (i, cmd) in enumerate(cmds)
+    @async begin
+      if !isempty(cmd)
+        cmdStr = join(cmd, rpc[i].delim)
+        send(rpc[i], cmdStr)
+        Sockets.quickack(rpc[i].socket, true)
+      end
     end
   end
   results = []
   # Retrieve results from each "affected" RedPitaya for each cmd
   for (f, args) in batch.cmds
-    result = Array{Any}(nothing, length(rpc))
+    result = Array{Union{Nothing, scpiReturn(f)}}(nothing, length(rpc))
     indices = batchIndices(f, rpc, args...)
     @sync for idx in indices
       @async begin
         if !isnothing(scpiReturn(f))
           ret = parseReturn(f, receive(rpc[idx], getTimeout()))
+          Sockets.quickack(rpc[idx].socket, true)
           result[idx] = ret
         end
       end
