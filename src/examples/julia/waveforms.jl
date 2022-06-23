@@ -24,8 +24,6 @@ amplitudeDAC!(rp, 1, 1, 0.5)
 offsetDAC!(rp, 1, 0.1)
 phaseDAC!(rp, 1, 1, 0.0 )
 # Controls the sharpness of the jump for the square
-jumpSharpnessDAC!(rp, 1, 0.01)
-
 
 signals = zeros(4*N)
 
@@ -33,9 +31,9 @@ figure(1)
 clf()
 
 color = ["g", "b", "orange", "k"]
-for (i,name) in enumerate(["SINE", "SQUARE", "TRIANGLE", "SAWTOOTH"])
+for (i,name) in enumerate(["SINE", "TRIANGLE", "SAWTOOTH"])
   # Set different waveforms
-  signalTypeDAC!(rp, 1 , name)
+  signalTypeDAC!(rp, 1, 1, name)
   serverMode!(rp, ACQUISITION)
   masterTrigger!(rp, false)
   masterTrigger!(rp, true)

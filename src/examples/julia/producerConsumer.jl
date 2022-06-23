@@ -4,7 +4,7 @@ using PyPlot
 
 include("config.jl")
 
-# Note that this example is intended to be used with at least two threads (start Julia with option -t 2)
+# Note that this example is intended to be used with at least three threads (start Julia with option -t 3)
 
 rp = RedPitaya(URLs[1])
 if serverMode(rp) == ACQUISITION
@@ -31,7 +31,7 @@ periodsPerFrame!(rp, periods_per_frame)
 triggerMode!(rp, INTERNAL)
 
 frequencyDAC!(rp, 1, 1, base_frequency / modulus)
-signalTypeDAC!(rp, 1 , SINE)
+signalTypeDAC!(rp, 1, 1, SINE)
 amplitudeDAC!(rp, 1, 1, 0.5)
 offsetDAC!(rp, 1, 0)
 phaseDAC!(rp, 1, 1, 0.0 )

@@ -22,7 +22,7 @@ frequencyDAC!(rp, 1, 1, base_frequency / modulus)
 signalTypeDAC!(rp, 1 , 1, SINE)
 amplitudeDAC!(rp, 1, 1, 0.5)
 offsetDAC!(rp, 1, 0)
-phaseDAC!(rp, 2, 1, 0.0)
+phaseDAC!(rp, 1, 1, 0.0)
 
 # Ramping
 # Ramping commands can be specified for each channel individually

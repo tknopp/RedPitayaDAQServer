@@ -26,7 +26,7 @@ triggerMode!(rp, INTERNAL) # or triggerMode!(rp, "INTERNAL")
 # DAC Configuration
 # These commands are allowed during an acquisition
 frequencyDAC!(rp, 1, 1, base_frequency / modulus)
-signalTypeDAC!(rp, 1 , SINE) # or signalTypeDAC!(rp, 1, "SINE")
+signalTypeDAC!(rp, 1 , 1, SINE) # or signalTypeDAC!(rp, 1, "SINE")
 amplitudeDAC!(rp, 1, 1, 0.5)
 offsetDAC!(rp, 1, 0)
 phaseDAC!(rp, 1, 1, 0.0)
