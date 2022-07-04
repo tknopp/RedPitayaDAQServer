@@ -77,6 +77,7 @@ function listReleaseTags()
   return [rel.tag_name for rel in rels]
 end
 
+export latestReleaseTag
 """
     latestReleaseTag()
 
@@ -90,7 +91,6 @@ julia> update!("192.168.1.100", latestReleaseTag())
 ...
 ```
 """
-export latestReleaseTag
 function latestReleaseTag()
   return listReleaseTags()[1]
 end
@@ -179,7 +179,28 @@ function update!(ip::String, tagName::String)
   # Run make on RP, since we do not necessarily have all set-up to do a cross-compile
   argument = Cmd(["-i", keyPath, "root@$(ip)", "cd /media/mmcblk0p1/apps/RedPitayaDAQServer && make server"])
   run(`ssh $argument`)
-  @info "Successfully updated RedPitaya $ip"
+
+  @info "Rebooting RedPitaya"
+  argument = Cmd(["-i", keyPath, "root@$(ip)", "reboot"])
+  run(`ssh $argument`)
+
+  @info "Atemmpting to connect to RedPitaya $ip"
+  for i=1:3
+    try 
+      rp = RedPitaya(ip)
+      @info "Connected to RedPitaya $ip"
+      @info "Successfully updated RedPitaya $ip"
+      break
+    catch ex
+      if i == 3
+        @warn "Could not connect to RedPitaya in $i attempts. Try again manually"
+      else 
+        @info "Failed to connect. Retry in 5 seconds"
+        sleep(5)
+      end
+    end
+  end
+
 end
 update!(rp::RedPitaya, tagName::String) = update!(rp.host, tagName::String)
 update!(rpc::RedPitayaCluster) = [update!(rp) for rp in rpc]
