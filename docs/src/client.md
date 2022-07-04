@@ -81,3 +81,4 @@ RedPitayaDAQServer.readSamples
 RedPitayaDAQServer.readFrames
 RedPitayaDAQServer.convertSamplesToFrames
 ```
+## Utility
