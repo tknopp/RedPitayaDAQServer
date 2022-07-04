@@ -184,6 +184,8 @@ function update!(ip::String, tagName::String)
   argument = Cmd(["-i", keyPath, "root@$(ip)", "reboot"])
   run(`ssh $argument`)
 
+  # Wait for reboot
+  sleep(2)
   @info "Atemmpting to connect to RedPitaya $ip"
   for i=1:3
     try 
