@@ -160,7 +160,9 @@ sed -i 's/^#PermitRootLogin.*/PermitRootLogin yes/' etc/ssh/sshd_config
 chmod 400 /etc/ssh/*
 
 #ssh-keygen -t rsa -b 2048 -m PEM -f /media/mmcblk0p1/apps/RedPitayaDAQServer/rootkey  -q -N ""
-/media/mmcblk0p1/apps/RedPitayaDAQServer/scripts/add_key
+#/media/mmcblk0p1/apps/RedPitayaDAQServer/scripts/add_key
+mkdir /media/mmcblk0p1/.ssh
+cp /media/mmcblk0p1/apps/RedPitayaDAQServer/rootkey.pub /media/mmcblk0p1/.ssh/authorized_keys
 
 echo root:$passwd | chpasswd
 
