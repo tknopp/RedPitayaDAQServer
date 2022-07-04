@@ -19,8 +19,6 @@ using Scratch
 using GitHub
 using URIs
 using ZipFile
-using OpenSSH_jll
-using LibGit2
 
 """
     RedPitaya
@@ -267,7 +265,7 @@ scpiReturn(::typeof(serverMode!)) = Bool
 """
     ScpiBatch
 
-Struct representing a batch of SCPI commands for a RedPitaya. Only commands that only interact with the command socket should be used in a batch.
+Struct representing a batch of SCPI commands for a RedPitaya. Only commands that interact exclusively with the command socket should be used in a batch.
 """
 struct ScpiBatch
   cmds::Vector{Pair{Function, Tuple}}
@@ -315,14 +313,12 @@ function execute!(rp::RedPitaya, batch::ScpiBatch)
   send(rp, cmds)
   # Then receive
   Sockets.quickack(rp.socket, true)
-  result = Array{Any}(undef, length(batch.cmds))
+  result = Array{Any}(nothing, length(batch.cmds))
   for (i, (f, _)) in enumerate(batch.cmds)
     if !isnothing(scpiReturn(f))
       ret = receive(rp, getTimeout())
       Sockets.quickack(rp.socket, true) # quickack can be reset after tcp operations
       result[i] = parseReturn(f, ret)
-    else
-      result[i] = nothing
     end
   end
   return result

@@ -29,10 +29,12 @@ function downloadImage(url::URI; force=false)
   splittedUrl = URIs.splitpath(url)
   fileName = splittedUrl[end]
   tagName = splittedUrl[end-1]
-  output = joinpath(@get_scratch!("rp"), tagName, fileName)
+  scratch = @get_scratch!("releases")
+  releaseFolder = mkpath(joinpath(scratch, tagName))
+  output = joinpath(releaseFolder, fileName)
 
   if !isfile(output) || force
-    Downloads.download(string(url), output, progress=(total, now) -> update!(p, calcDownloadProgress(total, now)))
+    Downloads.download(string(url), output, progress=(total, now) -> ProgressMeter.update!(p, calcDownloadProgress(total, now)))
   else
     @debug "The image at `$url` does already exist and was thus not downloaded. Use `force=true` to download it anyways."
   end
@@ -111,37 +113,49 @@ export update!
 Update the Red Pitaya with the release from the given tag.
 """
 function update!(ip::String, tagName::String)
+  if Sys.iswindows()
+    success(`where ssh`) || error("'ssh' not found.")
+    success(`where scp`) || error("'scp' not found.")
+    success(`where git`) || error("'git' not found.")
+  else
+    success(`which ssh`) || error("'ssh' not found.")
+    success(`which scp`) || error("'scp' not found.")
+    success(`which git`) || error("'git' not found.")
+  end
+
+  @info "Downloading tagged release"
   imagePath = downloadAndExtractImage(tagName)
   projectPath = joinpath(imagePath, "apps", "RedPitayaDAQServer")
   keyPath = joinpath(projectPath, "rootkey")
 
   # Prepare folder for RPs without internet connection
-  argument = Cmd(["config", "--global", "--add", "safe.directory", projectPath])
-  run(`git $argument`)
-  argument = Cmd(["config", "--global", "--add", "safe.directory", joinpath(projectPath, "libs", "scpi-parser")])
-  run(`git $argument`)
+  @info "Preparing RedPitayaDAQServer folder"
+  argument = Cmd(["config", "--add", "safe.directory", projectPath])
+  run(setenv(`git $argument`, dir=projectPath))
+  argument = Cmd(["config", "--add", "safe.directory", joinpath(projectPath, "libs", "scpi-parser")])
+  run(setenv(`git $argument`, dir=projectPath))
   argument = Cmd(["submodule", "update", "--init", "--force", "--remote"])
   run(setenv(`git $argument`, dir=projectPath))
+  chmod(keyPath, 0o400) # Otherwise private key is not accepted by ssh as it is unsecure
 
+  @info "Uploading folder"
   # Remove old folder
   argument = Cmd(["-i", keyPath, "root@$(ip)", "rm -r /media/mmcblk0p1/apps/RedPitayaDAQServer"])
-  run(`$(ssh()) $argument`)
+  run(`ssh $argument`)
 
   # Create new folder
   argument = Cmd(["-i", keyPath, "root@$(ip)", "mkdir /media/mmcblk0p1/apps/RedPitayaDAQServer"])
-  run(`$(ssh()) $argument`)
+  run(`ssh $argument`)
 
   # Upload new folder
-  argument = Cmd(["-i", keyPath, "-rp", "$projectPath/*", "root@$(ip):/media/mmcblk0p1/apps/RedPitayaDAQServer"])
-  run(`$(scp()) $argument`)
+  argument = Cmd(["-i", keyPath, "-rp", "$projectPath/", "root@$(ip):/media/mmcblk0p1/apps"])
+  run(`scp $argument`)
 
-  # Upload hidden folders
-  argument = Cmd(["-i", keyPath, "-rp", "$projectPath/.*", "root@$(ip):/media/mmcblk0p1/apps/RedPitayaDAQServer"])
-  run(`$(scp()) $argument`)
-
+  @info "Preparing server"
   # Run make on RP, since we do not necessarily have all set-up to do a cross-compile
   argument = Cmd(["-i", keyPath, "root@$(ip)", "cd /media/mmcblk0p1/apps/RedPitayaDAQServer && make server"])
-  run(`$(ssh()) $argument`)
+  run(`ssh $argument`)
+  @info "Successfully updated RedPitaya $ip"
 end
 update!(rp::RedPitaya, tagName::String) = update!(rp.host, tagName::String)
 update!(rpc::RedPitayaCluster) = [update!(rp) for rp in rpc]
