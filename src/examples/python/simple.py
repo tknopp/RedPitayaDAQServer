@@ -24,7 +24,7 @@ ret = rp.query("RP:TRIGger:MODe %s" % "INTERNAL")
 # DAC Configuration
 # These commands are allowed during an acquisition
 ret = rp.query("RP:DAC:CH0:COMP0:FREQ %f" % (base_frequency / modulus))
-ret = rp.query("RP:DAC:CH0:SIGnaltype SINE")
+ret = rp.query("RP:DAC:CH0:COMP0:SIGnaltype SINE")
 ret = rp.query("RP:DAC:CH0:COMP0:AMP %f" % (0.5))
 ret = rp.query("RP:DAC:CH0:OFF %f" % (0.0))
 ret = rp.query("RP:DAC:CH0:COMP0:PHA %f" % (0.0))
