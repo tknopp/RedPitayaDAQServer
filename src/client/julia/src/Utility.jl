@@ -66,9 +66,33 @@ function getImageURL(tagName::String)
   end
 end
 
+export listReleaseTags
+"""
+    listReleaseTags()
+
+Return a vector of release tags
+"""
 function listReleaseTags()
   rels = releases("tknopp/RedPitayaDAQServer")[1]
   return [rel.tag_name for rel in rels]
+end
+
+"""
+    latestReleaseTag()
+
+Return the latest release tag.
+
+See also [`listReleaseTags`](@ref), [`update!`](@ref).
+
+# Examples
+```julia
+julia> update!("192.168.1.100", latestReleaseTag())
+...
+```
+"""
+export latestReleaseTag
+function latestReleaseTag()
+  return listReleaseTags()[1]
 end
 
 function downloadAndExtractImage(tagName::String; force=false)
