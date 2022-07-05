@@ -1,4 +1,4 @@
-export SignalType, SINE, SQUARE, TRIANGLE, SAWTOOTH, DACPerformanceData, DACConfig, passPDMToFastDAC, passPDMToFastDAC!,
+export SignalType, SINE, TRIANGLE, SAWTOOTH, DACPerformanceData, DACConfig, passPDMToFastDAC, passPDMToFastDAC!,
 amplitudeDAC, amplitudeDAC!,offsetDAC, offsetDAC!,
 frequencyDAC, frequencyDAC!, phaseDAC, phaseDAC!, signalTypeDAC, signalTypeDAC!,
 rampingDAC!, rampingDAC, enableRamping!, enableRamping, enableRampDown, enableRampDown!, RampingState, RampingStatus, rampingStatus, rampDownDone, rampUpDone
@@ -6,11 +6,11 @@ rampingDAC!, rampingDAC, enableRamping!, enableRamping, enableRampDown, enableRa
 """
     SignalType
 
-Represent the different types of signals the fast DAC can have. Valid values are `SINE`, `SQUARE`, `TRIANGLE` and `SAWTOOTH`.
+Represent the different types of signals the fast DAC can have. Valid values are `SINE`, `TRIANGLE` and `SAWTOOTH`.
 
 See [`signalTypeDAC`](@ref), [`signalTypeDAC!`](@ref).
 """
-@enum SignalType SINE SQUARE TRIANGLE SAWTOOTH
+@enum SignalType SINE TRIANGLE SAWTOOTH
 struct DACPerformanceData
   uDeltaControl::UInt8
   uDeltaSet::UInt8
@@ -344,18 +344,6 @@ function signalTypeDAC!(rp::RedPitaya, channel, component, sigType::SignalType)
 end
 scpiCommand(::typeof(signalTypeDAC!), channel, component, sigType) = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":SIGnaltype ", string(sigType))
 scpiReturn(::typeof(signalTypeDAC!)) = Bool
-
-function signalTypeDACSeq!(rp::RedPitaya, channel, sigType::String)
-  return signalTypeDACSeq!(rp, channel, stringToEnum(SignalType, sigType))
-end
-function signalTypeDACSeq!(rp::RedPitaya, channel, sigType::SignalType)
-  return query(rp, scpiCommand(signalTypeDACSeq!, channel, sigType), scpiReturn(signalTypeDACSeq!))
-end
-scpiCommand(::typeof(signalTypeDACSeq!), channel, sigType) = string("RP:DAC:SEQ:CH", Int(channel)-1, ":SIGnaltype ", string(sigType))
-scpiReturn(::typeof(signalTypeDACSeq!)) = Bool
-function signalTypeDACSeq!(config::DACConfig, channel, sigType::String)
-  config.signalTypes[channel] = sigType
-end
 
 
 function rampingDAC!(rp::RedPitaya, channel, value)
