@@ -1,8 +1,8 @@
 # SCPI Interface
 
-For communication betten the server and the client an [SCPI](https://en.wikipedia.org/wiki/Standard_Commands_for_Programmable_Instruments) with custom commands is used. In the following tables an overview of the available commands and their behaviour is given. The Julia [Client](client.md) library encapsulates these commands into function calls, abstracting their communication details and also combining commands to manage a cluster of RedPitayas at the same time.
+For communication betten the server and the client an [SCPI](https://en.wikipedia.org/wiki/Standard_Commands_for_Programmable_Instruments) interface with custom commands is used. In the following tables an overview of the available commands and their behaviour is given. The Julia [Client](client.md) library encapsulates these commands into function calls, abstracting their communication details and also combining commands to manage a cluster of RedPitayas at the same time.
 
-As a safe guard the server has different modes and certain commands are only available in certain modes. To give an example, during an acquisition changing the sampling rate would result in unclear behaviour. To stop such a scenario the decimation can only be set in the `CONFIGURATION` mode and an acquisition can only be triggered in the `ACQUISITION` mode. The available modes are `CONFIGURATION`, `ACQUISITION` and `TRANSMISSION`. The former two are set by the client and the latter is set by the server during sample transmission.
+As a safe guard the server has different communcation modes and certain commands are only available in certain modes. To give an example, during an acquisition changing the sampling rate would result in unclear behaviour. To stop such a scenario the decimation can only be set in the `CONFIGURATION` mode and an acquisition can only be triggered in the `ACQUISITION` mode. The available modes are `CONFIGURATION`, `ACQUISITION` and `TRANSMISSION` (C, A, T, 😺). The former two are set by the client and the latter is set by the server during sample transmission.
 
 After each SCPI command the server replies with `true` or `false` on the command socket depending on whether the given command was successfully excecuted. The exception to this rule are the commands which themselves just query values from the server.
 
@@ -39,7 +39,7 @@ After each SCPI command the server replies with `true` or `false` on the command
 
 
 ## Sequence Configuration
-The server maintains three acqusition sequences. When the server is `ACQUSITION` mode a client can configure a configuration set of three sequence. If the current configured sequences fits the desired signal, a client can intstruct the server to set the sequences. This moves the configuration sequences to the acquisition sequences and writes the first values to the FPGA buffer.
+The server maintains three acqusition sequences. When the server is in the`CONFIGURATION` mode a client can configure a set of three sequences. If the current configured sequences fits the desired signal, a client can intstruct the server to set the sequences. This moves the configuration sequences to the acquisition sequences and writes the first values to the FPGA buffer.
 
 During an active trigger the buffer is periodically updated by the server. If the server recognizes the end of a sequence, it sets the amplitudes of the waveform components to 0.
 
@@ -64,13 +64,13 @@ During an active trigger the buffer is periodically updated by the server. If th
 ## Acquisition and Transmission
 | Command | Arguments | Description | Mode | Example |
 | :--- | :--- | :--- | :---: | :--- |
-| RP:TRIGger | trigger status (OFF, ON) | Set the internal trigger status | M | RP:TRIG ON |
+| RP:TRIGger | trigger status (OFF, ON) | Set the internal trigger status | A | RP:TRIG ON |
 | RP:TRIGger? |  | Return the trigger status | Any | RP:TRIG? |
-| RP:TRIGger:ALiVe | keep alive status (OFF, ON) | Set the keep alive bypass | M | RP:TRIG:ALV OFF |
+| RP:TRIGger:ALiVe | keep alive status (OFF, ON) | Set the keep alive bypass | A | RP:TRIG:ALV OFF |
 | RP:TRIGger:ALiVe? |  | Return the keep alive status | Any | RP:TRIG:ALV? |
-| RP:ADC:WP:CURRent? |  | Return the current writepointer | M, T | RP:ADC:WP? |
-| RP:ADC:DATa? | readpointer, number of samples | Transmit number of samples from the buffer component of the readpointer over the data socket. Return true on the command socket if transmission is started. | M | RP:ADC:DATa? 400,1024 |
-| RP:ADC:DATa:PIPElined? | readpointer, number of samples, chunksize | Transmit number of samples from the readpointer on in chunks of chunksize over the data socket. After every chunk status and performance data is transmitted over the data socket. Return true if pipeline was started. | M | RP:ADC:DAT:PIPE? 400,1024,128 |
+| RP:ADC:WP:CURRent? |  | Return the current writepointer | A, T | RP:ADC:WP? |
+| RP:ADC:DATa? | readpointer, number of samples | Transmit number of samples from the buffer component of the readpointer over the data socket. Return true on the command socket if transmission is started. | A | RP:ADC:DATa? 400,1024 |
+| RP:ADC:DATa:PIPElined? | readpointer, number of samples, chunksize | Transmit number of samples from the readpointer on in chunks of chunksize over the data socket. After every chunk status and performance data is transmitted over the data socket. Return true if pipeline was started. | A | RP:ADC:DAT:PIPE? 400,1024,128 |
 | RP:STATus? |  | Transmit status as one byte with flags from lower bits: overwritten, corrupted, lost steps, master trigger, sequence active | Any | RP:STAT? |
 | RP:STATus:OVERwritten? |  | Transmit overwritten flag | Any | RP:STAT:OVER? |
 | RP:STATus:CORRupted? |  | Transmit corrupted flag | Any | RP:STAT:CORR? |
@@ -78,6 +78,8 @@ During an active trigger the buffer is periodically updated by the server. If th
 | RP:PERF? |  | Transmit ADC and DAC performance data | Any | RP:PERF? |
 
 ## Calibration
+| Command | Arguments | Description | Mode | Example |
+| :--- | :--- | :--- | :---: | :--- |
 |RP:CALib:ADC:CHannel#:OFFset | channel (0, 1), offset | Store the ADC offset value for given channel in EEPROM  | C | RP:CAL:ADC:CH0:OFF 0.2 |
 |RP:CALib:ADC:CHannel#:OFFset? | channel (0, 1) | Return the ADC offset value for given channel from EEPROM | Any | RP:CAL:ADC:CH1:OFF? |
 |RP:CALib:ADC:CHannel#:SCAle | channel (0, 1), scale| Store the ADC scale value for given channel in EEPROM | C | RP:CAL:ADC:CH1:SCA 1.0 |

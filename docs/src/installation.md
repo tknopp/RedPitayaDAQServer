@@ -25,10 +25,63 @@ Then with
 add RedPitayaDAQServer
 ```
 the latest release of the Julia client is added. To install a different version, please consult the [Pkg documentation](https://pkgdocs.julialang.org/dev/managing-packages/#Adding-packages). The Julia client and the RedPitaya image should be from the same release to avoid errors due to communication protocol changes.
+
+To try out the Julia examples one can either download them from Github directly, clone the whole repository or use the alternative way of installing Julia packages described [here](installation.md#julia-client-library).
 # Updating
 The Julia client offers function to automatically update the server and FPGA of a RedPitaya. More on this can be found [here](client.md#utility). Note that this process deletes all data in the `RedPitayaDAQServer` folder on the RedPitaya.
-# Security Considerations
-The system as it is provided here should not be accessible from the internet as it uses an default public password and publically known ssh-key.
+# Network Connection
+The system as provided here should not be made accessible from the internet since it uses a default public password and ssh-key.
+
+One possible configuration to run single or a cluster of RedPitayas is to directly connect them with the measurement computer. In case of a cluster one can use a switch such that only a single network connector is required. In case that the measurement computer has no free ethernet port one can use a USB network adapter.
+
+
+In order to get this setup running you need to install a dhcp server on the measurement computer, such as `dhcpd`, and give the measurement computer a static IP address (e.g. 192.168.1.1). This can be installed with 
+```
+sudo apt-get install isc-dhcp-server
+```
+
+One can then edit the `/etc/dhcp/dhcpd.conf` configuration file with a setup similar to the following example:
+```
+subnet 192.168.1.0 netmask 255.255.255.0 {
+        interface ????;
+
+        #range dynamic-bootp 192.168.1.100 192.168.1.102;
+        option broadcast-address 192.168.1.255;
+        option routers 192.168.1.1;
+
+        host rp1 {
+                hardware ethernet 00:26:32:F0:70:83;
+                fixed-address 192.168.1.100;
+        }
+
+        host rp2 {
+                hardware ethernet 00:26:32:F0:92:97;
+                fixed-address 192.168.1.101;
+        }
+
+        host rp3 {
+                hardware ethernet 00:26:32:F0:61:F5;
+                fixed-address 192.168.1.102;
+        }
+}
+```
+The example defines three fixed IP addresses for three RedPitayas based on their MAC addresses. You may also need to specify DNS servers or alternatively create a network with a range of IPs (e.g. 192.168.1.100-105).
+
+Afterwards with
+```
+service isc-dhcp-server start
+```
+or 
+```
+service isc-dhcp-server restart 
+```
+one can start the DHCP service and should see the RedPitayas using the DHCP protocol to get their IP addresses with:
+```
+journalctl -f -u isc-dhcp-server
+```
+This displays the latest log messages of the DHCP service. 
+
+If you need internet at your RedPitaya you need to configure the firewall to allow this using iptables. In this repository there is in the `scripts` directory a script `rp-internet.sh` where you need to change the network adapters to allow traffic going from the internet network adapter to the RedPitaya network adapter.
 # Building Components
 
 ## Linux Image and FPGA Images
@@ -56,13 +109,17 @@ Then switch into this directory. You can build the whole project using
 make all
 ```
 
-For only building some parts, such as the FPGA image, please refer to the Makefile.
+With 
+```
+make daq_bitfiles
+```
+one can build both the 7010 and the 7020 versions of the FPGA image. For different build targets consult the Makefiles.
 
 Note: `make` has to be run as root if you want to build the Linux image, since `chroot` requires `root` privileges.
 
 ## Server
 
-To build the RedPitaya server connect the RedPitaya to you local network and accessto you local network and access the device via ssh:
+To build the RedPitaya server connect the RedPitaya to your local network and access the device via ssh:
 ```
 ssh root@rp-f?????.local
 ```
@@ -84,12 +141,8 @@ Then cd into RedPitayaDAQServer
 cd /root/apps/RedPitayaDAQServer
 ```
 and enter `make server`. This will compile the library, the server, and some example applications. After you restart the RedPitaya the DAQ server will automatically run and you can access it via TCP.
-
-Under `src/scripts/rp-internet.sh` an example script can be found, that shows how to let the RedPitaya access the internet through a client computer.
-
-
-## Julia Client Library
-Another option when installing the Julia client is to `dev` the package with
+## Developing Julia Client Library
+Another option when installing the Julia client is to add the package with the  `dev` command:
 ```
 dev RedPitayaDAQServer
 ```
