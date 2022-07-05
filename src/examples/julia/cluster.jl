@@ -10,13 +10,13 @@ rpc = RedPitayaCluster([URLs[1], URLs[2]])
 serverMode!(rpc, CONFIGURATION)
 
 dec = 32
-modulus = 12500
+modulus = 12480
 base_frequency = 125000000
 samples_per_period = div(modulus, dec)
 periods_per_frame = 2
 
 decimation!(rpc, dec)
-samplesPerpceriod!(rpc, samples_per_period)
+samplesPerPeriod!(rpc, samples_per_period)
 periodsPerFrame!(rpc, periods_per_frame)
 # In a cluster setting RedPitayas should listen to the external triggered
 triggerMode!(rpc, EXTERNAL)
@@ -34,7 +34,7 @@ amplitudeDAC!(rpc, 3, 1, 0.8)
 phaseDAC!(rpc, 1, 1, 0.0) 
 phaseDAC!(rpc, 3, 1, pi)
 
-serverMode!(rpc, MEASUREMENT)
+serverMode!(rpc, ACQUISITION)
 masterTrigger!(rpc, true)
 
 uFirstPeriod = readFrames(rpc, 0, 1)
@@ -50,6 +50,7 @@ subplot(2, 1, 1)
 plot(vec(uFirstPeriod[:,1,:,:]))
 plot(vec(uFirstPeriod[:,3,:,:]))
 legend(("Channel 1", "Channel 3"))
+subplot(2, 1, 2)
 plot(vec(uCurrentPeriod[:,1,:,:]))
 plot(vec(uCurrentPeriod[:,3,:,:]))
 legend(("Channel 1", "Channel 3"))
