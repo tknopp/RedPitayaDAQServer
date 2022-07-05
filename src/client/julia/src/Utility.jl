@@ -132,11 +132,7 @@ function uploadBitfiles(ip::String, tagName::String)
   end
 end
 
-export update!
-"""
-Update the Red Pitaya with the release from the given tag.
-"""
-function update!(ip::String, tagName::String)
+function checkDependencies()
   if Sys.iswindows()
     success(`where ssh`) || error("'ssh' not found.")
     success(`where scp`) || error("'scp' not found.")
@@ -146,7 +142,9 @@ function update!(ip::String, tagName::String)
     success(`which scp`) || error("'scp' not found.")
     success(`which git`) || error("'git' not found.")
   end
+end
 
+function prepareProject(tagName::String)
   @info "Downloading tagged release"
   imagePath = downloadAndExtractImage(tagName)
   projectPath = joinpath(imagePath, "apps", "RedPitayaDAQServer")
@@ -161,7 +159,10 @@ function update!(ip::String, tagName::String)
   argument = Cmd(["submodule", "update", "--init", "--force", "--remote"])
   run(setenv(`git $argument`, dir=projectPath))
   chmod(keyPath, 0o400) # Otherwise private key is not accepted by ssh as it is unsecure
+  return projectPath, keyPath
+end
 
+function updateRedPitaya!(ip::String, projectPath, keyPath)
   @info "Uploading folder"
   # Remove old folder
   argument = Cmd(["-i", keyPath, "root@$(ip)", "rm -r /media/mmcblk0p1/apps/RedPitayaDAQServer"])
@@ -187,7 +188,7 @@ function update!(ip::String, tagName::String)
   # Wait for reboot
   sleep(2)
   @info "Atemmpting to connect to RedPitaya $ip"
-  for i=1:3
+  for i=1:5
     try 
       rp = RedPitaya(ip)
       @info "Connected to RedPitaya $ip"
@@ -195,14 +196,29 @@ function update!(ip::String, tagName::String)
       break
     catch ex
       if i == 3
-        @warn "Could not connect to RedPitaya in $i attempts. Try again manually"
+        @warn "Could not connect to RedPitaya $ip in $i attempts. Try again manually"
       else 
-        @info "Failed to connect. Retry in 5 seconds"
-        sleep(5)
+        @info "Failed to connect. Retry in 10 seconds"
+        sleep(10)
       end
     end
   end
+end
 
+export update!
+"""
+Update the Red Pitaya with the release from the given tag.
+"""
+function update!(ip::String, tagName::String)
+  checkDependencies()
+  projectPath, keyPath = prepareProject(tagName)
+  updateRedPitaya!(ip, projectPath, keyPath)
 end
 update!(rp::RedPitaya, tagName::String) = update!(rp.host, tagName::String)
-update!(rpc::RedPitayaCluster) = [update!(rp) for rp in rpc]
+function update!(rpc::RedPitayaCluster, tagName::String) 
+  checkDependencies()
+  projectPath, keyPath = prepareProject(tagName)
+  @sync for rp in rpc
+    @async updateRedPitaya!(rp.host, projectPath, keyPath)
+  end
+end
