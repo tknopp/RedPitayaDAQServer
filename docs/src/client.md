@@ -54,13 +54,13 @@ RedPitayaDAQServer.phaseDAC!
 RedPitayaDAQServer.SignalType
 RedPitayaDAQServer.signalTypeDAC
 RedPitayaDAQServer.signalTypeDAC!
-RedPitayaDAQServer.numSeqChan
-RedPitayaDAQServer.numSeqChan!
+RedPitayaDAQServer.seqChan
+RedPitayaDAQServer.seqChan!
 RedPitayaDAQServer.samplesPerStep
 RedPitayaDAQServer.samplesPerStep!
 RedPitayaDAQServer.stepsPerFrame!
-RedPitayaDAQServer.clearSequences!
-RedPitayaDAQServer.popSequence!
+RedPitayaDAQServer.clearSequence!
+RedPitayaDAQServer.sequence!
 RedPitayaDAQServer.length(::AbstractSequence)
 RedPitayaDAQServer.start
 RedPitayaDAQServer.calibDACOffset
@@ -82,3 +82,8 @@ RedPitayaDAQServer.readFrames
 RedPitayaDAQServer.convertSamplesToFrames
 ```
 ## Utility
+```@docs
+RedPitayaDAQServer.listReleaseTags
+RedPitayaDAQServer.latestReleaseTags
+RedPitayaDAQServer.update!
+```
