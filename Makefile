@@ -198,8 +198,6 @@ $(LINUX_BUILD_DIR)/tmp/%.tree/system-top.dts: $(LINUX_BUILD_DIR)/tmp/%.xsa $(DTR
 	patch -d $(@D) < linux-image/patches/devicetree.patch
 	
 server: 
-	git config --global --add safe.directory /home/rpdev/RedPitayaDAQServer
-	git config --global --add safe.directory /home/rpdev/RedPitayaDAQServer/libs/scpi-parser
 	git submodule update --init
 	@$(MAKE) install -C libs/scpi-parser
 	@$(MAKE) -C libs/scpi-parser
