@@ -187,7 +187,7 @@ function updateRedPitaya!(ip::String, projectPath, keyPath)
 
   # Wait for reboot
   sleep(2)
-  @info "Atemmpting to connect to RedPitaya $ip"
+  @info "Attempting to connect to RedPitaya $ip"
   for i=1:5
     try 
       rp = RedPitaya(ip)
@@ -195,7 +195,7 @@ function updateRedPitaya!(ip::String, projectPath, keyPath)
       @info "Successfully updated RedPitaya $ip"
       break
     catch ex
-      if i == 3
+      if i == 5
         @warn "Could not connect to RedPitaya $ip in $i attempts. Try again manually"
       else 
         @info "Failed to connect. Retry in 10 seconds"
