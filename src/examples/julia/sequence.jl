@@ -12,7 +12,7 @@ modulus = 12480
 base_frequency = 125000000
 periods_per_step = 5
 samples_per_period = div(modulus, dec)
-periods_per_frame = 50 # about 0.5 s frame length
+periods_per_frame = 50
 frame_period = dec*samples_per_period*periods_per_frame / base_frequency
 steps_per_frame = div(50, periods_per_step)
 
