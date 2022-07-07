@@ -223,8 +223,8 @@ struct StartUpSequence <: RampingSequence
     if !isnothing(enable) && size(lut) != size(enable)
       throw(DimensionMismatch("Size of enable LUT does not match size of value LUT"))
     end
-    if rampingSteps > startUpSteps
-      throw(DimensionMismatch("Ramping steps are larger than start up steps"))
+    if rampingSteps < startUpSteps
+      throw(DimensionMismatch("Ramping steps are smaller than start up steps"))
     end
     upLut = zeros(Float32, size(lut, 1), rampingSteps)
     for i = 0:startUpSteps-1
@@ -245,8 +245,8 @@ StartUpSequence(lut::Vector, repetitions::Integer, rampingSteps::Integer, startU
 
 enableLUT(seq::StartUpSequence) = seq.enable
 valueLUT(seq::StartUpSequence) = seq.lut
-rampUpLUT(seq::StartUpSequence) = seq.ramping
-rampDownLUT(seq::StartUpSequence) = seq.ramping
+rampUpLUT(seq::StartUpSequence) = seq.rampUp
+rampDownLUT(seq::StartUpSequence) = seq.rampDown
 
 function computeRamping(dec, samplesPerStep, stepsPerSeq, rampTime, rampFraction)
   bandwidth = 125e6/dec
