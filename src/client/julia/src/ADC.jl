@@ -336,25 +336,6 @@ function readADCPerformanceData(rp::RedPitaya, numSamples = 0)
   return ADCPerformanceData(perf[1], perf[2], numSamples)
 end
 
-# Low level read. One has to take care that the numFrames are available
-"""
-    readSamples(rp::RedPitaya, reqWP, numSamples)
-
-Retrieves `numSamples` from writepointer `reqWP` on. Throws error if samples can not be sent.
-Does not check if samples exist or fit within the buffer. For such features use `readPipelinedSamples` instead.
-"""
-function readSamples(rp::RedPitaya, reqWP, numSamples)
-  command = string("RP:ADC:DATA? ",Int64(reqWP),",",Int64(numSamples))
-  sending = query(rp, command, Bool)
-
-  if !sending
-    error("RedPitaya $(rp.host) can not start transmitting samples.")
-  end
-
-  u = read!(rp.dataSocket, Array{Int16}(undef, 2 * Int64(numSamples)))
-  return u
-end
-
 # Low level read, reads samples, error and perf. Values need to be already requested
 function readSamplesChunk_(rp::RedPitaya, reqWP::Int64, numSamples::Int64, into=nothing)
   #@debug "read samples chunk ..."
