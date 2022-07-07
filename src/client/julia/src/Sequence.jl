@@ -1,7 +1,7 @@
-export seqChan, seqChan!, samplesPerStep, samplesPerStep!, stepsPerFrame!, AbstractSequence, SimpleSequence, sequence!, clearSequence!, HoldBorderRampingSequence, StartUpSequence, SequenceLUT, SimpleRampingSequence
+export seqChan, seqChan!, samplesPerStep, samplesPerStep!, stepsPerFrame!, AbstractSequence, SimpleSequence, sequence!, clearSequence!, HoldBorderRampingSequence, StartUpSequence, SequenceLUT, SimpleRampingSequence, seqTiming
 
 """
-  numSeqChan(rp::RedPitaya)
+  seqChan(rp::RedPitaya)
 
 Return the number of sequence channel.
 """
@@ -9,7 +9,7 @@ seqChan(rp::RedPitaya) = query(rp, scpiCommand(seqChan), scpiReturn(seqChan))
 scpiCommand(::typeof(seqChan)) = "RP:DAC:SEQ:CHan?"
 scpiReturn(::typeof(seqChan)) = Int64
 """
-    numSeqChan(rp::RedPitaya, value)
+    seqChan!(rp::RedPitaya, value)
 
 Set the number of sequence channel. Valid values are between `1` and `4`. Return `true` if the command was successful.
 """
@@ -86,6 +86,7 @@ struct SequenceLUT
 end
 values(seq::SequenceLUT) = seq.values
 repetitions(seq::SequenceLUT) = seq.repetitions
+length(seq::SequenceLUT) = seq.repetitions * size(seq.values, 2)
 
 """
     AbstractSequence
@@ -320,26 +321,16 @@ function enableLUT!(rp::RedPitaya, lut::Nothing)
   return true
 end
 
-"""
-    length(seq::AbstractSequence)
-
-Return the number of steps a sequence will take.
-"""
-function length(seq::AbstractSequence)
-  result = stepsPerRepetition(seq) * repetitions(seq) + rampUpTotalSteps(seq) + rampDownTotalSteps(seq)
-  result = resetAfterSequence(seq) ? result + 1 : result
-  return result
-end
-
-"""
-    start(seq::AbstractSequence)
-
-Return the number of steps after which a sequence leaves the ramp up phase.
-"""
-function start(seq::AbstractSequence)
-  lut = rampUpLUT(seq)
-  if isnothing(lut)
-    return 0
+function seqTiming(seq::AbstractSequence)
+  up = 0
+  if !isnothing(rampUpLUT(seq)) 
+    up = 0 + length(rampUpLUT(seq))
   end
-  return size(values(lut), 2) * repetitions(lut)
+  start = up
+  down = length(valueLUT(seq)) + start
+  finish = down
+  if !isnothing(rampUpLUT(seq)) 
+    finish = down + length(rampUpLUT(seq))
+  end
+  return (start=start, down=down, finish=finish)
 end
