@@ -131,6 +131,7 @@ for op in [:clearSequence!, :sequence!]
       end
       return result
     end
+    batchIndices(::typeof($op), rpc::RedPitayaCluster, value) = collect(1:length(rpc))
   end
 end
 
