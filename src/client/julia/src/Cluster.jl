@@ -120,7 +120,7 @@ end
 for op in [:clearSequence!, :sequence!]
   @eval begin
     @doc """
-        $($op)(rpc::RedPitayaCluster, value)
+        $($op)(rpc::RedPitayaCluster)
 
     As with single RedPitaya, but applied to all RedPitayas in a cluster.
     """
@@ -131,7 +131,7 @@ for op in [:clearSequence!, :sequence!]
       end
       return result
     end
-    batchIndices(::typeof($op), rpc::RedPitayaCluster, value) = collect(1:length(rpc))
+    batchIndices(::typeof($op), rpc::RedPitayaCluster) = collect(1:length(rpc))
   end
 end
 
