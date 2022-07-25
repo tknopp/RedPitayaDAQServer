@@ -197,17 +197,17 @@ struct ConstantRampingSequence <: RampingSequence
   lut::SequenceLUT
   enable::Union{Array{Bool}, Nothing}
   ramping::SequenceLUT
-  function ConstantRampingSequence(lut::Array{Float32}, repetitions::Integer, rampingValue::Float32, rampingSteps, enable::Union{Array{Bool}, Nothing} = nothing)
+  function ConstantRampingSequence(lut::Array{Float32}, repetitions::Integer, rampingValue::Float32, rampingSteps::Integer, enable::Union{Array{Bool}, Nothing} = nothing)
     if !isnothing(enable) && size(lut) != size(enable)
       throw(DimensionMismatch("Size of enable LUT does not match size of value LUT"))
     end
-    rampingLut = SequenceLUT([rampingValue], rampingSteps)
+    rampingLut = SequenceLUT([rampingValue for i = 1:size(lut, 1)], rampingSteps)
     return new(SequenceLUT(lut, repetitions), enable, rampingLut)
   end
 end
 
-ConstantRampingSequence(lut::Array, repetitions::Integer, rampingValue::Float32, rampingSteps::Integer, enable=nothing) = ConstantRampingSequence(map(Float32, lut), repetitions, rampingValue, rampingSteps, enable)
-ConstantRampingSequence(lut::Vector, repetitions::Integer, rampingValue::Float32, rampingSteps::Integer, enable=nothing) = ConstantRampingSequence(reshape(lut, 1, :), repetitions, rampingValue, rampingSteps, enable)
+ConstantRampingSequence(lut::Array, repetitions, rampingValue, rampingSteps, enable=nothing) = ConstantRampingSequence(map(Float32, lut), repetitions, Float32(rampingValue), rampingSteps, enable)
+ConstantRampingSequence(lut::Vector, repetitions, rampingValue, rampingSteps, enable=nothing) = ConstantRampingSequence(reshape(lut, 1, :), repetitions, rampingValue, rampingSteps, enable)
 
 enableLUT(seq::ConstantRampingSequence) = seq.enable
 valueLUT(seq::ConstantRampingSequence) = seq.lut
