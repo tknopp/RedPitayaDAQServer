@@ -116,8 +116,16 @@ function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView
   numOfReceivedSamples = 0
   chunkBuffer = zeros(Int16, chunkSize * 2, length(rpu))
 
+  heartbeatTimeout = 30.0
+  heartBeatStartTime = Dates.now()
+  timeOutCounter = 0
   while currentWP(rpu) < wpStart
     # Current WP query as a heartbeat to avoid timeouts with "distant" wpStarts
+    timeDifference = Dates.now() - heartBeatStartTime
+    if timeDifference.value / (heartbeatTimeout*1000.0) >= timeOutCounter
+      @warn "Still waiting for write pointer (currently it is $(currentWP(rpu)). Are you sure there is no error and this loop is running infinitely?"
+      timeOutCounter += 1
+    end
   end
 
   startPipelinedData(rpu, wpStart, numOfRequestedSamples, chunkSize)
