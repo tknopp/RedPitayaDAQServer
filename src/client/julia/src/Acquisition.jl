@@ -55,66 +55,28 @@ function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView
 
   readSamplesHeartbeat(rpu, wpStart)
 
+  channel = Channel{SampleChunk}(1)
   startPipelinedData(rpu, wpStart, numOfRequestedSamples, chunkSize)
   while numOfReceivedSamples < numOfRequestedSamples
     wpRead = wpStart + numOfReceivedSamples
     chunk = min(numOfRequestedSamples - numOfReceivedSamples, chunkSize)
-    collectSamples!(rpu, wpRead, chunk, rawData, chunkBuffer, index, rpInfo=rpInfo)
-    index += chunk
+    collectSamples!(rpu, wpRead, chunk, channel, chunkBuffer)
     numOfReceivedSamples += chunk
-  end
-  return rawData
-
-end
-
-
-function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpRead::Int64, chunk::Int64, rawData::Matrix{Int16}, chunkBuffer, index; rpInfo=nothing)
-  done = zeros(Bool, length(rpu))
-  iterationDone = Condition()
-  timeoutHappened = false
-
-  for (d, rp) in enumerate(rpu)
-    @async begin
-      buffer = view(chunkBuffer, 1:(2 * chunk), d)
-      (u, perf) = readSamplesChunk_(rp, Int64(wpRead), Int64(chunk), buffer)
-      samples = reshape(u, 2, chunk)
-      rawData[2*d-1, index:(index + chunk - 1)] = samples[1, :]
-      rawData[2*d, index:(index + chunk - 1)] = samples[2, :]
-
-      # Status
-      if perf.status.overwritten
-        @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) was overwritten"
-      end
-      if perf.status.corrupted
-        @error "RP $d: Requested data from $wpRead until $(wpRead+chunk) might have been corrupted"
-      end
-
-      # Performance
-      if !isnothing(rpInfo)
-        push!(rpInfo.performances[d].data, perf)
-      end
-
-      done[d] = true
-      if (all(done))
-        notify(iterationDone)
+    temp = take!(channel)
+    
+    # Add Samples
+    samples = temp.samples
+    rawData[:, index:(index + chunk - 1)] = samples
+    index += chunk
+    # Add Performance Info
+    if !isnothing(rpInfo)
+      perfs = temp.perf
+      for (i,perf) in enumerate(perfs)
+        rpInfo.performance[i].data = perf
       end
     end
   end
-
-  # Setup Timeout
-  t = Timer(getTimeout())
-  @async begin
-    wait(t)
-    notify(iterationDone)
-    timeoutHappened = true
-  end
-
-  wait(iterationDone)
-  close(t)
-  if timeoutHappened
-    error("Timeout reached when reading from sockets")
-  end
-
+  return rawData
 end
 
 """
