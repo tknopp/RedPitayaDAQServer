@@ -26,6 +26,20 @@ function startPipelinedData(rpu::Union{RedPitayaCluster,RedPitayaClusterView}, r
   end
 end
 
+function readSamplesHeartbeat(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64)
+  heartbeatTimeout = 30.0
+  heartBeatStartTime = time()
+  timeOutCounter = 1
+  while currentWP(rpu) < wpStart
+    # Current WP query as a heartbeat to avoid timeouts with "distant" wpStarts
+    timeDifference = time() - heartBeatStartTime
+    if timeDifference / (heartbeatTimeout*1000.0) >= timeOutCounter
+      @warn "Still waiting for write pointer (currently it is $(currentWP(rpu)). Are you sure there is no error and this loop is running infinitely?"
+      timeOutCounter += 1
+    end
+  end
+end
+
 """
     readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
 
@@ -39,9 +53,7 @@ function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView
   rawData = zeros(Int16, numChan(rpu), numOfRequestedSamples)
   chunkBuffer = zeros(Int16, chunkSize * 2, length(rpu))
 
-  while currentWP(rpu) < wpStart
-    # Current WP query as a heartbeat to avoid timeouts with "distant" wpStarts
-  end
+  readSamplesHeartbeat(rpu, wpStart)
 
   startPipelinedData(rpu, wpStart, numOfRequestedSamples, chunkSize)
   while numOfReceivedSamples < numOfRequestedSamples
@@ -116,17 +128,7 @@ function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView
   numOfReceivedSamples = 0
   chunkBuffer = zeros(Int16, chunkSize * 2, length(rpu))
 
-  heartbeatTimeout = 30.0
-  heartBeatStartTime = Dates.now()
-  timeOutCounter = 0
-  while currentWP(rpu) < wpStart
-    # Current WP query as a heartbeat to avoid timeouts with "distant" wpStarts
-    timeDifference = Dates.now() - heartBeatStartTime
-    if timeDifference.value / (heartbeatTimeout*1000.0) >= timeOutCounter
-      @warn "Still waiting for write pointer (currently it is $(currentWP(rpu)). Are you sure there is no error and this loop is running infinitely?"
-      timeOutCounter += 1
-    end
-  end
+  readSamplesHeartbeat(rpu, wpStart)
 
   startPipelinedData(rpu, wpStart, numOfRequestedSamples, chunkSize)
   while numOfReceivedSamples < numOfRequestedSamples

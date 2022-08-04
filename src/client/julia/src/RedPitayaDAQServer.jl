@@ -5,7 +5,6 @@ module RedPitayaDAQServer
 using Base: UInt16
 using Sockets
 import Sockets: send, connect
-using Dates
 
 using Statistics
 using LinearAlgebra
