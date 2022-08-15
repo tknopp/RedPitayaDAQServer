@@ -875,111 +875,77 @@ proc create_hier_cell_write_to_ram { parentCell nameHier } {
   # Create instance: divide_by_two_0, and set properties
   set divide_by_two_0 [ create_bd_cell -type ip -vlnv jbeuke:user:divide_by_two:1.0 divide_by_two_0 ]
 
-  # Create instance: fir_compiler_A, and set properties
-  set fir_compiler_A [ create_bd_cell -type ip -vlnv xilinx.com:ip:fir_compiler:7.2 fir_compiler_A ]
+  # Create instance: fir_compiler_1, and set properties
+  set fir_compiler_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:fir_compiler:7.2 fir_compiler_1 ]
   set_property -dict [ list \
    CONFIG.BestPrecision {true} \
-   CONFIG.Clock_Frequency {125.0} \
+   CONFIG.Clock_Frequency {125} \
    CONFIG.CoefficientVector {\
-1.864885e-05, 1.294666e-05, -3.770850e-05, -4.311539e-05, 5.300379e-05,\
-9.817273e-05, -5.008376e-05, -1.792568e-04, 9.065278e-06, 2.779881e-04,\
-9.210241e-05, -3.728498e-04, -2.718314e-04, 4.275765e-04, 5.370248e-04,\
--3.929370e-04, -8.743719e-04, 2.129371e-04, 1.242726e-03, 1.642698e-04,\
--1.568912e-03, -7.715215e-04, 1.749326e-03, 1.605770e-03, -1.659122e-03,\
--2.612204e-03, 1.169717e-03, 3.673090e-03, -1.737946e-04, -4.605147e-03,\
--1.384765e-03, 5.168595e-03, 3.480177e-03, -5.089591e-03, -5.978548e-03,\
-4.095682e-03, 8.621744e-03, -1.961567e-03, -1.102610e-02, -1.439735e-03,\
-1.269893e-02, 6.086744e-03, -1.307282e-02, -1.176712e-02, 1.155437e-02,\
-1.804827e-02, -7.579900e-03, -2.426236e-02, 6.667354e-04, 2.949956e-02,\
-9.555878e-03, -3.258853e-02, -2.335979e-02, 3.200919e-02, 4.101456e-02,\
--2.558662e-02, -6.305221e-02, 9.473435e-03, 9.090422e-02, 2.565442e-02,\
--1.282244e-01, -1.138063e-01, 1.755209e-01, 4.883955e-01, 4.883955e-01,\
-1.755209e-01, -1.138063e-01, -1.282244e-01, 2.565442e-02, 9.090422e-02,\
-9.473435e-03, -6.305221e-02, -2.558662e-02, 4.101456e-02, 3.200919e-02,\
--2.335979e-02, -3.258853e-02, 9.555878e-03, 2.949956e-02, 6.667354e-04,\
--2.426236e-02, -7.579900e-03, 1.804827e-02, 1.155437e-02, -1.176712e-02,\
--1.307282e-02, 6.086744e-03, 1.269893e-02, -1.439735e-03, -1.102610e-02,\
--1.961567e-03, 8.621744e-03, 4.095682e-03, -5.978548e-03, -5.089591e-03,\
-3.480177e-03, 5.168595e-03, -1.384765e-03, -4.605147e-03, -1.737946e-04,\
-3.673090e-03, 1.169717e-03, -2.612204e-03, -1.659122e-03, 1.605770e-03,\
-1.749326e-03, -7.715215e-04, -1.568912e-03, 1.642698e-04, 1.242726e-03,\
-2.129371e-04, -8.743719e-04, -3.929370e-04, 5.370248e-04, 4.275765e-04,\
--2.718314e-04, -3.728498e-04, 9.210241e-05, 2.779881e-04, 9.065278e-06,\
--1.792568e-04, -5.008376e-05, 9.817273e-05, 5.300379e-05, -4.311539e-05,\
--3.770850e-05, 1.294666e-05, 1.864885e-05} \
-   CONFIG.Coefficient_Fractional_Bits {16} \
-   CONFIG.Coefficient_Reload {false} \
+-1.2111259955404956e-5, 2.241971682684939e-5, 3.66493593703953e-5,\
+-3.324006796210868e-5, -8.04633086087355e-5, 3.233230672061999e-5,\
+0.00014634714483317558, -6.00118475313112e-6, -0.0002321364815617402,\
+-6.264695810491982e-5, 0.000328121859950504, 0.00019135134150201593,\
+-0.00041490913382647603, -0.0003949851097703914, 0.00046236706462638496,\
+0.000680700214145288, -0.00043030590642888277, -0.0010424379449868824,\
+0.0002714126908048984, 0.0014555934890391504, 6.327639370494698e-5,\
+-0.0018728337612947384, -0.0006164436509176294, 0.002222155884296462,\
+0.0014146024259829532, -0.0024082006339828346, -0.002457199160306731,\
+0.0023175792874575375, 0.003706023752644372, -0.001828548208661915,\
+-0.005076484023437298, 0.000824810534820757, 0.0064323270967588985,\
+0.0007873804506966824, -0.007585171754781873, -0.0030602078886446567,\
+0.008299726592877294, 0.005985160906717992, -0.008304844357552481,\
+-0.009475714038151617, 0.0073096330659644295, 0.013353463720536645,\
+-0.0050227945813047375, -0.017338557996864474, 0.0011721948985329287,\
+0.02104363983243494, 0.004479628541196722, -0.023967630223554567,\
+-0.012130101371924825, 0.025480079312593093, 0.0219505545411657,\
+-0.02477468788694066, -0.03413553504175863, 0.020739575444621818,\
+0.04902075503109143, -0.011598469929505133, -0.06734936924794818,\
+-0.006163458395815653, 0.09088810296080056, 0.041658429235328184,\
+-0.12369955980610249, -0.12885683386215485, 0.16660450554648135,\
+0.5010509825330399, 0.5010509825330397, 0.16660450554648076,\
+-0.1288568338621551, -0.12369955980610227, 0.04165842923532841,\
+0.09088810296080052, -0.006163458395815837, -0.06734936924794818,\
+-0.011598469929504978, 0.049020755031091476, 0.02073957544462173,\
+-0.034135535041758695, -0.024774687886940604, 0.021950554541165748,\
+0.02548007931259306, -0.012130101371924879, -0.023967630223554567,\
+0.004479628541196748, 0.021043639832434926, 0.0011721948985329038,\
+-0.017338557996864453, -0.005022794581304712, 0.013353463720536632,\
+0.007309633065964384, -0.009475714038151624, -0.00830484435755246,\
+0.005985160906718005, 0.008299726592877274, -0.0030602078886446675,\
+-0.00758517175478185, 0.0007873804506967104, 0.0064323270967589045,\
+0.0008248105348207495, -0.005076484023437294, -0.0018285482086619004,\
+0.0037060237526443775, 0.0023175792874575315, -0.002457199160306733,\
+-0.0024082006339828277, 0.0014146024259829525, 0.0022221558842964576,\
+-0.0006164436509176303, -0.0018728337612947336, 6.327639370494592e-5,\
+0.001455593489039139, 0.0002714126908048877, -0.0010424379449868828,\
+-0.00043030590642887794, 0.0006807002141452871, 0.00046236706462637845,\
+-0.00039498510977039523, -0.00041490913382647435, 0.00019135134150201832,\
+0.0003281218599505029, -6.264695810492123e-5, -0.00023213648156173943,\
+-6.0011847531292186e-6, 0.00014634714483317628, 3.23323067206198e-5,\
+-8.046330860873512e-5, -3.3240067962107486e-5, 3.664935937039612e-5,\
+2.2419716826849245e-5, -1.2111259955405468e-5} \
+   CONFIG.Coefficient_Fractional_Bits {23} \
    CONFIG.Coefficient_Sets {1} \
    CONFIG.Coefficient_Sign {Signed} \
-   CONFIG.Coefficient_Structure {Inferred} \
-   CONFIG.Coefficient_Width {16} \
-   CONFIG.ColumnConfig {8} \
-   CONFIG.Data_Width {16} \
+   CONFIG.Coefficient_Structure {Non_Symmetric} \
+   CONFIG.Coefficient_Width {24} \
+   CONFIG.ColumnConfig {16} \
    CONFIG.Decimation_Rate {2} \
    CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
    CONFIG.Filter_Type {Decimation} \
+   CONFIG.Has_ARESETn {true} \
    CONFIG.Interpolation_Rate {1} \
    CONFIG.Number_Channels {1} \
-   CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
+   CONFIG.Number_Paths {2} \
+   CONFIG.Output_Rounding_Mode {Convergent_Rounding_to_Even} \
    CONFIG.Output_Width {16} \
    CONFIG.Quantization {Quantize_Only} \
    CONFIG.RateSpecification {Frequency_Specification} \
+   CONFIG.Rate_Change_Type {Integer} \
+   CONFIG.SamplePeriod {1} \
    CONFIG.Sample_Frequency {31.25} \
    CONFIG.Zero_Pack_Factor {1} \
- ] $fir_compiler_A
-
-  # Create instance: fir_compiler_B, and set properties
-  set fir_compiler_B [ create_bd_cell -type ip -vlnv xilinx.com:ip:fir_compiler:7.2 fir_compiler_B ]
-  set_property -dict [ list \
-   CONFIG.BestPrecision {true} \
-   CONFIG.Clock_Frequency {125.0} \
-   CONFIG.CoefficientVector {\
-1.864885e-05, 1.294666e-05, -3.770850e-05, -4.311539e-05, 5.300379e-05,\
-9.817273e-05, -5.008376e-05, -1.792568e-04, 9.065278e-06, 2.779881e-04,\
-9.210241e-05, -3.728498e-04, -2.718314e-04, 4.275765e-04, 5.370248e-04,\
--3.929370e-04, -8.743719e-04, 2.129371e-04, 1.242726e-03, 1.642698e-04,\
--1.568912e-03, -7.715215e-04, 1.749326e-03, 1.605770e-03, -1.659122e-03,\
--2.612204e-03, 1.169717e-03, 3.673090e-03, -1.737946e-04, -4.605147e-03,\
--1.384765e-03, 5.168595e-03, 3.480177e-03, -5.089591e-03, -5.978548e-03,\
-4.095682e-03, 8.621744e-03, -1.961567e-03, -1.102610e-02, -1.439735e-03,\
-1.269893e-02, 6.086744e-03, -1.307282e-02, -1.176712e-02, 1.155437e-02,\
-1.804827e-02, -7.579900e-03, -2.426236e-02, 6.667354e-04, 2.949956e-02,\
-9.555878e-03, -3.258853e-02, -2.335979e-02, 3.200919e-02, 4.101456e-02,\
--2.558662e-02, -6.305221e-02, 9.473435e-03, 9.090422e-02, 2.565442e-02,\
--1.282244e-01, -1.138063e-01, 1.755209e-01, 4.883955e-01, 4.883955e-01,\
-1.755209e-01, -1.138063e-01, -1.282244e-01, 2.565442e-02, 9.090422e-02,\
-9.473435e-03, -6.305221e-02, -2.558662e-02, 4.101456e-02, 3.200919e-02,\
--2.335979e-02, -3.258853e-02, 9.555878e-03, 2.949956e-02, 6.667354e-04,\
--2.426236e-02, -7.579900e-03, 1.804827e-02, 1.155437e-02, -1.176712e-02,\
--1.307282e-02, 6.086744e-03, 1.269893e-02, -1.439735e-03, -1.102610e-02,\
--1.961567e-03, 8.621744e-03, 4.095682e-03, -5.978548e-03, -5.089591e-03,\
-3.480177e-03, 5.168595e-03, -1.384765e-03, -4.605147e-03, -1.737946e-04,\
-3.673090e-03, 1.169717e-03, -2.612204e-03, -1.659122e-03, 1.605770e-03,\
-1.749326e-03, -7.715215e-04, -1.568912e-03, 1.642698e-04, 1.242726e-03,\
-2.129371e-04, -8.743719e-04, -3.929370e-04, 5.370248e-04, 4.275765e-04,\
--2.718314e-04, -3.728498e-04, 9.210241e-05, 2.779881e-04, 9.065278e-06,\
--1.792568e-04, -5.008376e-05, 9.817273e-05, 5.300379e-05, -4.311539e-05,\
--3.770850e-05, 1.294666e-05, 1.864885e-05} \
-   CONFIG.Coefficient_Fractional_Bits {16} \
-   CONFIG.Coefficient_Reload {false} \
-   CONFIG.Coefficient_Sets {1} \
-   CONFIG.Coefficient_Sign {Signed} \
-   CONFIG.Coefficient_Structure {Inferred} \
-   CONFIG.Coefficient_Width {16} \
-   CONFIG.ColumnConfig {8} \
-   CONFIG.Data_Width {16} \
-   CONFIG.Decimation_Rate {2} \
-   CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
-   CONFIG.Filter_Type {Decimation} \
-   CONFIG.Interpolation_Rate {1} \
-   CONFIG.Number_Channels {1} \
-   CONFIG.Output_Rounding_Mode {Truncate_LSBs} \
-   CONFIG.Output_Width {16} \
-   CONFIG.Quantization {Quantize_Only} \
-   CONFIG.RateSpecification {Frequency_Specification} \
-   CONFIG.Sample_Frequency {31.25} \
-   CONFIG.Zero_Pack_Factor {1} \
- ] $fir_compiler_B
+ ] $fir_compiler_1
 
   # Create instance: sign_extend_A
   create_hier_cell_sign_extend_A $hier_obj sign_extend_A
@@ -1053,6 +1019,7 @@ proc create_hier_cell_write_to_ram { parentCell nameHier } {
   connect_bd_intf_net -intf_net axis_ram_writer_1_M_AXI [get_bd_intf_pins m_axi] [get_bd_intf_pins axis_ram_writer_1/M_AXI]
   connect_bd_intf_net -intf_net axis_variable_2_M_AXIS [get_bd_intf_pins axis_variable_decimation_A/M_AXIS] [get_bd_intf_pins cic_compiler_A/S_AXIS_CONFIG]
   connect_bd_intf_net -intf_net axis_variable_decimation_B_M_AXIS [get_bd_intf_pins axis_variable_decimation_B/M_AXIS] [get_bd_intf_pins cic_compiler_B/S_AXIS_CONFIG]
+  connect_bd_intf_net -intf_net fir_compiler_1_M_AXIS_DATA [get_bd_intf_pins axis_dwidth_converter_0/S_AXIS] [get_bd_intf_pins fir_compiler_1/M_AXIS_DATA]
 
   # Create port connections
   connect_bd_net -net aresetn3_1 [get_bd_pins keep_alive_aresetn] [get_bd_pins util_vector_logic_1/Op2]
@@ -1063,13 +1030,13 @@ proc create_hier_cell_write_to_ram { parentCell nameHier } {
   connect_bd_net -net cic_compiler_A_m_axis_data_tvalid [get_bd_pins cic_compiler_A/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net cic_compiler_B_m_axis_data_tdata [get_bd_pins cic_compiler_B/m_axis_data_tdata] [get_bd_pins xlconcat_1/In1]
   connect_bd_net -net cic_compiler_B_m_axis_data_tvalid [get_bd_pins cic_compiler_B/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op2]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_ram_writer_1/aclk] [get_bd_pins axis_variable_decimation_A/aclk] [get_bd_pins axis_variable_decimation_B/aclk] [get_bd_pins cic_compiler_A/aclk] [get_bd_pins cic_compiler_B/aclk] [get_bd_pins fir_compiler_A/aclk] [get_bd_pins fir_compiler_B/aclk]
+  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_ram_writer_1/aclk] [get_bd_pins axis_variable_decimation_A/aclk] [get_bd_pins axis_variable_decimation_B/aclk] [get_bd_pins cic_compiler_A/aclk] [get_bd_pins cic_compiler_B/aclk] [get_bd_pins fir_compiler_1/aclk]
   connect_bd_net -net decimation_1 [get_bd_pins decimation] [get_bd_pins axis_variable_decimation_A/cfg_data] [get_bd_pins axis_variable_decimation_B/cfg_data] [get_bd_pins divide_by_two_0/input_vector]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_variable_decimation_A/aresetn] [get_bd_pins axis_variable_decimation_B/aresetn] [get_bd_pins cic_compiler_A/aresetn] [get_bd_pins cic_compiler_B/aresetn] [get_bd_pins util_vector_logic_1/Op1]
+  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_variable_decimation_A/aresetn] [get_bd_pins axis_variable_decimation_B/aresetn] [get_bd_pins cic_compiler_A/aresetn] [get_bd_pins cic_compiler_B/aresetn] [get_bd_pins fir_compiler_1/aresetn] [get_bd_pins util_vector_logic_1/Op1]
   connect_bd_net -net sign_extend_B_dout [get_bd_pins cic_compiler_B/s_axis_data_tdata] [get_bd_pins sign_extend_B/dout]
-  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins axis_dwidth_converter_0/s_axis_tvalid] [get_bd_pins util_vector_logic_0/Res]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins fir_compiler_1/s_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Res]
   connect_bd_net -net util_vector_logic_1_Res [get_bd_pins axis_ram_writer_1/aresetn] [get_bd_pins util_vector_logic_1/Res]
-  connect_bd_net -net xlconcat_1_dout [get_bd_pins axis_dwidth_converter_0/s_axis_tdata] [get_bd_pins xlconcat_1/dout]
+  connect_bd_net -net xlconcat_1_dout [get_bd_pins fir_compiler_1/s_axis_data_tdata] [get_bd_pins xlconcat_1/dout]
   connect_bd_net -net xlconcat_2_dout [get_bd_pins cic_compiler_A/s_axis_data_tdata] [get_bd_pins sign_extend_A/dout]
   connect_bd_net -net xlconstant_2_dout [get_bd_pins axis_ram_writer_1/cfg_data] [get_bd_pins xlconstant_2/dout]
   connect_bd_net -net xlslice_A_Dout [get_bd_pins sign_extend_A/In0] [get_bd_pins xlslice_A/Dout]
