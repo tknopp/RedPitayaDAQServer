@@ -524,13 +524,15 @@ int setDecimation(uint16_t decimation) {
 		return -1;
 	}
 
-	*((uint16_t *)(cfg + 2)) = decimation;
+	// FIR Compensation filter also decimates by 2
+	*((uint16_t *)(cfg + 2)) = decimation/2;
 	return 0;
 }
 
 uint16_t getDecimation() {
+	// FIR Compensation filter also decimates by 2
 	uint16_t value = *((uint16_t *)(cfg + 2));
-	return value;
+	return value*2;
 }
 
 #define BIT_MASK(__TYPE__, __ONE_COUNT__) \
