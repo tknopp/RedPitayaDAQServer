@@ -235,22 +235,13 @@ static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
 			enable = false;
 	}
 	
-	// Atm channel 2 overwrites ramp down flags -> preserve them
-	bool rampCh0 = getRampDownDAC(0, currPDMIndex);
-	bool rampCh1 = getRampDownDAC(1, currPDMIndex);
-
 	//printf("Step %d factor %f value %f interval %d \n", futureStep, factor, val, computeInterval(&(currentSequence->sequence).data, localRepetition, localStep));
 	if (setPDMValueVolt(val, channel, currPDMIndex) != 0) {
 		printf("Could not set AO[%d] voltage.\n", channel);	
 	}
 	setEnableDAC(enable, channel, currPDMIndex);
-	if (channel < 2) {
-		setRampDownDAC(rampDown, channel, currPDMIndex);
-	}
-	else if (channel == 2) {
-		setRampDownDAC(rampCh0, 0, currPDMIndex);
-		setRampDownDAC(rampCh1, 1, currPDMIndex);
-	}
+	setRampDownDAC(rampDown, channel, currPDMIndex);
+
 }
 
 static void setLUTValuesFrom(uint64_t baseStep) {

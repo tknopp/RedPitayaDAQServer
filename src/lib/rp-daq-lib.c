@@ -680,8 +680,9 @@ int setPDMValue(int16_t value, int channel, int index) {
 	}
 
 	//printf("%p   %p   %d \n", (void*)pdm_cfg, (void*)((uint16_t *)(pdm_cfg+2*(channel+4*index))), 2*(channel+4*index) );
-	*((int16_t *)(pdm_cfg + 2*(channel+4*index))) = value;
-
+	int16_t temp = *((int16_t *)(pdm_cfg + 2*(channel+4*index))); 
+	*((int16_t *)(pdm_cfg + 2*(channel+4*index))) = (value & MASK_LOWER_14) | (temp & ~MASK_LOWER_14);
+	
 	return 0;
 }
 
