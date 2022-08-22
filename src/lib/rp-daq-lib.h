@@ -135,6 +135,7 @@ extern int setEnableDACAll(int8_t, int);
 extern int setEnableDAC(int8_t, int, int);
 extern int setResetDAC(int8_t, int);
 extern int setRampDownDAC(int8_t, int, int);
+extern int getRampDownDAC(int, int);
 
 // misc
 extern int getDIODirection(const char*);

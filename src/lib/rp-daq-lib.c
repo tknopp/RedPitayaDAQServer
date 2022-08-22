@@ -628,6 +628,14 @@ int setResetDAC(int8_t value, int index) {
 	return 0;
 }
 
+bool getRampDownDAC(int channel, int index) {
+	if(channel < 0 || channel > 1) {
+		return false;
+	}
+	int bitpos = 14 + channel * 1; // 14 or 15
+	return (*((int16_t *)(pdm_cfg + 2*(2+4*index))) >> bitpos) & 1;
+}
+
 int setRampDownDAC(int8_t value, int channel, int index) {
 	if(value < 0 || value >= 2) {
 		return -1;
