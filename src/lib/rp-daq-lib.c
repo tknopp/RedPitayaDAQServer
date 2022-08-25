@@ -880,7 +880,7 @@ int getMasterTrigger() {
 int setMasterTrigger(int mode) {
 	if(mode == OFF) {
 		setKeepAliveReset(ON);
-		double waitTime = getPDMClockDivider() / 125e6;
+		double waitTime = getSamplesPerStep() * getDecimation() / 125e6;
 		usleep( 10*waitTime * 1000000);
 		*((uint8_t *)(cfg + 1)) &= ~(1 << 5);
 		usleep( 10*waitTime * 1000000);
