@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# reset_manager, enable_ramping_slice, sequence_slice, signal_cfg_slice, signal_composer, signal_cfg_slice, signal_composer
+# reset_manager, enable_ramping_slice, sequence_slice, sequence_stepper, signal_cfg_slice, signal_composer, signal_cfg_slice, signal_composer
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -149,8 +149,6 @@ xilinx.com:ip:xadc_wiz:3.3\
 xilinx.com:ip:xlconcat:2.1\
 xilinx.com:ip:xlconstant:1.1\
 xilinx.com:ip:xlslice:1.0\
-xilinx.com:ip:c_counter_binary:12.0\
-referencedesigner.com:user:cfg_clk_div:1.1\
 koheron:user:pdm:1.0\
 matthiasgraeser:user:pdm_multiplexer:1.0\
 pavel-demin:user:axi_cfg_register:1.0\
@@ -190,6 +188,7 @@ if { $bCheckModules == 1 } {
 reset_manager\
 enable_ramping_slice\
 sequence_slice\
+sequence_stepper\
 signal_cfg_slice\
 signal_composer\
 signal_cfg_slice\
@@ -1097,7 +1096,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   create_bd_pin -dir I -from 63 -to 0 adc_sts
   create_bd_pin -dir I -type rst aresetn
   create_bd_pin -dir O -from 95 -to 0 cfg_data
-  create_bd_pin -dir I -from 63 -to 0 curr_pdm_values
+  create_bd_pin -dir I -from 31 -to 0 curr_pdm_values
   create_bd_pin -dir O -from 1663 -to 0 dac_cfg
   create_bd_pin -dir I dcm_locked
   create_bd_pin -dir O -from 8191 -to 0 pdm_data
@@ -1150,7 +1149,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   set axi_sts_register_pdm [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_sts_register:1.0 axi_sts_register_pdm ]
   set_property -dict [ list \
    CONFIG.AXI_ADDR_WIDTH {32} \
-   CONFIG.STS_DATA_WIDTH {64} \
+   CONFIG.STS_DATA_WIDTH {32} \
  ] $axi_sts_register_pdm
 
   # Create instance: axi_sts_register_reset, and set properties
@@ -1659,38 +1658,17 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   # Create pins
   create_bd_pin -dir I -from 8191 -to 0 Din
   create_bd_pin -dir I -type clk aclk
+  create_bd_pin -dir I -from 63 -to 0 adc_sts
   create_bd_pin -dir I -type rst aresetn
-  create_bd_pin -dir I -from 31 -to 0 cfg_data
+  create_bd_pin -dir I -from 15 -to 0 cfg_data
   create_bd_pin -dir I -type clk ddr_clk
   create_bd_pin -dir O -from 3 -to 0 dout
   create_bd_pin -dir I dyn_offset_enable
   create_bd_pin -dir O -from 1 -to 0 enable_dac
   create_bd_pin -dir I -type rst keep_alive_aresetn
   create_bd_pin -dir O -from 31 -to 0 oa_dac
-  create_bd_pin -dir O -from 63 -to 0 pdm_sts
+  create_bd_pin -dir O -from 31 -to 0 pdm_sts
   create_bd_pin -dir O -from 1 -to 0 seq_ramp_down
-
-  # Create instance: c_counter_binary_0, and set properties
-  set c_counter_binary_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:c_counter_binary:12.0 c_counter_binary_0 ]
-  set_property -dict [ list \
-   CONFIG.CE {false} \
-   CONFIG.Fb_Latency_Configuration {Automatic} \
-   CONFIG.Latency {1} \
-   CONFIG.Latency_Configuration {Manual} \
-   CONFIG.Load_Sense {Active_High} \
-   CONFIG.Output_Width {64} \
-   CONFIG.Restrict_Count {false} \
-   CONFIG.SCLR {true} \
-   CONFIG.SSET {false} \
-   CONFIG.Sync_Threshold_Output {false} \
- ] $c_counter_binary_0
-
-  # Create instance: cfg_clk_div_0, and set properties
-  set cfg_clk_div_0 [ create_bd_cell -type ip -vlnv referencedesigner.com:user:cfg_clk_div:1.1 cfg_clk_div_0 ]
-  set_property -dict [ list \
-   CONFIG.CONFIGURABLE {TRUE} \
-   CONFIG.WIDTH {32} \
- ] $cfg_clk_div_0
 
   # Create instance: pdm_1, and set properties
   set pdm_1 [ create_bd_cell -type ip -vlnv koheron:user:pdm:1.0 pdm_1 ]
@@ -1721,6 +1699,17 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
      return 1
    }
   
+  # Create instance: sequence_stepper_0, and set properties
+  set block_name sequence_stepper
+  set block_cell_name sequence_stepper_0
+  if { [catch {set sequence_stepper_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $sequence_stepper_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
   # Create instance: util_vector_logic_0, and set properties
   set util_vector_logic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_0 ]
   set_property -dict [ list \
@@ -1728,22 +1717,6 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
    CONFIG.C_SIZE {1} \
    CONFIG.LOGO_FILE {data/sym_orgate.png} \
  ] $util_vector_logic_0
-
-  # Create instance: util_vector_logic_1, and set properties
-  set util_vector_logic_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_1 ]
-  set_property -dict [ list \
-   CONFIG.C_OPERATION {not} \
-   CONFIG.C_SIZE {1} \
-   CONFIG.LOGO_FILE {data/sym_notgate.png} \
- ] $util_vector_logic_1
-
-  # Create instance: util_vector_logic_2, and set properties
-  set util_vector_logic_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_2 ]
-  set_property -dict [ list \
-   CONFIG.C_OPERATION {not} \
-   CONFIG.C_SIZE {1} \
-   CONFIG.LOGO_FILE {data/sym_notgate.png} \
- ] $util_vector_logic_2
 
   # Create instance: util_vector_logic_3, and set properties
   set util_vector_logic_3 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_3 ]
@@ -1765,14 +1738,6 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
    CONFIG.C_SIZE {1} \
  ] $util_vector_logic_5
 
-  # Create instance: util_vector_logic_6, and set properties
-  set util_vector_logic_6 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_6 ]
-  set_property -dict [ list \
-   CONFIG.C_OPERATION {not} \
-   CONFIG.C_SIZE {1} \
-   CONFIG.LOGO_FILE {data/sym_notgate.png} \
- ] $util_vector_logic_6
-
   # Create instance: util_vector_logic_7, and set properties
   set util_vector_logic_7 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_7 ]
   set_property -dict [ list \
@@ -1793,17 +1758,16 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.DIN_FROM {6} \
    CONFIG.DIN_TO {0} \
-   CONFIG.DIN_WIDTH {64} \
+   CONFIG.DIN_WIDTH {32} \
    CONFIG.DOUT_WIDTH {7} \
  ] $xlslice_0
 
   # Create port connections
   connect_bd_net -net Din_1 [get_bd_pins Din] [get_bd_pins pdm_multiplexer_0/pdm_data_in]
-  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins cfg_clk_div_0/clk] [get_bd_pins pdm_multiplexer_0/clk]
+  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins pdm_multiplexer_0/clk] [get_bd_pins sequence_stepper_0/clk]
+  connect_bd_net -net adc_sts_1 [get_bd_pins adc_sts] [get_bd_pins sequence_stepper_0/writepointer]
   connect_bd_net -net aresetn3_1 [get_bd_pins keep_alive_aresetn] [get_bd_pins util_vector_logic_0/Op2]
-  connect_bd_net -net c_counter_binary_0_Q [get_bd_pins pdm_sts] [get_bd_pins c_counter_binary_0/Q] [get_bd_pins xlslice_0/Din]
-  connect_bd_net -net cfg_clk_div_0_clk_out [get_bd_pins cfg_clk_div_0/clk_out] [get_bd_pins util_vector_logic_6/Op1]
-  connect_bd_net -net cfg_data_1 [get_bd_pins cfg_data] [get_bd_pins cfg_clk_div_0/cfg_data]
+  connect_bd_net -net cfg_data_1 [get_bd_pins cfg_data] [get_bd_pins sequence_stepper_0/stepSize]
   connect_bd_net -net ddr_clk_1 [get_bd_pins ddr_clk] [get_bd_pins pdm_1/clk] [get_bd_pins pdm_2/clk] [get_bd_pins pdm_3/clk] [get_bd_pins pdm_4/clk]
   connect_bd_net -net dyn_offset_enable_1 [get_bd_pins dyn_offset_enable] [get_bd_pins util_vector_logic_3/Op1]
   connect_bd_net -net pdm_1_dout [get_bd_pins pdm_1/dout] [get_bd_pins util_vector_logic_5/Op2]
@@ -1811,7 +1775,7 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   connect_bd_net -net pdm_3_dout [get_bd_pins pdm_3/dout] [get_bd_pins xlconcat_0/In2]
   connect_bd_net -net pdm_4_dout [get_bd_pins pdm_4/dout] [get_bd_pins xlconcat_0/In3]
   connect_bd_net -net pdm_multiplexer_0_pdm_data_out [get_bd_pins pdm_multiplexer_0/pdm_data_out] [get_bd_pins sequence_slice_0/seq_data]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins pdm_1/aresetn] [get_bd_pins pdm_2/aresetn] [get_bd_pins pdm_3/aresetn] [get_bd_pins pdm_4/aresetn] [get_bd_pins pdm_multiplexer_0/aresetn] [get_bd_pins util_vector_logic_0/Op1] [get_bd_pins util_vector_logic_1/Op1]
+  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins pdm_1/aresetn] [get_bd_pins pdm_2/aresetn] [get_bd_pins pdm_3/aresetn] [get_bd_pins pdm_4/aresetn] [get_bd_pins pdm_multiplexer_0/aresetn] [get_bd_pins sequence_stepper_0/aresetn] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net sequence_slice_0_dac_value_0 [get_bd_pins sequence_slice_0/dac_value_0] [get_bd_pins xlconcat_1/In0]
   connect_bd_net -net sequence_slice_0_dac_value_1 [get_bd_pins sequence_slice_0/dac_value_1] [get_bd_pins xlconcat_1/In1]
   connect_bd_net -net sequence_slice_0_enable_dac [get_bd_pins enable_dac] [get_bd_pins sequence_slice_0/enable_dac]
@@ -1821,17 +1785,14 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   connect_bd_net -net sequence_slice_0_pdm_value_1 [get_bd_pins pdm_2/din] [get_bd_pins sequence_slice_0/pdm_value_1]
   connect_bd_net -net sequence_slice_0_pdm_value_2 [get_bd_pins pdm_3/din] [get_bd_pins sequence_slice_0/pdm_value_2]
   connect_bd_net -net sequence_slice_0_pdm_value_3 [get_bd_pins pdm_4/din] [get_bd_pins sequence_slice_0/pdm_value_3]
-  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins util_vector_logic_0/Res] [get_bd_pins util_vector_logic_2/Op1]
-  connect_bd_net -net util_vector_logic_1_Res [get_bd_pins c_counter_binary_0/SCLR] [get_bd_pins util_vector_logic_1/Res]
-  connect_bd_net -net util_vector_logic_2_Res [get_bd_pins cfg_clk_div_0/reset] [get_bd_pins util_vector_logic_2/Res]
   connect_bd_net -net util_vector_logic_3_Res [get_bd_pins util_vector_logic_3/Res] [get_bd_pins util_vector_logic_4/Op1] [get_bd_pins util_vector_logic_5/Op1]
   connect_bd_net -net util_vector_logic_4_Res [get_bd_pins util_vector_logic_4/Res] [get_bd_pins xlconcat_0/In1]
   connect_bd_net -net util_vector_logic_5_Res [get_bd_pins util_vector_logic_5/Res] [get_bd_pins xlconcat_0/In0]
-  connect_bd_net -net util_vector_logic_6_Res [get_bd_pins c_counter_binary_0/CLK] [get_bd_pins util_vector_logic_6/Res]
   connect_bd_net -net util_vector_logic_7_Res [get_bd_pins dout] [get_bd_pins util_vector_logic_7/Res]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins util_vector_logic_7/Op1] [get_bd_pins xlconcat_0/dout]
   connect_bd_net -net xlconcat_1_dout [get_bd_pins oa_dac] [get_bd_pins xlconcat_1/dout]
   connect_bd_net -net xlslice_0_Dout [get_bd_pins pdm_multiplexer_0/sample_select] [get_bd_pins xlslice_0/Dout]
+  connect_bd_net -net xlslice_1_Dout [get_bd_pins pdm_sts] [get_bd_pins sequence_stepper_0/step_counter] [get_bd_pins xlslice_0/Din]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -2321,10 +2282,10 @@ proc create_root_design { parentCell } {
   # Create instance: xlslice_1, and set properties
   set xlslice_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_1 ]
   set_property -dict [ list \
-   CONFIG.DIN_FROM {63} \
+   CONFIG.DIN_FROM {47} \
    CONFIG.DIN_TO {32} \
    CONFIG.DIN_WIDTH {96} \
-   CONFIG.DOUT_WIDTH {1} \
+   CONFIG.DOUT_WIDTH {16} \
  ] $xlslice_1
 
   # Create instance: xlslice_2, and set properties
@@ -2458,7 +2419,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net util_ds_buf_0_OBUF_DS_N [get_bd_ports adc_enc_n_o] [get_bd_pins util_ds_buf_0/OBUF_DS_N]
   connect_bd_net -net util_ds_buf_0_OBUF_DS_P [get_bd_ports adc_enc_p_o] [get_bd_pins util_ds_buf_0/OBUF_DS_P]
   connect_bd_net -net util_vector_logic_0_Res [get_bd_pins clk_wiz_0/clk_in_sel] [get_bd_pins util_vector_logic_0/Res]
-  connect_bd_net -net xlconcat_0_dout [get_bd_pins system/adc_sts] [get_bd_pins write_to_ram/sts_data]
+  connect_bd_net -net xlconcat_0_dout [get_bd_pins sequencer/adc_sts] [get_bd_pins system/adc_sts] [get_bd_pins write_to_ram/sts_data]
   connect_bd_net -net xlconcat_0_dout1 [get_bd_ports dac_pwm_o] [get_bd_pins sequencer/dout]
   connect_bd_net -net xlconcat_0_dout2 [get_bd_pins system/sts_data] [get_bd_pins xlconcat_0/dout]
   connect_bd_net -net xlconstant_0_dout [get_bd_ports ext_DIO1_N] [get_bd_pins xlconstant_0/dout]
@@ -2489,7 +2450,6 @@ proc create_root_design { parentCell } {
   # Restore current instance
   current_bd_instance $oldCurInst
 
-  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -2501,4 +2461,6 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
+
+common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
