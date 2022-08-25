@@ -142,7 +142,7 @@ module axis_ram_writer #
   end
 
   assign sts_data = int_addr_reg;
-  assign sts_total_data = int_addr_reg_total;
+  assign sts_total_data = int_addr_reg_total << 1;
 
   assign m_axi_awid = int_wid_reg;
   assign m_axi_awaddr = cfg_data + {int_addr_reg, {(ADDR_SIZE){1'b0}}};

@@ -542,7 +542,7 @@ uint16_t getDecimation() {
 uint32_t getWritePointer() {
 	uint32_t val = (*((uint32_t *)(adc_sts + 0)));
 	uint32_t mask = BIT_MASK(uint64_t, ADC_BUFF_NUM_BITS); // Extract lower bits
-	return 2*(val&mask);
+	return val&mask;
 }
 
 uint32_t getInternalWritePointer(uint64_t wp) {
@@ -559,7 +559,7 @@ uint32_t getWritePointerOverflows() {
 }
 
 uint64_t getTotalWritePointer() {
-	return 2*(*(((uint64_t *)(adc_sts + 0))));
+	return (*(((uint64_t *)(adc_sts + 0))));
 }
 
 uint32_t getWritePointerDistance(uint32_t start_pos, uint32_t end_pos) {
