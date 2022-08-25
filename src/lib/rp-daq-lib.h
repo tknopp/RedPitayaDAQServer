@@ -117,8 +117,8 @@ extern int resetRamWriter();
 extern int enableRamWriter();
 
 // Sequence
-extern int getPDMClockDivider();
-extern int setPDMClockDivider(int);
+extern int getSamplesPerStep();
+extern int setSamplesPerStep(int);
 extern int setPDMRegisterValue(uint64_t, int);
 extern int setPDMRegisterAllValues(uint64_t);
 extern int setPDMValue(int16_t, int, int);

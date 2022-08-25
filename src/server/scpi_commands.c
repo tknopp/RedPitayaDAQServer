@@ -404,39 +404,16 @@ static scpi_result_t RP_DAC_SetSamplesPerStep(scpi_t * context) {
 	}
 
 	// Adapt the slowDAC frequency to match the step length
-	setPDMClockDivider(numSamplesPerStep * getDecimation());
+	setSamplesPerStep(numSamplesPerStep);
 	seqState = CONFIG;
 	return returnSCPIBool(context, true);
 }
 
 static scpi_result_t RP_DAC_GetSamplesPerStep(scpi_t * context) {
-	SCPI_ResultInt32(context, numSamplesPerStep);
+	SCPI_ResultInt32(context, getSamplesPerStep());
 
 	return SCPI_RES_OK;
 }
-
-static scpi_result_t RP_ADC_SetSeqClockDivider(scpi_t * context) {
-	if(!isSequenceConfigurable()) {
-		return returnSCPIBool(context, false);
-	}
-	int32_t clockDiv = 1;
-
-	if (!SCPI_ParamInt32(context, &clockDiv, TRUE)) {
-		return returnSCPIBool(context, false);
-	}
-
-	setPDMClockDivider(clockDiv);
-	seqState = CONFIG;
-	return returnSCPIBool(context, true);
-}
-
-static scpi_result_t RP_ADC_GetSeqClockDivider(scpi_t * context) {
-	SCPI_ResultInt32(context, getPDMClockDivider());
-
-	return SCPI_RES_OK;
-}
-
-
 
 static scpi_result_t RP_DAC_SetNumSlowDACChan(scpi_t * context) {
 	if(!isSequenceConfigurable()) {

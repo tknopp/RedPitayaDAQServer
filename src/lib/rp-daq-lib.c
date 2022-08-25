@@ -628,7 +628,7 @@ int setResetDAC(int8_t value, int index) {
 	return 0;
 }
 
-bool getRampDownDAC(int channel, int index) {
+int getRampDownDAC(int channel, int index) {
 	if(channel < 0 || channel > 1) {
 		return false;
 	}
@@ -724,16 +724,13 @@ int setPDMAllValuesVolt(float voltage, int channel) {
 	return 0;
 }
 
-int getPDMClockDivider() {
+int getSamplesPerStep() {
 	int32_t value = *((int32_t *)(cfg + 4));
-	return value*2;
+	return value;
 }
 
-int setPDMClockDivider(int divider) {
-	printf("SetPDMClockDivider to %d\n", divider);
-
-	*((int32_t *)(cfg + 4)) = divider/2;
-
+int setSamplesPerStep(int samples) {
+	*((int32_t *)(cfg + 4)) = samples;
 	return 0;
 }
 
