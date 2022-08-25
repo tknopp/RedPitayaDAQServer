@@ -235,7 +235,7 @@ static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
 			enable = false;
 	}
 	
-	//printf("Step %d factor %f value %f interval %d \n", futureStep, factor, val, computeInterval(&(currentSequence->sequence).data, localRepetition, localStep));
+	//printf("Step %d value %f interval %d \n", futureStep, val, interval);
 	if (setPDMValueVolt(val, channel, currPDMIndex) != 0) {
 		printf("Could not set AO[%d] voltage.\n", channel);	
 	}
@@ -347,9 +347,10 @@ void *controlThread(void *ch) {
 
 			// Handle sequence
 			wp = getTotalWritePointer();
-			currentSlowDACStepTotal = wp / numSamplesPerStep;
-
+			currentSlowDACStepTotal = getPDMTotalWritePointer();
 			if (currentSlowDACStepTotal > oldSlowDACStepTotal) {
+
+				//printf("Expected step %"PRIu64", actual %"PRIu64", wp %"PRIu64"\n", wp/numSamplesPerStep, currentSlowDACStepTotal, wp);
 
 				if (currentSlowDACStepTotal > oldSlowDACStepTotal + lookahead) {
 					handleLostSlowDACSteps(oldSlowDACStepTotal, currentSlowDACStepTotal);

@@ -1428,8 +1428,6 @@ const scpi_command_t scpi_commands[] = {
 	//{.pattern = "RP:DAC:CHannel#:RAMPing:STATus?", .callback = RP_DAC_GetChannelRampingStatus,},
 	{.pattern = "RP:DAC:RAMPing:STATus?", .callback = RP_DAC_GetRampingStatus,},
 	// Sequence
-	{.pattern = "RP:DAC:SEQ:CLocKdivider", .callback = RP_ADC_SetSeqClockDivider,},
-	{.pattern = "RP:DAC:SEQ:CLocKdivider?", .callback = RP_ADC_GetSeqClockDivider,},
 	{.pattern = "RP:DAC:SEQ:SAMPlesperstep", .callback = RP_DAC_SetSamplesPerStep,},
 	{.pattern = "RP:DAC:SEQ:SAMPlesperstep?", .callback = RP_DAC_GetSamplesPerStep,},
 	{.pattern = "RP:DAC:SEQ:CHan", .callback = RP_DAC_SetNumSlowDACChan,},

@@ -744,7 +744,7 @@ uint32_t getPDMTotalWritePointer() {
 	return value;
 }
 
-uint64_t getPDMWritePointer() {
+uint32_t getPDMWritePointer() {
 	uint32_t value = getPDMTotalWritePointer();
 	return value % PDM_BUFF_SIZE;
 }
