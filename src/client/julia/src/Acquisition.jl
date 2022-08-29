@@ -43,11 +43,13 @@ end
 correctFilterDelay(rpu::Union{RedPitaya, RedPitayaCluster}, wpStart) = correctFilterDelay(wpStart, decimation(rpu))
 correctFilterDelay(rpcv::RedPitayaClusterView, wpStart) = correctFilterDelay(rpcv.rpc, wpStart)
 function correctFilterDelay(wpStart::Int64, dec::Int64)
-  cicDelay = (6-1)/2
-  firDelay = (128-1)/4
+  cic_stages = 6
+  fir_taps = 92
+  cicDelay = (((dec/2-1)/2*cic_stages))/dec
+  firDelay = ((fir_taps-1)/2)/2
   delay = Int64(round((cicDelay + firDelay), RoundUp))
   correctedWp = wpStart + delay
-  @info "Filter delay corrected $wpStart to $correctedWp ($cicDelay, $firDelay, $delay)"
+  @debug "Filter delay corrected $wpStart to $correctedWp ($cicDelay, $firDelay, $delay)"
   return correctedWp
 end
 
