@@ -52,7 +52,7 @@ See [`samplesPerPeriod!`](@ref), [`periodsPerFrame!`](@ref), [`samplesPerStep!`]
 function stepsPerFrame!(rp::RedPitaya, stepsPerFrame)
   samplesPerFrame = rp.periodsPerFrame * rp.samplesPerPeriod
   samplesPerStep = div(samplesPerFrame, stepsPerFrame)
-  return samplesPerStep!(rp, samplesPerStep) # Sets PDMClockDivider
+  return samplesPerStep!(rp, samplesPerStep)
 end
 
 """
@@ -227,11 +227,13 @@ struct StartUpSequence <: RampingSequence
       throw(DimensionMismatch("Ramping steps are smaller than start up steps"))
     end
     upLut = zeros(Float32, size(lut, 1), rampingSteps)
-    for i = 0:startUpSteps-1
-      upLut[:, end-i] = lut[:, end-(i%size(lut, 2))]
-    end
-    for i = 1:rampingSteps - startUpSteps
-      upLut[:, i] = upLut[:, end-(startUpSteps-1)]
+    if startUpSteps > 0
+      for i = 0:startUpSteps-1
+        upLut[:, end-i] = lut[:, end-(i%size(lut, 2))]
+      end
+      for i = 1:rampingSteps - startUpSteps
+        upLut[:, i] = upLut[:, end-(startUpSteps-1)]
+      end
     end
     up = SequenceLUT(upLut, 1)
     down = SequenceLUT(lut[:, end], rampingSteps)
