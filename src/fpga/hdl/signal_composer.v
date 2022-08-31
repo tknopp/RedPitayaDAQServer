@@ -12,7 +12,6 @@ module signal_composer(
     input valid3,
     input signed [15:0] offset,
     input signed [15:0] seq,
-    input dyn_offset_disable,
     input disable_dac,
     output signal_valid,
     output signed [15:0] signal_out
@@ -35,12 +34,7 @@ begin
     valid_temp0 <= valid0 & valid1;
     valid_temp1 <= valid2 & valid3;
     signal_temp2 <= signal_temp0 + signal_temp1;
-    if (~dyn_offset_disable)
-    begin
-        signal_temp3 <= seq + offset; 
-    end else begin
-        signal_temp3 <= offset;
-    end
+    signal_temp3 <= seq + offset; 
     if  (~disable_dac)
     begin
         signal_temp4 <= signal_temp2 + signal_temp3;
