@@ -21,7 +21,7 @@ bool verbose = false;
 int mmapfd;
 volatile uint32_t *slcr, *axi_hp0;
 void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *dio_sts;
-char *pdm_cfg;
+uint16_t *pdm_cfg;
 uint64_t *dac_cfg;
 volatile int32_t *xadc;
 
@@ -135,7 +135,7 @@ int init() {
 	axi_hp0 = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0xF8008000);
 	dac_cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40000000);
 	adc_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40001000);
-	pdm_cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40002000);
+	pdm_cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x42000000);
 	pdm_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40003000);
 	reset_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40005000);
 	dio_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40006000);
@@ -598,17 +598,17 @@ int setEnableDAC(int8_t value, int channel, int index) {
 		return -1;
 	}
 
-	if(channel < 0 || channel >= 4) {
+	if(channel < 0 || channel >= 6) {
 		return -2;
 	}
 
-	int bitpos = 12 + channel;
-
-	// The enable bits are in the 4-th slowDAC channel
+	int bitpos = channel;
+	int offset = 8 * index + 7;
+	// The enable bits are in the 6-th slowDAC channel
 	// clear the bit
-	*((int16_t *)(pdm_cfg + 2*(3+4*index))) &= ~(1u << bitpos);
+	*((int16_t *)(pdm_cfg + offset)) &= ~(1u << bitpos);
 	// set the bit
-	*((int16_t *)(pdm_cfg + 2*(3+4*index))) |= (value << bitpos);
+	*((int16_t *)(pdm_cfg + offset)) |= (value << bitpos);
 
 	return 0;
 }
@@ -617,7 +617,6 @@ int setResetDAC(int8_t value, int index) {
 	if (value < 0 || value >= 2)
 		return -1;
 
-	//printf("%d before reset pdm\n", *((int16_t *)(pdm_cfg + 2*(0+4*index))));
 	int bitpos = 14;
 	// Reset bit is in the 1-th channel
 	// clear the bit
@@ -645,12 +644,13 @@ int setRampDownDAC(int8_t value, int channel, int index) {
 		return -2;
 	}
 
-	int bitpos = 14 + channel * 1; // 14 or 15
-	// Ramp Down bit is in the 3rd channel
+	int bitpos = channel; // 0 or 1
+	// Ramp Down bit is in the 7th channel
 	// clear the bit
-	*((int16_t *)(pdm_cfg + 2*(2+4*index))) &= ~(1u << bitpos);
+	int offset = 8 * index + 7;
+	*((int16_t *)(pdm_cfg + offset)) &= ~(1u << bitpos);
 	// set the bit
-	*((int16_t *)(pdm_cfg + 2*(2+4*index))) |= (value << bitpos);
+	*((int16_t *)(pdm_cfg + offset)) |= (value << bitpos);
 	return 0;
 }
 
@@ -675,13 +675,14 @@ int setPDMValue(int16_t value, int channel, int index) {
 	  return -1;
 	  }*/
 
-	if(channel < 0 || channel >= 4) {
+	if(channel < 0 || channel >= 6) {
 		return -2;
 	}
 
 	//printf("%p   %p   %d \n", (void*)pdm_cfg, (void*)((uint16_t *)(pdm_cfg+2*(channel+4*index))), 2*(channel+4*index) );
-	int16_t temp = *((int16_t *)(pdm_cfg + 2*(channel+4*index))); 
-	*((int16_t *)(pdm_cfg + 2*(channel+4*index))) = (value & MASK_LOWER_14) | (temp & ~MASK_LOWER_14);
+	int offset = 8 * index + channel;
+	int16_t temp = *((int16_t *)(pdm_cfg + offset)); 
+	*((int16_t *)(pdm_cfg + offset)) = value;
 	
 	return 0;
 }

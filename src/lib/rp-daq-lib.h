@@ -60,7 +60,7 @@ extern int mmapfd;
 extern volatile uint32_t *slcr, *axi_hp0;
 // FPGA registers that are memory mapped
 extern void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *buf, *dio_sts;
-extern char *pdm_cfg;
+extern uint16_t *pdm_cfg;
 extern uint64_t *dac_cfg; 
 
 // init routines
@@ -119,8 +119,8 @@ extern int enableRamWriter();
 // Sequence
 extern int getSamplesPerStep();
 extern int setSamplesPerStep(int);
-extern int setPDMRegisterValue(uint64_t, int);
-extern int setPDMRegisterAllValues(uint64_t);
+//extern int setPDMRegisterValue(uint64_t, int);
+//extern int setPDMRegisterAllValues(uint64_t);
 extern int setPDMValue(int16_t, int, int);
 extern int setPDMAllValues(int16_t, int);
 extern int setPDMValueVolt(float, int, int);
@@ -134,7 +134,7 @@ extern uint32_t getXADCValue(int);
 extern float getXADCValueVolt(int);
 extern int setEnableDACAll(int8_t, int);
 extern int setEnableDAC(int8_t, int, int);
-extern int setResetDAC(int8_t, int);
+//extern int setResetDAC(int8_t, int);
 extern int setRampDownDAC(int8_t, int, int);
 extern int getRampDownDAC(int, int);
 
