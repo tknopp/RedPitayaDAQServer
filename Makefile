@@ -26,7 +26,7 @@ DAQ_CORES = axi_cfg_register_v1_0 axis_variable_v1_0 pdm_multiplexer_v1_0 \
   axis_red_pitaya_adc_v1_0 clk_div_v1_0 red_pitaya_dfilt1_v1_0 \
   axis_red_pitaya_dac_v1_0 dio_v1_0 shift_by_n_v1_0 \
   axis_select_v1_0 divide_by_two_v1_0 signal_generator_v1_0 \
-  axi_sts_register_v1_0 fourier_synthesizer_v1_0
+  axi_sts_register_v1_0 fourier_synthesizer_v1_0 sequence_bram_reader_v1_0
 
 DAQ_PARTS = xc7z010clg400-1 xc7z020clg400-1
 
