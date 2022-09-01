@@ -1602,8 +1602,8 @@ unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#una
   connect_bd_net -net clk_wiz_0_locked [get_bd_pins dcm_locked] [get_bd_pins rst_ps7_0_125M/dcm_locked]
   connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins FCLK_CLK0] [get_bd_pins processing_system7_0/FCLK_CLK0]
   connect_bd_net -net processing_system7_0_FCLK_RESET0_N [get_bd_pins FCLK_RESET0_N] [get_bd_pins processing_system7_0/FCLK_RESET0_N]
-  connect_bd_net -net rst_ps7_0_125M_interconnect_aresetn [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins rst_ps7_0_125M/interconnect_aresetn]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins peripheral_aresetn] [get_bd_pins axi_cfg_register_0/aresetn] [get_bd_pins axi_cfg_register_cfg/aresetn] [get_bd_pins axi_cfg_register_dac/aresetn] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/M02_ARESETN] [get_bd_pins axi_interconnect_0/M03_ARESETN] [get_bd_pins axi_interconnect_0/M04_ARESETN] [get_bd_pins axi_interconnect_0/M05_ARESETN] [get_bd_pins axi_interconnect_0/M06_ARESETN] [get_bd_pins axi_interconnect_0/M07_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_1/ARESETN] [get_bd_pins axi_interconnect_1/M00_ARESETN] [get_bd_pins axi_interconnect_1/M01_ARESETN] [get_bd_pins axi_interconnect_1/M02_ARESETN] [get_bd_pins axi_interconnect_1/S00_ARESETN] [get_bd_pins axi_sts_register_DIOIn/aresetn] [get_bd_pins axi_sts_register_adc/aresetn] [get_bd_pins axi_sts_register_pdm/aresetn] [get_bd_pins axi_sts_register_reset/aresetn] [get_bd_pins rst_ps7_0_125M/peripheral_aresetn]
+  connect_bd_net -net rst_ps7_0_125M_interconnect_aresetn [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_1/ARESETN] [get_bd_pins rst_ps7_0_125M/interconnect_aresetn]
+  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins peripheral_aresetn] [get_bd_pins axi_cfg_register_0/aresetn] [get_bd_pins axi_cfg_register_cfg/aresetn] [get_bd_pins axi_cfg_register_dac/aresetn] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/M02_ARESETN] [get_bd_pins axi_interconnect_0/M03_ARESETN] [get_bd_pins axi_interconnect_0/M04_ARESETN] [get_bd_pins axi_interconnect_0/M05_ARESETN] [get_bd_pins axi_interconnect_0/M06_ARESETN] [get_bd_pins axi_interconnect_0/M07_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_1/M00_ARESETN] [get_bd_pins axi_interconnect_1/M01_ARESETN] [get_bd_pins axi_interconnect_1/M02_ARESETN] [get_bd_pins axi_interconnect_1/S00_ARESETN] [get_bd_pins axi_sts_register_DIOIn/aresetn] [get_bd_pins axi_sts_register_adc/aresetn] [get_bd_pins axi_sts_register_pdm/aresetn] [get_bd_pins axi_sts_register_reset/aresetn] [get_bd_pins rst_ps7_0_125M/peripheral_aresetn]
   connect_bd_net -net sts_data1_1 [get_bd_pins curr_pdm_values] [get_bd_pins axi_sts_register_pdm/sts_data]
   connect_bd_net -net sts_data_1 [get_bd_pins reset_sts] [get_bd_pins axi_sts_register_reset/sts_data]
   connect_bd_net -net sts_data_2 [get_bd_pins sts_data] [get_bd_pins axi_sts_register_DIOIn/sts_data]
@@ -1682,17 +1682,17 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
    CONFIG.Enable_B {Use_ENB_Pin} \
    CONFIG.Fill_Remaining_Memory_Locations {false} \
    CONFIG.Load_Init_File {false} \
-   CONFIG.Memory_Type {Dual_Port_ROM} \
+   CONFIG.Memory_Type {True_Dual_Port_RAM} \
    CONFIG.Operating_Mode_A {WRITE_FIRST} \
-   CONFIG.Port_A_Write_Rate {0} \
+   CONFIG.Port_A_Write_Rate {50} \
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
-   CONFIG.Port_B_Write_Rate {0} \
+   CONFIG.Port_B_Write_Rate {50} \
    CONFIG.Read_Width_A {128} \
    CONFIG.Read_Width_B {128} \
    CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
    CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
-   CONFIG.Use_Byte_Write_Enable {false} \
+   CONFIG.Use_Byte_Write_Enable {true} \
    CONFIG.Use_RSTA_Pin {true} \
    CONFIG.Use_RSTB_Pin {true} \
    CONFIG.Write_Width_A {128} \
@@ -1722,6 +1722,7 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
 
   set_property -dict [ list \
    CONFIG.MASTER_TYPE {BRAM_CTRL} \
+   CONFIG.READ_WRITE_MODE {READ_ONLY} \
  ] [get_bd_intf_pins /sequencer/sequence_bram_reader_0/BRAM_PORTA]
 
   # Create instance: sequence_slice_0, and set properties
@@ -2446,6 +2447,7 @@ proc create_root_design { parentCell } {
   # Restore current instance
   current_bd_instance $oldCurInst
 
+  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -2457,6 +2459,4 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
-
-common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
