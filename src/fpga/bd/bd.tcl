@@ -1669,6 +1669,7 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
    CONFIG.DATA_WIDTH {128} \
+   CONFIG.PROTOCOL {AXI4} \
    CONFIG.SINGLE_PORT_BRAM {1} \
  ] $axi_bram_ctrl_0
 
@@ -1680,17 +1681,18 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
    CONFIG.Enable_32bit_Address {true} \
    CONFIG.Enable_B {Use_ENB_Pin} \
    CONFIG.Fill_Remaining_Memory_Locations {false} \
-   CONFIG.Memory_Type {True_Dual_Port_RAM} \
+   CONFIG.Load_Init_File {false} \
+   CONFIG.Memory_Type {Dual_Port_ROM} \
    CONFIG.Operating_Mode_A {WRITE_FIRST} \
-   CONFIG.Port_A_Write_Rate {50} \
+   CONFIG.Port_A_Write_Rate {0} \
    CONFIG.Port_B_Clock {100} \
    CONFIG.Port_B_Enable_Rate {100} \
-   CONFIG.Port_B_Write_Rate {50} \
+   CONFIG.Port_B_Write_Rate {0} \
    CONFIG.Read_Width_A {128} \
    CONFIG.Read_Width_B {128} \
    CONFIG.Register_PortA_Output_of_Memory_Primitives {false} \
    CONFIG.Register_PortB_Output_of_Memory_Primitives {false} \
-   CONFIG.Use_Byte_Write_Enable {true} \
+   CONFIG.Use_Byte_Write_Enable {false} \
    CONFIG.Use_RSTA_Pin {true} \
    CONFIG.Use_RSTB_Pin {true} \
    CONFIG.Write_Width_A {128} \
@@ -1717,6 +1719,10 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
    CONFIG.BRAM_DATA_WIDTH {128} \
    CONFIG.STS_DATA_WIDTH {13} \
  ] $sequence_bram_reader_0
+
+  set_property -dict [ list \
+   CONFIG.MASTER_TYPE {BRAM_CTRL} \
+ ] [get_bd_intf_pins /sequencer/sequence_bram_reader_0/BRAM_PORTA]
 
   # Create instance: sequence_slice_0, and set properties
   set block_name sequence_slice
