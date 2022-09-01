@@ -1779,6 +1779,15 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
    CONFIG.DOUT_WIDTH {13} \
  ] $xlslice_0
 
+  # Create instance: xlslice_1, and set properties
+  set xlslice_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_1 ]
+  set_property -dict [ list \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DIN_TO {3} \
+   CONFIG.DIN_WIDTH {17} \
+   CONFIG.DOUT_WIDTH {13} \
+ ] $xlslice_1
+
   # Create interface connections
   connect_bd_intf_net -intf_net axi_bram_ctrl_0_BRAM_PORTA [get_bd_intf_pins axi_bram_ctrl_0/BRAM_PORTA] [get_bd_intf_pins blk_mem_gen_0/BRAM_PORTA]
   connect_bd_intf_net -intf_net seq_bram_1 [get_bd_intf_pins seq_bram] [get_bd_intf_pins axi_bram_ctrl_0/S_AXI]
@@ -1788,6 +1797,7 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] [get_bd_pins sequence_bram_reader_0/aclk] [get_bd_pins sequence_bram_reader_0/updateclk] [get_bd_pins sequence_stepper_0/clk]
   connect_bd_net -net adc_sts_1 [get_bd_pins adc_sts] [get_bd_pins sequence_stepper_0/writepointer]
   connect_bd_net -net aresetn3_1 [get_bd_pins keep_alive_aresetn] [get_bd_pins util_vector_logic_0/Op2]
+  connect_bd_net -net axi_bram_ctrl_0_bram_addr_a [get_bd_pins axi_bram_ctrl_0/bram_addr_a] [get_bd_pins xlslice_1/Din]
   connect_bd_net -net cfg_data_1 [get_bd_pins cfg_data] [get_bd_pins sequence_stepper_0/stepSize]
   connect_bd_net -net ddr_clk_1 [get_bd_pins ddr_clk] [get_bd_pins pdm_1/clk] [get_bd_pins pdm_2/clk] [get_bd_pins pdm_3/clk] [get_bd_pins pdm_4/clk]
   connect_bd_net -net pdm_1_dout [get_bd_pins pdm_1/dout] [get_bd_pins xlconcat_0/In0]
@@ -1810,6 +1820,7 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   connect_bd_net -net xlconcat_1_dout [get_bd_pins oa_dac] [get_bd_pins xlconcat_1/dout]
   connect_bd_net -net xlslice_0_Dout [get_bd_pins sequence_bram_reader_0/sts_data] [get_bd_pins xlslice_0/Dout]
   connect_bd_net -net xlslice_1_Dout [get_bd_pins pdm_sts] [get_bd_pins sequence_stepper_0/step_counter] [get_bd_pins xlslice_0/Din]
+  connect_bd_net -net xlslice_1_Dout1 [get_bd_pins blk_mem_gen_0/addra] [get_bd_pins xlslice_1/Dout]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -2447,7 +2458,6 @@ proc create_root_design { parentCell } {
   # Restore current instance
   current_bd_instance $oldCurInst
 
-  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -2459,4 +2469,6 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
+
+common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
