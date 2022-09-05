@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# reset_manager, enable_ramping_slice, sequence_slice, sequence_stepper, signal_cfg_slice, signal_composer, signal_cfg_slice, signal_composer
+# reset_manager, enable_ramping_slice, bram_address_converter, sequence_slice, sequence_stepper, signal_cfg_slice, signal_composer, signal_cfg_slice, signal_composer
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -188,6 +188,7 @@ if { $bCheckModules == 1 } {
    set list_check_mods "\ 
 reset_manager\
 enable_ramping_slice\
+bram_address_converter\
 sequence_slice\
 sequence_stepper\
 signal_cfg_slice\
@@ -1700,6 +1701,20 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
    CONFIG.use_bram_block {BRAM_Controller} \
  ] $blk_mem_gen_0
 
+  # Create instance: bram_address_convert_0, and set properties
+  set block_name bram_address_converter
+  set block_cell_name bram_address_convert_0
+  if { [catch {set bram_address_convert_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $bram_address_convert_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+    set_property -dict [ list \
+   CONFIG.ELEMENT_SHIFT_SIZE {4} \
+ ] $bram_address_convert_0
+
   # Create instance: pdm_1, and set properties
   set pdm_1 [ create_bd_cell -type ip -vlnv koheron:user:pdm:1.0 pdm_1 ]
 
@@ -1764,8 +1779,6 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   set xlslice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_0 ]
   set_property -dict [ list \
    CONFIG.DIN_FROM {12} \
-   CONFIG.DIN_TO {0} \
-   CONFIG.DIN_WIDTH {32} \
    CONFIG.DOUT_WIDTH {13} \
  ] $xlslice_0
 
@@ -1778,6 +1791,7 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   connect_bd_net -net adc_sts_1 [get_bd_pins adc_sts] [get_bd_pins sequence_stepper_0/writepointer]
   connect_bd_net -net aresetn3_1 [get_bd_pins keep_alive_aresetn] [get_bd_pins util_vector_logic_0/Op2]
   connect_bd_net -net blk_mem_gen_0_doutb [get_bd_pins blk_mem_gen_0/doutb] [get_bd_pins sequence_slice_0/seq_data]
+  connect_bd_net -net bram_address_convert_0_addr [get_bd_pins blk_mem_gen_0/addrb] [get_bd_pins bram_address_convert_0/addr]
   connect_bd_net -net bram_aresetn_1 [get_bd_pins bram_aresetn] [get_bd_pins axi_bram_ctrl_0/s_axi_aresetn]
   connect_bd_net -net cfg_data_1 [get_bd_pins cfg_data] [get_bd_pins sequence_stepper_0/stepSize]
   connect_bd_net -net ddr_clk_1 [get_bd_pins ddr_clk] [get_bd_pins pdm_1/clk] [get_bd_pins pdm_2/clk] [get_bd_pins pdm_3/clk] [get_bd_pins pdm_4/clk]
@@ -1799,7 +1813,7 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   connect_bd_net -net xlconcat_0_dout [get_bd_pins util_vector_logic_7/Op1] [get_bd_pins xlconcat_0/dout]
   connect_bd_net -net xlconcat_1_dout [get_bd_pins oa_dac] [get_bd_pins xlconcat_1/dout]
   connect_bd_net -net xlconstant_0_dout [get_bd_pins blk_mem_gen_0/enb] [get_bd_pins xlconstant_0/dout]
-  connect_bd_net -net xlslice_0_Dout [get_bd_pins blk_mem_gen_0/addrb] [get_bd_pins xlslice_0/Dout]
+  connect_bd_net -net xlslice_0_Dout [get_bd_pins bram_address_convert_0/elAddr] [get_bd_pins xlslice_0/Dout]
   connect_bd_net -net xlslice_1_Dout [get_bd_pins pdm_sts] [get_bd_pins sequence_stepper_0/step_counter] [get_bd_pins xlslice_0/Din]
 
   # Restore current instance
