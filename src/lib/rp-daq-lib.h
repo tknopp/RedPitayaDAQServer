@@ -30,7 +30,7 @@
 #define ADC_BUFF_SIZE (1 << (ADC_BUFF_NUM_BITS+1)) 
 #define ADC_BUFF_MEM_ADDRESS 0x18000000 // 0x1E000000  
 
-#define PDM_BUFF_SIZE 128  
+#define PDM_BUFF_SIZE 8192  
 
 #define DAC_MODE_AWG  1
 #define	DAC_MODE_STANDARD   0
@@ -163,8 +163,6 @@ extern int getXADCAResetN();
 extern int getTriggerStatus();
 extern int getWatchdogStatus();
 extern int getInstantResetStatus();
-extern int getPassPDMToFastDAC();
-extern int setPassPDMToFastDAC(int);
 extern void stopTx();
 
 // Calibration

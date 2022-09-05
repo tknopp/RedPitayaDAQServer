@@ -135,7 +135,7 @@ int init() {
 	axi_hp0 = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0xF8008000);
 	dac_cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40000000);
 	adc_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40001000);
-	pdm_cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x42000000);
+	pdm_cfg = mmap(NULL, 8*sizeof(uint16_t)*PDM_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x42000000);
 	pdm_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40003000);
 	reset_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40005000);
 	dio_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40006000);
@@ -164,7 +164,6 @@ int init() {
 	setRAMWriterMode(ADC_MODE_TRIGGERED);
 	setMasterTrigger(OFF);
 	setInstantResetMode(OFF);
-	setPassPDMToFastDAC(OFF);
 
 	stopTx();
 
@@ -202,6 +201,9 @@ int init() {
 	setEnableDACAll(1, 1);
 	setEnableDACAll(1, 2);
 	setEnableDACAll(1, 3);
+	setEnableDACAll(1, 4);
+	setEnableDACAll(1, 5);
+
 
 	return 0;
 }
