@@ -20,6 +20,7 @@ module reset_manager #
     output xadc_aresetn,
     output fourier_synth_aresetn,
     output pdm_aresetn,
+    output bram_aresetn,
     output [31:0] reset_sts,
     output [7:0] led,
     input [7:0] ramping_cfg,
@@ -67,6 +68,7 @@ reg write_to_ram_aresetn_int = 0;
 reg xadc_aresetn_int = 0;
 reg fourier_synth_aresetn_int = 0;
 reg pdm_aresetn_int = 0;
+reg bram_aresetn_int = 0;
 reg keep_alive_aresetn_int = 0;
 
 wire trigger_in;
@@ -220,6 +222,7 @@ begin
         xadc_aresetn_int <= peripheral_aresetn_int;
         fourier_synth_aresetn_int <= peripheral_aresetn_int;
         pdm_aresetn_int <= peripheral_aresetn_int;
+        bram_aresetn_int <= peripheral_aresetn_int;
     end
     else
     begin
@@ -249,6 +252,7 @@ begin
 
         // XADC is always running
         xadc_aresetn_int <= peripheral_aresetn_int;
+        bram_aresetn_int <= peripheral_aresetn_int;
         keep_alive_aresetn_int <= reset_cfg[6];
     end
 end
@@ -258,6 +262,7 @@ assign write_to_ramwriter_aresetn = write_to_ram_aresetn_int;
 assign xadc_aresetn = xadc_aresetn_int;
 assign fourier_synth_aresetn = fourier_synth_aresetn_int;
 assign pdm_aresetn = pdm_aresetn_int;
+assign bram_aresetn = bram_aresetn_int;
 assign keep_alive_aresetn = keep_alive_aresetn_int;
 
 assign reset_sts[0] = peripheral_aresetn_int;
