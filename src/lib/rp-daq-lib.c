@@ -605,7 +605,7 @@ int setEnableDAC(int8_t value, int channel, int index) {
 	}
 
 	int bitpos = channel;
-	int offset = 8 * index + 7;
+	int offset = 8 * index + 6;
 	// The enable bits are in the 6-th slowDAC channel
 	// clear the bit
 	*((int16_t *)(pdm_cfg + offset)) &= ~(1u << bitpos);
