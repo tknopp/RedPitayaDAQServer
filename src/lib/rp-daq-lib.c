@@ -20,9 +20,9 @@ bool verbose = false;
 
 int mmapfd;
 volatile uint32_t *slcr, *axi_hp0;
-void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *dio_sts;
+void *pdm_sts, *reset_sts, *cfg, *ram, *dio_sts;
 uint16_t *pdm_cfg;
-uint64_t *dac_cfg;
+uint64_t *adc_sts, *dac_cfg;
 volatile int32_t *xadc;
 
 // static const uint32_t ANALOG_OUT_MASK            = 0xFF;
@@ -542,7 +542,7 @@ uint16_t getDecimation() {
 	& (((__TYPE__) -1) >> ((sizeof(__TYPE__) * CHAR_BIT) - (__ONE_COUNT__)))
 
 uint32_t getWritePointer() {
-	uint32_t val = (*((uint32_t *)(adc_sts + 0)));
+	uint32_t val = getTotalWritePointer();
 	uint32_t mask = BIT_MASK(uint64_t, ADC_BUFF_NUM_BITS); // Extract lower bits
 	return val&mask;
 }
@@ -557,11 +557,11 @@ uint32_t getInternalPointerOverflows(uint64_t wp) {
 }
 
 uint32_t getWritePointerOverflows() {
-	return (*(((uint64_t *)(adc_sts + 0)))) >> ADC_BUFF_NUM_BITS; // Extract upper bits
+	return getTotalWritePointer() >> ADC_BUFF_NUM_BITS; // Extract upper bits
 }
 
 uint64_t getTotalWritePointer() {
-	return (*(((uint64_t *)(adc_sts + 0))));
+	return *adc_sts;
 }
 
 uint32_t getWritePointerDistance(uint32_t start_pos, uint32_t end_pos) {

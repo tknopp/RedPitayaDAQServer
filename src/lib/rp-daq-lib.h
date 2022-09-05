@@ -59,9 +59,9 @@ extern bool verbose;
 extern int mmapfd;
 extern volatile uint32_t *slcr, *axi_hp0;
 // FPGA registers that are memory mapped
-extern void *adc_sts, *pdm_sts, *reset_sts, *cfg, *ram, *buf, *dio_sts;
+extern void *pdm_sts, *reset_sts, *cfg, *ram, *buf, *dio_sts;
 extern uint16_t *pdm_cfg;
-extern uint64_t *dac_cfg; 
+extern uint64_t *adc_sts, *dac_cfg; 
 
 // init routines
 extern uint32_t getFPGAId();
