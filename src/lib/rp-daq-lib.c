@@ -706,7 +706,7 @@ int setPDMValueVolt(float voltage, int channel, int index) {
 
 	int16_t val;
 
-	if( !getPassPDMToFastDAC() || channel >= 2 ) {
+	if(channel >= 2 ) {
 		if (voltage > 1.8) voltage = 1.8;
 		if (voltage < 0) voltage = 0;
 		val = (voltage / 1.8) * 2038.;
@@ -1013,30 +1013,6 @@ int setInstantResetMode(int mode) {
 		*((uint8_t *)(cfg + 1)) &= ~8;
 	} else if(mode == ON) {
 		*((uint8_t *)(cfg + 1)) |= 8;
-	} else {
-		return -1;
-	}
-
-	return 0;
-}
-
-int getPassPDMToFastDAC() {
-	int value = (((int)(*((uint8_t *)(cfg))) & 0x08) >> 3);
-
-	if(value == 0) {
-		return OFF;
-	} else if(value == 1) {
-		return ON;
-	}
-
-	return -1;
-}
-
-int setPassPDMToFastDAC(int mode) {
-	if(mode == OFF) {
-		*((uint8_t *)(cfg)) &= ~8;
-	} else if(mode == ON) {
-		*((uint8_t *)(cfg)) |= 8;
 	} else {
 		return -1;
 	}
