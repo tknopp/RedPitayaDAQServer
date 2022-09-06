@@ -38,7 +38,7 @@ static sequenceInterval_t prevInterval;
 
 static int lastStep = INT_MAX;
 
-static int lookahead = 110;
+static int lookahead = PDM_BUFF_SIZE * 0.9;
 
 sequenceData_t * allocSequence() {
 	sequenceData_t * seq = (sequenceData_t*) calloc(1, sizeof(sequenceData_t));
