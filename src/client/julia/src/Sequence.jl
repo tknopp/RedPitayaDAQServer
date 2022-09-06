@@ -11,11 +11,11 @@ scpiReturn(::typeof(seqChan)) = Int64
 """
     seqChan!(rp::RedPitaya, value)
 
-Set the number of sequence channel. Valid values are between `1` and `4`. Return `true` if the command was successful.
+Set the number of sequence channel. Valid values are between `1` and `6`. Return `true` if the command was successful.
 """
 function seqChan!(rp::RedPitaya, value)
-  if value <= 0 || value > 4
-    error("Num sequence channels needs to be between 1 and 4!")
+  if value <= 0 || value > 6
+    error("Num sequence channels needs to be between 1 and 6!")
   end
   return query(rp, scpiCommand(seqChan!, value), scpiReturn(seqChan!))
 end
