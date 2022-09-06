@@ -1787,7 +1787,7 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   connect_bd_intf_net -intf_net seq_bram_1 [get_bd_intf_pins seq_bram] [get_bd_intf_pins axi_bram_ctrl_0/S_AXI]
 
   # Create port connections
-  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] [get_bd_pins blk_mem_gen_0/clkb] [get_bd_pins sequence_stepper_0/clk]
+  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] [get_bd_pins blk_mem_gen_0/clkb] [get_bd_pins bram_address_convert_0/clk] [get_bd_pins sequence_stepper_0/clk]
   connect_bd_net -net adc_sts_1 [get_bd_pins adc_sts] [get_bd_pins sequence_stepper_0/writepointer]
   connect_bd_net -net aresetn3_1 [get_bd_pins keep_alive_aresetn] [get_bd_pins util_vector_logic_0/Op2]
   connect_bd_net -net blk_mem_gen_0_doutb [get_bd_pins blk_mem_gen_0/doutb] [get_bd_pins sequence_slice_0/seq_data]
@@ -1961,7 +1961,6 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
   connect_bd_net -net Din_1_1 [get_bd_pins signal_compose1/offset] [get_bd_pins xlslice_2/Dout]
   connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins signal_compose/aclk] [get_bd_pins signal_compose1/aclk]
   connect_bd_net -net aresetn_1 [get_bd_pins aresetn] [get_bd_pins signal_compose/aresetn] [get_bd_pins signal_compose1/aresetn]
-  connect_bd_net -net c_addsub_2_S [get_bd_pins signal_compose/S] [get_bd_pins xlconcat_2/In0]
   connect_bd_net -net cfg_data_1 [get_bd_pins cfg_data] [get_bd_pins xlslice_0/Din] [get_bd_pins xlslice_1/Din]
   connect_bd_net -net enable_dac_1 [get_bd_pins enable_dac] [get_bd_pins util_vector_logic_2/Op1]
   connect_bd_net -net enable_ramping_1 [get_bd_pins enable_ramping] [get_bd_pins enable_ramping_slice_0/enable_ramping]
@@ -1974,6 +1973,7 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
   connect_bd_net -net signal_compose1_S [get_bd_pins signal_compose1/S] [get_bd_pins xlconcat_2/In1]
   connect_bd_net -net signal_compose1_m_axis_data_tvalid_1 [get_bd_pins signal_compose1/m_axis_data_tvalid_1] [get_bd_pins util_vector_logic_1/Op2]
   connect_bd_net -net signal_compose1_ramp_state_1 [get_bd_pins ramp_state_1] [get_bd_pins signal_compose1/ramp_state_1]
+  connect_bd_net -net signal_compose_S [get_bd_pins signal_compose/S] [get_bd_pins xlconcat_2/In0]
   connect_bd_net -net signal_compose_ramp_state_0 [get_bd_pins ramp_state_0] [get_bd_pins signal_compose/ramp_state_0]
   connect_bd_net -net signal_gen_m_axis_data_tvalid_1 [get_bd_pins signal_compose/m_axis_data_tvalid_1] [get_bd_pins util_vector_logic_1/Op1]
   connect_bd_net -net start_ramp_down_1 [get_bd_pins start_ramp_down] [get_bd_pins enable_ramping_slice_0/start_ramp_down]

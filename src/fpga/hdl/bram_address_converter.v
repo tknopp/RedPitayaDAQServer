@@ -7,9 +7,17 @@ module bram_address_converter #
 )
 (
     input [ELEMENT_ADDR_WIDTH -1:0] elAddr,
-    output [31:0] addr
+    output [31:0] addr,
+    input clk
 );
 
-assign addr[31:0] = {{(31-ELEMENT_ADDR_WIDTH-ELEMENT_SHIFT_SIZE){0'b1}}, (elAddr[ELEMENT_ADDR_WIDTH -1:0] << ELEMENT_SHIFT_SIZE)};
+reg [31:0] addr_int;
+
+always @(posedge clk)
+begin
+    addr_int <= {{(32-ELEMENT_ADDR_WIDTH-ELEMENT_SHIFT_SIZE){1'b0}}, (elAddr[ELEMENT_ADDR_WIDTH -1:0] << ELEMENT_SHIFT_SIZE)};
+end
+
+assign addr = addr_int;
 
 endmodule
