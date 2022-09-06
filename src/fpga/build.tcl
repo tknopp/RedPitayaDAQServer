@@ -29,6 +29,7 @@ update_ip_catalog
 # Recreate blockdesign
 source src/fpga/bd/signal_calib.tcl
 source src/fpga/bd/signal_ramp.tcl
+source src/fpga/bd/waveform_gen_awg.tcl
 source src/fpga/bd/waveform_gen.tcl
 source src/fpga/bd/bd.tcl
 
