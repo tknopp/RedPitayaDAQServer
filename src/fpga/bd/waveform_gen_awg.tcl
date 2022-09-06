@@ -341,9 +341,17 @@ proc create_root_design { parentCell } {
 
   # Create instance: element_slice, and set properties
   set element_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 element_slice ]
+  set_property -dict [ list \
+   CONFIG.DIN_FROM {12} \
+   CONFIG.DIN_WIDTH {14} \
+   CONFIG.DOUT_WIDTH {13} \
+ ] $element_slice
 
   # Create instance: odd_slice, and set properties
   set odd_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 odd_slice ]
+  set_property -dict [ list \
+   CONFIG.DIN_WIDTH {14} \
+ ] $odd_slice
 
   # Create instance: wave_awg_composer_0, and set properties
   set block_name wave_awg_composer

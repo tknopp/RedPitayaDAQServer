@@ -8,21 +8,25 @@ module wave_awg_composer(
     output [15:0] wave_out
 );
 
+reg signed [15:0] wave_int;
+
 always @(posedge aclk)
 begin
     if (~aresetn)
     begin
-        wave_out <= 0;
+        wave_int <= 0;
     end 
     else
     begin
         if (odd)
         begin
-            wave_out <= wave_in[31:16];
+            wave_int <= wave_in[31:16];
         end else begin
-            wave_out <= wave_in[15:0];
+            wave_int <= wave_in[15:0];
         end
     end
 end
+
+assign wave_out = wave_int;
 
 endmodule
