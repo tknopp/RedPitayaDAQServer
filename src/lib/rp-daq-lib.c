@@ -136,15 +136,15 @@ int init() {
 	axi_hp0 = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0xF8008000);
 	dac_cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40000000);
 	adc_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40001000);
-	pdm_cfg = mmap(NULL, 8*sizeof(uint16_t)*PDM_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x42000000);
+	pdm_cfg = mmap(NULL, 8*sizeof(uint16_t)*PDM_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80000000);
 	pdm_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40003000);
 	reset_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40005000);
 	dio_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40006000);
 	cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40004000);
 	ram = mmap(NULL, sizeof(int32_t)*ADC_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, ADC_BUFF_MEM_ADDRESS);
 	xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
-	awg_0_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(uint16_t), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80020000);
-	awg_1_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(uint16_t), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80028000);
+	awg_0_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(int16_t), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80020000);
+	awg_1_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(int16_t), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80028000);
 
 
 	loadBitstream();
@@ -482,7 +482,7 @@ int setArbitraryWaveform(float* values, int channel) {
 	}
 
 	for (int i = 0; i < AWG_BUFF_SIZE; i++) {
-		*(awg_cfg) = intValues[i];
+		*(awg_cfg + i) = intValues[i];
 	}
 }
 
