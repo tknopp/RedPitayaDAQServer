@@ -26,6 +26,24 @@
 #include "../lib/rp-daq-lib.h"
 #include "../server/daq_server_scpi.h"
 
+
+static int readAll(int fd, void *buf,  size_t len) {
+	size_t left = len;
+	size_t n = 0;
+	char *ptr = (char*) buf;
+
+	while(left > 0) {
+		n = read(fd, ptr, left);
+		if (n <= 0) {
+			return n;
+		}
+		ptr += n;
+		left -= n;
+	}
+	
+	return len;
+}
+
 static sequenceData_t * configSeq = NULL; 
 
 static scpi_result_t returnSCPIBool(scpi_t* context, bool val) {
@@ -906,24 +924,7 @@ static scpi_result_t RP_InstantResetStatus(scpi_t * context) {
 	SCPI_ResultBool(context, getInstantResetStatus());
 
 	return SCPI_RES_OK;
-}
-
-static int readAll(int fd, void *buf,  size_t len) {
-	size_t left = len;
-	size_t n = 0;
-	char *ptr = (char*) buf;
-
-	while(left > 0) {
-		n = read(fd, ptr, left);
-		if (n <= 0) {
-			return n;
-		}
-		ptr += n;
-		left -= n;
-	}
-	
-	return len;
-}
+}*
 
 static scpi_result_t RP_DAC_SetValueLUT(scpi_t * context) {
 
@@ -1385,8 +1386,6 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:SEQ:SAMPlesperstep?", .callback = RP_DAC_GetSamplesPerStep,},
 	{.pattern = "RP:DAC:SEQ:CHan", .callback = RP_DAC_SetNumSlowDACChan,},
 	{.pattern = "RP:DAC:SEQ:CHan?", .callback = RP_DAC_GetNumSlowDACChan,},
-	{.pattern = "RP:DAC:PASStofast", .callback = RP_SetPassPDMToFastDAC,},
-	{.pattern = "RP:DAC:PASStofast?", .callback = RP_GetPassPDMToFastDAC,},
 	{.pattern = "RP:DAC:SEQ:LUT", .callback = RP_DAC_SetValueLUT,},
 	{.pattern = "RP:DAC:SEQ:LUT:ENaBle", .callback = RP_DAC_SetEnableLUT,},
 	{.pattern = "RP:DAC:SEQ:LUT:UP", .callback = RP_DAC_SetUpLUT,},

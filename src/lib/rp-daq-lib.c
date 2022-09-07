@@ -23,7 +23,7 @@ volatile uint32_t *slcr, *axi_hp0;
 void *pdm_sts, *reset_sts, *cfg, *ram, *dio_sts;
 uint16_t *pdm_cfg;
 uint64_t *adc_sts, *dac_cfg;
-int16_t *awg_0_cfg, awg_1_cfg;
+int16_t *awg_0_cfg, *awg_1_cfg;
 volatile int32_t *xadc;
 
 // static const uint32_t ANALOG_OUT_MASK            = 0xFF;
@@ -460,7 +460,7 @@ int setCalibDACOffset(float value, int channel) {
 }
 
 int setArbitraryWaveform(float* values, int channel) {
-	*int16_t awg_cfg = NULL;
+	int16_t *awg_cfg = NULL;
 	if (channel == 0) {
 		awg_cfg = awg_0_cfg;
 	}
