@@ -1,7 +1,26 @@
-export SignalType, SINE, TRIANGLE, SAWTOOTH, DACPerformanceData, DACConfig, passPDMToFastDAC, passPDMToFastDAC!,
+export SignalType, SINE, TRIANGLE, SAWTOOTH, DACPerformanceData, DACConfig, ArbitraryWaveform, waveformDAC!
 amplitudeDAC, amplitudeDAC!,offsetDAC, offsetDAC!,
 frequencyDAC, frequencyDAC!, phaseDAC, phaseDAC!, signalTypeDAC, signalTypeDAC!,
 rampingDAC!, rampingDAC, enableRamping!, enableRamping, enableRampDown, enableRampDown!, RampingState, RampingStatus, rampingStatus, rampDownDone, rampUpDone
+
+
+
+const _awgBufferSize = 16384
+struct ArbitraryWaveform
+  samples::Vector{Float32}
+  ArbitraryWaveform(samples::Vector{Float32}) = length(samples) != _awgBufferSize ? error("Unexpected waveform length $(length(samples)), expected $_awgBufferSize") : new(samples)
+end
+values(wave::ArbitraryWaveform) = wave.samples
++(x::ArbitraryWaveform, y::ArbitraryWaveform) = ArbitraryWaveform(values(x).+values(y))
+ArbitraryWaveform(f::Function, min=0, max=_awgBufferSize) = ArbitraryWaveform([f(x) for x = range(min, max, length = _awgBufferSize)])
+
+function waveformDAC!(rp::RedPitaya, channel::Integer, wave::ArbitraryWaveform)
+  send(rp, "RP:DAC:CH$(channel-1):AWG")
+  write(rp.dataSocket, values(wave))
+  reply = receive(rp)
+  return parse(Bool, reply)
+end
+waveformDAC!(rp::RedPitaya, channel::Integer, wave::Nothing) = waveformDAC!(rp, channel, ArbitraryWaveform(x-> Float32(0.0)))
 
 """
     SignalType
@@ -44,19 +63,6 @@ struct DACConfig
     Array{Union{String, Nothing}}(nothing, 2), Array{Union{Float64, Nothing}}(nothing, 2))
   end
 end
-
-function passPDMToFastDAC!(rp::RedPitaya, val::Bool)
-  valStr = val ? "ON" : "OFF"
-  return query(rp, string("RP:DAC:PASStofast ", valStr), Bool)
-end
-scpiCommand(::typeof(passPDMToFastDAC!), val::Bool) = scpiCommand(passPDMToFastDAC!, val ? "ON" : "OFF")
-scpiCommand(::typeof(passPDMToFastDAC!), val::String) = string("RP:DAC:PASStofast ", val)
-scpiReturn(::typeof(passPDMToFastDAC!)) = Bool
-
-passPDMToFastDAC(rp::RedPitaya) = occursin("ON", query(rp, scpiCommand(passPDMToFastDAC)))
-scpiCommand(::typeof(passPDMToFastDAC)) = "RP:DAC:PASStofast?"
-scpiReturn(::typeof(passPDMToFastDAC)) = String
-parseReturn(::typeof(passPDMToFastDAC), ret) = occursin("ON", ret)
 
 """
     amplitudeDAC(rp::RedPitaya, channel, component)
