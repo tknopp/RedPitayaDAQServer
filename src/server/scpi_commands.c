@@ -336,34 +336,15 @@ static scpi_result_t RP_DAC_GetSignalType(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DAC_GetJumpSharpness(scpi_t * context) {
-	int32_t numbers[2];
-	SCPI_CommandNumbers(context, numbers, 2, 1);
+static scpi_result_t RP_DAC_SetArbitraryWaveform(scpi_t * context) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
 	int channel = numbers[0];
-	int component = numbers[1];
 
-	SCPI_ResultDouble(context, getJumpSharpness(channel, component));
-
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_DAC_SetJumpSharpness(scpi_t * context) {
-	int32_t numbers[2];
-	SCPI_CommandNumbers(context, numbers, 2, 1);
-	int channel = numbers[0];
-	int component = numbers[1];
-	
-	double percentage;
-	if (!SCPI_ParamDouble(context, &percentage, TRUE)) {
-		return returnSCPIBool(context, false);
-	}
-
-	int result = setJumpSharpness(percentage, channel, component);
-	if (result < 0) {
-		return returnSCPIBool(context, false);
-	}
-
-	return returnSCPIBool(context, true);
+	float temp[AWG_BUFF_SIZE];
+	int n = readAll(newdatasockfd, temp, AWG_BUFF_SIZE * sizeof(float));
+	if (n < 0) perror("ERROR reading from socket");
+	return returnSCPIBool(context, setArbitraryWaveform(temp, channel));
 }
 
 static scpi_result_t RP_ADC_SetDecimation(scpi_t * context) {
@@ -674,34 +655,6 @@ static scpi_result_t RP_SetWatchdogMode(scpi_t * context) {
 	}
 
 	int result = setWatchdogMode(watchdog_mode_selection);
-	if (result < 0) {
-		return returnSCPIBool(context, false);
-	}
-
-	return returnSCPIBool(context, true);
-}
-
-static scpi_result_t RP_GetPassPDMToFastDAC(scpi_t * context) {
-	const char * name;
-
-	SCPI_ChoiceToName(onoff_modes, getPassPDMToFastDAC(), &name);
-	SCPI_ResultText(context, name);
-
-	return SCPI_RES_OK;
-}
-
-static scpi_result_t RP_SetPassPDMToFastDAC(scpi_t * context) {
-	if (!isSequenceConfigurable())
-		return returnSCPIBool(context, false);
-
-
-	int32_t selection;
-
-	if (!SCPI_ParamChoice(context, onoff_modes, &selection, TRUE)) {
-		return returnSCPIBool(context, false);
-	}
-
-	int result = setPassPDMToFastDAC(selection);
 	if (result < 0) {
 		return returnSCPIBool(context, false);
 	}
@@ -1416,8 +1369,8 @@ const scpi_command_t scpi_commands[] = {
 	//{.pattern = "RP:DAC:MODe?", .callback = RP_DAC_GetDACMode,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:SIGnaltype", .callback = RP_DAC_SetSignalType,},
 	{.pattern = "RP:DAC:CHannel#:COMPonent#:SIGnaltype?", .callback = RP_DAC_GetSignalType,},
-	{.pattern = "RP:DAC:CHannel#:COMPonent#:JUMPsharpness", .callback = RP_DAC_SetJumpSharpness,},
-	{.pattern = "RP:DAC:CHannel#:COMPonent#:JUMPsharpness?", .callback = RP_DAC_GetJumpSharpness,},
+	{.pattern = "RP:DAC:CHannel#:AWG", .callback = RP_DAC_SetArbitraryWaveform,},
+	// {.pattern = "RP:DAC:CHannel#:AWG?", .callback = RP_DAC_GetArbitraryWaveform,},
 	// Ramping
 	{.pattern = "RP:DAC:CHannel#:RAMPing", .callback = RP_DAC_SetRampingFast,},
 	{.pattern = "RP:DAC:CHannel#:RAMPing?", .callback = RP_DAC_GetRampingFast,},
