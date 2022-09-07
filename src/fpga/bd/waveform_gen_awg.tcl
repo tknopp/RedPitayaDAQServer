@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# bram_address_converter, dds_bram_slice, wave_awg_composer
+# dds_bram_slice, wave_awg_composer
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -130,13 +130,10 @@ set bCheckIPsPassed 1
 set bCheckIPs 1
 if { $bCheckIPs == 1 } {
    set list_check_ips "\ 
-xilinx.com:ip:axi_bram_ctrl:4.1\
 pavel-demin:user:axis_variable:1.0\
-xilinx.com:ip:blk_mem_gen:8.4\
 xilinx.com:ip:dds_compiler:6.0\
 xilinx.com:ip:xlslice:1.0\
 xilinx.com:ip:xlconcat:2.1\
-xilinx.com:ip:xlconstant:1.1\
 "
 
    set list_ips_missing ""
@@ -162,7 +159,6 @@ xilinx.com:ip:xlconstant:1.1\
 set bCheckModules 1
 if { $bCheckModules == 1 } {
    set list_check_mods "\ 
-bram_address_converter\
 dds_bram_slice\
 wave_awg_composer\
 "
@@ -227,56 +223,19 @@ proc create_root_design { parentCell } {
 
 
   # Create interface ports
-  set S_AXI [ create_bd_intf_port -mode Slave -vlnv xilinx.com:interface:aximm_rtl:1.0 S_AXI ]
-  set_property -dict [ list \
-   CONFIG.ADDR_WIDTH {32} \
-   CONFIG.ARUSER_WIDTH {0} \
-   CONFIG.AWUSER_WIDTH {0} \
-   CONFIG.BUSER_WIDTH {0} \
-   CONFIG.DATA_WIDTH {32} \
-   CONFIG.FREQ_HZ {125000000} \
-   CONFIG.HAS_BRESP {1} \
-   CONFIG.HAS_BURST {1} \
-   CONFIG.HAS_CACHE {1} \
-   CONFIG.HAS_LOCK {1} \
-   CONFIG.HAS_PROT {1} \
-   CONFIG.HAS_QOS {0} \
-   CONFIG.HAS_REGION {0} \
-   CONFIG.HAS_RRESP {1} \
-   CONFIG.HAS_WSTRB {1} \
-   CONFIG.ID_WIDTH {0} \
-   CONFIG.MAX_BURST_LENGTH {16} \
-   CONFIG.NUM_READ_OUTSTANDING {8} \
-   CONFIG.NUM_READ_THREADS {1} \
-   CONFIG.NUM_WRITE_OUTSTANDING {8} \
-   CONFIG.NUM_WRITE_THREADS {1} \
-   CONFIG.PROTOCOL {AXI4} \
-   CONFIG.READ_WRITE_MODE {READ_WRITE} \
-   CONFIG.RUSER_BITS_PER_BYTE {0} \
-   CONFIG.RUSER_WIDTH {0} \
-   CONFIG.SUPPORTS_NARROW_BURST {0} \
-   CONFIG.WUSER_BITS_PER_BYTE {0} \
-   CONFIG.WUSER_WIDTH {0} \
-   ] $S_AXI
-
 
   # Create ports
   set aclk [ create_bd_port -dir I -type clk -freq_hz 125000000 aclk ]
   set_property -dict [ list \
-   CONFIG.ASSOCIATED_BUSIF {S_AXI} \
+   CONFIG.ASSOCIATED_BUSIF {} \
    CONFIG.ASSOCIATED_RESET {bram_aresetn:aresetn} \
  ] $aclk
   set aresetn [ create_bd_port -dir I aresetn ]
-  set bram_aresetn [ create_bd_port -dir I bram_aresetn ]
+  set bram_element [ create_bd_port -dir O -from 12 -to 0 bram_element ]
+  set bram_wave [ create_bd_port -dir I -from 31 -to 0 bram_wave ]
   set freq [ create_bd_port -dir I -from 47 -to 0 freq ]
   set phase [ create_bd_port -dir I -from 47 -to 0 phase ]
   set wave_awg [ create_bd_port -dir O -from 15 -to 0 wave_awg ]
-
-  # Create instance: axi_bram_ctrl_0, and set properties
-  set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
-  set_property -dict [ list \
-   CONFIG.SINGLE_PORT_BRAM {1} \
- ] $axi_bram_ctrl_0
 
   # Create instance: axis_variable_0, and set properties
   set axis_variable_0 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_0 ]
@@ -284,28 +243,6 @@ proc create_root_design { parentCell } {
    CONFIG.AXIS_TDATA_WIDTH {96} \
  ] $axis_variable_0
 
-  # Create instance: blk_mem_gen_0, and set properties
-  set blk_mem_gen_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:blk_mem_gen:8.4 blk_mem_gen_0 ]
-  set_property -dict [ list \
-   CONFIG.Enable_B {Use_ENB_Pin} \
-   CONFIG.Memory_Type {True_Dual_Port_RAM} \
-   CONFIG.Port_B_Clock {100} \
-   CONFIG.Port_B_Enable_Rate {100} \
-   CONFIG.Port_B_Write_Rate {50} \
-   CONFIG.Use_RSTB_Pin {true} \
- ] $blk_mem_gen_0
-
-  # Create instance: bram_address_convert_0, and set properties
-  set block_name bram_address_converter
-  set block_cell_name bram_address_convert_0
-  if { [catch {set bram_address_convert_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   } elseif { $bram_address_convert_0 eq "" } {
-     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
-     return 1
-   }
-  
   # Create instance: dds_bram_slice, and set properties
   set block_name dds_bram_slice
   set block_cell_name dds_bram_slice
@@ -342,7 +279,8 @@ proc create_root_design { parentCell } {
   # Create instance: element_slice, and set properties
   set element_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 element_slice ]
   set_property -dict [ list \
-   CONFIG.DIN_FROM {12} \
+   CONFIG.DIN_FROM {13} \
+   CONFIG.DIN_TO {1} \
    CONFIG.DIN_WIDTH {14} \
    CONFIG.DOUT_WIDTH {13} \
  ] $element_slice
@@ -367,32 +305,23 @@ proc create_root_design { parentCell } {
   # Create instance: xlconcat_0, and set properties
   set xlconcat_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_0 ]
 
-  # Create instance: xlconstant_0, and set properties
-  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
-
   # Create interface connections
-  connect_bd_intf_net -intf_net awg_bram_1 [get_bd_intf_ports S_AXI] [get_bd_intf_pins axi_bram_ctrl_0/S_AXI]
-  connect_bd_intf_net -intf_net axi_bram_ctrl_0_BRAM_PORTA [get_bd_intf_pins axi_bram_ctrl_0/BRAM_PORTA] [get_bd_intf_pins blk_mem_gen_0/BRAM_PORTA]
   connect_bd_intf_net -intf_net axis_variable_0_M_AXIS [get_bd_intf_pins axis_variable_0/M_AXIS] [get_bd_intf_pins dds_compiler_0/S_AXIS_CONFIG]
   connect_bd_intf_net -intf_net dds_compiler_0_M_AXIS_PHASE [get_bd_intf_pins dds_bram_slice/s_axis_phase] [get_bd_intf_pins dds_compiler_0/M_AXIS_PHASE]
 
   # Create port connections
-  connect_bd_net -net aclk_1 [get_bd_ports aclk] [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] [get_bd_pins axis_variable_0/aclk] [get_bd_pins blk_mem_gen_0/clkb] [get_bd_pins bram_address_convert_0/clk] [get_bd_pins dds_bram_slice/clk] [get_bd_pins dds_compiler_0/aclk] [get_bd_pins wave_awg_composer_0/aclk]
+  connect_bd_net -net aclk_1 [get_bd_ports aclk] [get_bd_pins axis_variable_0/aclk] [get_bd_pins dds_bram_slice/clk] [get_bd_pins dds_compiler_0/aclk] [get_bd_pins wave_awg_composer_0/aclk]
   connect_bd_net -net aresetn_1 [get_bd_ports aresetn] [get_bd_pins axis_variable_0/aresetn] [get_bd_pins dds_bram_slice/aresetn] [get_bd_pins dds_compiler_0/aresetn] [get_bd_pins wave_awg_composer_0/aresetn]
-  connect_bd_net -net blk_mem_gen_0_doutb [get_bd_pins blk_mem_gen_0/doutb] [get_bd_pins wave_awg_composer_0/wave_in]
-  connect_bd_net -net bram_address_convert_0_addr [get_bd_pins blk_mem_gen_0/addrb] [get_bd_pins bram_address_convert_0/addr]
-  connect_bd_net -net bram_aresetn_1 [get_bd_ports bram_aresetn] [get_bd_pins axi_bram_ctrl_0/s_axi_aresetn]
+  connect_bd_net -net bram_wave_1 [get_bd_ports bram_wave] [get_bd_pins wave_awg_composer_0/wave_in]
   connect_bd_net -net dds_bram_slice_counter [get_bd_pins dds_bram_slice/counter] [get_bd_pins element_slice/Din] [get_bd_pins odd_slice/Din]
-  connect_bd_net -net element_slice_Dout [get_bd_pins bram_address_convert_0/elAddr] [get_bd_pins element_slice/Dout]
+  connect_bd_net -net element_slice_Dout [get_bd_ports bram_element] [get_bd_pins element_slice/Dout]
   connect_bd_net -net freq_1 [get_bd_ports freq] [get_bd_pins xlconcat_0/In0]
   connect_bd_net -net odd_slice_Dout [get_bd_pins odd_slice/Dout] [get_bd_pins wave_awg_composer_0/odd]
   connect_bd_net -net phase_1 [get_bd_ports phase] [get_bd_pins xlconcat_0/In1]
   connect_bd_net -net wave_awg_composer_0_wave_out [get_bd_ports wave_awg] [get_bd_pins wave_awg_composer_0/wave_out]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins axis_variable_0/cfg_data] [get_bd_pins xlconcat_0/dout]
-  connect_bd_net -net xlconstant_0_dout [get_bd_pins blk_mem_gen_0/enb] [get_bd_pins xlconstant_0/dout]
 
   # Create address segments
-  assign_bd_address -offset 0x80020000 -range 0x00008000 -target_address_space [get_bd_addr_spaces S_AXI] [get_bd_addr_segs axi_bram_ctrl_0/S_AXI/Mem0] -force
 
 
   # Restore current instance
