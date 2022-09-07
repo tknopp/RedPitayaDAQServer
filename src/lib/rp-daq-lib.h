@@ -30,7 +30,8 @@
 #define ADC_BUFF_SIZE (1 << (ADC_BUFF_NUM_BITS+1)) 
 #define ADC_BUFF_MEM_ADDRESS 0x18000000 // 0x1E000000  
 
-#define PDM_BUFF_SIZE 8192  
+#define PDM_BUFF_SIZE 8192
+#define AWG_BUFF_SIZE 16384
 
 #define DAC_MODE_AWG  1
 #define	DAC_MODE_STANDARD   0
@@ -62,6 +63,7 @@ extern volatile uint32_t *slcr, *axi_hp0;
 extern void *pdm_sts, *reset_sts, *cfg, *ram, *buf, *dio_sts;
 extern uint16_t *pdm_cfg;
 extern uint64_t *adc_sts, *dac_cfg; 
+extern int16_t *awg_0_cfg, awg_1_cfg;
 
 // init routines
 extern uint32_t getFPGAId();
@@ -88,10 +90,9 @@ extern int setDACMode(int);
 extern int getDACMode();
 extern int getSignalType(int, int);
 extern int setSignalType(int, int, int);
-extern float getJumpSharpness(int, int);
-extern int setJumpSharpness(float, int, int);
 extern int setCalibDACScale(float, int);
 extern int setCalibDACOffset(float, int);
+extern int setArbitraryWaveform(float*, int)
 //extern int getRampingPeriod(int);
 
 // Ramping

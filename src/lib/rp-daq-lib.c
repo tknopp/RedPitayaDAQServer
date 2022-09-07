@@ -23,6 +23,7 @@ volatile uint32_t *slcr, *axi_hp0;
 void *pdm_sts, *reset_sts, *cfg, *ram, *dio_sts;
 uint16_t *pdm_cfg;
 uint64_t *adc_sts, *dac_cfg;
+int16_t *awg_0_cfg, awg_1_cfg;
 volatile int32_t *xadc;
 
 // static const uint32_t ANALOG_OUT_MASK            = 0xFF;
@@ -142,6 +143,9 @@ int init() {
 	cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40004000);
 	ram = mmap(NULL, sizeof(int32_t)*ADC_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, ADC_BUFF_MEM_ADDRESS);
 	xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
+	awg_0_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(uint16_t), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80020000);
+	awg_1_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(uint16_t), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80028000);
+
 
 	loadBitstream();
 	
@@ -167,15 +171,6 @@ int init() {
 
 	stopTx();
 
-	/*setFrequency(25000, 0, 0);
-	  setFrequency(25000, 0, 1);
-	  setFrequency(25000, 0, 2);
-	  setFrequency(25000, 0, 3);
-	  setFrequency(25000, 1, 0);
-	  setFrequency(25000, 1, 1);
-	  setFrequency(25000, 1, 2);
-	  setFrequency(25000, 1, 3);*/
-
 	setPhase(0, 0, 0);
 	setPhase(0, 0, 1);
 	setPhase(0, 0, 2);
@@ -185,25 +180,8 @@ int init() {
 	setPhase(0, 1, 2);
 	setPhase(0, 1, 3);
 
-	setAmplitude(0, 0, 0);
-	setAmplitude(0, 0, 1);
-	setAmplitude(0, 0, 2);
-	setAmplitude(0, 0, 3);
-	setAmplitude(0, 1, 0);
-	setAmplitude(0, 1, 1);
-	setAmplitude(0, 1, 2);
-	setAmplitude(0, 1, 3);
-
 	setOffset(0, 0);
 	setOffset(0, 1);
-
-	setEnableDACAll(1, 0);
-	setEnableDACAll(1, 1);
-	setEnableDACAll(1, 2);
-	setEnableDACAll(1, 3);
-	setEnableDACAll(1, 4);
-	setEnableDACAll(1, 5);
-
 
 	return 0;
 }
@@ -449,43 +427,6 @@ int getSignalType(int channel, int component) {
 	return value;
 }
 
-int setJumpSharpness(float percentage, int channel, int component) {
-	if(channel < 0 || channel > 1 || percentage == 0.0) {
-		return -3;
-	}
-
-	if(component < 0 || component > 3) {
-		return -4;
-	}
-
-	int16_t A = (int16_t) (8191*percentage);
-	int16_t A_incr = (int16_t) (8191/A);
-	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET * channel);
-	uint64_t mask = 0x00000000ffff0000;
-	register_value = (register_value & ~mask) | (A & mask);
-	mask = 0x0000ffff00000000;
-	register_value = (register_value & ~mask) | (A_incr & mask);
-	*(dac_cfg + COMPONENT_START_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET * channel) = register_value;
-
-	return 0;
-}
-
-float getJumpSharpness(int channel, int component) {
-	if(channel < 0 || channel > 1) {
-		return -3;
-	}
-
-	if(component < 0 || component > 3) {
-		return -4;
-	}
-
-	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET * channel);
-	uint64_t mask = 0x00000000ffff0000;
-	int value = (int) ((register_value & mask) >> 16);
-
-	return ((float)value)/8191.0;
-}
-
 int setCalibDACScale(float value, int channel) {
 	if (channel < 0 || channel > 1) {
 		return -3;
@@ -516,6 +457,33 @@ int setCalibDACOffset(float value, int channel) {
 	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) offset) << 48) & ~MASK_LOWER_48);
 	*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel) = register_value;
 	return 0;
+}
+
+int setArbitraryWaveform(float* values, int channel) {
+	*int16_t awg_cfg = NULL;
+	if (channel == 0) {
+		awg_cfg = awg_0_cfg;
+	}
+	else if (channel == 1) {
+		awg_cfg = awg_1_cfg;
+	}
+	else {
+		return -3;
+	}
+
+	int16_t intValues[AWG_BUFF_SIZE];
+	// First prepare and check values
+	for (int i = 0; i< AWG_BUFF_SIZE; i++) {
+		int16_t value = (int16_t)(values[i]*8191.0);
+		if (value < -8191 || value >= 8192) {
+			return -2;
+		}
+		intValues[i] = value;
+	}
+
+	for (int i = 0; i < AWG_BUFF_SIZE; i++) {
+		*(awg_cfg) = intValues[i];
+	}
 }
 
 
@@ -1192,6 +1160,7 @@ int getDIO(const char* pin) {
 }
 
 void stopTx() {
+	// Stop Fast
 	setAmplitude(0, 0, 0);
 	setAmplitude(0, 0, 1);
 	setAmplitude(0, 0, 2);
@@ -1201,13 +1170,15 @@ void stopTx() {
 	setAmplitude(0, 1, 2);
 	setAmplitude(0, 1, 3);
 
-	setPDMAllValuesVolt(0.0, 0);
-	setPDMAllValuesVolt(0.0, 1);
-	setPDMAllValuesVolt(0.0, 2);
-	setPDMAllValuesVolt(0.0, 3);
+	// Stop AWG
+	float reset[AWG_BUFF_SIZE];
+	memset(reset, 0, AWG_BUFF_SIZE*sizeof(float));
+	setArbitraryWaveform(reset, 0);
+	setArbitraryWaveform(reset, 1);
 
-
-	for(int d=0; d<4; d++) {
+	// Stop Sequence
+	for(int d=0; d<5; d++) {
+		setPDMAllValuesVolt(0.0, d);
 		setEnableDACAll(1,d);
 	}
 }
