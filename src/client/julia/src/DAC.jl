@@ -1,4 +1,4 @@
-export SignalType, SINE, TRIANGLE, SAWTOOTH, DACPerformanceData, DACConfig, ArbitraryWaveform, waveformDAC!
+export SignalType, SINE, TRIANGLE, SAWTOOTH, DACPerformanceData, DACConfig, ArbitraryWaveform, waveformDAC!,
 amplitudeDAC, amplitudeDAC!,offsetDAC, offsetDAC!,
 frequencyDAC, frequencyDAC!, phaseDAC, phaseDAC!, signalTypeDAC, signalTypeDAC!,
 rampingDAC!, rampingDAC, enableRamping!, enableRamping, enableRampDown, enableRampDown!, RampingState, RampingStatus, rampingStatus, rampDownDone, rampUpDone
@@ -6,17 +6,20 @@ rampingDAC!, rampingDAC, enableRamping!, enableRamping, enableRampDown, enableRa
 
 
 const _awgBufferSize = 16384
-struct ArbitraryWaveform
+mutable struct ArbitraryWaveform <: AbstractArray{Float32, 1}
   samples::Vector{Float32}
   ArbitraryWaveform(samples::Vector{Float32}) = length(samples) != _awgBufferSize ? error("Unexpected waveform length $(length(samples)), expected $_awgBufferSize") : new(samples)
 end
-values(wave::ArbitraryWaveform) = wave.samples
-+(x::ArbitraryWaveform, y::ArbitraryWaveform) = ArbitraryWaveform(values(x).+values(y))
+Base.size(wave::ArbitraryWaveform) = size(wave.samples)
+Base.IndexStyle(::Type{<:ArbitraryWaveform}) = IndexLinear()
+Base.getindex(wave::ArbitraryWaveform, i::Int) = wave.samples[i]
+Base.setindex!(wave::ArbitraryWaveform, v, i::Int) = wave.samples[i] = v
+ArbitraryWaveform(samples::Vector{Float64}) = ArbitraryWaveform(convert(Vector{Float32}, samples))
 ArbitraryWaveform(f::Function, min=0, max=_awgBufferSize) = ArbitraryWaveform([f(x) for x = range(min, max, length = _awgBufferSize)])
 
 function waveformDAC!(rp::RedPitaya, channel::Integer, wave::ArbitraryWaveform)
   send(rp, "RP:DAC:CH$(channel-1):AWG")
-  write(rp.dataSocket, values(wave))
+  write(rp.dataSocket, wave[1:end])
   reply = receive(rp)
   return parse(Bool, reply)
 end
