@@ -21,7 +21,7 @@ begin
     begin
         temp <= 0;
     end else begin
-        temp <= s_axis_tdata_phase[47:47-COUNTER_SIZE+1];
+        temp <= (s_axis_tdata_phase >>> (47-COUNTER_SIZE));
     end
 end
 

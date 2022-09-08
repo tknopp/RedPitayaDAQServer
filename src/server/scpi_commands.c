@@ -924,7 +924,7 @@ static scpi_result_t RP_InstantResetStatus(scpi_t * context) {
 	SCPI_ResultBool(context, getInstantResetStatus());
 
 	return SCPI_RES_OK;
-}*
+}
 
 static scpi_result_t RP_DAC_SetValueLUT(scpi_t * context) {
 
