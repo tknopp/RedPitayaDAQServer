@@ -23,7 +23,7 @@ volatile uint32_t *slcr, *axi_hp0;
 void *pdm_sts, *reset_sts, *cfg, *ram, *dio_sts;
 uint16_t *pdm_cfg;
 uint64_t *adc_sts, *dac_cfg;
-int16_t *awg_0_cfg, *awg_1_cfg;
+uint32_t *awg_0_cfg, *awg_1_cfg;
 volatile int32_t *xadc;
 
 // static const uint32_t ANALOG_OUT_MASK            = 0xFF;
@@ -143,8 +143,8 @@ int init() {
 	cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40004000);
 	ram = mmap(NULL, sizeof(int32_t)*ADC_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, ADC_BUFF_MEM_ADDRESS);
 	xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
-	awg_0_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(int16_t), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80020000);
-	awg_1_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(int16_t), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80028000);
+	awg_0_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(uint32_t)/2, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80020000);
+	awg_1_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(uint32_t)/2, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80028000);
 
 
 	loadBitstream();
@@ -460,7 +460,7 @@ int setCalibDACOffset(float value, int channel) {
 }
 
 int setArbitraryWaveform(float* values, int channel) {
-	int16_t *awg_cfg = NULL;
+	uint32_t *awg_cfg = NULL;
 	if (channel == 0) {
 		awg_cfg = awg_0_cfg;
 	}
@@ -481,9 +481,12 @@ int setArbitraryWaveform(float* values, int channel) {
 		intValues[i] = value;
 	}
 
-	for (int i = 0; i < AWG_BUFF_SIZE; i++) {
+	for (int i = 0; i < AWG_BUFF_SIZE/2; i++) {
+		// Without cast to uint the sign is mistakenly taken into account
+		uint32_t bram_value = ((uint16_t) intValues[2*i+1] << 16 | (uint16_t)intValues[2*i]);
 		*(awg_cfg + i) = intValues[i];
 	}
+	return 0;
 }
 
 
