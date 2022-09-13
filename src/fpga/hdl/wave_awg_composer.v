@@ -8,7 +8,7 @@ module wave_awg_composer(
     output [15:0] wave_out
 );
 
-reg signed [15:0] wave_int;
+reg [15:0] wave_int;
 
 always @(posedge aclk)
 begin

@@ -334,12 +334,6 @@ proc create_hier_cell_waveform_awg1 { parentCell nameHier } {
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
 
-  # Create instance: concat_axi_addr, and set properties
-  set concat_axi_addr [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 concat_axi_addr ]
-
-  # Create instance: concat_element_addr, and set properties
-  set concat_element_addr [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 concat_element_addr ]
-
   # Create instance: dds_compiler_0, and set properties
   set dds_compiler_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_0 ]
   set_property -dict [ list \
@@ -368,6 +362,9 @@ proc create_hier_cell_waveform_awg1 { parentCell nameHier } {
    CONFIG.DOUT_WIDTH {13} \
  ] $element_slice
 
+  # Create instance: enable_read_constant, and set properties
+  set enable_read_constant [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 enable_read_constant ]
+
   # Create instance: odd_slice, and set properties
   set odd_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 odd_slice ]
   set_property -dict [ list \
@@ -377,14 +374,12 @@ proc create_hier_cell_waveform_awg1 { parentCell nameHier } {
    CONFIG.DOUT_WIDTH {1} \
  ] $odd_slice
 
-  # Create instance: slice_axi_addr, and set properties
-  set slice_axi_addr [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 slice_axi_addr ]
+  # Create instance: to_32_bit_address, and set properties
+  set to_32_bit_address [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 to_32_bit_address ]
   set_property -dict [ list \
-   CONFIG.DIN_FROM {14} \
-   CONFIG.DIN_TO {2} \
-   CONFIG.DIN_WIDTH {15} \
-   CONFIG.DOUT_WIDTH {13} \
- ] $slice_axi_addr
+   CONFIG.IN0_WIDTH {2} \
+   CONFIG.NUM_PORTS {3} \
+ ] $to_32_bit_address
 
   # Create instance: wave_awg_composer_0, and set properties
   set block_name wave_awg_composer
@@ -402,13 +397,17 @@ proc create_hier_cell_waveform_awg1 { parentCell nameHier } {
 
   # Create instance: xlconstant_0, and set properties
   set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
-
-  # Create instance: zero_constant, and set properties
-  set zero_constant [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 zero_constant ]
   set_property -dict [ list \
    CONFIG.CONST_VAL {0} \
-   CONFIG.CONST_WIDTH {19} \
- ] $zero_constant
+   CONFIG.CONST_WIDTH {17} \
+ ] $xlconstant_0
+
+  # Create instance: xlconstant_1, and set properties
+  set xlconstant_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_1 ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {0} \
+   CONFIG.CONST_WIDTH {2} \
+ ] $xlconstant_1
 
   # Create interface connections
   connect_bd_intf_net -intf_net awg_bram_1 [get_bd_intf_pins S_AXI] [get_bd_intf_pins axi_bram_ctrl_0/S_AXI]
@@ -417,22 +416,20 @@ proc create_hier_cell_waveform_awg1 { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net aresetn_1 [get_bd_pins aresetn] [get_bd_pins axis_variable_0/aresetn] [get_bd_pins dds_compiler_0/aresetn] [get_bd_pins wave_awg_composer_0/aresetn]
-  connect_bd_net -net axi_bram_ctrl_0_bram_addr_a [get_bd_pins axi_bram_ctrl_0/bram_addr_a] [get_bd_pins slice_axi_addr/Din]
   connect_bd_net -net blk_mem_gen_0_doutb [get_bd_pins blk_mem_gen_0/doutb] [get_bd_pins wave_awg_composer_0/wave_in]
   connect_bd_net -net bram_aresetn_1 [get_bd_pins bram_aresetn] [get_bd_pins axi_bram_ctrl_0/s_axi_aresetn]
   connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] [get_bd_pins axis_variable_0/aclk] [get_bd_pins blk_mem_gen_0/clkb] [get_bd_pins dds_compiler_0/aclk] [get_bd_pins wave_awg_composer_0/aclk]
-  connect_bd_net -net concat_axi_addr_dout [get_bd_pins blk_mem_gen_0/addra] [get_bd_pins concat_axi_addr/dout]
-  connect_bd_net -net concat_element_addr_dout [get_bd_pins blk_mem_gen_0/addrb] [get_bd_pins concat_element_addr/dout]
   connect_bd_net -net dds_compiler_0_m_axis_phase_tdata [get_bd_pins dds_compiler_0/m_axis_phase_tdata] [get_bd_pins element_slice/Din] [get_bd_pins odd_slice/Din]
-  connect_bd_net -net element_slice_Dout [get_bd_pins concat_element_addr/In0] [get_bd_pins element_slice/Dout]
+  connect_bd_net -net element_slice_Dout [get_bd_pins element_slice/Dout] [get_bd_pins to_32_bit_address/In1]
+  connect_bd_net -net enable_read_constant_dout [get_bd_pins blk_mem_gen_0/enb] [get_bd_pins enable_read_constant/dout]
   connect_bd_net -net freq_1 [get_bd_pins freq] [get_bd_pins xlconcat_0/In0]
   connect_bd_net -net odd_slice_Dout [get_bd_pins odd_slice/Dout] [get_bd_pins wave_awg_composer_0/odd]
   connect_bd_net -net phase_1 [get_bd_pins phase] [get_bd_pins xlconcat_0/In1]
-  connect_bd_net -net slice_axi_addr_Dout [get_bd_pins concat_axi_addr/In0] [get_bd_pins slice_axi_addr/Dout]
   connect_bd_net -net wave_awg_composer_0_wave_out [get_bd_pins S] [get_bd_pins wave_awg_composer_0/wave_out]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins axis_variable_0/cfg_data] [get_bd_pins xlconcat_0/dout]
-  connect_bd_net -net xlconstant_0_dout [get_bd_pins blk_mem_gen_0/enb] [get_bd_pins xlconstant_0/dout]
-  connect_bd_net -net zero_constant_dout [get_bd_pins concat_axi_addr/In1] [get_bd_pins concat_element_addr/In1] [get_bd_pins zero_constant/dout]
+  connect_bd_net -net xlconcat_1_dout [get_bd_pins blk_mem_gen_0/addrb] [get_bd_pins to_32_bit_address/dout]
+  connect_bd_net -net xlconstant_0_dout [get_bd_pins to_32_bit_address/In2] [get_bd_pins xlconstant_0/dout]
+  connect_bd_net -net xlconstant_1_dout [get_bd_pins to_32_bit_address/In0] [get_bd_pins xlconstant_1/dout]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -507,12 +504,6 @@ proc create_hier_cell_waveform_awg { parentCell nameHier } {
    CONFIG.Use_RSTB_Pin {true} \
  ] $blk_mem_gen_0
 
-  # Create instance: concat_axi_addr, and set properties
-  set concat_axi_addr [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 concat_axi_addr ]
-
-  # Create instance: concat_element_addr, and set properties
-  set concat_element_addr [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 concat_element_addr ]
-
   # Create instance: dds_compiler_0, and set properties
   set dds_compiler_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_0 ]
   set_property -dict [ list \
@@ -553,14 +544,12 @@ proc create_hier_cell_waveform_awg { parentCell nameHier } {
    CONFIG.DOUT_WIDTH {1} \
  ] $odd_slice
 
-  # Create instance: slice_axi_addr, and set properties
-  set slice_axi_addr [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 slice_axi_addr ]
+  # Create instance: to_32_bit_address, and set properties
+  set to_32_bit_address [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 to_32_bit_address ]
   set_property -dict [ list \
-   CONFIG.DIN_FROM {14} \
-   CONFIG.DIN_TO {2} \
-   CONFIG.DIN_WIDTH {15} \
-   CONFIG.DOUT_WIDTH {13} \
- ] $slice_axi_addr
+   CONFIG.IN0_WIDTH {2} \
+   CONFIG.NUM_PORTS {3} \
+ ] $to_32_bit_address
 
   # Create instance: wave_awg_composer_0, and set properties
   set block_name wave_awg_composer
@@ -576,12 +565,19 @@ proc create_hier_cell_waveform_awg { parentCell nameHier } {
   # Create instance: xlconcat_0, and set properties
   set xlconcat_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_0 ]
 
-  # Create instance: zero_constant, and set properties
-  set zero_constant [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 zero_constant ]
+  # Create instance: xlconstant_0, and set properties
+  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
   set_property -dict [ list \
    CONFIG.CONST_VAL {0} \
-   CONFIG.CONST_WIDTH {19} \
- ] $zero_constant
+   CONFIG.CONST_WIDTH {17} \
+ ] $xlconstant_0
+
+  # Create instance: xlconstant_1, and set properties
+  set xlconstant_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_1 ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {0} \
+   CONFIG.CONST_WIDTH {2} \
+ ] $xlconstant_1
 
   # Create interface connections
   connect_bd_intf_net -intf_net S_AXI_1 [get_bd_intf_pins S_AXI] [get_bd_intf_pins axi_bram_ctrl_0/S_AXI]
@@ -591,21 +587,19 @@ proc create_hier_cell_waveform_awg { parentCell nameHier } {
   # Create port connections
   connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] [get_bd_pins axis_variable_0/aclk] [get_bd_pins blk_mem_gen_0/clkb] [get_bd_pins dds_compiler_0/aclk] [get_bd_pins wave_awg_composer_0/aclk]
   connect_bd_net -net aresetn_1 [get_bd_pins aresetn] [get_bd_pins axis_variable_0/aresetn] [get_bd_pins dds_compiler_0/aresetn] [get_bd_pins wave_awg_composer_0/aresetn]
-  connect_bd_net -net axi_bram_ctrl_0_bram_addr_a [get_bd_pins axi_bram_ctrl_0/bram_addr_a] [get_bd_pins slice_axi_addr/Din]
   connect_bd_net -net blk_mem_gen_0_doutb [get_bd_pins blk_mem_gen_0/doutb] [get_bd_pins wave_awg_composer_0/wave_in]
   connect_bd_net -net bram_aresetn_1 [get_bd_pins bram_aresetn] [get_bd_pins axi_bram_ctrl_0/s_axi_aresetn]
   connect_bd_net -net dds_compiler_0_m_axis_phase_tdata [get_bd_pins dds_compiler_0/m_axis_phase_tdata] [get_bd_pins element_slice/Din] [get_bd_pins odd_slice/Din]
-  connect_bd_net -net element_slice_Dout [get_bd_pins concat_element_addr/In0] [get_bd_pins element_slice/Dout]
+  connect_bd_net -net element_slice_Dout [get_bd_pins element_slice/Dout] [get_bd_pins to_32_bit_address/In1]
   connect_bd_net -net freq_1 [get_bd_pins freq] [get_bd_pins xlconcat_0/In0]
   connect_bd_net -net odd_slice_Dout [get_bd_pins odd_slice/Dout] [get_bd_pins wave_awg_composer_0/odd]
   connect_bd_net -net phase_1 [get_bd_pins phase] [get_bd_pins xlconcat_0/In1]
   connect_bd_net -net wave_awg_composer_0_wave_out [get_bd_pins S] [get_bd_pins wave_awg_composer_0/wave_out]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins axis_variable_0/cfg_data] [get_bd_pins xlconcat_0/dout]
-  connect_bd_net -net xlconcat_1_dout [get_bd_pins blk_mem_gen_0/addrb] [get_bd_pins concat_element_addr/dout]
-  connect_bd_net -net xlconcat_2_dout [get_bd_pins blk_mem_gen_0/addra] [get_bd_pins concat_axi_addr/dout]
+  connect_bd_net -net xlconcat_1_dout [get_bd_pins blk_mem_gen_0/addrb] [get_bd_pins to_32_bit_address/dout]
   connect_bd_net -net xlconstant_0_dout [get_bd_pins blk_mem_gen_0/enb] [get_bd_pins enable_read_constant/dout]
-  connect_bd_net -net xlconstant_1_dout [get_bd_pins concat_axi_addr/In1] [get_bd_pins concat_element_addr/In1] [get_bd_pins zero_constant/dout]
-  connect_bd_net -net xlslice_1_Dout [get_bd_pins concat_axi_addr/In0] [get_bd_pins slice_axi_addr/Dout]
+  connect_bd_net -net xlconstant_0_dout1 [get_bd_pins to_32_bit_address/In2] [get_bd_pins xlconstant_0/dout]
+  connect_bd_net -net xlconstant_1_dout [get_bd_pins to_32_bit_address/In0] [get_bd_pins xlconstant_1/dout]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -2035,18 +2029,6 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   create_bd_pin -dir O -from 31 -to 0 pdm_sts
   create_bd_pin -dir O -from 1 -to 0 seq_ramp_down
 
-  # Create instance: axi_addr_concat, and set properties
-  set axi_addr_concat [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 axi_addr_concat ]
-
-  # Create instance: axi_addr_slice, and set properties
-  set axi_addr_slice [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 axi_addr_slice ]
-  set_property -dict [ list \
-   CONFIG.DIN_FROM {16} \
-   CONFIG.DIN_TO {4} \
-   CONFIG.DIN_WIDTH {17} \
-   CONFIG.DOUT_WIDTH {13} \
- ] $axi_addr_slice
-
   # Create instance: axi_bram_ctrl_0, and set properties
   set axi_bram_ctrl_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_bram_ctrl:4.1 axi_bram_ctrl_0 ]
   set_property -dict [ list \
@@ -2091,6 +2073,9 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
 
   # Create instance: concat_element_addr, and set properties
   set concat_element_addr [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 concat_element_addr ]
+  set_property -dict [ list \
+   CONFIG.NUM_PORTS {3} \
+ ] $concat_element_addr
 
   # Create instance: pdm_1, and set properties
   set pdm_1 [ create_bd_cell -type ip -vlnv koheron:user:pdm:1.0 pdm_1 ]
@@ -2156,8 +2141,15 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   set zero_constant [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 zero_constant ]
   set_property -dict [ list \
    CONFIG.CONST_VAL {0} \
-   CONFIG.CONST_WIDTH {19} \
+   CONFIG.CONST_WIDTH {15} \
  ] $zero_constant
+
+  # Create instance: zero_constant1, and set properties
+  set zero_constant1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 zero_constant1 ]
+  set_property -dict [ list \
+   CONFIG.CONST_VAL {0} \
+   CONFIG.CONST_WIDTH {4} \
+ ] $zero_constant1
 
   # Create interface connections
   connect_bd_intf_net -intf_net axi_bram_ctrl_0_BRAM_PORTA [get_bd_intf_pins axi_bram_ctrl_0/BRAM_PORTA] [get_bd_intf_pins blk_mem_gen_0/BRAM_PORTA]
@@ -2167,11 +2159,10 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] [get_bd_pins blk_mem_gen_0/clkb] [get_bd_pins sequence_stepper_0/clk]
   connect_bd_net -net adc_sts_1 [get_bd_pins adc_sts] [get_bd_pins sequence_stepper_0/writepointer]
   connect_bd_net -net aresetn3_1 [get_bd_pins keep_alive_aresetn] [get_bd_pins util_vector_logic_0/Op2]
-  connect_bd_net -net axi_bram_ctrl_0_bram_addr_a [get_bd_pins axi_addr_slice/Din] [get_bd_pins axi_bram_ctrl_0/bram_addr_a]
   connect_bd_net -net blk_mem_gen_0_doutb [get_bd_pins blk_mem_gen_0/doutb] [get_bd_pins sequence_slice_0/seq_data]
   connect_bd_net -net bram_aresetn_1 [get_bd_pins bram_aresetn] [get_bd_pins axi_bram_ctrl_0/s_axi_aresetn]
+  connect_bd_net -net bram_element_slice_Dout [get_bd_pins bram_element_slice/Dout] [get_bd_pins concat_element_addr/In1]
   connect_bd_net -net cfg_data_1 [get_bd_pins cfg_data] [get_bd_pins sequence_stepper_0/stepSize]
-  connect_bd_net -net concat_element_addr1_dout [get_bd_pins axi_addr_concat/dout] [get_bd_pins blk_mem_gen_0/addra]
   connect_bd_net -net concat_element_addr_dout [get_bd_pins blk_mem_gen_0/addrb] [get_bd_pins concat_element_addr/dout]
   connect_bd_net -net ddr_clk_1 [get_bd_pins ddr_clk] [get_bd_pins pdm_1/clk] [get_bd_pins pdm_2/clk] [get_bd_pins pdm_3/clk] [get_bd_pins pdm_4/clk]
   connect_bd_net -net pdm_1_dout [get_bd_pins pdm_1/dout] [get_bd_pins xlconcat_0/In0]
@@ -2192,10 +2183,9 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   connect_bd_net -net xlconcat_0_dout [get_bd_pins util_vector_logic_7/Op1] [get_bd_pins xlconcat_0/dout]
   connect_bd_net -net xlconcat_1_dout [get_bd_pins oa_dac] [get_bd_pins xlconcat_1/dout]
   connect_bd_net -net xlconstant_0_dout [get_bd_pins blk_mem_gen_0/enb] [get_bd_pins xlconstant_0/dout]
-  connect_bd_net -net xlslice_0_Dout [get_bd_pins bram_element_slice/Dout] [get_bd_pins concat_element_addr/In0]
   connect_bd_net -net xlslice_1_Dout [get_bd_pins pdm_sts] [get_bd_pins bram_element_slice/Din] [get_bd_pins sequence_stepper_0/step_counter]
-  connect_bd_net -net xlslice_1_Dout1 [get_bd_pins axi_addr_concat/In0] [get_bd_pins axi_addr_slice/Dout]
-  connect_bd_net -net zero_constant_dout [get_bd_pins axi_addr_concat/In1] [get_bd_pins concat_element_addr/In1] [get_bd_pins zero_constant/dout]
+  connect_bd_net -net zero_constant1_dout [get_bd_pins concat_element_addr/In0] [get_bd_pins zero_constant1/dout]
+  connect_bd_net -net zero_constant_dout [get_bd_pins concat_element_addr/In2] [get_bd_pins zero_constant/dout]
 
   # Restore current instance
   current_bd_instance $oldCurInst
