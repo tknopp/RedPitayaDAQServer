@@ -151,6 +151,7 @@ xilinx.com:ip:xlconstant:1.1\
 xilinx.com:ip:xlslice:1.0\
 xilinx.com:ip:axi_bram_ctrl:4.1\
 xilinx.com:ip:blk_mem_gen:8.4\
+xilinx.com:ip:c_shift_ram:12.0\
 koheron:user:pdm:1.0\
 pavel-demin:user:axi_cfg_register:1.0\
 pavel-demin:user:axi_sts_register:1.0\
@@ -1481,6 +1482,8 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   # Create instance: axi_interconnect_1, and set properties
   set axi_interconnect_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_1 ]
   set_property -dict [ list \
+   CONFIG.M01_HAS_DATA_FIFO {1} \
+   CONFIG.M02_HAS_DATA_FIFO {1} \
    CONFIG.NUM_MI {3} \
    CONFIG.S00_HAS_DATA_FIFO {2} \
    CONFIG.STRATEGY {2} \
@@ -2071,6 +2074,19 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
    CONFIG.DOUT_WIDTH {13} \
  ] $bram_element_slice
 
+  # Create instance: c_shift_ram_0, and set properties
+  set c_shift_ram_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:c_shift_ram:12.0 c_shift_ram_0 ]
+  set_property -dict [ list \
+   CONFIG.AsyncInitVal {\
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000} \
+   CONFIG.DefaultData {\
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000} \
+   CONFIG.Depth {1} \
+   CONFIG.SyncInitVal {\
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000} \
+   CONFIG.Width {128} \
+ ] $c_shift_ram_0
+
   # Create instance: concat_element_addr, and set properties
   set concat_element_addr [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 concat_element_addr ]
   set_property -dict [ list \
@@ -2156,12 +2172,13 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   connect_bd_intf_net -intf_net seq_bram_1 [get_bd_intf_pins seq_bram] [get_bd_intf_pins axi_bram_ctrl_0/S_AXI]
 
   # Create port connections
-  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] [get_bd_pins blk_mem_gen_0/clkb] [get_bd_pins sequence_stepper_0/clk]
+  connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] [get_bd_pins blk_mem_gen_0/clkb] [get_bd_pins c_shift_ram_0/CLK] [get_bd_pins sequence_stepper_0/clk]
   connect_bd_net -net adc_sts_1 [get_bd_pins adc_sts] [get_bd_pins sequence_stepper_0/writepointer]
   connect_bd_net -net aresetn3_1 [get_bd_pins keep_alive_aresetn] [get_bd_pins util_vector_logic_0/Op2]
-  connect_bd_net -net blk_mem_gen_0_doutb [get_bd_pins blk_mem_gen_0/doutb] [get_bd_pins sequence_slice_0/seq_data]
+  connect_bd_net -net blk_mem_gen_0_doutb [get_bd_pins blk_mem_gen_0/doutb] [get_bd_pins c_shift_ram_0/D]
   connect_bd_net -net bram_aresetn_1 [get_bd_pins bram_aresetn] [get_bd_pins axi_bram_ctrl_0/s_axi_aresetn]
   connect_bd_net -net bram_element_slice_Dout [get_bd_pins bram_element_slice/Dout] [get_bd_pins concat_element_addr/In1]
+  connect_bd_net -net c_shift_ram_0_Q [get_bd_pins c_shift_ram_0/Q] [get_bd_pins sequence_slice_0/seq_data]
   connect_bd_net -net cfg_data_1 [get_bd_pins cfg_data] [get_bd_pins sequence_stepper_0/stepSize]
   connect_bd_net -net concat_element_addr_dout [get_bd_pins blk_mem_gen_0/addrb] [get_bd_pins concat_element_addr/dout]
   connect_bd_net -net ddr_clk_1 [get_bd_pins ddr_clk] [get_bd_pins pdm_1/clk] [get_bd_pins pdm_2/clk] [get_bd_pins pdm_3/clk] [get_bd_pins pdm_4/clk]
