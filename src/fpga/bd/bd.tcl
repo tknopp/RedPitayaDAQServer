@@ -1277,7 +1277,8 @@ proc create_hier_cell_write_to_ram { parentCell nameHier } {
    CONFIG.Coefficient_Structure {Non_Symmetric} \
    CONFIG.Coefficient_Width {24} \
    CONFIG.ColumnConfig {12} \
-   CONFIG.Data_Width {16} \
+   CONFIG.Data_Fractional_Bits {0} \
+   CONFIG.Data_Width {14} \
    CONFIG.Decimation_Rate {2} \
    CONFIG.Filter_Architecture {Systolic_Multiply_Accumulate} \
    CONFIG.Filter_Type {Decimation} \
