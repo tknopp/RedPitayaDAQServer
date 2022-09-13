@@ -244,23 +244,11 @@ for op in [:offsetDAC!, :rampingDAC!, :enableRamping!, :enableRampDown!]
   end
 end
 
-function passPDMToFastDAC!(rpc::RedPitayaCluster, val::Vector{Bool})
-  result = [false for i=1:length(rpc)]
-  @sync for (d,rp) in enumerate(rpc)
-    @async result[d] = passPDMToFastDAC!(rp, val[d])
-  end
+function waveformDAC!(rpc::RedPitayaCluster, channel::Integer, value)
+  idxRP = div(chan-1, 2) + 1
+  chan = mod1(channel, 2)
+  return waveformDAC!(rpc[idxRP], chan, value)
 end
-batchIndices(::typeof(passPDMToFastDAC!), rpc::RedPitayaCluster, val) = collect(1:length(rpc))
-batchTransformArgs(::typeof(passPDMToFastDAC!), rpc::RedPitayaCluster, idx, val::Vector{Bool}) = (val[idx])
-
-function passPDMToFastDAC(rpc::RedPitayaCluster)
-  result = [false for rp in rpc]
-  @sync for (d, rp) in enumerate(rpc)
-    @async result[d] = passPDMToFastDAC(rp)
-  end
-  return result
-end
-batchIndices(::typeof(passPDMToFastDAC), rpc::RedPitayaCluster) = collect(1:length(rpc))
 
 function rampingStatus(rpc::RedPitayaCluster)
   result = Array{RampingStatus}(undef, length(rpc))

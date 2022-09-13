@@ -393,7 +393,7 @@ int setSignalType(int signal_type, int channel, int component) {
 		return -3;
 	}
 
-	if(component < 0 || component > 3) {
+	if(component < 0 || component > 2) {
 		return -4;
 	}
 
@@ -417,7 +417,7 @@ int getSignalType(int channel, int component) {
 		return -3;
 	}
 
-	if(component < 0 || component > 3) {
+	if(component < 0 || component > 2) {
 		return -4;
 	}
 

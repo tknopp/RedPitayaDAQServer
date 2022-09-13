@@ -23,7 +23,21 @@ function waveformDAC!(rp::RedPitaya, channel::Integer, wave::ArbitraryWaveform)
   reply = receive(rp)
   return parse(Bool, reply)
 end
+waveformDAC!(rp::RedPitaya, channel::Integer, samples::Vector{Float64}) = waveformDAC!(rp, channel, ArbitraryWaveform(samples))
 waveformDAC!(rp::RedPitaya, channel::Integer, wave::Nothing) = waveformDAC!(rp, channel, ArbitraryWaveform(x-> Float32(0.0)))
+function waveformDAC!(rp::RedPitaya, channel::Integer, signal::SignalType)
+  wave = nothing
+  if signal == SINE
+    wave = ArbitraryWaveform(x->sin(x), 0, 2*pi)
+  elseif TRIANGLE
+    wave = ArbitraryWaveform(x->2*abs(x/_awgBufferSize - floor(x/_awgBufferSize + 1/2)))
+  elseif SAWTOOTH
+    wave = ArbitraryWaveform(x->2*(x/_awgBufferSize - 1/2))
+  else
+    error("Signal type $(string(signal)) not implemented yet")
+  end
+  waveformDAC!(rp, channel, wave)
+end
 
 """
     SignalType
