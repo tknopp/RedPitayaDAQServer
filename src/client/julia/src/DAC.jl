@@ -3,7 +3,14 @@ amplitudeDAC, amplitudeDAC!,offsetDAC, offsetDAC!,
 frequencyDAC, frequencyDAC!, phaseDAC, phaseDAC!, signalTypeDAC, signalTypeDAC!,
 rampingDAC!, rampingDAC, enableRamping!, enableRamping, enableRampDown, enableRampDown!, RampingState, RampingStatus, rampingStatus, rampDownDone, rampUpDone
 
+"""
+    SignalType
 
+Represent the different types of signals the fast DAC can have. Valid values are `SINE`, `TRIANGLE` and `SAWTOOTH`.
+
+See [`signalTypeDAC`](@ref), [`signalTypeDAC!`](@ref).
+"""
+@enum SignalType SINE TRIANGLE SAWTOOTH
 
 const _awgBufferSize = 16384
 mutable struct ArbitraryWaveform <: AbstractArray{Float32, 1}
@@ -39,14 +46,6 @@ function waveformDAC!(rp::RedPitaya, channel::Integer, signal::SignalType)
   waveformDAC!(rp, channel, wave)
 end
 
-"""
-    SignalType
-
-Represent the different types of signals the fast DAC can have. Valid values are `SINE`, `TRIANGLE` and `SAWTOOTH`.
-
-See [`signalTypeDAC`](@ref), [`signalTypeDAC!`](@ref).
-"""
-@enum SignalType SINE TRIANGLE SAWTOOTH
 struct DACPerformanceData
   uDeltaControl::UInt8
   uDeltaSet::UInt8
