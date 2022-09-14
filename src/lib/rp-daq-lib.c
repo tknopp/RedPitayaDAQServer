@@ -484,7 +484,7 @@ int setArbitraryWaveform(float* values, int channel) {
 	for (int i = 0; i < AWG_BUFF_SIZE/2; i++) {
 		// Without cast to uint the sign is mistakenly taken into account
 		uint32_t bram_value = ((uint16_t) intValues[2*i+1] << 16 | (uint16_t)intValues[2*i]);
-		*(awg_cfg + i) = intValues[i];
+		*(awg_cfg + i) = bram_value;
 	}
 	return 0;
 }
