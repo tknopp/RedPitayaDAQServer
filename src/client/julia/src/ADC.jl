@@ -336,18 +336,29 @@ function readADCPerformanceData(rp::RedPitaya, numSamples = 0)
   return ADCPerformanceData(perf[1], perf[2], numSamples)
 end
 
-# Low level read, reads samples, error and perf. Values need to be already requested
-function readSamplesChunk_(rp::RedPitaya, reqWP::Int64, numSamples::Int64, into=nothing)
-  #@debug "read samples chunk ..."
-  if isnothing(into)
-    into = Array{Int16}(undef, 2 * Int64(numSamples))
-  end
-  data = read!(rp.dataSocket, into)
+function readChunkMetaData(rp::RedPitaya, reqWP, numSamples)
   status = readServerStatus(rp)
   (adc, dac) = readPerformanceData(rp, numSamples)
-  #@debug "read samples chunk ..."
-  perf = PerformanceData(UInt64(reqWP), adc, dac, status)
-  return (data, perf)
+  return PerformanceData(UInt64(reqWP), adc, dac, status)
+end
+
+function readSamples!(rp::RedPitaya, data::AbstractArray{Int16})
+  return read!(rp.dataSocket, data)
+end
+
+# Low level read, reads samples, error and perf. Values need to be already requested
+function readSamplesChunk_(rp::RedPitaya, reqWP::Int64, numSamples::Int64)
+  buffer = Array{Int16}(undef, 2 * numSamples)
+  readSamples!(rp, buffer)
+  meta = readChunkMetaData(rp, reqWP, numSamples)
+  return (buffer, meta)
+end
+
+function readSamplesChunk_(rp::RedPitaya, reqWP::Int64, buffer::AbstractArray{Int16})
+  numSamples = div(length(buffer), 2)
+  readSamples!(rp, buffer)
+  meta = readChunkMetaData(rp, reqWP, numSamples)
+  return (buffer, meta)
 end
 
 """
