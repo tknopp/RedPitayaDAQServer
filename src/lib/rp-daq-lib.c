@@ -109,7 +109,7 @@ void loadBitstream() {
 			printf("Error while writing the image to the FPGA.\n");
 		}
 		else {
-			printf("Bitsream loaded\n");
+			printf("Bitstream loaded\n");
 		}
 
 		FILE* fp = fopen("/tmp/bitstreamLoaded", "a");
