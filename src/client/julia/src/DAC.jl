@@ -30,7 +30,7 @@ function waveformDAC!(rp::RedPitaya, channel::Integer, wave::ArbitraryWaveform)
   reply = receive(rp)
   return parse(Bool, reply)
 end
-waveformDAC!(rp::RedPitaya, channel::Integer, samples::Vector{Float64}) = waveformDAC!(rp, channel, ArbitraryWaveform(samples))
+waveformDAC!(rp::RedPitaya, channel::Integer, samples::Vector{Float32}) = waveformDAC!(rp, channel, ArbitraryWaveform(samples))
 waveformDAC!(rp::RedPitaya, channel::Integer, wave::Nothing) = waveformDAC!(rp, channel, ArbitraryWaveform(x-> Float32(0.0)))
 function waveformDAC!(rp::RedPitaya, channel::Integer, signal::SignalType)
   wave = nothing
