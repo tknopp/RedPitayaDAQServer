@@ -23,6 +23,7 @@ Manifest.toml
 *.img
 *.tar.gz
 *.zip
+*.vcd
 vivado*
 webtalk*
 tmp
