@@ -245,7 +245,7 @@ for op in [:offsetDAC!, :rampingDAC!, :enableRamping!, :enableRampDown!]
 end
 
 function waveformDAC!(rpc::RedPitayaCluster, channel::Integer, value)
-  idxRP = div(chan-1, 2) + 1
+  idxRP = div(channel-1, 2) + 1
   chan = mod1(channel, 2)
   return waveformDAC!(rpc[idxRP], chan, value)
 end
