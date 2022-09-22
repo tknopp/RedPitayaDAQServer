@@ -13,6 +13,7 @@ module test;
   reg trigger_reset = 0;
   reg counter_reset = 0;
   reg [32-1:0] presamples = 50;
+  reg [32-1:0] reference_counter = 250;
   
   wire trigger;
   
@@ -43,5 +44,5 @@ module test;
      # 20000 $finish;
   end
   
-  counter_delayed_trigger cdt1 (clk, aresetn, arm, trigger_reset, counter_reset, presamples, trigger, armed_status);
+  counter_delayed_trigger cdt1 (clk, aresetn, arm, trigger_reset, counter_reset, presamples, reference_counter, trigger, armed_status);
 endmodule // test
