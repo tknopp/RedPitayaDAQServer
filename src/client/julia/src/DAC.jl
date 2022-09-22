@@ -1,5 +1,5 @@
 export SignalType, SINE, TRIANGLE, SAWTOOTH, DACPerformanceData, DACConfig, ArbitraryWaveform, waveformDAC!, scaleWaveformDAC!,
-amplitudeDAC, amplitudeDAC!,offsetDAC, offsetDAC!, normalize
+amplitudeDAC, amplitudeDAC!,offsetDAC, offsetDAC!, normalize,
 frequencyDAC, frequencyDAC!, phaseDAC, phaseDAC!, signalTypeDAC, signalTypeDAC!,
 rampingDAC!, rampingDAC, enableRamping!, enableRamping, enableRampDown, enableRampDown!, RampingState, RampingStatus, rampingStatus, rampDownDone, rampUpDone
 
