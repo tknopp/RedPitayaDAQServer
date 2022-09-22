@@ -244,10 +244,14 @@ for op in [:offsetDAC!, :rampingDAC!, :enableRamping!, :enableRampDown!]
   end
 end
 
-function waveformDAC!(rpc::RedPitayaCluster, channel::Integer, value)
-  idxRP = div(channel-1, 2) + 1
-  chan = mod1(channel, 2)
-  return waveformDAC!(rpc[idxRP], chan, value)
+for op in [:waveformDAC!, :scaleWaveformDAC!]
+  @eval begin
+    function $op(rpc::RedPitayaCluster, channel::Integer, value)
+      idxRP = div(channel-1, 2) + 1
+      chan = mod1(channel, 2)
+      return $op(rpc[idxRP], chan, value)
+    end
+  end
 end
 
 function rampingStatus(rpc::RedPitayaCluster)
