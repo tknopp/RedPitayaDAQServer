@@ -1,4 +1,7 @@
-
+export counterTrigger_enabled, counterTrigger_enabled!, counterTrigger_presamples,
+       counterTrigger_presamples!, counterTrigger_isArmed, counterTrigger_arm!,
+       counterTrigger_reset, counterTrigger_reset!, counterTrigger_lastCounter,
+       counterTrigger_referenceCounter, counterTrigger_referenceCounter!
 
 """
     counterTrigger_enabled(rp::RedPitaya)
