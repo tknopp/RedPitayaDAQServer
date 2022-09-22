@@ -146,7 +146,8 @@ int init() {
 	xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
 	awg_0_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(uint32_t)/2, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80020000);
 	awg_1_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(uint32_t)/2, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80028000);
-	counter_trigger_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(uint32_t)/2, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, ); // TODO: Set address range
+	counter_trigger_cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40007000);
+	counter_trigger_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40008000);
 
 
 	loadBitstream();
@@ -1482,12 +1483,17 @@ uint32_t cmn_CalibFullScaleFromVoltage(float voltageScale) {
 /**
  * Memory layout for `counter_trigger_cfg`
  * 
- * 0 .................................................................................................. 68 bit |
- * last_counter (32 bit) | reference_counter (32 bit) | presamples (32 bit) | enable (1 bit) | arm (1 bit) | armed (1 bit) | reset (1 bit)       |
+ * 0 ...................................................................................... 67 bit |
+ * reference_counter (32 bit) | presamples (32 bit) | enable (1 bit) | arm (1 bit) | reset (1 bit) |
+ * 
+ * Memory layout for `counter_trigger_sts`
+ * 
+ * 0 ............................ 33 bit |
+ * last_counter (32 bit) | armed (1 bit) |
  **/
 
 int counter_trigger_setEnabled(bool enable) {
-	uint32_t register_value = *(counter_trigger_cfg + 3);
+	uint32_t register_value = *(counter_trigger_cfg + 2);
 	if (enable) {
 		register_value = register_value | (1 << 0);
 	}
@@ -1500,40 +1506,40 @@ int counter_trigger_setEnabled(bool enable) {
 }
 
 bool counter_trigger_isEnabled() {
-	uint32_t register_value = *(counter_trigger_cfg + 3);
+	uint32_t register_value = *(counter_trigger_cfg + 2);
 	register_value = register_value & (1 << 0);
 	return (register_value > 0);
 }
 
 int counter_trigger_setPresamples(uint32_t presamples) {
-	*(counter_trigger_cfg + 2) = presamples;
+	*(counter_trigger_cfg + 1) = presamples;
 	return 0;
 }
 
 int counter_trigger_getPresamples() {
-	return *(counter_trigger_cfg + 2);
+	return *(counter_trigger_cfg + 1);
 }
 
 int counter_trigger_arm() {
-	uint32_t register_value = *(counter_trigger_cfg + 3);
+	uint32_t register_value = *(counter_trigger_cfg + 2);
 	register_value = register_value | (1 << 1);
 	*(counter_trigger_cfg + 2) = register_value;
 	return 0;
 }
 
 bool counter_trigger_isArmed() {
-	uint32_t register_value = *(counter_trigger_cfg + 3);
-	register_value = register_value & (1 << 2);
+	uint32_t register_value = *(counter_trigger_sts + 1);
+	register_value = register_value & (1 << 0);
 	return (register_value > 0);
 }
 
 int counter_trigger_setReset(bool reset) {
-	uint32_t register_value = *(counter_trigger_cfg + 3);
+	uint32_t register_value = *(counter_trigger_cfg + 2);
 	if (reset) {
-		register_value = register_value | (1 << 3);
+		register_value = register_value | (1 << 2);
 	}
 	else {
-		register_value = register_value & ~(1 << 3);
+		register_value = register_value & ~(1 << 2);
 	}
 	
 	*(counter_trigger_cfg + 2) = register_value;
@@ -1541,20 +1547,20 @@ int counter_trigger_setReset(bool reset) {
 }
 
 int counter_trigger_getReset() {
-	uint32_t register_value = *(counter_trigger_cfg + 3);
-	register_value = register_value & (1 << 3);
+	uint32_t register_value = *(counter_trigger_cfg + 2);
+	register_value = register_value & (1 << 2);
 	return (register_value > 0);
 }
 
 int counter_trigger_getLastCounter() {
-	return *(counter_trigger_cfg + 0);
+	return *(counter_trigger_sts + 0);
 }
 
 int counter_trigger_setReferenceCounter(uint32_t reference_counter) {
-	*(counter_trigger_cfg + 1) = reference_counter;
+	*(counter_trigger_cfg + 0) = reference_counter;
 	return 0;
 }
 
 int counter_trigger_getReferenceCounter() {
-	return *(counter_trigger_cfg + 1);
+	return *(counter_trigger_cfg + 0);
 }
