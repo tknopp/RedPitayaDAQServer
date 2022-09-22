@@ -1137,6 +1137,131 @@ static scpi_result_t RP_GetPerformance(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+// Counter trigger
+static scpi_result_t RP_CounterTrigger_IsEnabled(scpi_t* context) {
+	const char * name;
+
+	SCPI_ChoiceToName(onoff_modes, counter_trigger_isEnabled(), &name);
+	SCPI_ResultText(context, name);
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_CounterTrigger_Enable(scpi_t* context) {
+	int32_t param;
+
+	if (!SCPI_ParamChoice(context, onoff_modes, &param, TRUE)) {
+		return returnSCPIBool(context, false);
+	}
+
+	int result = counter_trigger_setEnabled(param);
+	if (result < 0) {
+		return returnSCPIBool(context, false);
+	}
+
+	return returnSCPIBool(context, true);
+}
+
+static scpi_result_t RP_CounterTrigger_SetPresamples(scpi_t * context) {
+	if (getServerMode() != CONFIGURATION) {
+		return returnSCPIBool(context, false);
+	}
+
+	uint32_t presamples;
+	if (!SCPI_ParamUInt32(context, &presamples, TRUE)) {
+		return returnSCPIBool(context, false);
+	}
+
+	printf("set presamples = %d \n", presamples);
+	int result = counter_trigger_setPresamples(presamples);
+	if (result < 0) {
+		printf("Could not set presamples!");
+		return returnSCPIBool(context, false);
+	}
+
+	return returnSCPIBool(context, true);
+}
+
+static scpi_result_t RP_CounterTrigger_GetPresamples(scpi_t * context) {
+	uint32_t presamples = counter_trigger_getPresamples();
+	
+	SCPI_ResultUInt32(context, presamples);
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_CounterTrigger_IsArmed(scpi_t * context) {
+	return returnSCPIBool(context, counter_trigger_isArmed());
+}
+
+static scpi_result_t RP_CounterTrigger_Arm(scpi_t * context) {
+	int result = counter_trigger_arm();
+	if (result < 0) {
+		return returnSCPIBool(context, false);
+	}
+
+	return returnSCPIBool(context, true);
+}
+
+static scpi_result_t RP_CounterTrigger_SetReset(scpi_t* context) {
+	int32_t param;
+
+	if (!SCPI_ParamChoice(context, onoff_modes, &param, TRUE)) {
+		return returnSCPIBool(context, false);
+	}
+
+	int result = counter_trigger_setReset(param);
+	if (result < 0) {
+		return returnSCPIBool(context, false);
+	}
+
+	return returnSCPIBool(context, true);
+}
+
+static scpi_result_t RP_CounterTrigger_GetReset(scpi_t* context) {
+	const char * name;
+
+	SCPI_ChoiceToName(onoff_modes, counter_trigger_getReset(), &name);
+	SCPI_ResultText(context, name);
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_CounterTrigger_GetLastCounter(scpi_t * context) {
+	uint32_t last_counter = counter_trigger_getLastCounter();
+	
+	SCPI_ResultUInt32(context, last_counter);
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_CounterTrigger_SetReferenceCounter(scpi_t * context) {
+	if (getServerMode() != CONFIGURATION) {
+		return returnSCPIBool(context, false);
+	}
+
+	uint32_t reference_counter;
+	if (!SCPI_ParamUInt32(context, &reference_counter, TRUE)) {
+		return returnSCPIBool(context, false);
+	}
+
+	printf("set reference_counter = %d \n", reference_counter);
+	int result = counter_trigger_setReferenceCounter(reference_counter);
+	if (result < 0) {
+		printf("Could not set reference_counter!");
+		return returnSCPIBool(context, false);
+	}
+
+	return returnSCPIBool(context, true);
+}
+
+static scpi_result_t RP_CounterTrigger_GetReferenceCounter(scpi_t * context) {
+	uint32_t reference_counter = counter_trigger_getReferenceCounter();
+	
+	SCPI_ResultUInt32(context, reference_counter);
+	return SCPI_RES_OK;
+}
+
+
+
 // Calibration
 static scpi_result_t RP_Calib_DAC_GetOffset(scpi_t* context) {
 	int32_t numbers[1];
@@ -1432,8 +1557,21 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:STATus?", .callback = RP_GetStatus,},
 	{.pattern = "RP:STATus:LOSTSteps?", .callback = RP_GetLostStatus,},
 	{.pattern = "RP:LOG?", .callback = RP_GetLog,},
-	{.pattern = "RP:PERF?", .callback = RP_GetPerformance,},	
+	{.pattern = "RP:PERF?", .callback = RP_GetPerformance,},
 
+	/* Counter trigger */
+	{.pattern = "RP:CounterTrigger:ENable?", .callback = RP_CounterTrigger_IsEnabled,},
+	{.pattern = "RP:CounterTrigger:ENable", .callback = RP_CounterTrigger_Enable,},
+	{.pattern = "RP:CounterTrigger:PREsamples?", .callback = RP_CounterTrigger_GetPresamples,},
+	{.pattern = "RP:CounterTrigger:PREsamples", .callback = RP_CounterTrigger_SetPresamples,},
+	{.pattern = "RP:CounterTrigger:ARM?", .callback = RP_CounterTrigger_IsArmed,},
+	{.pattern = "RP:CounterTrigger:ARM", .callback = RP_CounterTrigger_Arm,},
+	{.pattern = "RP:CounterTrigger:RESet?", .callback = RP_CounterTrigger_GetReset,},
+	{.pattern = "RP:CounterTrigger:RESet", .callback = RP_CounterTrigger_SetReset,},
+	{.pattern = "RP:CounterTrigger:COUNTer:LAst?", .callback = RP_CounterTrigger_GetLastCounter,},
+	{.pattern = "RP:CounterTrigger:COUNTer:REFerence?", .callback = RP_CounterTrigger_GetReferenceCounter,},
+	{.pattern = "RP:CounterTrigger:COUNTer:REFerence", .callback = RP_CounterTrigger_SetReferenceCounter,},
+	
 	/* Calibration */
 	{.pattern = "RP:CALib:DAC:CHannel#:OFFset?", .callback = RP_Calib_DAC_GetOffset,},
 	{.pattern = "RP:CALib:DAC:CHannel#:OFFset", .callback = RP_Calib_DAC_SetOffset,},

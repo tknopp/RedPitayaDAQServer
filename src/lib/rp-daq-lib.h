@@ -64,6 +64,7 @@ extern void *pdm_sts, *reset_sts, *cfg, *ram, *buf, *dio_sts;
 extern uint16_t *pdm_cfg;
 extern uint64_t *adc_sts, *dac_cfg; 
 extern uint32_t *awg_0_cfg, *awg_1_cfg;
+extern uint32_t *counter_trigger_cfg;
 
 // init routines
 extern uint32_t getFPGAId();
@@ -138,6 +139,19 @@ extern int setEnableDAC(int8_t, int, int);
 //extern int setResetDAC(int8_t, int);
 extern int setRampDownDAC(int8_t, int, int);
 extern int getRampDownDAC(int, int);
+
+// Counter trigger
+extern int counter_trigger_setEnabled(bool enable);
+extern bool counter_trigger_isEnabled();
+extern int counter_trigger_setPresamples(uint32_t presamples);
+extern int counter_trigger_getPresamples();
+extern int counter_trigger_arm();
+extern bool counter_trigger_isArmed();
+extern int counter_trigger_setReset(bool reset);
+extern int counter_trigger_getReset();
+extern int counter_trigger_getLastCounter();
+extern int counter_trigger_setReferenceCounter();
+extern int counter_trigger_getReferenceCounter();
 
 // misc
 extern int getDIODirection(const char*);
