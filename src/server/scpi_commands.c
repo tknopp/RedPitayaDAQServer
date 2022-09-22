@@ -362,7 +362,7 @@ static scpi_result_t RP_DAC_SetArbitraryWaveform(scpi_t * context) {
 	float temp[AWG_BUFF_SIZE];
 	int n = readAll(newdatasockfd, temp, AWG_BUFF_SIZE * sizeof(float));
 	if (n < 0) perror("ERROR reading from socket");
-	return returnSCPIBool(context, setArbitraryWaveform(temp, channel));
+	return returnSCPIBool(context, !setArbitraryWaveform(temp, channel));
 }
 
 static scpi_result_t RP_ADC_SetDecimation(scpi_t * context) {

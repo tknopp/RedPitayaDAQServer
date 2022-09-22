@@ -8,6 +8,7 @@ import Sockets: send, connect
 
 using Statistics
 using LinearAlgebra
+import LinearAlgebra: normalize
 
 import Base: reset, iterate, length, push!, pop!
 
@@ -19,6 +20,8 @@ using Scratch
 using GitHub
 using URIs
 using ZipFile
+
+const _awgBufferSize = 16384
 
 """
     RedPitaya
@@ -42,6 +45,7 @@ mutable struct RedPitaya
   isMaster::Bool
   destroyed::Bool
   calib::Array{Float32}
+  awgs::Matrix{Float32}
 end
 
 # Iterable Interface
@@ -390,7 +394,7 @@ julia> decimation(rp)
 """
 function RedPitaya(host::String, port::Int64=5025, dataPort::Int64=5026, isMaster::Bool=true)
 
-  rp = RedPitaya(host, port, dataPort, "\n", TCPSocket(), TCPSocket(), 1, 1, 1, false, isMaster, false, zeros(Float32, 2, 2))
+  rp = RedPitaya(host, port, dataPort, "\n", TCPSocket(), TCPSocket(), 1, 1, 1, false, isMaster, false, zeros(Float32, 2, 2), zeros(Float32, _awgBufferSize, 2))
 
   connect(rp)
 
