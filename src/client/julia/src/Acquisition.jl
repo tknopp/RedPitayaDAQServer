@@ -135,7 +135,7 @@ function collectSamples!(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCluster
   for (d, rp) in enumerate(rpu)
     @async begin
       buffer = view(chunkBuffer, 1:(2 * chunk), d)
-      (u, perf) = readSamplesChunk_(rp, Int64(wpRead), Int64(chunk), buffer)
+      (u, perf) = readSamplesChunk_(rp, Int64(wpRead), buffer)
       samples = reshape(u, 2, chunk)
       result[2*d-1, :] = samples[1, :]
       result[2*d, :] = samples[2, :]
