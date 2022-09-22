@@ -165,3 +165,39 @@ counterTrigger_lastCounter(rp::RedPitaya) = query(rp, scpiCommand(counterTrigger
 scpiCommand(::typeof(counterTrigger_lastCounter)) = "RP:CounterTrigger:COUNTer:LAst?"
 scpiReturn(::typeof(counterTrigger_lastCounter)) = Int64
 
+"""
+    counterTrigger_referenceCounter(rp::RedPitaya)
+
+Return the counter value that the counter trigger should trigger on.
+
+# Examples
+```julia
+julia> counterTrigger_presamples!(rp, 50)
+true
+
+julia> counterTrigger_presamples(rp)
+50
+```
+"""
+counterTrigger_referenceCounter(rp::RedPitaya) = query(rp, scpiCommand(counterTrigger_referenceCounter), scpiReturn(counterTrigger_referenceCounter))
+scpiCommand(::typeof(counterTrigger_referenceCounter)) = "RP:CounterTrigger:COUNTer:REFerence?"
+scpiReturn(::typeof(counterTrigger_referenceCounter)) = Int64
+"""
+counterTrigger_referenceCounter!(rp::RedPitaya, presamples)
+
+Set the number of samples that the counter trigger should trigger on.
+
+# Examples
+```julia
+julia> counterTrigger_referenceCounter!(rp, 250)
+true
+
+julia> counterTrigger_referenceCounter!(rp)
+250
+```
+"""
+function counterTrigger_referenceCounter!(rp::RedPitaya, reference::T) where T <: Integer
+  return query(rp, scpiCommand(counterTrigger_referenceCounter!, presamples), scpiReturn(counterTrigger_referenceCounter!))
+end
+scpiCommand(::typeof(counterTrigger_referenceCounter!), reference) = string("RP:CounterTrigger:COUNTer:REFerence ", reference)
+scpiReturn(::typeof(counterTrigger_referenceCounter!)) = Bool
