@@ -1,5 +1,5 @@
-export SignalType, SINE, TRIANGLE, SAWTOOTH, DACPerformanceData, DACConfig, ArbitraryWaveform, waveformDAC!,
-amplitudeDAC, amplitudeDAC!,offsetDAC, offsetDAC!,
+export SignalType, SINE, TRIANGLE, SAWTOOTH, DACPerformanceData, DACConfig, ArbitraryWaveform, waveformDAC!, scaleWaveformDAC!,
+amplitudeDAC, amplitudeDAC!,offsetDAC, offsetDAC!, normalize
 frequencyDAC, frequencyDAC!, phaseDAC, phaseDAC!, signalTypeDAC, signalTypeDAC!,
 rampingDAC!, rampingDAC, enableRamping!, enableRamping, enableRampDown, enableRampDown!, RampingState, RampingStatus, rampingStatus, rampDownDone, rampUpDone
 
@@ -12,7 +12,6 @@ See [`signalTypeDAC`](@ref), [`signalTypeDAC!`](@ref).
 """
 @enum SignalType SINE TRIANGLE SAWTOOTH
 
-const _awgBufferSize = 16384
 mutable struct ArbitraryWaveform <: AbstractArray{Float32, 1}
   samples::Vector{Float32}
   ArbitraryWaveform(samples::Vector{Float32}) = length(samples) != _awgBufferSize ? error("Unexpected waveform length $(length(samples)), expected $_awgBufferSize") : new(samples)
@@ -21,16 +20,24 @@ Base.size(wave::ArbitraryWaveform) = size(wave.samples)
 Base.IndexStyle(::Type{<:ArbitraryWaveform}) = IndexLinear()
 Base.getindex(wave::ArbitraryWaveform, i::Int) = wave.samples[i]
 Base.setindex!(wave::ArbitraryWaveform, v, i::Int) = wave.samples[i] = v
-ArbitraryWaveform(samples::Vector{Float64}) = ArbitraryWaveform(convert(Vector{Float32}, samples))
+ArbitraryWaveform(samples::Vector{T}) where T <: AbstractFloat = ArbitraryWaveform(convert(Vector{Float32}, samples))
 ArbitraryWaveform(f::Function, min=0, max=_awgBufferSize) = ArbitraryWaveform([f(x) for x = range(min, max, length = _awgBufferSize)])
 
-function waveformDAC!(rp::RedPitaya, channel::Integer, wave::ArbitraryWaveform)
+function waveform!_(rp::RedPitaya, channel::Integer, wave::ArbitraryWaveform)
   send(rp, "RP:DAC:CH$(channel-1):AWG")
   write(rp.dataSocket, wave[1:end])
-  reply = receive(rp)
-  return parse(Bool, reply)
+  return parse(Bool, receive(rp))
 end
-waveformDAC!(rp::RedPitaya, channel::Integer, samples::Vector{Float32}) = waveformDAC!(rp, channel, ArbitraryWaveform(samples))
+
+function waveformDAC!(rp::RedPitaya, channel::Integer, wave::ArbitraryWaveform)
+  reply = waveform!_(rp, channel, wave)
+  if reply
+    rp.awgs[:, channel] = wave[1:end]
+  end
+  return reply
+end
+scaleWaveformDAC!(rp::RedPitaya, channel::Integer, scale::Float64) = waveform!_(rp, channel, ArbitraryWaveform(scale.*rp.awgs[:, channel]))
+waveformDAC!(rp::RedPitaya, channel::Integer, samples::Vector{T}) where T <: AbstractFloat = waveformDAC!(rp, channel, ArbitraryWaveform(samples))
 waveformDAC!(rp::RedPitaya, channel::Integer, wave::Nothing) = waveformDAC!(rp, channel, ArbitraryWaveform(x-> Float32(0.0)))
 function waveformDAC!(rp::RedPitaya, channel::Integer, signal::SignalType)
   wave = nothing
@@ -45,6 +52,8 @@ function waveformDAC!(rp::RedPitaya, channel::Integer, signal::SignalType)
   end
   waveformDAC!(rp, channel, wave)
 end
+normalize(wave::ArbitraryWaveform) = ArbitraryWaveform(wave/maximum(abs.(wave)))
+
 
 struct DACPerformanceData
   uDeltaControl::UInt8
@@ -128,21 +137,6 @@ function amplitudeDAC!(rp::RedPitaya, channel, component, value)
 end
 scpiCommand(::typeof(amplitudeDAC!), channel, component, value) = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":AMP ", Float64(value))
 scpiReturn(::typeof(amplitudeDAC!)) = Bool
-function amplitudeDACSeq!(rp::RedPitaya, channel, component, value)
-  if value > 1.0
-    error("$value is larger than 1.0 V!")
-  end
-  command = scpiCommand(amplitudeDACSeq!, channel, component, value)
-  return query(rp, command, Bool)
-end
-scpiCommand(::typeof(amplitudeDACSeq!), channel, component, value) = string("RP:DAC:SEQ:CH", Int(channel)-1, ":COMP", Int(component)-1, ":AMP ", Float64(value))
-scpiReturn(::typeof(amplitudeDACSeq!)) = Bool
-function amplitudeDACSeq!(config::DACConfig, channel, component, value)
-  if value > 1.0
-    error("$value is larger than 1.0 V!")
-  end
-  config.amplitudes[channel, component] = value
-end
 
 """
     offsetDAC(rp::RedPitaya, channel)
