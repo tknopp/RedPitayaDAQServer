@@ -360,6 +360,7 @@ include("ClusterView.jl")
 include("Acquisition.jl")
 include("SlowIO.jl")
 include("EEPROM.jl")
+include("CounterTrigger.jl")
 include("Utility.jl")
 
 function destroy(rp::RedPitaya)
