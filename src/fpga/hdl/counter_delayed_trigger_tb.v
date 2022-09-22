@@ -4,9 +4,6 @@ module test;
   /* Make a regular pulsing clock. */
   reg clk = 0;
   always #4 clk = !clk;
-
-  
-  
   
   reg aresetn = 0;
   reg arm = 0;
@@ -16,6 +13,8 @@ module test;
   reg [32-1:0] reference_counter = 250;
   
   wire trigger;
+  wire armed_status;
+  wire [32-1:0] last_counter;
   
   initial begin
 	$dumpfile("counter_delayed_trigger.vcd");
@@ -44,5 +43,5 @@ module test;
      # 20000 $finish;
   end
   
-  counter_delayed_trigger cdt1 (clk, aresetn, arm, trigger_reset, counter_reset, presamples, reference_counter, trigger, armed_status);
+  counter_delayed_trigger cdt1 (clk, aresetn, arm, trigger_reset, counter_reset, presamples, reference_counter, trigger, armed_status, last_counter);
 endmodule // test

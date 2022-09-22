@@ -14,7 +14,8 @@ module counter_delayed_trigger #
 	input [TRIGGER_PRESAMPLES_WIDTH-1:0] trigger_presamples, // Number of samples the trigger should be fired prior to reaching the last counter value
     input [TRIGGER_COUNTER_WIDTH-1:0] reference_counter, // The reference that is used for determining when to start the trigger. Note: Splitted off to allow for e.g using an average value of the polled last counter values.
 	output trigger, // The actual trigger
-	output trigger_armed // Arming status of the trigger
+	output trigger_armed, // Arming status of the trigger
+	output [TRIGGER_COUNTER_WIDTH-1:0] last_counter // The last full counter value
 );
 
 // Delayed trigger counter
@@ -88,5 +89,6 @@ end
 
 assign trigger = trigger_out;
 assign trigger_armed = trigger_armed_int;
+assign last_counter = last_counter_out;
 
 endmodule
