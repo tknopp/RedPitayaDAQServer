@@ -6,6 +6,7 @@ module test;
   always #4 clk = !clk;
   
   reg aresetn = 0;
+  reg enable = 1;
   reg arm = 0;
   reg trigger_reset = 0;
   reg counter_reset = 0;
@@ -35,6 +36,8 @@ module test;
 	 #   100 arm = 1;
 	 #    10 arm = 0;
 	 
+	 #  1000 enable = 0;
+	 
 	 #  3000 counter_reset = 1;
 	 #   100 counter_reset = 0;
 	 
@@ -43,5 +46,5 @@ module test;
      # 20000 $finish;
   end
   
-  counter_delayed_trigger cdt1 (clk, aresetn, arm, trigger_reset, counter_reset, presamples, reference_counter, trigger, armed_status, last_counter);
+  counter_delayed_trigger cdt1 (clk, aresetn, enable, arm, trigger_reset, counter_reset, presamples, reference_counter, trigger, armed_status, last_counter);
 endmodule // test

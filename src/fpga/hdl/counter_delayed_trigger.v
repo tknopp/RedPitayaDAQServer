@@ -8,6 +8,7 @@ module counter_delayed_trigger #
 (
     input clk,
 	input aresetn,
+	input enable,
 	input trigger_arm, // Arm the trigger
 	input trigger_reset, // Unset the trigger after having triggered. Needs re-arming then.
     input counter_reset, // Reset the counter to zero and save last counter state.
@@ -28,7 +29,7 @@ reg trigger_armed_int_pre = 0;
 
 always @(posedge clk)
 begin
-	if (~aresetn)
+	if (~aresetn && enable)
 	begin
 		// Only react on first reset == 1
 		if ((counter_reset == 1) && (counter_reset_first == 1))
@@ -81,9 +82,18 @@ begin
 		delayed_trigger_counter <= 0;
 		last_counter_out <= 0;
 		counter_reset_first <= 0;
-		trigger_out <= 0;
 		trigger_armed_int <= 0;
 		trigger_armed_int_pre <= 0;
+		
+		// If the counter trigger is not enabled, it should always be on due to and-ing the triggers
+		if (enable == 1)
+		begin
+			trigger_out <= 0;
+		end
+		else
+		begin
+			trigger_out <= 1;
+		end
 	end
 end
 
