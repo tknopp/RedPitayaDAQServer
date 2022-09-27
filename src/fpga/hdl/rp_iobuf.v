@@ -17,7 +17,7 @@ IOBUF #(
 .DRIVE(8),
 .IOSTANDARD("LVCMOS33"),
 .SLEW("FAST")
-) IOBUF_watchdog (
+) IOBUF_impl (
 .I(val_out),
 .IO(val_tri),
 .O(val_in),
