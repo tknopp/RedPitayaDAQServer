@@ -21,12 +21,11 @@ bool verbose = false;
 int mmapfd;
 volatile uint32_t *slcr, *axi_hp0;
 void *pdm_sts, *reset_sts, *cfg, *ram, *dio_sts;
+void *counter_trigger_cfg, *counter_trigger_sts;
 uint16_t *pdm_cfg;
 uint64_t *adc_sts, *dac_cfg;
 uint32_t *awg_0_cfg, *awg_1_cfg;
 volatile int32_t *xadc;
-uint32_t *counter_trigger_cfg;
-uint32_t *counter_trigger_sts;
 
 // static const uint32_t ANALOG_OUT_MASK            = 0xFF;
 // static const uint32_t ANALOG_OUT_BITS            = 16;
@@ -1495,7 +1494,7 @@ uint32_t cmn_CalibFullScaleFromVoltage(float voltageScale) {
  **/
 
 int counter_trigger_setEnabled(bool enable) {
-	uint32_t register_value = *(counter_trigger_cfg + 2);
+	uint32_t register_value = *((uint32_t *)(counter_trigger_cfg + 2));
 	if (enable) {
 		register_value = register_value | (1 << 0);
 	}
@@ -1508,35 +1507,35 @@ int counter_trigger_setEnabled(bool enable) {
 }
 
 bool counter_trigger_isEnabled() {
-	uint32_t register_value = *(counter_trigger_cfg + 2);
+	uint32_t register_value = *((uint32_t *)(counter_trigger_cfg + 2));
 	register_value = register_value & (1 << 0);
 	return (register_value > 0);
 }
 
 int counter_trigger_setPresamples(uint32_t presamples) {
-	*(counter_trigger_cfg + 1) = presamples;
+	*((uint32_t *)(counter_trigger_cfg + 1)) = presamples;
 	return 0;
 }
 
 int counter_trigger_getPresamples() {
-	return *(counter_trigger_cfg + 1);
+	return *((uint32_t *)(counter_trigger_cfg + 1));
 }
 
 int counter_trigger_arm() {
-	uint32_t register_value = *(counter_trigger_cfg + 2);
+	uint32_t register_value = *((uint32_t *)(counter_trigger_cfg + 2));
 	register_value = register_value | (1 << 1);
-	*(counter_trigger_cfg + 2) = register_value;
+	*((uint32_t *)(counter_trigger_cfg + 2)) = register_value;
 	return 0;
 }
 
 bool counter_trigger_isArmed() {
-	uint32_t register_value = *(counter_trigger_sts + 1);
+	uint32_t register_value = *((uint32_t *)(counter_trigger_sts + 1));
 	register_value = register_value & (1 << 0);
 	return (register_value > 0);
 }
 
 int counter_trigger_setReset(bool reset) {
-	uint32_t register_value = *(counter_trigger_cfg + 2);
+	uint32_t register_value = *((uint32_t *)(counter_trigger_cfg + 2));
 	if (reset) {
 		register_value = register_value | (1 << 2);
 	}
@@ -1544,25 +1543,25 @@ int counter_trigger_setReset(bool reset) {
 		register_value = register_value & ~(1 << 2);
 	}
 	
-	*(counter_trigger_cfg + 2) = register_value;
+	*((uint32_t *)(counter_trigger_cfg + 2)) = register_value;
 	return 0;
 }
 
-int counter_trigger_getReset() {
-	uint32_t register_value = *(counter_trigger_cfg + 2);
+bool counter_trigger_getReset() {
+	uint32_t register_value = *((uint32_t *)(counter_trigger_cfg + 2));
 	register_value = register_value & (1 << 2);
 	return (register_value > 0);
 }
 
 int counter_trigger_getLastCounter() {
-	return *(counter_trigger_sts + 0);
+	return *((uint32_t *)(counter_trigger_sts + 0));
 }
 
 int counter_trigger_setReferenceCounter(uint32_t reference_counter) {
-	*(counter_trigger_cfg + 0) = reference_counter;
+	*((uint32_t *)(counter_trigger_cfg + 0)) = reference_counter;
 	return 0;
 }
 
 int counter_trigger_getReferenceCounter() {
-	return *(counter_trigger_cfg + 0);
+	return *((uint32_t *)(counter_trigger_cfg + 0));
 }
