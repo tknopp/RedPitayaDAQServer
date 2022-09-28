@@ -61,11 +61,10 @@ extern int mmapfd;
 extern volatile uint32_t *slcr, *axi_hp0;
 // FPGA registers that are memory mapped
 extern void *pdm_sts, *reset_sts, *cfg, *ram, *buf, *dio_sts;
+extern void *counter_trigger_cfg, *counter_trigger_sts;
 extern uint16_t *pdm_cfg;
 extern uint64_t *adc_sts, *dac_cfg; 
 extern uint32_t *awg_0_cfg, *awg_1_cfg;
-extern uint32_t *counter_trigger_cfg;
-extern uint32_t *counter_trigger_sts;
 
 // init routines
 extern uint32_t getFPGAId();
@@ -149,10 +148,10 @@ extern int counter_trigger_getPresamples();
 extern int counter_trigger_arm();
 extern bool counter_trigger_isArmed();
 extern int counter_trigger_setReset(bool reset);
-extern int counter_trigger_getReset();
-extern int counter_trigger_getLastCounter();
+extern bool counter_trigger_getReset();
+extern uint32_t counter_trigger_getLastCounter();
 extern int counter_trigger_setReferenceCounter();
-extern int counter_trigger_getReferenceCounter();
+extern uint32_t counter_trigger_getReferenceCounter();
 
 // misc
 extern int getDIODirection(const char*);
