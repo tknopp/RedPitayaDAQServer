@@ -1469,19 +1469,19 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   create_bd_pin -dir I -from 31 -to 0 reset_sts
   create_bd_pin -dir I -from 31 -to 0 sts_data
 
-  # Create instance: axi_cfg_register_axi_sts_register_counter_trigger, and set properties
-  set axi_cfg_register_axi_sts_register_counter_trigger [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 axi_cfg_register_axi_sts_register_counter_trigger ]
-  set_property -dict [ list \
-   CONFIG.AXI_ADDR_WIDTH {32} \
-   CONFIG.CFG_DATA_WIDTH {96} \
- ] $axi_cfg_register_axi_sts_register_counter_trigger
-
   # Create instance: axi_cfg_register_cfg, and set properties
   set axi_cfg_register_cfg [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 axi_cfg_register_cfg ]
   set_property -dict [ list \
    CONFIG.AXI_ADDR_WIDTH {32} \
    CONFIG.CFG_DATA_WIDTH {96} \
  ] $axi_cfg_register_cfg
+
+  # Create instance: axi_cfg_register_counter_trigger, and set properties
+  set axi_cfg_register_counter_trigger [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 axi_cfg_register_counter_trigger ]
+  set_property -dict [ list \
+   CONFIG.AXI_ADDR_WIDTH {32} \
+   CONFIG.CFG_DATA_WIDTH {96} \
+ ] $axi_cfg_register_counter_trigger
 
   # Create instance: axi_cfg_register_dac, and set properties
   set axi_cfg_register_dac [ create_bd_cell -type ip -vlnv pavel-demin:user:axi_cfg_register:1.0 axi_cfg_register_dac ]
@@ -1977,7 +1977,7 @@ unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#una
   connect_bd_intf_net -intf_net axi_interconnect_0_M05_AXI [get_bd_intf_pins axi_cfg_register_cfg/S_AXI] [get_bd_intf_pins axi_interconnect_0/M05_AXI]
   connect_bd_intf_net -intf_net axi_interconnect_0_M06_AXI [get_bd_intf_pins axi_interconnect_0/M06_AXI] [get_bd_intf_pins axi_sts_register_reset/S_AXI]
   connect_bd_intf_net -intf_net axi_interconnect_0_M07_AXI [get_bd_intf_pins axi_interconnect_0/M07_AXI] [get_bd_intf_pins axi_sts_register_counter_trigger/S_AXI]
-  connect_bd_intf_net -intf_net axi_interconnect_0_M08_AXI [get_bd_intf_pins axi_cfg_register_axi_sts_register_counter_trigger/S_AXI] [get_bd_intf_pins axi_interconnect_0/M08_AXI]
+  connect_bd_intf_net -intf_net axi_interconnect_0_M08_AXI [get_bd_intf_pins axi_cfg_register_counter_trigger/S_AXI] [get_bd_intf_pins axi_interconnect_0/M08_AXI]
   connect_bd_intf_net -intf_net axi_interconnect_1_M00_AXI [get_bd_intf_pins seq_bram] [get_bd_intf_pins axi_interconnect_1/M00_AXI]
   connect_bd_intf_net -intf_net axi_interconnect_1_M01_AXI [get_bd_intf_pins awg_0_bram] [get_bd_intf_pins axi_interconnect_1/M01_AXI]
   connect_bd_intf_net -intf_net axi_interconnect_1_M02_AXI [get_bd_intf_pins awg_1_bram] [get_bd_intf_pins axi_interconnect_1/M02_AXI]
@@ -1990,13 +1990,13 @@ unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#unassigned#una
   # Create port connections
   connect_bd_net -net axi_cfg_register_1_cfg_data1 [get_bd_pins dac_cfg] [get_bd_pins axi_cfg_register_dac/cfg_data]
   connect_bd_net -net axi_cfg_register_1_cfg_data2 [get_bd_pins cfg_data] [get_bd_pins axi_cfg_register_cfg/cfg_data]
-  connect_bd_net -net axi_cfg_register_axi_sts_register_counter_trigger_cfg_data [get_bd_pins counter_trigger_cfg] [get_bd_pins axi_cfg_register_axi_sts_register_counter_trigger/cfg_data]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins S_AXI_HP0_ACLK] [get_bd_pins axi_cfg_register_axi_sts_register_counter_trigger/aclk] [get_bd_pins axi_cfg_register_cfg/aclk] [get_bd_pins axi_cfg_register_dac/aclk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/M01_ACLK] [get_bd_pins axi_interconnect_0/M02_ACLK] [get_bd_pins axi_interconnect_0/M03_ACLK] [get_bd_pins axi_interconnect_0/M04_ACLK] [get_bd_pins axi_interconnect_0/M05_ACLK] [get_bd_pins axi_interconnect_0/M06_ACLK] [get_bd_pins axi_interconnect_0/M07_ACLK] [get_bd_pins axi_interconnect_0/M08_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_1/ACLK] [get_bd_pins axi_interconnect_1/M00_ACLK] [get_bd_pins axi_interconnect_1/M01_ACLK] [get_bd_pins axi_interconnect_1/M02_ACLK] [get_bd_pins axi_interconnect_1/S00_ACLK] [get_bd_pins axi_sts_register_DIOIn/aclk] [get_bd_pins axi_sts_register_adc/aclk] [get_bd_pins axi_sts_register_counter_trigger/aclk] [get_bd_pins axi_sts_register_pdm/aclk] [get_bd_pins axi_sts_register_reset/aclk] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins processing_system7_0/M_AXI_GP1_ACLK] [get_bd_pins processing_system7_0/S_AXI_HP0_ACLK] [get_bd_pins rst_ps7_0_125M/slowest_sync_clk]
+  connect_bd_net -net axi_cfg_register_axi_sts_register_counter_trigger_cfg_data [get_bd_pins counter_trigger_cfg] [get_bd_pins axi_cfg_register_counter_trigger/cfg_data]
+  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins S_AXI_HP0_ACLK] [get_bd_pins axi_cfg_register_cfg/aclk] [get_bd_pins axi_cfg_register_counter_trigger/aclk] [get_bd_pins axi_cfg_register_dac/aclk] [get_bd_pins axi_interconnect_0/ACLK] [get_bd_pins axi_interconnect_0/M00_ACLK] [get_bd_pins axi_interconnect_0/M01_ACLK] [get_bd_pins axi_interconnect_0/M02_ACLK] [get_bd_pins axi_interconnect_0/M03_ACLK] [get_bd_pins axi_interconnect_0/M04_ACLK] [get_bd_pins axi_interconnect_0/M05_ACLK] [get_bd_pins axi_interconnect_0/M06_ACLK] [get_bd_pins axi_interconnect_0/M07_ACLK] [get_bd_pins axi_interconnect_0/M08_ACLK] [get_bd_pins axi_interconnect_0/S00_ACLK] [get_bd_pins axi_interconnect_1/ACLK] [get_bd_pins axi_interconnect_1/M00_ACLK] [get_bd_pins axi_interconnect_1/M01_ACLK] [get_bd_pins axi_interconnect_1/M02_ACLK] [get_bd_pins axi_interconnect_1/S00_ACLK] [get_bd_pins axi_sts_register_DIOIn/aclk] [get_bd_pins axi_sts_register_adc/aclk] [get_bd_pins axi_sts_register_counter_trigger/aclk] [get_bd_pins axi_sts_register_pdm/aclk] [get_bd_pins axi_sts_register_reset/aclk] [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] [get_bd_pins processing_system7_0/M_AXI_GP1_ACLK] [get_bd_pins processing_system7_0/S_AXI_HP0_ACLK] [get_bd_pins rst_ps7_0_125M/slowest_sync_clk]
   connect_bd_net -net clk_wiz_0_locked [get_bd_pins dcm_locked] [get_bd_pins rst_ps7_0_125M/dcm_locked]
   connect_bd_net -net processing_system7_0_FCLK_CLK0 [get_bd_pins FCLK_CLK0] [get_bd_pins processing_system7_0/FCLK_CLK0]
   connect_bd_net -net processing_system7_0_FCLK_RESET0_N [get_bd_pins FCLK_RESET0_N] [get_bd_pins processing_system7_0/FCLK_RESET0_N]
   connect_bd_net -net rst_ps7_0_125M_interconnect_aresetn [get_bd_pins axi_interconnect_0/ARESETN] [get_bd_pins axi_interconnect_1/ARESETN] [get_bd_pins rst_ps7_0_125M/interconnect_aresetn]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins peripheral_aresetn] [get_bd_pins axi_cfg_register_axi_sts_register_counter_trigger/aresetn] [get_bd_pins axi_cfg_register_cfg/aresetn] [get_bd_pins axi_cfg_register_dac/aresetn] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/M02_ARESETN] [get_bd_pins axi_interconnect_0/M03_ARESETN] [get_bd_pins axi_interconnect_0/M04_ARESETN] [get_bd_pins axi_interconnect_0/M05_ARESETN] [get_bd_pins axi_interconnect_0/M06_ARESETN] [get_bd_pins axi_interconnect_0/M07_ARESETN] [get_bd_pins axi_interconnect_0/M08_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_1/M00_ARESETN] [get_bd_pins axi_interconnect_1/M01_ARESETN] [get_bd_pins axi_interconnect_1/M02_ARESETN] [get_bd_pins axi_interconnect_1/S00_ARESETN] [get_bd_pins axi_sts_register_DIOIn/aresetn] [get_bd_pins axi_sts_register_adc/aresetn] [get_bd_pins axi_sts_register_counter_trigger/aresetn] [get_bd_pins axi_sts_register_pdm/aresetn] [get_bd_pins axi_sts_register_reset/aresetn] [get_bd_pins rst_ps7_0_125M/peripheral_aresetn]
+  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins peripheral_aresetn] [get_bd_pins axi_cfg_register_cfg/aresetn] [get_bd_pins axi_cfg_register_counter_trigger/aresetn] [get_bd_pins axi_cfg_register_dac/aresetn] [get_bd_pins axi_interconnect_0/M00_ARESETN] [get_bd_pins axi_interconnect_0/M01_ARESETN] [get_bd_pins axi_interconnect_0/M02_ARESETN] [get_bd_pins axi_interconnect_0/M03_ARESETN] [get_bd_pins axi_interconnect_0/M04_ARESETN] [get_bd_pins axi_interconnect_0/M05_ARESETN] [get_bd_pins axi_interconnect_0/M06_ARESETN] [get_bd_pins axi_interconnect_0/M07_ARESETN] [get_bd_pins axi_interconnect_0/M08_ARESETN] [get_bd_pins axi_interconnect_0/S00_ARESETN] [get_bd_pins axi_interconnect_1/M00_ARESETN] [get_bd_pins axi_interconnect_1/M01_ARESETN] [get_bd_pins axi_interconnect_1/M02_ARESETN] [get_bd_pins axi_interconnect_1/S00_ARESETN] [get_bd_pins axi_sts_register_DIOIn/aresetn] [get_bd_pins axi_sts_register_adc/aresetn] [get_bd_pins axi_sts_register_counter_trigger/aresetn] [get_bd_pins axi_sts_register_pdm/aresetn] [get_bd_pins axi_sts_register_reset/aresetn] [get_bd_pins rst_ps7_0_125M/peripheral_aresetn]
   connect_bd_net -net sts_data1_1 [get_bd_pins curr_pdm_values] [get_bd_pins axi_sts_register_pdm/sts_data]
   connect_bd_net -net sts_data_1 [get_bd_pins reset_sts] [get_bd_pins axi_sts_register_reset/sts_data]
   connect_bd_net -net sts_data_2 [get_bd_pins sts_data] [get_bd_pins axi_sts_register_DIOIn/sts_data]
@@ -3305,7 +3305,7 @@ proc create_root_design { parentCell } {
   assign_bd_address -offset 0x80000000 -range 0x00020000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs sequencer/axi_bram_ctrl_0/S_AXI/Mem0] -force
   assign_bd_address -offset 0x80028000 -range 0x00008000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs fourier_synth_standard/signal_compose1/waveform_awg1/axi_bram_ctrl_0/S_AXI/Mem0] -force
   assign_bd_address -offset 0x80020000 -range 0x00008000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs fourier_synth_standard/signal_compose/waveform_awg/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0x40008000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_cfg_register_axi_sts_register_counter_trigger/s_axi/reg0] -force
+  assign_bd_address -offset 0x40008000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_cfg_register_counter_trigger/s_axi/reg0] -force
   assign_bd_address -offset 0x40004000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_cfg_register_cfg/s_axi/reg0] -force
   assign_bd_address -offset 0x40000000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_cfg_register_dac/s_axi/reg0] -force
   assign_bd_address -offset 0x40006000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_sts_register_DIOIn/s_axi/reg0] -force
@@ -3320,7 +3320,6 @@ proc create_root_design { parentCell } {
   # Restore current instance
   current_bd_instance $oldCurInst
 
-  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -3332,4 +3331,6 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
+
+common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
