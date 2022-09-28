@@ -63,10 +63,12 @@ all: linux
 daq_bitfiles: $(addsuffix .bit, $(addprefix bitfiles/daq_,$(DAQ_PARTS)))
 
 bitfiles/daq_%.bit: daq_cores
+ifneq ("$(wildcard bitfiles/daq_$*.bit)","")
 	vivado -nolog -nojournal -mode batch -source src/fpga/build.tcl -tclargs $*
 	vivado -nolog -nojournal -mode batch -source scripts/runSynthAndImpl.tcl -tclargs $*
 	mkdir -p bitfiles
 	cp build/fpga/$*/firmware/RedPitayaDAQServer.runs/impl_1/system_wrapper.bit bitfiles/daq_$*.bit
+endif
 	
 linux: daq_bitfiles $(LINUX_BUILD_DIR)/tmp/$(NAME).bit $(LINUX_BUILD_DIR)/boot.bin $(LINUX_BUILD_DIR)/uImage $(LINUX_BUILD_DIR)/devicetree.dtb
 	sh scripts/alpine.sh
