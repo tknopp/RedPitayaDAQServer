@@ -42,6 +42,7 @@ static const uint32_t ANALOG_IN_MAX_VAL_INTEGER  = 0xFFF;
 // Cached parameter values.
 static rp_calib_params_t calib;
 
+/*
 static int16_t getCalibDACOffset(int channel) {
 	if (channel == 0) 
 		return (int16_t)(calib.dac_ch1_offs*8192.0);
@@ -60,7 +61,7 @@ double getCalibDACScale(int channel, bool isPDM) {
 		return calib.dac_ch2_fs;
 	else
 		return 0.0;
-}
+}*/
 
 // Init stuff
 
@@ -658,7 +659,7 @@ int setPDMValue(int16_t value, int channel, int index) {
 
 	//printf("%p   %p   %d \n", (void*)pdm_cfg, (void*)((uint16_t *)(pdm_cfg+2*(channel+4*index))), 2*(channel+4*index) );
 	int offset = 8 * index + channel;
-	int16_t temp = *((int16_t *)(pdm_cfg + offset)); 
+	//int16_t temp = *((int16_t *)(pdm_cfg + offset)); 
 	*((int16_t *)(pdm_cfg + offset)) = value;
 	
 	return 0;

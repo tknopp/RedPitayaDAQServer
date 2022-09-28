@@ -65,6 +65,7 @@ extern uint16_t *pdm_cfg;
 extern uint64_t *adc_sts, *dac_cfg; 
 extern uint32_t *awg_0_cfg, *awg_1_cfg;
 extern uint32_t *counter_trigger_cfg;
+extern uint32_t *counter_trigger_sts;
 
 // init routines
 extern uint32_t getFPGAId();
