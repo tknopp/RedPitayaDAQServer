@@ -1502,7 +1502,7 @@ int counter_trigger_setEnabled(bool enable) {
 		register_value = register_value & ~(1 << 0);
 	}
 	
-	*(counter_trigger_cfg + 2) = register_value;
+	*((uint32_t *)(counter_trigger_cfg + 2)) = register_value;
 	return 0;
 }
 
@@ -1553,7 +1553,7 @@ bool counter_trigger_getReset() {
 	return (register_value > 0);
 }
 
-int counter_trigger_getLastCounter() {
+uint32_t counter_trigger_getLastCounter() {
 	return *((uint32_t *)(counter_trigger_sts + 0));
 }
 
@@ -1562,6 +1562,6 @@ int counter_trigger_setReferenceCounter(uint32_t reference_counter) {
 	return 0;
 }
 
-int counter_trigger_getReferenceCounter() {
+uint32_t counter_trigger_getReferenceCounter() {
 	return *((uint32_t *)(counter_trigger_cfg + 0));
 }
