@@ -18,32 +18,32 @@ module test;
   wire [32-1:0] last_counter;
   
   initial begin
-	$dumpfile("counter_delayed_trigger.vcd");
-	$dumpvars(2, test);
-     #  1000 counter_reset = 1;
-	 #   100 counter_reset = 0;
-	 #  3000 counter_reset = 1;
-	 #   100 counter_reset = 0;
-	 
-	 #   100 arm = 1;
-	 #    10 arm = 0;
-	 
-	 #  3000 counter_reset = 1;
-	 #   100 counter_reset = 0;
-	 
-	 #  1000 trigger_reset = 1;
-	 #    10 trigger_reset = 0;
-	 #   100 arm = 1;
-	 #    10 arm = 0;
-	 
-	 #  1000 enable = 0;
-	 
-	 #  3000 counter_reset = 1;
-	 #   100 counter_reset = 0;
-	 
-	 # 15000 aresetn = 1;
-	 
-     # 20000 $finish;
+    $dumpfile("counter_delayed_trigger.vcd");
+    $dumpvars(2, test);
+    #  1000 counter_reset = 1;
+    #   100 counter_reset = 0;
+    #  3000 counter_reset = 1;
+    #   100 counter_reset = 0;
+    
+    #   100 arm = 1;
+    #    10 arm = 0;
+    
+    #  3000 counter_reset = 1;
+    #   100 counter_reset = 0;
+    
+    #  1000 trigger_reset = 1;
+    #    10 trigger_reset = 0;
+    #   100 arm = 1;
+    #    10 arm = 0;
+    
+    #  1000 enable = 0;
+    
+    #  3000 counter_reset = 1;
+    #   100 counter_reset = 0;
+    
+    # 15000 aresetn = 1;
+    
+    # 20000 $finish;
   end
   
   counter_delayed_trigger cdt1 (clk, aresetn, enable, arm, trigger_reset, counter_reset, presamples, reference_counter, trigger, armed_status, last_counter);
