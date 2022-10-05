@@ -211,8 +211,8 @@ begin
         triggerState <= trigger_in_int;
     end
 
-    masterTriggerState_pre <= reset_cfg[5];
-    masterTriggerState <= masterTriggerState_pre && counter_trigger; // counter_trigger must always be high if not enabled
+    masterTriggerState_pre <= reset_cfg[5] && counter_trigger; // counter_trigger must always be high if not enabled
+    masterTriggerState <= masterTriggerState_pre;
 end
 
 always @(posedge clk)
