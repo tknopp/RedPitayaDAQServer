@@ -38,7 +38,7 @@ static const uint32_t ANALOG_IN_MAX_VAL_INTEGER  = 0xFFF;
 // static const float    ANALOG_OUT_MIN_VAL         = 0.0;
 // static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
 
-static const uint32_t COUNTER_TRIGGER_CFG_OFFSET  = 0x800/(sizeof(int32_t)*CHAR_BIT);
+static const uint32_t COUNTER_TRIGGER_CFG_OFFSET  = 0x800/sizeof(int32_t);
 
 // Cached parameter values.
 static rp_calib_params_t calib;
