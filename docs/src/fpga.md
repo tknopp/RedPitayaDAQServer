@@ -14,7 +14,7 @@ Afterwards you can start Vivado and open the recreated project in `./build/fpga/
 
 After creating the respective bitfile you need to copy it to your Red Pitayas. You can use
 
-`scp ./build/fpga/<xc7z010clg400-1,xc7z020clg400-1>/firmware/RedPitayaDAQServer.runs/impl_1/system_wrapper.bin root@<IP>:/root/RedPitayaDAQServer/bitfiles/daq_<xc7z010clg400-1,xc7z020clg400-1>.bin`
+`scp ./build/fpga/<xc7z010clg400-1,xc7z020clg400-1>/firmware/RedPitayaDAQServer.runs/impl_1/system_wrapper.bit root@<IP>:/root/RedPitayaDAQServer/bitfiles/daq_<xc7z010clg400-1,xc7z020clg400-1>.bit`
 
 for this. Set your IP and FPGA version accordingly. Another option is to fully regenerate the Linux image with `make all` and copy it to the SD card.
 
