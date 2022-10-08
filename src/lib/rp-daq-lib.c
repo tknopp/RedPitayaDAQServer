@@ -1485,8 +1485,8 @@ uint32_t cmn_CalibFullScaleFromVoltage(float voltageScale) {
 /**
  * Memory layout for `counter_trigger + COUNTER_TRIGGER_CFG_OFFSET` upper bits 0x40002800
  * 
- * 0 ...................................................................................... 67 bit |
- * reference_counter (32 bit) | presamples (32 bit) | enable (1 bit) | arm (1 bit) | reset (1 bit) |
+ * 0 ................................................................................................................. 67 bit |
+ * reference_counter (32 bit) | presamples (32 bit) | enable (1 bit) | arm (1 bit) | reset (1 bit) | source selection (5 bit) |
  * 
  * Memory layout for `counter_trigger` lower bits 0x40002000
  * 
@@ -1565,4 +1565,48 @@ int counter_trigger_setReferenceCounter(uint32_t reference_counter) {
 
 uint32_t counter_trigger_getReferenceCounter() {
 	return *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 0);
+}
+
+uint32_t counter_trigger_getSelectedChannelType() {
+	uint32_t register_value = *(counter_trigger + 2);
+	return (register_value & ~(1 << 6)) >> 6;
+}
+
+bool counter_trigger_setSelectedChannelType(uint32_t channelType) {
+	uint32_t register_value = *(counter_trigger + 2);
+	if (channelType == 1) // ADC
+	{
+		*(counter_trigger + 2) = register_value | (1 << 6);
+	}
+	else // DIO
+	{
+		*(counter_trigger + 2) = register_value & ~(1 << 6);
+	}
+	return 0;
+}
+
+uint32_t counter_trigger_getSelectedChannel() {
+	uint32_t register_value = *(counter_trigger + 2);
+	return (register_value & ~(0b1111 << 3)) >> 3;
+}
+
+uint32_t counter_trigger_setSelectedChannel(uint32_t channel) {
+	if (counter_trigger_getSelectedChannelType() == 0) // DIOs
+	{
+		if (channel < 0 || channel > 7)
+		{
+			return -3;
+		}
+	}
+	else // ADCs
+	{
+		if (channel < 0 || channel > 1)
+		{
+			return -3;
+		}
+	}
+
+	uint32_t register_value = *(counter_trigger + 2);
+	*(counter_trigger + 2) = (register_value | (0b1111 << 3)) & (channel << 3);
+	return 0;
 }

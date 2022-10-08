@@ -1260,7 +1260,59 @@ static scpi_result_t RP_CounterTrigger_GetReferenceCounter(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_CounterTrigger_SetSourceType(scpi_t * context) {
+	if (getServerMode() != CONFIGURATION) {
+		return returnSCPIBool(context, false);
+	}
 
+	uint32_t source_type;
+	if (!SCPI_ParamUInt32(context, &source_type, TRUE)) {
+		return returnSCPIBool(context, false);
+	}
+
+	printf("set source_type = %d \n", source_type);
+	int result = counter_trigger_setSelectedChannelType(source_type);
+	if (result < 0) {
+		printf("Could not set source_type!");
+		return returnSCPIBool(context, false);
+	}
+
+	return returnSCPIBool(context, true);
+}
+
+static scpi_result_t RP_CounterTrigger_GetSourceType(scpi_t * context) {
+	uint32_t channel_type = counter_trigger_getSelectedChannelType();
+	
+	SCPI_ResultUInt32(context, channel_type); // 0: DIO; 1: ADC
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_CounterTrigger_SetSourceChannel(scpi_t * context) {
+	if (getServerMode() != CONFIGURATION) {
+		return returnSCPIBool(context, false);
+	}
+
+	uint32_t source_channel;
+	if (!SCPI_ParamUInt32(context, &source_channel, TRUE)) {
+		return returnSCPIBool(context, false);
+	}
+
+	printf("set source_channel = %d \n", source_channel);
+	int result = counter_trigger_setSelectedChannel(source_channel);
+	if (result < 0) {
+		printf("Could not set source_channel!");
+		return returnSCPIBool(context, false);
+	}
+
+	return returnSCPIBool(context, true);
+}
+
+static scpi_result_t RP_CounterTrigger_GetSourceChannel(scpi_t * context) {
+	uint32_t source_channel = counter_trigger_getSelectedChannel();
+	
+	SCPI_ResultUInt32(context, source_channel);
+	return SCPI_RES_OK;
+}
 
 // Calibration
 static scpi_result_t RP_Calib_DAC_GetOffset(scpi_t* context) {
@@ -1571,6 +1623,10 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:CounterTrigger:COUNTer:LAst?", .callback = RP_CounterTrigger_GetLastCounter,},
 	{.pattern = "RP:CounterTrigger:COUNTer:REFerence?", .callback = RP_CounterTrigger_GetReferenceCounter,},
 	{.pattern = "RP:CounterTrigger:COUNTer:REFerence", .callback = RP_CounterTrigger_SetReferenceCounter,},
+	{.pattern = "RP:CounterTrigger:SouRCe:TYPe?", .callback = RP_CounterTrigger_GetSourceType,},
+	{.pattern = "RP:CounterTrigger:SouRCe:TYPe", .callback = RP_CounterTrigger_SetSourceType,},
+	{.pattern = "RP:CounterTrigger:SouRCe:CHANnel?", .callback = RP_CounterTrigger_GetSourceChannel,},
+	{.pattern = "RP:CounterTrigger:SouRCe:CHANnel", .callback = RP_CounterTrigger_SetSourceChannel,},
 	
 	/* Calibration */
 	{.pattern = "RP:CALib:DAC:CHannel#:OFFset?", .callback = RP_Calib_DAC_GetOffset,},

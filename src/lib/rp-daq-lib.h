@@ -152,6 +152,10 @@ extern bool counter_trigger_getReset();
 extern uint32_t counter_trigger_getLastCounter();
 extern int counter_trigger_setReferenceCounter();
 extern uint32_t counter_trigger_getReferenceCounter();
+extern bool counter_trigger_getSelectedChannelType();
+extern uint32_t counter_trigger_setSelectedChannelType(bool channelType);
+extern uint32_t counter_trigger_getSelectedChannel();
+extern uint32_t counter_trigger_setSelectedChannel(uint32_t channel);
 
 // misc
 extern int getDIODirection(const char*);
