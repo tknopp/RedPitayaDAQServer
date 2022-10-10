@@ -153,7 +153,7 @@ extern uint32_t counter_trigger_getLastCounter();
 extern int counter_trigger_setReferenceCounter();
 extern uint32_t counter_trigger_getReferenceCounter();
 extern uint32_t counter_trigger_getSelectedChannelType();
-extern uint32_t counter_trigger_setSelectedChannelType(uint32_t channelType);
+extern bool counter_trigger_setSelectedChannelType(uint32_t channelType);
 extern uint32_t counter_trigger_getSelectedChannel();
 extern uint32_t counter_trigger_setSelectedChannel(uint32_t channel);
 
