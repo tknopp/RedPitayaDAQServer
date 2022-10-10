@@ -568,14 +568,19 @@ scpi_choice_def_t inout_modes[] = {
 	SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
-static scpi_result_t RP_DIO_GetDIODirection(scpi_t * context) {
-	const char* pin;
-	size_t len;
-	if (!SCPI_ParamCharacters(context, &pin, &len, TRUE)) {
-		return returnSCPIBool(context, false);
-	}
+static scpi_result_t RP_DIO_GetDIODirectionN(scpi_t * context) {
+	return RP_DIO_GetDIODirection(context, false)
+}
 
-	const char* name;
+static scpi_result_t RP_DIO_GetDIODirectionP(scpi_t * context) {
+	return RP_DIO_GetDIODirection(context, true)
+}
+
+static scpi_result_t RP_DIO_GetDIODirection(scpi_t * context, bool pinSide) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int pin_number = numbers[0];
+	const char* pin = pinSide ? sprintf("DIO%d_N") : sprintf("DIO%d_P");
 
 	int result = getDIODirection(pin);
 
@@ -583,18 +588,26 @@ static scpi_result_t RP_DIO_GetDIODirection(scpi_t * context) {
 		return returnSCPIBool(context, false);
 	}
 
+	const char* name;
 	SCPI_ChoiceToName(inout_modes, result, &name);
 	SCPI_ResultText(context, name);
 
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context) {
-	const char* pin;
-	size_t len;
-	if (!SCPI_ParamCharacters(context, &pin, &len, TRUE)) {
-		return returnSCPIBool(context, false);
-	}
+static scpi_result_t RP_DIO_SetDIODirectionN(scpi_t * context) {
+	return RP_DIO_SetDIODirection(context, false)
+}
+
+static scpi_result_t RP_DIO_SetDIODirectionP(scpi_t * context) {
+	return RP_DIO_SetDIODirection(context, true)
+}
+
+static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context, bool pinSide) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int pin_number = numbers[0];
+	const char* pin = pinSide ? sprintf("DIO%d_N") : sprintf("DIO%d_P");
 
 	int32_t DIO_pin_output_selection;
 	if (!SCPI_ParamChoice(context, inout_modes, &DIO_pin_output_selection, TRUE)) {
@@ -603,7 +616,7 @@ static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context) {
 
 	int result = setDIODirection(pin, DIO_pin_output_selection);
 	if (result < 0) {
-		return returnSCPIBool(context, true);
+		return returnSCPIBool(context, false);
 	}
 
 	return SCPI_RES_OK;
@@ -615,12 +628,19 @@ scpi_choice_def_t onoff_modes[] = {
 	SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
-static scpi_result_t RP_DIO_SetDIOOutput(scpi_t * context) {
-	const char* pin;
-	size_t len;
-	if (!SCPI_ParamCharacters(context, &pin, &len, TRUE)) {
-		return returnSCPIBool(context, false);
-	}
+static scpi_result_t RP_DIO_SetDIOOutputN(scpi_t * context) {
+	return RP_DIO_SetDIOOutput(context, false)
+}
+
+static scpi_result_t RP_DIO_SetDIOOutputP(scpi_t * context) {
+	return RP_DIO_SetDIOOutput(context, true)
+}
+
+static scpi_result_t RP_DIO_SetDIOOutput(scpi_t * context, bool pinSide) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int pin_number = numbers[0];
+	const char* pin = pinSide ? sprintf("DIO%d_N") : sprintf("DIO%d_P");
 
 	int32_t DIO_pin_output_selection;
 	if (!SCPI_ParamChoice(context, onoff_modes, &DIO_pin_output_selection, TRUE)) {
@@ -635,21 +655,27 @@ static scpi_result_t RP_DIO_SetDIOOutput(scpi_t * context) {
 	return returnSCPIBool(context, true);
 }
 
-static scpi_result_t RP_DIO_GetDIOOutput(scpi_t * context) {
-	const char* pin;
-	size_t len;
-	if (!SCPI_ParamCharacters(context, &pin, &len, TRUE)) {
-		return returnSCPIBool(context, false);
-	}
+static scpi_result_t RP_DIO_GetDIOOutputN(scpi_t * context) {
+	return RP_DIO_GetDIOOutput(context, false)
+}
 
-	const char* name;
+static scpi_result_t RP_DIO_GetDIOOutputP(scpi_t * context) {
+	return RP_DIO_GetDIOOutput(context, true)
+}
 
+static scpi_result_t RP_DIO_GetDIOOutput(scpi_t * context, bool pinSide) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int pin_number = numbers[0];
+	const char* pin = pinSide ? sprintf("DIO%d_N") : sprintf("DIO%d_P");
+	
 	int result = getDIO(pin);
 
 	if (result < 0) {
 		return returnSCPIBool(context, false);
 	}
 
+	const char* name;
 	SCPI_ChoiceToName(onoff_modes, result,  &name);
 	SCPI_ResultText(context, name);
 
@@ -1582,10 +1608,14 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:BUFfer:Size?", .callback = RP_ADC_GetBufferSize,},
 	//{.pattern = "RP:ADC:Slow:FRAmes:DATa", .callback = RP_ADC_Slow_GetFrames,},
 	//{.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},
-	{.pattern = "RP:DIO:DIR", .callback = RP_DIO_SetDIODirection,},
-	{.pattern = "RP:DIO:DIR?", .callback = RP_DIO_GetDIODirection,},
-	{.pattern = "RP:DIO", .callback = RP_DIO_SetDIOOutput,},
-	{.pattern = "RP:DIO?", .callback = RP_DIO_GetDIOOutput,},
+	{.pattern = "RP:DIO:DIO#_N:DIR", .callback = RP_DIO_SetDIODirectionN,},
+	{.pattern = "RP:DIO:DIO#_P:DIR", .callback = RP_DIO_SetDIODirectionP,},
+	{.pattern = "RP:DIO:DIO#_N:DIR?", .callback = RP_DIO_GetDIODirectionN,},
+	{.pattern = "RP:DIO:DIO#_P:DIR?", .callback = RP_DIO_GetDIODirectionP,},
+	{.pattern = "RP:DIO:DIO#_N", .callback = RP_DIO_SetDIOOutputN,}, 
+	{.pattern = "RP:DIO:DIO#_P", .callback = RP_DIO_SetDIOOutputP,}, 
+	{.pattern = "RP:DIO:DIO#_N?", .callback = RP_DIO_GetDIOOutputN,},
+	{.pattern = "RP:DIO:DIO#_P?", .callback = RP_DIO_GetDIOOutputP,},
 	{.pattern = "RP:WatchDogMode", .callback = RP_SetWatchdogMode,},
 	{.pattern = "RP:WatchDogMode?", .callback = RP_GetWatchdogMode,},
 	{.pattern = "RP:TRIGger:ALiVe", .callback = RP_SetKeepAliveReset,},
