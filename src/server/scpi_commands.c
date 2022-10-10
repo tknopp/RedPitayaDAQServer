@@ -568,14 +568,6 @@ scpi_choice_def_t inout_modes[] = {
 	SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
-static scpi_result_t RP_DIO_GetDIODirectionN(scpi_t * context) {
-	return RP_DIO_GetDIODirection(context, false)
-}
-
-static scpi_result_t RP_DIO_GetDIODirectionP(scpi_t * context) {
-	return RP_DIO_GetDIODirection(context, true)
-}
-
 static scpi_result_t RP_DIO_GetDIODirection(scpi_t * context, bool pinSide) {
 	int32_t numbers[1];
 	SCPI_CommandNumbers(context, numbers, 1, 1);
@@ -595,12 +587,12 @@ static scpi_result_t RP_DIO_GetDIODirection(scpi_t * context, bool pinSide) {
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DIO_SetDIODirectionN(scpi_t * context) {
-	return RP_DIO_SetDIODirection(context, false)
+static scpi_result_t RP_DIO_GetDIODirectionN(scpi_t * context) {
+	return RP_DIO_GetDIODirection(context, false)
 }
 
-static scpi_result_t RP_DIO_SetDIODirectionP(scpi_t * context) {
-	return RP_DIO_SetDIODirection(context, true)
+static scpi_result_t RP_DIO_GetDIODirectionP(scpi_t * context) {
+	return RP_DIO_GetDIODirection(context, true)
 }
 
 static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context, bool pinSide) {
@@ -622,19 +614,19 @@ static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context, bool pinSide) {
 	return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_DIO_SetDIODirectionN(scpi_t * context) {
+	return RP_DIO_SetDIODirection(context, false)
+}
+
+static scpi_result_t RP_DIO_SetDIODirectionP(scpi_t * context) {
+	return RP_DIO_SetDIODirection(context, true)
+}
+
 scpi_choice_def_t onoff_modes[] = {
 	{"OFF", OFF},
 	{"ON", ON},
 	SCPI_CHOICE_LIST_END /* termination of option list */
 };
-
-static scpi_result_t RP_DIO_SetDIOOutputN(scpi_t * context) {
-	return RP_DIO_SetDIOOutput(context, false)
-}
-
-static scpi_result_t RP_DIO_SetDIOOutputP(scpi_t * context) {
-	return RP_DIO_SetDIOOutput(context, true)
-}
 
 static scpi_result_t RP_DIO_SetDIOOutput(scpi_t * context, bool pinSide) {
 	int32_t numbers[1];
@@ -655,12 +647,12 @@ static scpi_result_t RP_DIO_SetDIOOutput(scpi_t * context, bool pinSide) {
 	return returnSCPIBool(context, true);
 }
 
-static scpi_result_t RP_DIO_GetDIOOutputN(scpi_t * context) {
-	return RP_DIO_GetDIOOutput(context, false)
+static scpi_result_t RP_DIO_SetDIOOutputN(scpi_t * context) {
+	return RP_DIO_SetDIOOutput(context, false)
 }
 
-static scpi_result_t RP_DIO_GetDIOOutputP(scpi_t * context) {
-	return RP_DIO_GetDIOOutput(context, true)
+static scpi_result_t RP_DIO_SetDIOOutputP(scpi_t * context) {
+	return RP_DIO_SetDIOOutput(context, true)
 }
 
 static scpi_result_t RP_DIO_GetDIOOutput(scpi_t * context, bool pinSide) {
@@ -680,6 +672,14 @@ static scpi_result_t RP_DIO_GetDIOOutput(scpi_t * context, bool pinSide) {
 	SCPI_ResultText(context, name);
 
 	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DIO_GetDIOOutputN(scpi_t * context) {
+	return RP_DIO_GetDIOOutput(context, false)
+}
+
+static scpi_result_t RP_DIO_GetDIOOutputP(scpi_t * context) {
+	return RP_DIO_GetDIOOutput(context, true)
 }
 
 static scpi_result_t RP_GetWatchdogMode(scpi_t * context) {
