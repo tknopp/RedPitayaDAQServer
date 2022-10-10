@@ -588,11 +588,11 @@ static scpi_result_t RP_DIO_GetDIODirection(scpi_t * context, bool pinSide) {
 }
 
 static scpi_result_t RP_DIO_GetDIODirectionN(scpi_t * context) {
-	return RP_DIO_GetDIODirection(context, false)
+	return RP_DIO_GetDIODirection(context, false);
 }
 
 static scpi_result_t RP_DIO_GetDIODirectionP(scpi_t * context) {
-	return RP_DIO_GetDIODirection(context, true)
+	return RP_DIO_GetDIODirection(context, true);
 }
 
 static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context, bool pinSide) {
@@ -615,11 +615,11 @@ static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context, bool pinSide) {
 }
 
 static scpi_result_t RP_DIO_SetDIODirectionN(scpi_t * context) {
-	return RP_DIO_SetDIODirection(context, false)
+	return RP_DIO_SetDIODirection(context, false);
 }
 
 static scpi_result_t RP_DIO_SetDIODirectionP(scpi_t * context) {
-	return RP_DIO_SetDIODirection(context, true)
+	return RP_DIO_SetDIODirection(context, true);
 }
 
 scpi_choice_def_t onoff_modes[] = {
@@ -648,11 +648,11 @@ static scpi_result_t RP_DIO_SetDIOOutput(scpi_t * context, bool pinSide) {
 }
 
 static scpi_result_t RP_DIO_SetDIOOutputN(scpi_t * context) {
-	return RP_DIO_SetDIOOutput(context, false)
+	return RP_DIO_SetDIOOutput(context, false);
 }
 
 static scpi_result_t RP_DIO_SetDIOOutputP(scpi_t * context) {
-	return RP_DIO_SetDIOOutput(context, true)
+	return RP_DIO_SetDIOOutput(context, true);
 }
 
 static scpi_result_t RP_DIO_GetDIOOutput(scpi_t * context, bool pinSide) {
@@ -675,11 +675,11 @@ static scpi_result_t RP_DIO_GetDIOOutput(scpi_t * context, bool pinSide) {
 }
 
 static scpi_result_t RP_DIO_GetDIOOutputN(scpi_t * context) {
-	return RP_DIO_GetDIOOutput(context, false)
+	return RP_DIO_GetDIOOutput(context, false);
 }
 
 static scpi_result_t RP_DIO_GetDIOOutputP(scpi_t * context) {
-	return RP_DIO_GetDIOOutput(context, true)
+	return RP_DIO_GetDIOOutput(context, true);
 }
 
 static scpi_result_t RP_GetWatchdogMode(scpi_t * context) {
