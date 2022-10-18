@@ -613,7 +613,7 @@ static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context, bool pinSide) {
 		return returnSCPIBool(context, false);
 	}
 
-	return SCPI_RES_OK;
+	return returnSCPIBool(context, true);
 }
 
 static scpi_result_t RP_DIO_SetDIODirectionN(scpi_t * context) {
