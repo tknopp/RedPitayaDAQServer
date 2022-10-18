@@ -146,6 +146,7 @@ extern bool counter_trigger_isEnabled();
 extern int counter_trigger_setPresamples(uint32_t presamples);
 extern int counter_trigger_getPresamples();
 extern int counter_trigger_arm();
+extern int counter_trigger_disarm();
 extern bool counter_trigger_isArmed();
 extern int counter_trigger_setReset(bool reset);
 extern bool counter_trigger_getReset();

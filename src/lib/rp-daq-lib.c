@@ -1529,6 +1529,13 @@ int counter_trigger_arm() {
 	return 0;
 }
 
+int counter_trigger_disarm() {
+	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	register_value = register_value & ~(1 << 1);
+	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value;
+	return 0;
+}
+
 bool counter_trigger_isArmed() {
 	uint32_t register_value = *(counter_trigger + 1);
 	register_value = register_value & (1 << 0);
@@ -1539,6 +1546,7 @@ int counter_trigger_setReset(bool reset) {
 	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
 	if (reset) {
 		register_value = register_value | (1 << 2);
+		counter_trigger_disarm(); // Always disarm when resetting
 	}
 	else {
 		register_value = register_value & ~(1 << 2);
