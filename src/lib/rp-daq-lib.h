@@ -47,6 +47,9 @@
 #define TRIGGER_MODE_INTERNAL 0
 #define	TRIGGER_MODE_EXTERNAL 1
 
+#define COUNTER_TRIGGER_DIO 0
+#define	COUNTER_TRIGGER_ADC 1
+
 #define OFF 0
 #define ON 1
 

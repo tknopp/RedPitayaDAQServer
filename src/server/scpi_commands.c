@@ -1290,13 +1290,19 @@ static scpi_result_t RP_CounterTrigger_GetReferenceCounter(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+scpi_choice_def_t source_types[] = {
+	{"DIO", COUNTER_TRIGGER_DIO},
+	{"ADC", COUNTER_TRIGGER_ADC},
+	SCPI_CHOICE_LIST_END /* termination of option list */
+};
+
 static scpi_result_t RP_CounterTrigger_SetSourceType(scpi_t * context) {
 	if (getServerMode() != CONFIGURATION) {
 		return returnSCPIBool(context, false);
 	}
 
-	uint32_t source_type;
-	if (!SCPI_ParamUInt32(context, &source_type, TRUE)) {
+	uint32_t source_type; // 0: DIO; 1: ADC
+	if (!SCPI_ParamChoice(context, source_types, &source_type, TRUE)) {
 		return returnSCPIBool(context, false);
 	}
 
@@ -1311,9 +1317,11 @@ static scpi_result_t RP_CounterTrigger_SetSourceType(scpi_t * context) {
 }
 
 static scpi_result_t RP_CounterTrigger_GetSourceType(scpi_t * context) {
-	uint32_t channel_type = counter_trigger_getSelectedChannelType();
+	const char * name;
+
+	SCPI_ChoiceToName(source_types, counter_trigger_getSelectedChannelType(), &name);
+	SCPI_ResultText(context, name);
 	
-	SCPI_ResultUInt32(context, channel_type); // 0: DIO; 1: ADC
 	return SCPI_RES_OK;
 }
 
