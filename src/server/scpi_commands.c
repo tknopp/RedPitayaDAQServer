@@ -573,7 +573,7 @@ static scpi_result_t RP_DIO_GetDIODirection(scpi_t * context, bool pinSide) {
 	SCPI_CommandNumbers(context, numbers, 1, 1);
 	int pin_number = numbers[0];
 	char pin[8];
-	pinSide ? sprintf(pin, "DIO%d_N", pin_number) : sprintf(pin, "DIO%d_P", pin_number);
+	pinSide ? sprintf(pin, "DIO%d_P", pin_number) : sprintf(pin, "DIO%d_N", pin_number);
 
 	int result = getDIODirection(pin);
 
@@ -601,7 +601,7 @@ static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context, bool pinSide) {
 	SCPI_CommandNumbers(context, numbers, 1, 1);
 	int pin_number = numbers[0];
 	char pin[8];
-	pinSide ? sprintf(pin, "DIO%d_N", pin_number) : sprintf(pin, "DIO%d_P", pin_number);
+	pinSide ? sprintf(pin, "DIO%d_P", pin_number) : sprintf(pin, "DIO%d_N", pin_number);
 
 	int32_t DIO_pin_output_selection;
 	if (!SCPI_ParamChoice(context, inout_modes, &DIO_pin_output_selection, TRUE)) {
@@ -635,7 +635,7 @@ static scpi_result_t RP_DIO_SetDIOOutput(scpi_t * context, bool pinSide) {
 	SCPI_CommandNumbers(context, numbers, 1, 1);
 	int pin_number = numbers[0];
 	char pin[8];
-	pinSide ? sprintf(pin, "DIO%d_N", pin_number) : sprintf(pin, "DIO%d_P", pin_number);
+	pinSide ? sprintf(pin, "DIO%d_P", pin_number) : sprintf(pin, "DIO%d_N", pin_number);
 
 	int32_t DIO_pin_output_selection;
 	if (!SCPI_ParamChoice(context, onoff_modes, &DIO_pin_output_selection, TRUE)) {
@@ -663,7 +663,7 @@ static scpi_result_t RP_DIO_GetDIOOutput(scpi_t * context, bool pinSide) {
 	SCPI_CommandNumbers(context, numbers, 1, 1);
 	int pin_number = numbers[0];
 	char pin[8];
-	pinSide ? sprintf(pin, "DIO%d_N", pin_number) : sprintf(pin, "DIO%d_P", pin_number);
+	pinSide ? sprintf(pin, "DIO%d_P", pin_number) : sprintf(pin, "DIO%d_N", pin_number);
 	
 	int result = getDIO(pin);
 
