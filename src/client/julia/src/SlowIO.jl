@@ -154,7 +154,7 @@ true
 ```
 """
 DIO!(rp::RedPitaya, pin, val) = query(rp, scpiCommand(DIO!, pin, val), scpiReturn(DIO!))
-scpiCommand(::typeof(DIO!), pin::DIOPins, val::Bool) = string("RP:DIO:", DIOPinToCommand(pin), (val ? "ON" : "OFF"))
+scpiCommand(::typeof(DIO!), pin::DIOPins, val::Bool) = string("RP:DIO:", DIOPinToCommand(pin), " ", (val ? "ON" : "OFF"))
 scpiReturn(::typeof(DIO!)) = Bool
 
 export DIO

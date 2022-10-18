@@ -1113,7 +1113,7 @@ int getDIODirection(const char* pin) {
 		return -3;
 	}
 
-	uint32_t register_value = *((uint8_t *)(cfg + 10));
+	uint32_t register_value = *((uint8_t *)(cfg + 9));
 	register_value = ((register_value & (0x1 << (pinInternal))) >> (pinInternal));
 	
 	if(register_value == IN) {
@@ -1130,9 +1130,9 @@ int setDIODirection(const char* pin, int value) {
 	}
 
 	if(value == IN) {
-		*((uint8_t *)(cfg + 10)) &= ~(0x1 << (pinInternal));
+		*((uint8_t *)(cfg + 9)) &= ~(0x1 << (pinInternal));
 	} else if(value == OUT) {
-		*((uint8_t *)(cfg + 10)) |= (0x1 << (pinInternal));
+		*((uint8_t *)(cfg + 9)) |= (0x1 << (pinInternal));
 	} else {
 		return -1;
 	}
@@ -1147,9 +1147,9 @@ int setDIO(const char* pin, int value) {
 	}
 
 	if(value == OFF) {
-		*((uint8_t *)(cfg + 9)) &= ~(0x1 << (pinInternal));
+		*((uint8_t *)(cfg + 8)) &= ~(0x1 << (pinInternal));
 	} else if(value == ON) {
-		*((uint8_t *)(cfg + 9)) |= (0x1 << (pinInternal));
+		*((uint8_t *)(cfg + 8)) |= (0x1 << (pinInternal));
 	} else {
 		return -1;
 	}
