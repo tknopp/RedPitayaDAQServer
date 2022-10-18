@@ -572,7 +572,7 @@ static scpi_result_t RP_DIO_GetDIODirection(scpi_t * context, bool pinSide) {
 	int32_t numbers[1];
 	SCPI_CommandNumbers(context, numbers, 1, 1);
 	int pin_number = numbers[0];
-	char* pin;
+	char pin[8];
 	pinSide ? sprintf(pin, "DIO%d_N", pin_number) : sprintf(pin, "DIO%d_P", pin_number);
 
 	int result = getDIODirection(pin);
@@ -600,7 +600,7 @@ static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context, bool pinSide) {
 	int32_t numbers[1];
 	SCPI_CommandNumbers(context, numbers, 1, 1);
 	int pin_number = numbers[0];
-	char* pin;
+	char pin[8];
 	pinSide ? sprintf(pin, "DIO%d_N", pin_number) : sprintf(pin, "DIO%d_P", pin_number);
 
 	int32_t DIO_pin_output_selection;
@@ -634,7 +634,7 @@ static scpi_result_t RP_DIO_SetDIOOutput(scpi_t * context, bool pinSide) {
 	int32_t numbers[1];
 	SCPI_CommandNumbers(context, numbers, 1, 1);
 	int pin_number = numbers[0];
-	char* pin;
+	char pin[8];
 	pinSide ? sprintf(pin, "DIO%d_N", pin_number) : sprintf(pin, "DIO%d_P", pin_number);
 
 	int32_t DIO_pin_output_selection;
@@ -662,7 +662,7 @@ static scpi_result_t RP_DIO_GetDIOOutput(scpi_t * context, bool pinSide) {
 	int32_t numbers[1];
 	SCPI_CommandNumbers(context, numbers, 1, 1);
 	int pin_number = numbers[0];
-	char* pin;
+	char pin[8];
 	pinSide ? sprintf(pin, "DIO%d_N", pin_number) : sprintf(pin, "DIO%d_P", pin_number);
 	
 	int result = getDIO(pin);
@@ -1612,14 +1612,14 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:BUFfer:Size?", .callback = RP_ADC_GetBufferSize,},
 	//{.pattern = "RP:ADC:Slow:FRAmes:DATa", .callback = RP_ADC_Slow_GetFrames,},
 	//{.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},
-	{.pattern = "RP:DIO:PIN#:SideN:DIR", .callback = RP_DIO_SetDIODirectionN,},
-	{.pattern = "RP:DIO:PIN#:SideP:DIR", .callback = RP_DIO_SetDIODirectionP,},
-	{.pattern = "RP:DIO:PIN#:SideN:DIR?", .callback = RP_DIO_GetDIODirectionN,},
-	{.pattern = "RP:DIO:PIN#:SideP:DIR?", .callback = RP_DIO_GetDIODirectionP,},
-	{.pattern = "RP:DIO:PIN#:SideN", .callback = RP_DIO_SetDIOOutputN,}, 
-	{.pattern = "RP:DIO:PIN#:SideP", .callback = RP_DIO_SetDIOOutputP,}, 
-	{.pattern = "RP:DIO:PIN#:SideN?", .callback = RP_DIO_GetDIOOutputN,},
-	{.pattern = "RP:DIO:PIN#:SideP?", .callback = RP_DIO_GetDIOOutputP,},
+	{.pattern = "RP:DIO:Pin#:SideN:DIR", .callback = RP_DIO_SetDIODirectionN,},
+	{.pattern = "RP:DIO:Pin#:SideP:DIR", .callback = RP_DIO_SetDIODirectionP,},
+	{.pattern = "RP:DIO:Pin#:SideN:DIR?", .callback = RP_DIO_GetDIODirectionN,},
+	{.pattern = "RP:DIO:Pin#:SideP:DIR?", .callback = RP_DIO_GetDIODirectionP,},
+	{.pattern = "RP:DIO:Pin#:SideN", .callback = RP_DIO_SetDIOOutputN,}, 
+	{.pattern = "RP:DIO:Pin#:SideP", .callback = RP_DIO_SetDIOOutputP,}, 
+	{.pattern = "RP:DIO:Pin#:SideN?", .callback = RP_DIO_GetDIOOutputN,},
+	{.pattern = "RP:DIO:Pin#:SideP?", .callback = RP_DIO_GetDIOOutputP,},
 	{.pattern = "RP:WatchDogMode", .callback = RP_SetWatchdogMode,},
 	{.pattern = "RP:WatchDogMode?", .callback = RP_GetWatchdogMode,},
 	{.pattern = "RP:TRIGger:ALiVe", .callback = RP_SetKeepAliveReset,},
