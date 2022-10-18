@@ -1129,9 +1129,9 @@ int setDIODirection(const char* pin, int value) {
 		return -3;
 	}
 
-	if(value == IN) {
+	if(value == OUT) {
 		*((uint8_t *)(cfg + 9)) &= ~(0x1 << (pinInternal));
-	} else if(value == OUT) {
+	} else if(value == IN) {
 		*((uint8_t *)(cfg + 9)) |= (0x1 << (pinInternal));
 	} else {
 		return -1;
