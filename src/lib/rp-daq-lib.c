@@ -1146,9 +1146,9 @@ int setDIO(const char* pin, int value) {
 		return -3;
 	}
 
-	if(value == ON) {
+	if(value == OFF) {
 		*((uint8_t *)(cfg + 8)) &= ~(0x1 << (pinInternal));
-	} else if(value == OFF) {
+	} else if(value == ON) {
 		*((uint8_t *)(cfg + 8)) |= (0x1 << (pinInternal));
 	} else {
 		return -1;
