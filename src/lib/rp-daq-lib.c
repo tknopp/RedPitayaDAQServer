@@ -38,7 +38,7 @@ static const uint32_t ANALOG_IN_MAX_VAL_INTEGER  = 0xFFF;
 // static const float    ANALOG_OUT_MIN_VAL         = 0.0;
 // static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
 
-static const uint32_t COUNTER_TRIGGER_CFG_OFFSET  = 0x800/(sizeof(int32_t)*CHAR_BIT);
+static const uint32_t COUNTER_TRIGGER_CFG_OFFSET  = 0x800/sizeof(int32_t);
 
 // Cached parameter values.
 static rp_calib_params_t calib;
@@ -1113,10 +1113,10 @@ int getDIODirection(const char* pin) {
 		return -3;
 	}
 
-	uint32_t register_value = *((uint8_t *)(dio_sts));
+	uint32_t register_value = *((uint8_t *)(cfg + 9));
 	register_value = ((register_value & (0x1 << (pinInternal))) >> (pinInternal));
 	
-	if(register_value == 1) {
+	if(register_value == IN) {
 		return IN;
 	} else {
 		return OUT;
@@ -1485,8 +1485,8 @@ uint32_t cmn_CalibFullScaleFromVoltage(float voltageScale) {
 /**
  * Memory layout for `counter_trigger + COUNTER_TRIGGER_CFG_OFFSET` upper bits 0x40002800
  * 
- * 0 ...................................................................................... 67 bit |
- * reference_counter (32 bit) | presamples (32 bit) | enable (1 bit) | arm (1 bit) | reset (1 bit) |
+ * 0 ................................................................................................................. 67 bit |
+ * reference_counter (32 bit) | presamples (32 bit) | enable (1 bit) | arm (1 bit) | reset (1 bit) | source selection (5 bit) |
  * 
  * Memory layout for `counter_trigger` lower bits 0x40002000
  * 
@@ -1529,6 +1529,13 @@ int counter_trigger_arm() {
 	return 0;
 }
 
+int counter_trigger_disarm() {
+	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	register_value = register_value & ~(1 << 1);
+	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value;
+	return 0;
+}
+
 bool counter_trigger_isArmed() {
 	uint32_t register_value = *(counter_trigger + 1);
 	register_value = register_value & (1 << 0);
@@ -1539,6 +1546,7 @@ int counter_trigger_setReset(bool reset) {
 	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
 	if (reset) {
 		register_value = register_value | (1 << 2);
+		counter_trigger_disarm(); // Always disarm when resetting
 	}
 	else {
 		register_value = register_value & ~(1 << 2);
@@ -1565,4 +1573,48 @@ int counter_trigger_setReferenceCounter(uint32_t reference_counter) {
 
 uint32_t counter_trigger_getReferenceCounter() {
 	return *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 0);
+}
+
+uint32_t counter_trigger_getSelectedChannelType() {
+	uint32_t register_value = *(counter_trigger + 2);
+	return (register_value & ~(1 << 6)) >> 6;
+}
+
+bool counter_trigger_setSelectedChannelType(uint32_t channelType) {
+	uint32_t register_value = *(counter_trigger + 2);
+	if (channelType == 1) // ADC
+	{
+		*(counter_trigger + 2) = register_value | (1 << 6);
+	}
+	else // DIO
+	{
+		*(counter_trigger + 2) = register_value & ~(1 << 6);
+	}
+	return 0;
+}
+
+uint32_t counter_trigger_getSelectedChannel() {
+	uint32_t register_value = *(counter_trigger + 2);
+	return (register_value & ~(0b1111 << 3)) >> 3;
+}
+
+uint32_t counter_trigger_setSelectedChannel(uint32_t channel) {
+	if (counter_trigger_getSelectedChannelType() == 0) // DIOs
+	{
+		if (channel < 0 || channel > 7)
+		{
+			return -3;
+		}
+	}
+	else // ADCs
+	{
+		if (channel < 0 || channel > 1)
+		{
+			return -3;
+		}
+	}
+
+	uint32_t register_value = *(counter_trigger + 2);
+	*(counter_trigger + 2) = (register_value | (0b1111 << 3)) & (channel << 3);
+	return 0;
 }

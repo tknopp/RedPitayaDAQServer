@@ -47,6 +47,9 @@
 #define TRIGGER_MODE_INTERNAL 0
 #define	TRIGGER_MODE_EXTERNAL 1
 
+#define COUNTER_TRIGGER_DIO 0
+#define	COUNTER_TRIGGER_ADC 1
+
 #define OFF 0
 #define ON 1
 
@@ -146,12 +149,17 @@ extern bool counter_trigger_isEnabled();
 extern int counter_trigger_setPresamples(uint32_t presamples);
 extern int counter_trigger_getPresamples();
 extern int counter_trigger_arm();
+extern int counter_trigger_disarm();
 extern bool counter_trigger_isArmed();
 extern int counter_trigger_setReset(bool reset);
 extern bool counter_trigger_getReset();
 extern uint32_t counter_trigger_getLastCounter();
 extern int counter_trigger_setReferenceCounter();
 extern uint32_t counter_trigger_getReferenceCounter();
+extern uint32_t counter_trigger_getSelectedChannelType();
+extern bool counter_trigger_setSelectedChannelType(uint32_t channelType);
+extern uint32_t counter_trigger_getSelectedChannel();
+extern uint32_t counter_trigger_setSelectedChannel(uint32_t channel);
 
 // misc
 extern int getDIODirection(const char*);

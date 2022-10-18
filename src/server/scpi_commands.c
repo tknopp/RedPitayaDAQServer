@@ -568,14 +568,12 @@ scpi_choice_def_t inout_modes[] = {
 	SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
-static scpi_result_t RP_DIO_GetDIODirection(scpi_t * context) {
-	const char* pin;
-	size_t len;
-	if (!SCPI_ParamCharacters(context, &pin, &len, TRUE)) {
-		return returnSCPIBool(context, false);
-	}
-
-	const char* name;
+static scpi_result_t RP_DIO_GetDIODirection(scpi_t * context, bool pinSide) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int pin_number = numbers[0];
+	char pin[8];
+	pinSide ? sprintf(pin, "DIO%d_P", pin_number) : sprintf(pin, "DIO%d_N", pin_number);
 
 	int result = getDIODirection(pin);
 
@@ -583,18 +581,27 @@ static scpi_result_t RP_DIO_GetDIODirection(scpi_t * context) {
 		return returnSCPIBool(context, false);
 	}
 
+	const char* name;
 	SCPI_ChoiceToName(inout_modes, result, &name);
 	SCPI_ResultText(context, name);
 
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context) {
-	const char* pin;
-	size_t len;
-	if (!SCPI_ParamCharacters(context, &pin, &len, TRUE)) {
-		return returnSCPIBool(context, false);
-	}
+static scpi_result_t RP_DIO_GetDIODirectionN(scpi_t * context) {
+	return RP_DIO_GetDIODirection(context, false);
+}
+
+static scpi_result_t RP_DIO_GetDIODirectionP(scpi_t * context) {
+	return RP_DIO_GetDIODirection(context, true);
+}
+
+static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context, bool pinSide) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int pin_number = numbers[0];
+	char pin[8];
+	pinSide ? sprintf(pin, "DIO%d_P", pin_number) : sprintf(pin, "DIO%d_N", pin_number);
 
 	int32_t DIO_pin_output_selection;
 	if (!SCPI_ParamChoice(context, inout_modes, &DIO_pin_output_selection, TRUE)) {
@@ -603,10 +610,18 @@ static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context) {
 
 	int result = setDIODirection(pin, DIO_pin_output_selection);
 	if (result < 0) {
-		return returnSCPIBool(context, true);
+		return returnSCPIBool(context, false);
 	}
 
-	return SCPI_RES_OK;
+	return returnSCPIBool(context, true);
+}
+
+static scpi_result_t RP_DIO_SetDIODirectionN(scpi_t * context) {
+	return RP_DIO_SetDIODirection(context, false);
+}
+
+static scpi_result_t RP_DIO_SetDIODirectionP(scpi_t * context) {
+	return RP_DIO_SetDIODirection(context, true);
 }
 
 scpi_choice_def_t onoff_modes[] = {
@@ -615,12 +630,12 @@ scpi_choice_def_t onoff_modes[] = {
 	SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
-static scpi_result_t RP_DIO_SetDIOOutput(scpi_t * context) {
-	const char* pin;
-	size_t len;
-	if (!SCPI_ParamCharacters(context, &pin, &len, TRUE)) {
-		return returnSCPIBool(context, false);
-	}
+static scpi_result_t RP_DIO_SetDIOOutput(scpi_t * context, bool pinSide) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int pin_number = numbers[0];
+	char pin[8];
+	pinSide ? sprintf(pin, "DIO%d_P", pin_number) : sprintf(pin, "DIO%d_N", pin_number);
 
 	int32_t DIO_pin_output_selection;
 	if (!SCPI_ParamChoice(context, onoff_modes, &DIO_pin_output_selection, TRUE)) {
@@ -635,25 +650,40 @@ static scpi_result_t RP_DIO_SetDIOOutput(scpi_t * context) {
 	return returnSCPIBool(context, true);
 }
 
-static scpi_result_t RP_DIO_GetDIOOutput(scpi_t * context) {
-	const char* pin;
-	size_t len;
-	if (!SCPI_ParamCharacters(context, &pin, &len, TRUE)) {
-		return returnSCPIBool(context, false);
-	}
+static scpi_result_t RP_DIO_SetDIOOutputN(scpi_t * context) {
+	return RP_DIO_SetDIOOutput(context, false);
+}
 
-	const char* name;
+static scpi_result_t RP_DIO_SetDIOOutputP(scpi_t * context) {
+	return RP_DIO_SetDIOOutput(context, true);
+}
 
+static scpi_result_t RP_DIO_GetDIOOutput(scpi_t * context, bool pinSide) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int pin_number = numbers[0];
+	char pin[8];
+	pinSide ? sprintf(pin, "DIO%d_P", pin_number) : sprintf(pin, "DIO%d_N", pin_number);
+	
 	int result = getDIO(pin);
 
 	if (result < 0) {
 		return returnSCPIBool(context, false);
 	}
 
+	const char* name;
 	SCPI_ChoiceToName(onoff_modes, result,  &name);
 	SCPI_ResultText(context, name);
 
 	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DIO_GetDIOOutputN(scpi_t * context) {
+	return RP_DIO_GetDIOOutput(context, false);
+}
+
+static scpi_result_t RP_DIO_GetDIOOutputP(scpi_t * context) {
+	return RP_DIO_GetDIOOutput(context, true);
 }
 
 static scpi_result_t RP_GetWatchdogMode(scpi_t * context) {
@@ -1260,7 +1290,67 @@ static scpi_result_t RP_CounterTrigger_GetReferenceCounter(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+scpi_choice_def_t source_types[] = {
+	{"DIO", COUNTER_TRIGGER_DIO},
+	{"ADC", COUNTER_TRIGGER_ADC},
+	SCPI_CHOICE_LIST_END /* termination of option list */
+};
 
+static scpi_result_t RP_CounterTrigger_SetSourceType(scpi_t * context) {
+	if (getServerMode() != CONFIGURATION) {
+		return returnSCPIBool(context, false);
+	}
+
+	uint32_t source_type; // 0: DIO; 1: ADC
+	if (!SCPI_ParamChoice(context, source_types, &source_type, TRUE)) {
+		return returnSCPIBool(context, false);
+	}
+
+	printf("set source_type = %d \n", source_type);
+	int result = counter_trigger_setSelectedChannelType(source_type);
+	if (result < 0) {
+		printf("Could not set source_type!");
+		return returnSCPIBool(context, false);
+	}
+
+	return returnSCPIBool(context, true);
+}
+
+static scpi_result_t RP_CounterTrigger_GetSourceType(scpi_t * context) {
+	const char * name;
+
+	SCPI_ChoiceToName(source_types, counter_trigger_getSelectedChannelType(), &name);
+	SCPI_ResultText(context, name);
+	
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_CounterTrigger_SetSourceChannel(scpi_t * context) {
+	if (getServerMode() != CONFIGURATION) {
+		return returnSCPIBool(context, false);
+	}
+
+	uint32_t source_channel;
+	if (!SCPI_ParamUInt32(context, &source_channel, TRUE)) {
+		return returnSCPIBool(context, false);
+	}
+
+	printf("set source_channel = %d \n", source_channel);
+	int result = counter_trigger_setSelectedChannel(source_channel);
+	if (result < 0) {
+		printf("Could not set source_channel!");
+		return returnSCPIBool(context, false);
+	}
+
+	return returnSCPIBool(context, true);
+}
+
+static scpi_result_t RP_CounterTrigger_GetSourceChannel(scpi_t * context) {
+	uint32_t source_channel = counter_trigger_getSelectedChannel();
+	
+	SCPI_ResultUInt32(context, source_channel);
+	return SCPI_RES_OK;
+}
 
 // Calibration
 static scpi_result_t RP_Calib_DAC_GetOffset(scpi_t* context) {
@@ -1530,10 +1620,14 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:BUFfer:Size?", .callback = RP_ADC_GetBufferSize,},
 	//{.pattern = "RP:ADC:Slow:FRAmes:DATa", .callback = RP_ADC_Slow_GetFrames,},
 	//{.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},
-	{.pattern = "RP:DIO:DIR", .callback = RP_DIO_SetDIODirection,},
-	{.pattern = "RP:DIO:DIR?", .callback = RP_DIO_GetDIODirection,},
-	{.pattern = "RP:DIO", .callback = RP_DIO_SetDIOOutput,},
-	{.pattern = "RP:DIO?", .callback = RP_DIO_GetDIOOutput,},
+	{.pattern = "RP:DIO:Pin#:SideN:Dir", .callback = RP_DIO_SetDIODirectionN,},
+	{.pattern = "RP:DIO:Pin#:SideP:Dir", .callback = RP_DIO_SetDIODirectionP,},
+	{.pattern = "RP:DIO:Pin#:SideN:Dir?", .callback = RP_DIO_GetDIODirectionN,},
+	{.pattern = "RP:DIO:Pin#:SideP:Dir?", .callback = RP_DIO_GetDIODirectionP,},
+	{.pattern = "RP:DIO:Pin#:SideN", .callback = RP_DIO_SetDIOOutputN,}, 
+	{.pattern = "RP:DIO:Pin#:SideP", .callback = RP_DIO_SetDIOOutputP,}, 
+	{.pattern = "RP:DIO:Pin#:SideN?", .callback = RP_DIO_GetDIOOutputN,},
+	{.pattern = "RP:DIO:Pin#:SideP?", .callback = RP_DIO_GetDIOOutputP,},
 	{.pattern = "RP:WatchDogMode", .callback = RP_SetWatchdogMode,},
 	{.pattern = "RP:WatchDogMode?", .callback = RP_GetWatchdogMode,},
 	{.pattern = "RP:TRIGger:ALiVe", .callback = RP_SetKeepAliveReset,},
@@ -1571,6 +1665,10 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:CounterTrigger:COUNTer:LAst?", .callback = RP_CounterTrigger_GetLastCounter,},
 	{.pattern = "RP:CounterTrigger:COUNTer:REFerence?", .callback = RP_CounterTrigger_GetReferenceCounter,},
 	{.pattern = "RP:CounterTrigger:COUNTer:REFerence", .callback = RP_CounterTrigger_SetReferenceCounter,},
+	{.pattern = "RP:CounterTrigger:SouRCe:TYPe?", .callback = RP_CounterTrigger_GetSourceType,},
+	{.pattern = "RP:CounterTrigger:SouRCe:TYPe", .callback = RP_CounterTrigger_SetSourceType,},
+	{.pattern = "RP:CounterTrigger:SouRCe:CHANnel?", .callback = RP_CounterTrigger_GetSourceChannel,},
+	{.pattern = "RP:CounterTrigger:SouRCe:CHANnel", .callback = RP_CounterTrigger_SetSourceChannel,},
 	
 	/* Calibration */
 	{.pattern = "RP:CALib:DAC:CHannel#:OFFset?", .callback = RP_Calib_DAC_GetOffset,},
