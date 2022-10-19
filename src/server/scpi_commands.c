@@ -1330,8 +1330,8 @@ static scpi_result_t RP_CounterTrigger_SetSourceChannel(scpi_t * context) {
 		return returnSCPIBool(context, false);
 	}
 
-	uint32_t source_channel;
-	if (!SCPI_ParamUInt32(context, &source_channel, TRUE)) {
+	char* source_channel;
+	if (!SCPI_ParamText(context, &source_channel, TRUE)) {
 		return returnSCPIBool(context, false);
 	}
 
@@ -1346,9 +1346,9 @@ static scpi_result_t RP_CounterTrigger_SetSourceChannel(scpi_t * context) {
 }
 
 static scpi_result_t RP_CounterTrigger_GetSourceChannel(scpi_t * context) {
-	uint32_t source_channel = counter_trigger_getSelectedChannel();
+	char* source_channel = counter_trigger_getSelectedChannel();
 	
-	SCPI_ResultUInt32(context, source_channel);
+	SCPI_ResultText(context, source_channel);
 	return SCPI_RES_OK;
 }
 

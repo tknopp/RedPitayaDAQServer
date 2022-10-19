@@ -1107,6 +1107,28 @@ int getInternalPINNumber(const char* pin) {
 	}
 }
 
+char* getPinFromInternalPINNumber(const uint32_t pinNumber) {
+	if(pinNumber == 0) {
+		return "DIO7_P";
+	} else if(pinNumber == 1) {
+		return "DIO7_N";
+	} else if(pinNumber == 2) {
+		return "DIO6_P";
+	} else if(pinNumber == 3) {
+		return "DIO6_N";
+	} else if(pinNumber == 4) {
+		return "DIO5_N";
+	} else if(pinNumber == 5) {
+		return "DIO4_N";
+	} else if(pinNumber == 6) {
+		return "DIO3_N";
+	} else if(pinNumber == 7) {
+		return "DIO2_N";
+	} else {
+		return -1;
+	}
+}
+
 int getDIODirection(const char* pin) {
 	int pinInternal = getInternalPINNumber(pin);
 	if(pinInternal < 0) {
@@ -1250,7 +1272,7 @@ rp_calib_params_t calib_GetDefaultCalib(){
  * @retval       >0 Failure
  *
  */
-int calib_ReadParams(rp_calib_params_t *calib_params,bool use_factory_zone)
+int calib_ReadParams(rp_calib_params_t *calib_params, bool use_factory_zone)
 {
     FILE   *fp;
     size_t  size;
@@ -1593,28 +1615,30 @@ bool counter_trigger_setSelectedChannelType(uint32_t channelType) {
 	return 0;
 }
 
-uint32_t counter_trigger_getSelectedChannel() {
+char* counter_trigger_getSelectedChannel() {
 	uint32_t register_value = *(counter_trigger + 2);
-	return (register_value & ~(0b1111 << 3)) >> 3;
+	return getPinFromInternalPINNumber((register_value & ~(0b1111 << 3)) >> 3);
 }
 
-uint32_t counter_trigger_setSelectedChannel(uint32_t channel) {
-	if (counter_trigger_getSelectedChannelType() == 0) // DIOs
-	{
-		if (channel < 0 || channel > 7)
-		{
-			return -3;
-		}
-	}
-	else // ADCs
-	{
-		if (channel < 0 || channel > 1)
-		{
-			return -3;
+uint32_t counter_trigger_setSelectedChannel(const char* channel) {
+	int32_t channelNumber;
+	if (counter_trigger_getSelectedChannelType() == 0) { // DIOs
+		channelNumber = getInternalPINNumber(channel);
+	} else { // ADCs
+		if (strncmp(channel, "IN1", 3) == 0) {
+			channelNumber = 0;
+		} else if (strncmp(channel, "IN2", 3) == 0) {
+			channelNumber = 1;
+		} else {
+			channelNumber = -3;
 		}
 	}
 
+	if (channelNumber < 0) {
+		return channelNumber;
+	}
+
 	uint32_t register_value = *(counter_trigger + 2);
-	*(counter_trigger + 2) = (register_value | (0b1111 << 3)) & (channel << 3);
+	*(counter_trigger + 2) = (register_value | (0b1111 << 3)) & (channelNumber << 3);
 	return 0;
 }

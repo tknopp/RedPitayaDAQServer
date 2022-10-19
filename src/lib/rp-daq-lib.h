@@ -162,6 +162,8 @@ extern uint32_t counter_trigger_getSelectedChannel();
 extern uint32_t counter_trigger_setSelectedChannel(uint32_t channel);
 
 // misc
+extern int getInternalPINNumber(const char*);
+extern char* getPinFromInternalPINNumber(const uint32_t);
 extern int getDIODirection(const char*);
 extern int setDIODirection(const char*, int);
 extern int setDIO(const char*, int);
