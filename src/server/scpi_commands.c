@@ -1331,11 +1331,11 @@ static scpi_result_t RP_CounterTrigger_SetSourceChannel(scpi_t * context) {
 	}
 
 	char* source_channel;
-	if (!SCPI_ParamText(context, &source_channel, TRUE)) {
+	if (!SCPI_ParamCharacters(context, &source_channel, TRUE)) {
 		return returnSCPIBool(context, false);
 	}
 
-	printf("set source_channel = %d \n", source_channel);
+	printf("set source_channel = %s \n", source_channel);
 	int result = counter_trigger_setSelectedChannel(source_channel);
 	if (result < 0) {
 		printf("Could not set source_channel!");
