@@ -1125,7 +1125,7 @@ char* getPinFromInternalPINNumber(const uint32_t pinNumber) {
 	} else if(pinNumber == 7) {
 		return "DIO2_N";
 	} else {
-		return -1;
+		return "ERR";
 	}
 }
 

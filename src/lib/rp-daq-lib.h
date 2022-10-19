@@ -158,8 +158,8 @@ extern int counter_trigger_setReferenceCounter();
 extern uint32_t counter_trigger_getReferenceCounter();
 extern uint32_t counter_trigger_getSelectedChannelType();
 extern bool counter_trigger_setSelectedChannelType(uint32_t channelType);
-extern uint32_t counter_trigger_getSelectedChannel();
-extern uint32_t counter_trigger_setSelectedChannel(uint32_t channel);
+extern char* counter_trigger_getSelectedChannel();
+extern uint32_t counter_trigger_setSelectedChannel(const char* channel);
 
 // misc
 extern int getInternalPINNumber(const char*);
