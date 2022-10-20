@@ -1276,7 +1276,7 @@ static scpi_result_t RP_CounterTrigger_SetReferenceCounter(scpi_t * context) {
 	printf("set reference_counter = %d \n", reference_counter);
 	int result = counter_trigger_setReferenceCounter(reference_counter);
 	if (result < 0) {
-		printf("Could not set reference_counter!");
+		printf("Could not set reference_counter!\n");
 		return returnSCPIBool(context, false);
 	}
 
@@ -1309,7 +1309,7 @@ static scpi_result_t RP_CounterTrigger_SetSourceType(scpi_t * context) {
 	printf("set source_type = %d \n", source_type);
 	int result = counter_trigger_setSelectedChannelType(source_type);
 	if (result < 0) {
-		printf("Could not set source_type!");
+		printf("Could not set source_type!\n");
 		return returnSCPIBool(context, false);
 	}
 
@@ -1339,7 +1339,7 @@ static scpi_result_t RP_CounterTrigger_SetSourceChannel(scpi_t * context) {
 	printf("set source_channel = %s \n", source_channel);
 	int result = counter_trigger_setSelectedChannel(source_channel);
 	if (result < 0) {
-		printf("Could not set source_channel!");
+		printf("Could not set source_channel!\n");
 		return returnSCPIBool(context, false);
 	}
 
