@@ -204,3 +204,94 @@ function counterTrigger_referenceCounter!(rp::RedPitaya, reference::T) where T <
 end
 scpiCommand(::typeof(counterTrigger_referenceCounter!), reference) = string("RP:CounterTrigger:COUNTer:REFerence ", reference)
 scpiReturn(::typeof(counterTrigger_referenceCounter!)) = Bool
+
+export CounterTriggerSourceType, COUNTER_TRIGGER_DIO, COUNTER_TRIGGER_ADC
+"""
+    CounterTriggerSourceType
+
+Represent the different counter trigger source types. Valid values are `COUNTER_TRIGGER_DIO` and `COUNTER_TRIGGER_ADC`.
+
+See [`counterTrigger_sourceType`](@ref), [`counterTrigger_sourceType!`](@ref).
+"""
+@enum CounterTriggerSourceType COUNTER_TRIGGER_DIO COUNTER_TRIGGER_ADC
+
+export counterTrigger_sourceType!
+"""
+    counterTrigger_sourceType!(rp::RedPitaya, sourceType::CounterTriggerSourceType)
+
+Set the source type of the counter trigger to `sourceType`.
+# Example
+```julia
+julia> counterTrigger_sourceType!(rp, COUNTER_TRIGGER_ADC)
+
+julia>counterTrigger_sourceType(rp)
+COUNTER_TRIGGER_ADC::CounterTriggerSourceType = 1
+```
+"""
+counterTrigger_sourceType!(rp::RedPitaya, sourceType) = query(rp, scpiCommand(counterTrigger_sourceType!, sourceType), scpiReturn(counterTrigger_sourceType!))
+scpiCommand(::typeof(counterTrigger_sourceType!), sourceType::CounterTriggerSourceType) = string("RP:CounterTrigger:SouRCe:TYPe ", (sourceType == COUNTER_TRIGGER_DIO ? "DIO" : "ADC"))
+scpiReturn(::typeof(counterTrigger_sourceType!)) = Bool
+
+export counterTrigger_sourceType
+"""
+    counterTrigger_sourceType(rp::RedPitaya)
+
+Get the source type of the counter trigger.
+# Example
+```julia
+julia> counterTrigger_sourceType!(rp, COUNTER_TRIGGER_ADC)
+
+julia>counterTrigger_sourceType(rp)
+COUNTER_TRIGGER_ADC::CounterTriggerSourceType = 1
+```
+"""
+counterTrigger_sourceType(rp::RedPitaya) = parseReturn(counterTrigger_sourceType, query(rp, scpiCommand(counterTrigger_sourceType), scpiReturn(counterTrigger_sourceType)))
+scpiCommand(::typeof(counterTrigger_sourceType)) = string("RP:CounterTrigger:SouRCe:TYPe?")
+scpiReturn(::typeof(counterTrigger_sourceType)) = String
+parseReturn(::typeof(counterTrigger_sourceType), ret) = stringToEnum(CounterTriggerSourceType, "COUNTER_TRIGGER_"*ret)
+
+export CounterTriggerSourceADCChannel, COUNTER_TRIGGER_IN1, COUNTER_TRIGGER_IN2
+"""
+    CounterTriggerSourceADCChannel
+
+Represent the different counter trigger ADC sources. Valid values are `COUNTER_TRIGGER_IN1` and `COUNTER_TRIGGER_IN2`.
+
+See [`counterTrigger_sourceChannel`](@ref), [`counterTrigger_sourceChannel!`](@ref).
+"""
+@enum CounterTriggerSourceADCChannel COUNTER_TRIGGER_IN1 COUNTER_TRIGGER_IN2
+
+export counterTrigger_sourceChannel!
+"""
+counterTrigger_sourceChannel!(rp::RedPitaya, sourceChannel::) //TODO
+
+Set the source channel of the counter trigger to `sourceChannel`.
+# Example
+```julia
+julia> counterTrigger_sourceChannel!(rp, COUNTER_TRIGGER_ADC)
+
+julia>counterTrigger_sourceChannel(rp)
+COUNTER_TRIGGER_ADC::CounterTriggerSourceType = 1 //TODO
+```
+"""
+counterTrigger_sourceChannel!(rp::RedPitaya, sourceChannel) = query(rp, scpiCommand(counterTrigger_sourceChannel!, sourceChannel), scpiReturn(counterTrigger_sourceChannel!))
+scpiCommand(::typeof(counterTrigger_sourceChannel!), sourceChannel::CounterTriggerSourceADCChannel) = string("RP:CounterTrigger:SouRCe:CHANnel ", (sourceChannel == COUNTER_TRIGGER_IN1 ? "IN1" : "IN2"))
+scpiCommand(::typeof(counterTrigger_sourceChannel!), sourceChannel::DIOPins) = string("RP:CounterTrigger:SouRCe:CHANnel ", string(sourceChannel))
+scpiReturn(::typeof(counterTrigger_sourceChannel!)) = Bool
+
+export counterTrigger_sourceChannel
+"""
+counterTrigger_sourceChannel(rp::RedPitaya)
+
+Get the source channel of the counter trigger.
+# Example
+```julia
+julia> counterTrigger_sourceChannel!(rp, COUNTER_TRIGGER_IN2)
+
+julia>counterTrigger_sourceChannel(rp)
+COUNTER_TRIGGER_IN2::CounterTriggerSourceADCChannel = 2
+```
+"""
+counterTrigger_sourceChannel(rp::RedPitaya) = parseReturn(counterTrigger_sourceChannel, query(rp, scpiCommand(counterTrigger_sourceChannel), scpiReturn(counterTrigger_sourceChannel)))
+scpiCommand(::typeof(counterTrigger_sourceChannel)) = string("RP:CounterTrigger:SouRCe:CHANnel?")
+scpiReturn(::typeof(counterTrigger_sourceChannel)) = String
+parseReturn(::typeof(counterTrigger_sourceChannel), ret) = startswith(ret, "DIO") ? stringToEnum(DIOPins, ret) : stringToEnum(CounterTriggerSourceADCChannel, "COUNTER_TRIGGER_"*ret)
