@@ -1599,32 +1599,48 @@ uint32_t counter_trigger_getReferenceCounter() {
 
 uint32_t counter_trigger_getSelectedChannelType() {
 	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
-	return (register_value & ~(1 << 5)) >> 5;
+	return (register_value & (1 << 8)) >> 8;
 }
 
 bool counter_trigger_setSelectedChannelType(uint32_t channelType) {
 	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
-	if (channelType == 1) // ADC
+	if (channelType == COUNTER_TRIGGER_ADC)
 	{
-		*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value | (1 << 5);
+		*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value | (1 << 8);
 	}
-	else // DIO
+	else if (channelType == COUNTER_TRIGGER_DIO)
 	{
-		*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value & ~(1 << 5);
+		*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value & ~(1 << 8);
 	}
+	else
+	{
+		return -1;
+	}
+
 	return 0;
 }
 
 char* counter_trigger_getSelectedChannel() {
 	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
-	return getPinFromInternalPINNumber((register_value & (0b1111 << 3)) >> 3);
+	uint32_t channelNumber = (register_value & (0b1111 << 3)) >> 3;
+	if (counter_trigger_getSelectedChannelType() == COUNTER_TRIGGER_DIO) {
+		return getPinFromInternalPINNumber(channelNumber);
+	} else { // ADC
+		if (channelNumber == 0) {
+			return "IN1";
+		} else if (channelNumber == 1) {
+			return "IN2";
+		} else {
+			return "ERR";
+		}
+	}
 }
 
 uint32_t counter_trigger_setSelectedChannel(const char* channel) {
 	int32_t channelNumber;
-	if (counter_trigger_getSelectedChannelType() == 0) { // DIOs
+	if (counter_trigger_getSelectedChannelType() == COUNTER_TRIGGER_DIO) {
 		channelNumber = getInternalPINNumber(channel);
-	} else { // ADCs
+	} else { // ADC
 		if (strncmp(channel, "IN1", 3) == 0) {
 			channelNumber = 0;
 		} else if (strncmp(channel, "IN2", 3) == 0) {
@@ -1639,6 +1655,6 @@ uint32_t counter_trigger_setSelectedChannel(const char* channel) {
 	}
 
 	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
-	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET+ 2) = (register_value | (0b1111 << 3)) & (channelNumber << 3);
+	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET+ 2) = (register_value | (0b1111 << 3)) & ((channelNumber << 3) | ~(0b1111 << 3));
 	return 0;
 }
