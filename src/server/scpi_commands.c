@@ -1330,8 +1330,9 @@ static scpi_result_t RP_CounterTrigger_SetSourceChannel(scpi_t * context) {
 		return returnSCPIBool(context, false);
 	}
 
-	char* source_channel;
-	if (!SCPI_ParamCharacters(context, &source_channel, TRUE)) {
+	const char * source_channel;
+	uint32_t len;
+	if (!SCPI_ParamCharacters(context, &source_channel, &len, TRUE)) {
 		return returnSCPIBool(context, false);
 	}
 
