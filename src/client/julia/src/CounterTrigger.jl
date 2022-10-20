@@ -229,6 +229,7 @@ export counterTrigger_sourceType!
     counterTrigger_sourceType!(rp::RedPitaya, sourceType::CounterTriggerSourceType)
 
 Set the source type of the counter trigger to `sourceType`.
+
 # Example
 ```julia
 julia> counterTrigger_sourceType!(rp, COUNTER_TRIGGER_ADC)
@@ -246,6 +247,7 @@ export counterTrigger_sourceType
     counterTrigger_sourceType(rp::RedPitaya)
 
 Get the source type of the counter trigger.
+
 # Example
 ```julia
 julia> counterTrigger_sourceType!(rp, COUNTER_TRIGGER_ADC)
@@ -274,6 +276,7 @@ export counterTrigger_sourceChannel!
 counterTrigger_sourceChannel!(rp::RedPitaya, sourceChannel::) //TODO
 
 Set the source channel of the counter trigger to `sourceChannel`.
+
 # Example
 ```julia
 julia> counterTrigger_sourceChannel!(rp, COUNTER_TRIGGER_ADC)
@@ -292,6 +295,7 @@ export counterTrigger_sourceChannel
 counterTrigger_sourceChannel(rp::RedPitaya)
 
 Get the source channel of the counter trigger.
+
 # Example
 ```julia
 julia> counterTrigger_sourceChannel!(rp, COUNTER_TRIGGER_IN2)
