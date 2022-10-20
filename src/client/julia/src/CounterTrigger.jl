@@ -1,8 +1,4 @@
-export counterTrigger_enabled, counterTrigger_enabled!, counterTrigger_presamples,
-       counterTrigger_presamples!, counterTrigger_isArmed, counterTrigger_arm!,
-       counterTrigger_reset, counterTrigger_reset!, counterTrigger_lastCounter,
-       counterTrigger_referenceCounter, counterTrigger_referenceCounter!
-
+export counterTrigger_enabled
 """
     counterTrigger_enabled(rp::RedPitaya)
 
@@ -21,8 +17,10 @@ counterTrigger_enabled(rp::RedPitaya) = parseReturn(counterTrigger_enabled, quer
 scpiCommand(::typeof(counterTrigger_enabled)) = "RP:CounterTrigger:ENable?"
 scpiReturn(::typeof(counterTrigger_enabled)) = String
 parseReturn(::typeof(counterTrigger_enabled), ret) = occursin("ON", ret)
+
+export counterTrigger_enabled!
 """
-counterTrigger_enabled!(rp::RedPitaya, dec)
+counterTrigger_enabled!(rp::RedPitaya, val)
 
 Set whether the counter trigger is enabled or not. Return `true` if the command was successful.
 
@@ -41,6 +39,7 @@ end
 scpiCommand(::typeof(counterTrigger_enabled!), val) = string("RP:CounterTrigger:ENable ", val ? "ON" : "OFF")
 scpiReturn(::typeof(counterTrigger_enabled!)) = Bool
 
+export counterTrigger_presamples
 """
     counterTrigger_presamples(rp::RedPitaya)
 
@@ -58,6 +57,8 @@ julia> counterTrigger_presamples(rp)
 counterTrigger_presamples(rp::RedPitaya) = query(rp, scpiCommand(counterTrigger_presamples), scpiReturn(counterTrigger_presamples))
 scpiCommand(::typeof(counterTrigger_presamples)) = "RP:CounterTrigger:PREsamples?"
 scpiReturn(::typeof(counterTrigger_presamples)) = Int64
+
+export counterTrigger_presamples!
 """
     counterTrigger_presamples!(rp::RedPitaya, presamples)
 
@@ -78,6 +79,7 @@ end
 scpiCommand(::typeof(counterTrigger_presamples!), presamples) = string("RP:CounterTrigger:PREsamples ", presamples)
 scpiReturn(::typeof(counterTrigger_presamples!)) = Bool
 
+export counterTrigger_isArmed
 """
     counterTrigger_isArmed(rp::RedPitaya)
 
@@ -95,6 +97,8 @@ true
 counterTrigger_isArmed(rp::RedPitaya) = query(rp, scpiCommand(counterTrigger_isArmed), scpiReturn(counterTrigger_isArmed))
 scpiCommand(::typeof(counterTrigger_isArmed)) = "RP:CounterTrigger:ARM?"
 scpiReturn(::typeof(counterTrigger_isArmed)) = Bool
+
+export counterTrigger_arm!
 """
     counterTrigger_arm!(rp::RedPitaya)
 
@@ -115,6 +119,7 @@ end
 scpiCommand(::typeof(counterTrigger_arm!)) = string("RP:CounterTrigger:ARM")
 scpiReturn(::typeof(counterTrigger_arm!)) = Bool
 
+export counterTrigger_reset
 """
     counterTrigger_reset(rp::RedPitaya)
 
@@ -132,6 +137,8 @@ counterTrigger_reset(rp::RedPitaya) = parseReturn(counterTrigger_reset, query(rp
 scpiCommand(::typeof(counterTrigger_reset)) = "RP:CounterTrigger:RESet?"
 scpiReturn(::typeof(counterTrigger_reset)) = String
 parseReturn(::typeof(counterTrigger_reset), ret) = occursin("ON", ret)
+
+export counterTrigger_reset!
 """
     counterTrigger_reset!(rp::RedPitaya, val::Bool)
 
@@ -153,6 +160,7 @@ scpiCommand(::typeof(counterTrigger_reset!), val::Bool) = scpiCommand(counterTri
 scpiCommand(::typeof(counterTrigger_reset!), val::String) = string("RP:CounterTrigger:RESet ", val)
 scpiReturn(::typeof(counterTrigger_reset!)) = Bool
 
+export counterTrigger_lastCounter
 """
 counterTrigger_lastCounter(rp::RedPitaya)
 
@@ -168,6 +176,7 @@ counterTrigger_lastCounter(rp::RedPitaya) = query(rp, scpiCommand(counterTrigger
 scpiCommand(::typeof(counterTrigger_lastCounter)) = "RP:CounterTrigger:COUNTer:LAst?"
 scpiReturn(::typeof(counterTrigger_lastCounter)) = Int64
 
+export counterTrigger_referenceCounter
 """
     counterTrigger_referenceCounter(rp::RedPitaya)
 
@@ -175,16 +184,18 @@ Return the counter value that the counter trigger should trigger on.
 
 # Examples
 ```julia
-julia> counterTrigger_presamples!(rp, 50)
+julia> counterTrigger_referenceCounter!(rp, 250)
 true
 
-julia> counterTrigger_presamples(rp)
-50
+julia> counterTrigger_referenceCounter(rp)
+250
 ```
 """
 counterTrigger_referenceCounter(rp::RedPitaya) = query(rp, scpiCommand(counterTrigger_referenceCounter), scpiReturn(counterTrigger_referenceCounter))
 scpiCommand(::typeof(counterTrigger_referenceCounter)) = "RP:CounterTrigger:COUNTer:REFerence?"
 scpiReturn(::typeof(counterTrigger_referenceCounter)) = Int64
+
+export counterTrigger_referenceCounter!
 """
 counterTrigger_referenceCounter!(rp::RedPitaya, presamples)
 
@@ -192,16 +203,14 @@ Set the number of samples that the counter trigger should trigger on.
 
 # Examples
 ```julia
-julia> counterTrigger_referenceCounter!(rp, 250)
+julia> counterTrigger_referenceCounter(rp, 250)
 true
 
 julia> counterTrigger_referenceCounter!(rp)
 250
 ```
 """
-function counterTrigger_referenceCounter!(rp::RedPitaya, reference::T) where T <: Integer
-  return query(rp, scpiCommand(counterTrigger_referenceCounter!, presamples), scpiReturn(counterTrigger_referenceCounter!))
-end
+counterTrigger_referenceCounter!(rp::RedPitaya, reference::T) where T <: Integer = query(rp, scpiCommand(counterTrigger_referenceCounter!, reference), scpiReturn(counterTrigger_referenceCounter!))
 scpiCommand(::typeof(counterTrigger_referenceCounter!), reference) = string("RP:CounterTrigger:COUNTer:REFerence ", reference)
 scpiReturn(::typeof(counterTrigger_referenceCounter!)) = Bool
 
