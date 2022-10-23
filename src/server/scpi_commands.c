@@ -1224,7 +1224,19 @@ static scpi_result_t RP_CounterTrigger_IsArmed(scpi_t * context) {
 }
 
 static scpi_result_t RP_CounterTrigger_Arm(scpi_t * context) {
-	int result = counter_trigger_arm();
+	int32_t param;
+
+	if (!SCPI_ParamChoice(context, onoff_modes, &param, TRUE)) {
+		return returnSCPIBool(context, false);
+	}
+
+	int result;
+	if (param) {
+		result = counter_trigger_arm();
+	} else {
+		result = counter_trigger_disarm();
+	}
+	
 	if (result < 0) {
 		return returnSCPIBool(context, false);
 	}

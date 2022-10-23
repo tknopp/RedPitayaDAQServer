@@ -100,7 +100,7 @@ scpiReturn(::typeof(counterTrigger_isArmed)) = Bool
 
 export counterTrigger_arm!
 """
-    counterTrigger_arm!(rp::RedPitaya)
+    counterTrigger_arm!(rp::RedPitaya, val::Bool)
 
 Set whether the counter trigger is armed or not. Return `true` if the command was successful.
 
@@ -113,10 +113,10 @@ julia> counterTrigger_isArmed(rp)
 true
 ```
 """
-function counterTrigger_arm!(rp::RedPitaya)
-  return query(rp, scpiCommand(counterTrigger_arm!), scpiReturn(counterTrigger_arm!))
+function counterTrigger_arm!(rp::RedPitaya, val=true)
+  return query(rp, scpiCommand(counterTrigger_arm!, val), scpiReturn(counterTrigger_arm!))
 end
-scpiCommand(::typeof(counterTrigger_arm!)) = string("RP:CounterTrigger:ARM")
+scpiCommand(::typeof(counterTrigger_arm!), val::Bool) = string("RP:CounterTrigger:ARM ", val ? "ON" : "OFF")
 scpiReturn(::typeof(counterTrigger_arm!)) = Bool
 
 export counterTrigger_reset
