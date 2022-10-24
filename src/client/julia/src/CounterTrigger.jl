@@ -153,8 +153,10 @@ julia>counterTrigger_reset(rp)
 true
 ```
 """
-function counterTrigger_reset!(rp::RedPitaya, val)
-  return query(rp, scpiCommand(counterTrigger_reset!, val), scpiReturn(counterTrigger_reset!))
+counterTrigger_reset!(rp::RedPitaya, val) = query(rp, scpiCommand(counterTrigger_reset!, val), scpiReturn(counterTrigger_reset!))
+function counterTrigger_reset!(rp::RedPitaya)
+  counterTrigger_reset!(rp, true)
+  counterTrigger_reset!(rp, false)
 end
 scpiCommand(::typeof(counterTrigger_reset!), val::Bool) = scpiCommand(counterTrigger_reset!, val ? "ON" : "OFF")
 scpiCommand(::typeof(counterTrigger_reset!), val::String) = string("RP:CounterTrigger:RESet ", val)
