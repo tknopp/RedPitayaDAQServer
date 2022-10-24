@@ -73,7 +73,14 @@ begin
 		end
 		else
 		begin
-			delayed_trigger_counter <= delayed_trigger_counter + 1;
+			if (trigger_reset == 1)
+			begin
+				delayed_trigger_counter <= 0;
+			end
+			else
+			begin
+				delayed_trigger_counter <= delayed_trigger_counter + 1;
+			end
 			
 			if (counter_reset == 0 && counter_reset_first == 0)
 			begin
@@ -84,7 +91,16 @@ begin
 		// Set trigger if armed and presamples reached
 		if ((trigger_armed_int == 1) && (delayed_trigger_counter >= reference_counter-trigger_presamples-1))
 		begin
-			trigger_out <= 1;
+			if (trigger_reset == 1)
+			begin
+				trigger_out <= 0;
+				trigger_armed_int <= 0;
+				trigger_armed_int_pre <= 0;
+			end
+			else
+			begin
+				trigger_out <= 1;
+			end
 		end
 		else
 		begin
