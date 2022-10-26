@@ -1606,18 +1606,18 @@ uint32_t counter_trigger_getReferenceCounter() {
 
 uint32_t counter_trigger_getSelectedChannelType() {
 	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
-	return (register_value & (1 << 8)) >> 8;
+	return (register_value & (1 << 7)) >> 7;
 }
 
 bool counter_trigger_setSelectedChannelType(uint32_t channelType) {
 	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
 	if (channelType == COUNTER_TRIGGER_ADC)
 	{
-		*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value | (1 << 8);
+		*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value | (1 << 7);
 	}
 	else if (channelType == COUNTER_TRIGGER_DIO)
 	{
-		*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value & ~(1 << 8);
+		*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value & ~(1 << 7);
 	}
 	else
 	{
