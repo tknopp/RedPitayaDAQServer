@@ -112,6 +112,8 @@ begin
 			end
 			else
 			begin
+				trigger_out <= 0; // Disable trigger when enabled but not armed
+
 				// React to trigger arming internally in order to allow for short arm pulses
 				if (trigger_arm == 1)
 				begin
