@@ -3,6 +3,8 @@ using PyPlot
 using Statistics
 using Base.Threads
 
+# For this example, the ports DIO7_P and DIO2_N have to be connected by a jumper cable.
+
 # obtain the URL of the RedPitaya
 include("config.jl")
 
@@ -38,7 +40,7 @@ while i <= N
   lastCounter = counterTrigger_lastCounter(rp)
   #@info "" lastCounter savedCounter
 
-  if lastCounter > timerInterval*1e9/4*outlierFactor
+  if lastCounter > timerInterval*1e9/4*outlierFactor || lastCounter < timerInterval*1e9/4/outlierFactor
     continue
   end
 
@@ -68,7 +70,7 @@ periods_per_frame = 2
 decimation!(rp, dec)
 samplesPerPeriod!(rp, samples_per_period)
 periodsPerFrame!(rp, periods_per_frame)
-triggerMode!(rp, INTERNAL) # or triggerMode!(rp, "INTERNAL")
+triggerMode!(rp, EXTERNAL) # or triggerMode!(rp, "INTERNAL")
 
 # DAC Configuration
 # These commands are allowed during an acquisition
@@ -82,7 +84,7 @@ phaseDAC!(rp, 1, 1, 0.0)
 # The trigger can only be set in ACQUISITION mode
 serverMode!(rp, ACQUISITION)
 masterTrigger!(rp, true)
-#counterTrigger_arm!(rp)
+counterTrigger_arm!(rp)
 
 # Transmit the first frame
 uFirstPeriod = readFrames(rp, 0, 1)
@@ -100,8 +102,7 @@ uLastPeriod = readFrames(rp, currentFrame(rp), 1)
 masterTrigger!(rp, false)
 serverMode!(rp, CONFIGURATION)
 
-counterTrigger_arm!(rp, false) # TODO: This should not be necessary
-counterTrigger_reset!(rp)
+counterTrigger_enabled!(rp, false)
 
 close(t)
 

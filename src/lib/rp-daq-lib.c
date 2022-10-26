@@ -1517,12 +1517,15 @@ uint32_t cmn_CalibFullScaleFromVoltage(float voltageScale) {
  **/
 
 int counter_trigger_setEnabled(bool enable) {
+	if (!enable) {
+		counter_trigger_disarm(); // Always disarm when disabling
+	}
+
 	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
 	if (enable) {
 		register_value = register_value | (1 << 0);
 	}
 	else {
-		counter_trigger_disarm(); // Always disarm when disabling
 		register_value = register_value & ~(1 << 0);
 	}
 	
@@ -1566,9 +1569,12 @@ bool counter_trigger_isArmed() {
 }
 
 int counter_trigger_setReset(bool reset) {
-	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
 	if (reset) {
 		counter_trigger_disarm(); // Always disarm when resetting
+	}
+
+	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	if (reset) {
 		register_value = register_value | (1 << 2);
 	}
 	else {
