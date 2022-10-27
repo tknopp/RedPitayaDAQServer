@@ -2469,6 +2469,7 @@ proc create_hier_cell_counter_trigger { parentCell nameHier } {
   create_bd_pin -dir I -from 95 -to 0 counter_trigger_cfg
   create_bd_pin -dir O -from 63 -to 0 counter_trigger_sts
   create_bd_pin -dir I -from 7 -to 0 dios
+  create_bd_pin -dir I -from 0 -to 0 triggerState
 
   # Create instance: counter_delayed_trig_0, and set properties
   set block_name counter_delayed_trigger
@@ -2490,9 +2491,9 @@ proc create_hier_cell_counter_trigger { parentCell nameHier } {
    CONFIG.IN3_WIDTH {1} \
    CONFIG.IN4_WIDTH {1} \
    CONFIG.IN5_WIDTH {1} \
-   CONFIG.IN6_WIDTH {2} \
+   CONFIG.IN6_WIDTH {1} \
    CONFIG.IN7_WIDTH {1} \
-   CONFIG.NUM_PORTS {7} \
+   CONFIG.NUM_PORTS {8} \
  ] $xlconcat_0
 
   # Create instance: xlconcat_1, and set properties
@@ -2507,15 +2508,8 @@ proc create_hier_cell_counter_trigger { parentCell nameHier } {
   # Create instance: xlconstant_0, and set properties
   set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
   set_property -dict [ list \
-   CONFIG.CONST_VAL {0} \
-   CONFIG.CONST_WIDTH {5} \
+   CONFIG.CONST_WIDTH {3} \
  ] $xlconstant_0
-
-  # Create instance: xlconstant_1, and set properties
-  set xlconstant_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_1 ]
-  set_property -dict [ list \
-   CONFIG.CONST_WIDTH {2} \
- ] $xlconstant_1
 
   # Create instance: xlconstant_2, and set properties
   set xlconstant_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_2 ]
@@ -2538,6 +2532,24 @@ proc create_hier_cell_counter_trigger { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.DIN_WIDTH {8} \
  ] $xlslice_1
+
+  # Create instance: xlslice_2, and set properties
+  set xlslice_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_2 ]
+  set_property -dict [ list \
+   CONFIG.DIN_FROM {71} \
+   CONFIG.DIN_TO {67} \
+   CONFIG.DIN_WIDTH {96} \
+   CONFIG.DOUT_WIDTH {5} \
+ ] $xlslice_2
+
+  # Create instance: xlslice_3, and set properties
+  set xlslice_3 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_3 ]
+  set_property -dict [ list \
+   CONFIG.DIN_FROM {4} \
+   CONFIG.DIN_TO {4} \
+   CONFIG.DIN_WIDTH {5} \
+   CONFIG.DOUT_WIDTH {1} \
+ ] $xlslice_3
 
   # Create instance: xlslice_7, and set properties
   set xlslice_7 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_7 ]
@@ -2583,15 +2595,16 @@ proc create_hier_cell_counter_trigger { parentCell nameHier } {
   connect_bd_net -net counter_delayed_trig_0_trigger [get_bd_pins counter_trigger] [get_bd_pins counter_delayed_trig_0/trigger] [get_bd_pins xlconcat_0/In3]
   connect_bd_net -net counter_delayed_trig_0_trigger_armed [get_bd_pins counter_delayed_trig_0/trigger_armed] [get_bd_pins xlconcat_0/In4] [get_bd_pins xlconcat_1/In1]
   connect_bd_net -net dios_1 [get_bd_pins dios] [get_bd_pins counter_delayed_trig_0/dios] [get_bd_pins xlslice_1/Din]
-  connect_bd_net -net system_counter_trigger_cfg [get_bd_pins counter_trigger_cfg] [get_bd_pins xlslice_0/Din] [get_bd_pins xlslice_10/Din] [get_bd_pins xlslice_7/Din] [get_bd_pins xlslice_8/Din] [get_bd_pins xlslice_9/Din]
+  connect_bd_net -net master_trigger_in_1 [get_bd_pins triggerState] [get_bd_pins xlconcat_0/In7]
+  connect_bd_net -net system_counter_trigger_cfg [get_bd_pins counter_trigger_cfg] [get_bd_pins xlslice_0/Din] [get_bd_pins xlslice_10/Din] [get_bd_pins xlslice_2/Din] [get_bd_pins xlslice_7/Din] [get_bd_pins xlslice_8/Din] [get_bd_pins xlslice_9/Din]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins LED] [get_bd_pins xlconcat_0/dout]
   connect_bd_net -net xlconcat_1_dout [get_bd_pins counter_trigger_sts] [get_bd_pins xlconcat_1/dout]
-  connect_bd_net -net xlconstant_0_dout [get_bd_pins counter_delayed_trig_0/source_select] [get_bd_pins xlconstant_0/dout]
-  connect_bd_net -net xlconstant_1_dout [get_bd_pins xlconcat_0/In6] [get_bd_pins xlconstant_1/dout]
   connect_bd_net -net xlconstant_2_dout [get_bd_pins xlconcat_1/In2] [get_bd_pins xlconstant_2/dout]
   connect_bd_net -net xlslice_0_Dout [get_bd_pins counter_delayed_trig_0/trigger_reset] [get_bd_pins xlconcat_0/In2] [get_bd_pins xlslice_0/Dout]
   connect_bd_net -net xlslice_10_Dout [get_bd_pins counter_delayed_trig_0/enable] [get_bd_pins xlconcat_0/In0] [get_bd_pins xlslice_10/Dout]
   connect_bd_net -net xlslice_1_Dout [get_bd_pins xlconcat_0/In5] [get_bd_pins xlslice_1/Dout]
+  connect_bd_net -net xlslice_2_Dout [get_bd_pins counter_delayed_trig_0/source_select] [get_bd_pins xlslice_2/Dout] [get_bd_pins xlslice_3/Din]
+  connect_bd_net -net xlslice_3_Dout [get_bd_pins xlconcat_0/In6] [get_bd_pins xlslice_3/Dout]
   connect_bd_net -net xlslice_7_Dout [get_bd_pins counter_delayed_trig_0/reference_counter] [get_bd_pins xlslice_7/Dout]
   connect_bd_net -net xlslice_8_Dout [get_bd_pins counter_delayed_trig_0/trigger_presamples] [get_bd_pins xlslice_8/Dout]
   connect_bd_net -net xlslice_9_Dout [get_bd_pins counter_delayed_trig_0/trigger_arm] [get_bd_pins xlconcat_0/In1] [get_bd_pins xlslice_9/Dout]
@@ -3235,9 +3248,6 @@ proc create_root_design { parentCell } {
    CONFIG.CONST_VAL {0} \
  ] $xlconstant_0
 
-  # Create instance: xlconstant_1, and set properties
-  set xlconstant_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_1 ]
-
   # Create instance: xlslice_0, and set properties
   set xlslice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_0 ]
   set_property -dict [ list \
@@ -3280,6 +3290,14 @@ proc create_root_design { parentCell } {
    CONFIG.DIN_WIDTH {96} \
    CONFIG.DOUT_WIDTH {8} \
  ] $xlslice_6
+
+  # Create instance: xlslice_triggerState, and set properties
+  set xlslice_triggerState [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_triggerState ]
+  set_property -dict [ list \
+   CONFIG.DIN_FROM {8} \
+   CONFIG.DIN_TO {8} \
+   CONFIG.DOUT_WIDTH {1} \
+ ] $xlslice_triggerState
 
   # Create interface connections
   connect_bd_intf_net -intf_net Vaux0_1 [get_bd_intf_ports Vaux0] [get_bd_intf_pins xadc_wiz_0/Vaux0]
@@ -3331,6 +3349,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net clk_wiz_0_locked [get_bd_pins axis_red_pitaya_dac_0/locked] [get_bd_pins clk_wiz_0/locked] [get_bd_pins selectio_wiz_1/clock_enable] [get_bd_pins system/dcm_locked]
   connect_bd_net -net clk_wiz_1_clk_out1 [get_bd_pins clk_wiz_0/clk_in2] [get_bd_pins clk_wiz_1/clk_out1]
   connect_bd_net -net counter_trigger_LED [get_bd_ports led_o] [get_bd_pins counter_trigger/LED]
+  connect_bd_net -net counter_trigger_counter_trigger [get_bd_pins counter_trigger/counter_trigger] [get_bd_pins reset_manager_0/counter_trigger]
   connect_bd_net -net daisy_n_i_1 [get_bd_ports daisy_n_i] [get_bd_pins selectio_wiz_2/data_in_from_pins_n]
   connect_bd_net -net daisy_p_i_1 [get_bd_ports daisy_p_i] [get_bd_pins selectio_wiz_2/data_in_from_pins_p]
   connect_bd_net -net ext_DIO0_N_1 [get_bd_ports ext_DIO0_N] [get_bd_pins util_vector_logic_0/Op1]
@@ -3338,6 +3357,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net fourier_synth_standard_ramp_state_1 [get_bd_pins fourier_synth_standard/ramp_state_1] [get_bd_pins reset_manager_0/ramp_state_1]
   connect_bd_net -net fourier_synth_standard_synth_tdata [get_bd_pins axis_red_pitaya_dac_0/s_axis_tdata] [get_bd_pins fourier_synth_standard/synth_tdata]
   connect_bd_net -net fourier_synth_standard_synth_tvalid [get_bd_pins axis_red_pitaya_dac_0/s_axis_tvalid] [get_bd_pins fourier_synth_standard/synth_tvalid]
+  connect_bd_net -net master_trigger_in_1 [get_bd_pins counter_trigger/triggerState] [get_bd_pins xlslice_triggerState/Dout]
   connect_bd_net -net pdm_oa_dac [get_bd_pins fourier_synth_standard/oa_dac] [get_bd_pins sequencer/oa_dac]
   connect_bd_net -net pdm_pdm_sts [get_bd_pins sequencer/pdm_sts] [get_bd_pins system/curr_pdm_values]
   connect_bd_net -net proc_sys_reset_bram_peripheral_aresetn [get_bd_pins fourier_synth_standard/bram_aresetn] [get_bd_pins proc_sys_reset_bram/peripheral_aresetn] [get_bd_pins sequencer/bram_aresetn]
@@ -3349,7 +3369,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net reset_manager_0_fourier_synth_aresetn [get_bd_pins proc_sys_reset_fourier_synth/ext_reset_in] [get_bd_pins reset_manager_0/fourier_synth_aresetn]
   connect_bd_net -net reset_manager_0_pdm_aresetn [get_bd_pins proc_sys_reset_pdm/ext_reset_in] [get_bd_pins reset_manager_0/pdm_aresetn]
   connect_bd_net -net reset_manager_0_ramping_enable [get_bd_pins fourier_synth_standard/enable_ramping] [get_bd_pins reset_manager_0/ramping_enable]
-  connect_bd_net -net reset_manager_0_reset_sts [get_bd_pins reset_manager_0/reset_sts] [get_bd_pins system/reset_sts]
+  connect_bd_net -net reset_manager_0_reset_sts [get_bd_pins reset_manager_0/reset_sts] [get_bd_pins system/reset_sts] [get_bd_pins xlslice_triggerState/Din]
   connect_bd_net -net reset_manager_0_start_ramp_down [get_bd_pins fourier_synth_standard/start_ramp_down] [get_bd_pins reset_manager_0/start_ramp_down]
   connect_bd_net -net reset_manager_0_write_to_ram_aresetn [get_bd_pins proc_sys_reset_write_to_ram/ext_reset_in] [get_bd_pins reset_manager_0/write_to_ram_aresetn]
   connect_bd_net -net reset_manager_0_xadc_aresetn [get_bd_pins proc_sys_reset_xadc/ext_reset_in] [get_bd_pins reset_manager_0/xadc_aresetn]
@@ -3372,7 +3392,6 @@ proc create_root_design { parentCell } {
   connect_bd_net -net xlconcat_0_dout1 [get_bd_ports dac_pwm_o] [get_bd_pins sequencer/dout]
   connect_bd_net -net xlconcat_1_dout [get_bd_pins counter_trigger/counter_trigger_sts] [get_bd_pins system/counter_trigger_sts]
   connect_bd_net -net xlconstant_0_dout [get_bd_ports ext_DIO1_N] [get_bd_pins xlconstant_0/dout]
-  connect_bd_net -net xlconstant_1_dout [get_bd_pins reset_manager_0/counter_trigger] [get_bd_pins xlconstant_1/dout]
   connect_bd_net -net xlconstant_5_dout [get_bd_pins clk_wiz_0/reset] [get_bd_pins clk_wiz_1/reset] [get_bd_pins util_vector_logic_1/Res]
   connect_bd_net -net xlslice_0_Dout [get_bd_pins counter_trigger/dios] [get_bd_pins xlslice_0/Dout]
   connect_bd_net -net xlslice_1_Dout [get_bd_pins reset_manager_0/keep_alive_aresetn] [get_bd_pins sequencer/keep_alive_aresetn] [get_bd_pins write_to_ram/keep_alive_aresetn]

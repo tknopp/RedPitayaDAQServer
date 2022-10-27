@@ -204,14 +204,14 @@ always @(posedge clk)
 begin
     if (reset_cfg[4] == 0) // internal trigger mode
     begin
-        triggerState <= reset_cfg[5] && counter_trigger; // counter_trigger must always be high if not enabled
+        triggerState <= reset_cfg[5] & counter_trigger; // counter_trigger must always be high if not enabled
     end
     else
     begin
         triggerState <= trigger_in_int;
     end
 
-    masterTriggerState_pre <= reset_cfg[5] && counter_trigger; // counter_trigger must always be high if not enabled
+    masterTriggerState_pre <= reset_cfg[5] & counter_trigger; // counter_trigger must always be high if not enabled
     masterTriggerState <= masterTriggerState_pre;
 end
 
