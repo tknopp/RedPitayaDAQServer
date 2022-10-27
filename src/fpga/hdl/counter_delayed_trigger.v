@@ -67,9 +67,18 @@ begin
 		// Only react on first reset == 1
 		if ((counter_reset == 1) && (counter_reset_first == 1))
 		begin
-			last_counter_out <= delayed_trigger_counter;
-			delayed_trigger_counter <= 0;
-			counter_reset_first <= 0;
+			if (trigger_armed_int == 0)
+			begin
+				last_counter_out <= delayed_trigger_counter;
+				delayed_trigger_counter <= 0;
+				counter_reset_first <= 0;
+			end
+			else // If the trigger is armed, we want the counter to run until we disarm/disable to always reach the reference counter
+			begin
+				last_counter_out <= delayed_trigger_counter + 1;
+				delayed_trigger_counter <= delayed_trigger_counter + 1;
+				counter_reset_first <= 0;
+			end
 		end
 		else
 		begin
@@ -80,6 +89,12 @@ begin
 			else
 			begin
 				delayed_trigger_counter <= delayed_trigger_counter + 1;
+
+				// If the trigger is armed, the counter output should also run continuously
+				if (trigger_armed_int == 1)
+				begin
+					last_counter_out <= delayed_trigger_counter + 1;
+				end
 			end
 			
 			if (counter_reset == 0 && counter_reset_first == 0)
