@@ -112,7 +112,14 @@ begin
 			end
 			else
 			begin
-				trigger_out <= 0; // Disable trigger when enabled but not armed
+				if ((trigger_armed_int == 1) && (trigger_out == 1))
+				begin
+					trigger_out <= 1; // Keep activated as long as the trigger is enabled and armed
+				end
+				else
+				begin
+					trigger_out <= 0; // Disable trigger when enabled but not armed
+				end
 
 				// React to trigger arming internally in order to allow for short arm pulses
 				if (trigger_arm == 1)

@@ -17,8 +17,8 @@ module test;
 	reg [ADC_WIDTH-1:0] adc0 = 0;
 	reg [ADC_WIDTH-1:0] adc1 = 0;
 	reg [5-1:0] source_select = 0;
-  reg [TRIGGER_PRESAMPLES_WIDTH-1:0] presamples = 50;
-  reg [TRIGGER_COUNTER_WIDTH-1:0] reference_counter = 250;
+  reg [TRIGGER_PRESAMPLES_WIDTH-1:0] presamples = 0;
+  reg [TRIGGER_COUNTER_WIDTH-1:0] reference_counter = 0;
   
   wire trigger;
   wire armed_status;
@@ -30,34 +30,51 @@ module test;
   initial begin
     $dumpfile("counter_delayed_trigger.vcd");
     $dumpvars(2, test);
+    #    10 source_select[4] = 0;
+    #    10 source_select[3:0] = 0;
+    #   100 enable = 1;
+
     #  1000 dios[0] = 1;
     #   100 dios[0] = 0;
-    #  3000 dios[0] = 1;
+    #  1000 dios[0] = 1;
+    #   100 dios[0] = 0;
+    #  1000 dios[0] = 1;
+    #   100 dios[0] = 0;
+    #  1000 dios[0] = 1;
+    #   100 dios[0] = 0;
+
+    #   100 reference_counter = 130;
+
+    #  1000 dios[0] = 1;
+    #   100 dios[0] = 0;
+    #  1000 dios[0] = 1;
+    #   100 dios[0] = 0;
+    #  1000 dios[0] = 1;
+    #   100 dios[0] = 0;
+    #  1000 dios[0] = 1;
     #   100 dios[0] = 0;
     
     #   100 arm = 1;
     #    10 arm = 0;
-    
-    #  3000 dios[0] = 1;
+
+    #  1000 dios[0] = 1;
+    #   100 dios[0] = 0;
+    #  1000 dios[0] = 1;
+    #   100 dios[0] = 0;
+    #  1000 dios[0] = 1;
+    #   100 dios[0] = 0;
+    #  1000 dios[0] = 1;
     #   100 dios[0] = 0;
     
+    #   100 arm = 1;
+    #    10 arm = 0;
     #  1000 trigger_reset = 1;
     #    10 trigger_reset = 0;
-    #   100 arm = 1;
-    #    10 arm = 0;
     
     #  1000 enable = 0;
     
-    #  3000 dios[0] = 1;
+    #  1000 dios[0] = 1;
     #   100 dios[0] = 0;
-
-    #  1000 source_select[4] = 1;
-    #    10 enable = 1;
-
-    #   100 arm = 1;
-    #    10 arm = 0;
-
-    # 10000 enable = 0;
     
     # 15000 aresetn = 1;
     
