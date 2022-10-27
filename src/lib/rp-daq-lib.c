@@ -1517,12 +1517,15 @@ uint32_t cmn_CalibFullScaleFromVoltage(float voltageScale) {
  **/
 
 int counter_trigger_setEnabled(bool enable) {
+	if (!enable) {
+		counter_trigger_disarm(); // Always disarm when disabling
+	}
+
 	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
 	if (enable) {
 		register_value = register_value | (1 << 0);
 	}
 	else {
-		counter_trigger_disarm(); // Always disarm when disabling
 		register_value = register_value & ~(1 << 0);
 	}
 	
@@ -1566,9 +1569,12 @@ bool counter_trigger_isArmed() {
 }
 
 int counter_trigger_setReset(bool reset) {
-	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
 	if (reset) {
 		counter_trigger_disarm(); // Always disarm when resetting
+	}
+
+	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	if (reset) {
 		register_value = register_value | (1 << 2);
 	}
 	else {
@@ -1600,18 +1606,18 @@ uint32_t counter_trigger_getReferenceCounter() {
 
 uint32_t counter_trigger_getSelectedChannelType() {
 	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
-	return (register_value & (1 << 8)) >> 8;
+	return (register_value & (1 << 7)) >> 7;
 }
 
 bool counter_trigger_setSelectedChannelType(uint32_t channelType) {
 	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
 	if (channelType == COUNTER_TRIGGER_ADC)
 	{
-		*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value | (1 << 8);
+		*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value | (1 << 7);
 	}
 	else if (channelType == COUNTER_TRIGGER_DIO)
 	{
-		*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value & ~(1 << 8);
+		*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value & ~(1 << 7);
 	}
 	else
 	{

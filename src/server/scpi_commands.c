@@ -1205,7 +1205,7 @@ static scpi_result_t RP_CounterTrigger_SetPresamples(scpi_t * context) {
 	printf("set presamples = %d \n", presamples);
 	int result = counter_trigger_setPresamples(presamples);
 	if (result < 0) {
-		printf("Could not set presamples!");
+		printf("Could not set presamples!\n");
 		return returnSCPIBool(context, false);
 	}
 
@@ -1233,8 +1233,10 @@ static scpi_result_t RP_CounterTrigger_Arm(scpi_t * context) {
 	int result;
 	if (param) {
 		result = counter_trigger_arm();
+		printf("Counter trigger armed\n");
 	} else {
 		result = counter_trigger_disarm();
+		printf("Counter trigger disarmed\n");
 	}
 	
 	if (result < 0) {
