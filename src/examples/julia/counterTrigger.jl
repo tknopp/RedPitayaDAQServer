@@ -21,21 +21,22 @@ DIODirection!(rp, DIO7_P, DIO_IN)
 DIODirection!(rp, DIO2_N, DIO_OUT)
 counterTrigger_enabled!(rp, true)
 
+# This simulates a mechanical rotation with a 1 bit encoder which should be synchronized with the data acquisition
 function rotationSimulation(timer)
     DIO!(rp, DIO2_N, true)
     sleep(0.1+rand()*0.005)
     DIO!(rp, DIO2_N, false)
 end
 
-timerInterval = 1
+timerInterval = 2
 t = Timer(rotationSimulation, 0.05, interval=timerInterval)
 
-@info "Determining average rotation time (in clock cylces)"
-N = 10
+@info "Determining average rotation time (in clock cycles)"
+N = 5
 counterValue = zeros(N)
 i = 1
 savedCounter = 0
-outlierFactor = 3
+outlierFactor = 2
 while i <= N
   lastCounter = counterTrigger_lastCounter(rp)
   #@info "" lastCounter savedCounter
@@ -58,6 +59,7 @@ meanCounter = mean(counterValue)
 @info "The average rotation time is $(meanCounter*4/1e9) s with a standard deviation of $(std(counterValue)*4/1e6) ms."
 
 counterTrigger_referenceCounter!(rp, round(Int64, meanCounter))
+counterTrigger_presamples!(rp, 50000000)
 
 dec = 100
 modulus = 5000
@@ -70,7 +72,7 @@ periods_per_frame = 2
 decimation!(rp, dec)
 samplesPerPeriod!(rp, samples_per_period)
 periodsPerFrame!(rp, periods_per_frame)
-triggerMode!(rp, EXTERNAL) # or triggerMode!(rp, "INTERNAL")
+triggerMode!(rp, INTERNAL) # or triggerMode!(rp, "INTERNAL")
 
 # DAC Configuration
 # These commands are allowed during an acquisition
@@ -86,6 +88,15 @@ serverMode!(rp, ACQUISITION)
 masterTrigger!(rp, true)
 counterTrigger_arm!(rp)
 
+for i=1:300
+  @info "" Int64(counterTrigger_lastCounter(rp)) currentFrame(rp)
+  sleep(0.01)
+end
+
+sleep(0.01)
+@info "" Int64(counterTrigger_lastCounter(rp)) currentFrame(rp)
+
+#==
 # Transmit the first frame
 uFirstPeriod = readFrames(rp, 0, 1)
 
@@ -98,6 +109,8 @@ uCurrentPeriod = readFrames(rp, fr, 1)
 sleep(0.2)
 
 uLastPeriod = readFrames(rp, currentFrame(rp), 1)
+==#
+
 # Stop signal generation + acquisition
 masterTrigger!(rp, false)
 serverMode!(rp, CONFIGURATION)
@@ -106,6 +119,7 @@ counterTrigger_enabled!(rp, false)
 
 close(t)
 
+#==
 figure(1)
 clf()
 # Frame dimensions are [samples, chan, periods, frames]
@@ -114,6 +128,7 @@ plot(vec(uCurrentPeriod[:,1,:,:]))
 plot(vec(uLastPeriod[:,1,:,:]))
 legend(("first period", "current period", "last period"))
 #savefig("images/simple.png")
+==#
 
 #==
 0: enable

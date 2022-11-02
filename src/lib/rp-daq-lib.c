@@ -1662,6 +1662,6 @@ uint32_t counter_trigger_setSelectedChannel(const char* channel) {
 	}
 
 	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
-	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET+ 2) = (register_value | (0b1111 << 3)) & ((channelNumber << 3) | ~(0b1111 << 3));
+	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = (register_value | (0b1111 << 3)) & ((channelNumber << 3) | ~(0b1111 << 3));
 	return 0;
 }

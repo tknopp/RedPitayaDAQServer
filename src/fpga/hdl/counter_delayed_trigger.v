@@ -2,7 +2,7 @@
 
 module counter_delayed_trigger #
 (
-  parameter integer TRIGGER_COUNTER_WIDTH = 32,
+	parameter integer TRIGGER_COUNTER_WIDTH = 32,
 	parameter integer TRIGGER_PRESAMPLES_WIDTH = 32,
 	parameter integer ADC_WIDTH = 16
 )
@@ -17,7 +17,7 @@ module counter_delayed_trigger #
 	input [ADC_WIDTH-1:0] adc1,
 	input [5-1:0] source_select,
 	input [TRIGGER_PRESAMPLES_WIDTH-1:0] trigger_presamples, // Number of samples the trigger should be fired prior to reaching the last counter value
-  input [TRIGGER_COUNTER_WIDTH-1:0] reference_counter, // The reference that is used for determining when to start the trigger. Note: Splitted off to allow for e.g using an average value of the polled last counter values.
+	input [TRIGGER_COUNTER_WIDTH-1:0] reference_counter, // The reference that is used for determining when to start the trigger. Note: Splitted off to allow for e.g using an average value of the polled last counter values.
 	output trigger, // The actual trigger
 	output trigger_armed, // Arming status of the trigger
 	output [TRIGGER_COUNTER_WIDTH-1:0] last_counter // The last full counter value
@@ -64,21 +64,21 @@ begin
 			end
 		end
 
-		// Only react on first reset == 1
+		// Only react on first counter_reset == 1
 		if ((counter_reset == 1) && (counter_reset_first == 1))
 		begin
 			if (trigger_armed_int == 0)
 			begin
 				last_counter_out <= delayed_trigger_counter;
 				delayed_trigger_counter <= 0;
-				counter_reset_first <= 0;
 			end
 			else // If the trigger is armed, we want the counter to run until we disarm/disable to always reach the reference counter
 			begin
 				last_counter_out <= delayed_trigger_counter + 1;
 				delayed_trigger_counter <= delayed_trigger_counter + 1;
-				counter_reset_first <= 0;
 			end
+
+			counter_reset_first <= 0;
 		end
 		else
 		begin
@@ -102,7 +102,33 @@ begin
 				counter_reset_first <= 1;
 			end
 		end
+
+
+		// DEBUG
+		if (trigger_armed_int == 1)
+		begin
+			trigger_out <= 1;
+		end
+		else
+		begin
+			trigger_out <= 0;
+		end
+
+		// React to trigger arming internally in order to allow for short arm pulses
+		if (trigger_arm == 1)
+		begin
+			trigger_armed_int_pre <= 1;
+		end
 		
+		// Only do internal arming when we would not directly trigger due to already satisfying the condition
+		if ((trigger_armed_int_pre == 1))// && ~(delayed_trigger_counter >= reference_counter-trigger_presamples-1))
+		begin
+			trigger_armed_int <= 1;
+		end
+
+		// /DEBUG
+		
+		/*
 		// Set trigger if armed and presamples reached
 		if ((trigger_armed_int == 1) && (delayed_trigger_counter >= reference_counter-trigger_presamples-1))
 		begin
@@ -141,6 +167,10 @@ begin
 				begin
 					trigger_armed_int_pre <= 1;
 				end
+				else
+				begin
+					trigger_armed_int_pre <= 0; // Do not internally arm when disarming prior to hitting the condition below
+				end
 				
 				// Only do internal arming when we would not directly trigger due to already satisfying the condition
 				if ((trigger_armed_int_pre == 1) && ~(delayed_trigger_counter >= reference_counter-trigger_presamples-1))
@@ -148,7 +178,7 @@ begin
 					trigger_armed_int <= 1;
 				end
 			end
-		end
+		end*/
 	end
 	else
 	begin
