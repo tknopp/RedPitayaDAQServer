@@ -134,3 +134,16 @@ consumer = @tspawnat 3 begin
     masterTrigger!(rp, false)
     serverMode!(rp, CONFIGURATION)
 end
+
+if isinteractive()
+    @info "You can now access the data via the variable `buffer`."
+else
+    # Wait for the consumer since otherwise Julia just terminates in non-interactive mode.
+    wait(consumer)
+
+    figure(1)
+    clf()
+    # Frame dimensions are [samples, chan, periods, frames]
+    plot(vec(buffer[:, 1, :, :]))
+    savefig("images/producerConsumer.png")
+end
