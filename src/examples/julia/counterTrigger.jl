@@ -88,7 +88,7 @@ serverMode!(rp, ACQUISITION)
 masterTrigger!(rp, true)
 counterTrigger_arm!(rp)
 
-for i=1:300
+for i=1:200
   @info "" Int64(counterTrigger_lastCounter(rp)) currentFrame(rp)
   sleep(0.01)
 end
@@ -134,11 +134,11 @@ legend(("first period", "current period", "last period"))
 0: enable
 1: trigger_arm
 2: trigger_reset
-3: trigger
+3: trigger (trigger_out)
 4: trigger_armed
 5: DIO7_P
-6: 
-7: 
+6: source_select[4]
+7: triggerState
 ==#
 
 # Wenn master_trigger gesetzt, verzögere arm???
