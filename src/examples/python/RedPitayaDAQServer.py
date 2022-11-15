@@ -65,13 +65,12 @@ class RedPitaya:
         while receivedBytes < expectedBytes:
             receivedData = self._dataSocket.recv(chunksSize)
             receivedBytes += len(receivedData)
+            # read away performance data
+            self._dataSocket.recv(21)
             data.append(receivedData)
         
         # Combine all packets into one array
         data = b''.join(data)
-
-        # read away performance data
-        self._dataSocket.recv(21)
 
         # Restructure bytearray to int16 array with little endian
         data = [item[0] for item in struct.iter_unpack('<h', data)]
