@@ -7,8 +7,7 @@ module counter_delayed_trigger #
 	parameter integer ADC_WIDTH = 16
 )
 (
-  input clk,
-	input aresetn,
+    input clk,
 	input enable,
 	input trigger_arm, // Arm the trigger
 	input trigger_reset, // Unset the trigger after having triggered. Needs re-arming then.
@@ -20,14 +19,14 @@ module counter_delayed_trigger #
 	input [TRIGGER_COUNTER_WIDTH-1:0] reference_counter, // The reference that is used for determining when to start the trigger. Note: Splitted off to allow for e.g using an average value of the polled last counter values.
 	output trigger, // The actual trigger
 	output trigger_armed, // Arming status of the trigger
-	output [TRIGGER_COUNTER_WIDTH-1:0] last_counter // The last full counter value
+    output [TRIGGER_COUNTER_WIDTH-1:0] last_counter // The last full counter value
 );
 
 // Delayed trigger counter
 reg [TRIGGER_COUNTER_WIDTH-1:0] delayed_trigger_counter = 0;
 reg [TRIGGER_COUNTER_WIDTH-1:0] last_counter_out = 0;
 reg counter_reset = 0; // Reset the counter to zero and save last counter state.
-reg counter_reset_first = 0;
+reg counter_reset_first = 1;
 reg [ADC_WIDTH-1:0] curr_adc_val = 0;
 reg last_sign = 0;
 reg trigger_out = 0;
@@ -36,7 +35,7 @@ reg trigger_armed_int_pre = 0;
 
 always @(posedge clk)
 begin
-	if (~aresetn && enable)
+	if (enable)
 	begin
 		if (source_select[4] == 0) // The MSB defines if DIOs (== 0) or ADCs (== 1) should be selected
 		begin
@@ -102,33 +101,7 @@ begin
 				counter_reset_first <= 1;
 			end
 		end
-
-
-		// DEBUG
-		if (trigger_armed_int == 1)
-		begin
-			trigger_out <= 1;
-		end
-		else
-		begin
-			trigger_out <= 0;
-		end
-
-		// React to trigger arming internally in order to allow for short arm pulses
-		if (trigger_arm == 1)
-		begin
-			trigger_armed_int_pre <= 1;
-		end
 		
-		// Only do internal arming when we would not directly trigger due to already satisfying the condition
-		if ((trigger_armed_int_pre == 1))// && ~(delayed_trigger_counter >= reference_counter-trigger_presamples-1))
-		begin
-			trigger_armed_int <= 1;
-		end
-
-		// /DEBUG
-		
-		/*
 		// Set trigger if armed and presamples reached
 		if ((trigger_armed_int == 1) && (delayed_trigger_counter >= reference_counter-trigger_presamples-1))
 		begin
@@ -178,7 +151,7 @@ begin
 					trigger_armed_int <= 1;
 				end
 			end
-		end*/
+		end
 	end
 	else
 	begin

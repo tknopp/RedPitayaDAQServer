@@ -2463,7 +2463,6 @@ proc create_hier_cell_counter_trigger { parentCell nameHier } {
   create_bd_pin -dir O -from 7 -to 0 LED
   create_bd_pin -dir I -from 15 -to 0 adc0
   create_bd_pin -dir I -from 15 -to 0 adc1
-  create_bd_pin -dir I aresetn
   create_bd_pin -dir I clk
   create_bd_pin -dir O counter_trigger
   create_bd_pin -dir I -from 95 -to 0 counter_trigger_cfg
@@ -2504,12 +2503,6 @@ proc create_hier_cell_counter_trigger { parentCell nameHier } {
    CONFIG.IN2_WIDTH {31} \
    CONFIG.NUM_PORTS {3} \
  ] $xlconcat_1
-
-  # Create instance: xlconstant_0, and set properties
-  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
-  set_property -dict [ list \
-   CONFIG.CONST_WIDTH {3} \
- ] $xlconstant_0
 
   # Create instance: xlconstant_2, and set properties
   set xlconstant_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_2 ]
@@ -2589,7 +2582,6 @@ proc create_hier_cell_counter_trigger { parentCell nameHier } {
   # Create port connections
   connect_bd_net -net adc0_1 [get_bd_pins adc0] [get_bd_pins counter_delayed_trig_0/adc0]
   connect_bd_net -net adc1_1 [get_bd_pins adc1] [get_bd_pins counter_delayed_trig_0/adc1]
-  connect_bd_net -net aresetn_1 [get_bd_pins aresetn] [get_bd_pins counter_delayed_trig_0/aresetn]
   connect_bd_net -net clk_1 [get_bd_pins clk] [get_bd_pins counter_delayed_trig_0/clk]
   connect_bd_net -net counter_delayed_trig_0_last_counter [get_bd_pins counter_delayed_trig_0/last_counter] [get_bd_pins xlconcat_1/In0]
   connect_bd_net -net counter_delayed_trig_0_trigger [get_bd_pins counter_trigger] [get_bd_pins counter_delayed_trig_0/trigger] [get_bd_pins xlconcat_0/In3]
@@ -2653,7 +2645,6 @@ proc create_hier_cell_DIO { parentCell nameHier } {
   create_bd_pin -dir I -from 95 -to 0 cfg_in
   create_bd_pin -dir I -type clk clk
   create_bd_pin -dir O -from 31 -to 0 dio_data_clocked
-  create_bd_pin -dir O -from 7 -to 0 dio_val_out
   create_bd_pin -dir IO ext_DIO2_N
   create_bd_pin -dir IO ext_DIO3_N
   create_bd_pin -dir IO ext_DIO4_N
@@ -2953,7 +2944,7 @@ proc create_hier_cell_DIO { parentCell nameHier } {
   connect_bd_net -net xlslice_1_Dout [get_bd_pins rp_iobuf_2/direction] [get_bd_pins xlslice_1/Dout]
   connect_bd_net -net xlslice_2_Dout [get_bd_pins rp_iobuf_3/direction] [get_bd_pins xlslice_2/Dout]
   connect_bd_net -net xlslice_3_Dout [get_bd_pins rp_iobuf_4/direction] [get_bd_pins xlslice_3/Dout]
-  connect_bd_net -net xlslice_4_Dout [get_bd_pins dio_val_out] [get_bd_pins xlslice_0/Din] [get_bd_pins xlslice_10/Din] [get_bd_pins xlslice_11/Din] [get_bd_pins xlslice_12/Din] [get_bd_pins xlslice_15/Din] [get_bd_pins xlslice_16/Din] [get_bd_pins xlslice_4/Dout] [get_bd_pins xlslice_6/Din] [get_bd_pins xlslice_9/Din]
+  connect_bd_net -net xlslice_4_Dout [get_bd_pins xlslice_0/Din] [get_bd_pins xlslice_10/Din] [get_bd_pins xlslice_11/Din] [get_bd_pins xlslice_12/Din] [get_bd_pins xlslice_15/Din] [get_bd_pins xlslice_16/Din] [get_bd_pins xlslice_4/Dout] [get_bd_pins xlslice_6/Din] [get_bd_pins xlslice_9/Din]
   connect_bd_net -net xlslice_5_Dout [get_bd_pins xlslice_1/Din] [get_bd_pins xlslice_13/Din] [get_bd_pins xlslice_14/Din] [get_bd_pins xlslice_17/Din] [get_bd_pins xlslice_2/Din] [get_bd_pins xlslice_3/Din] [get_bd_pins xlslice_5/Dout] [get_bd_pins xlslice_7/Din] [get_bd_pins xlslice_8/Din]
   connect_bd_net -net xlslice_6_Dout [get_bd_pins rp_iobuf_5/val_out] [get_bd_pins xlslice_6/Dout]
   connect_bd_net -net xlslice_7_Dout [get_bd_pins rp_iobuf_0/direction] [get_bd_pins xlslice_7/Dout]
@@ -3361,7 +3352,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net pdm_oa_dac [get_bd_pins fourier_synth_standard/oa_dac] [get_bd_pins sequencer/oa_dac]
   connect_bd_net -net pdm_pdm_sts [get_bd_pins sequencer/pdm_sts] [get_bd_pins system/curr_pdm_values]
   connect_bd_net -net proc_sys_reset_bram_peripheral_aresetn [get_bd_pins fourier_synth_standard/bram_aresetn] [get_bd_pins proc_sys_reset_bram/peripheral_aresetn] [get_bd_pins sequencer/bram_aresetn]
-  connect_bd_net -net proc_sys_reset_fourier_synth_peripheral_aresetn [get_bd_pins counter_trigger/aresetn] [get_bd_pins fourier_synth_standard/aresetn] [get_bd_pins proc_sys_reset_fourier_synth/peripheral_aresetn] [get_bd_pins system/aresetn]
+  connect_bd_net -net proc_sys_reset_fourier_synth_peripheral_aresetn [get_bd_pins fourier_synth_standard/aresetn] [get_bd_pins proc_sys_reset_fourier_synth/peripheral_aresetn] [get_bd_pins system/aresetn]
   connect_bd_net -net proc_sys_reset_pdm_peripheral_aresetn [get_bd_pins proc_sys_reset_pdm/peripheral_aresetn] [get_bd_pins sequencer/aresetn]
   connect_bd_net -net proc_sys_reset_write_to_ram_peripheral_aresetn [get_bd_pins proc_sys_reset_write_to_ram/peripheral_aresetn] [get_bd_pins write_to_ram/aresetn]
   connect_bd_net -net proc_sys_reset_xadc_peripheral_aresetn [get_bd_pins proc_sys_reset_xadc/peripheral_aresetn] [get_bd_pins xadc_wiz_0/s_axi_aresetn]
