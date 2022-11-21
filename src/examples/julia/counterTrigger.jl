@@ -24,7 +24,7 @@ counterTrigger_enabled!(rp, true)
 # This simulates a mechanical rotation with a 1 bit encoder which should be synchronized with the data acquisition
 function rotationSimulation(timer)
     DIO!(rp, DIO2_N, true)
-    sleep(0.1) # +rand()*0.005
+    sleep(0.1)
     DIO!(rp, DIO2_N, false)
 end
 
