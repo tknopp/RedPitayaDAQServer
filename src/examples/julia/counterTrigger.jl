@@ -5,7 +5,7 @@ using Base.Threads
 
 # For this example, the ports DIO7_P and DIO2_N have to be connected by a jumper cable.
 
-# obtain the URL of the RedPitaya
+# Obtain the URL of the RedPitaya
 include("config.jl")
 
 # Establish connection to the RedPitaya
@@ -24,11 +24,11 @@ counterTrigger_enabled!(rp, true)
 # This simulates a mechanical rotation with a 1 bit encoder which should be synchronized with the data acquisition
 function rotationSimulation(timer)
     DIO!(rp, DIO2_N, true)
-    sleep(0.1+rand()*0.005)
+    sleep(0.1) # +rand()*0.005
     DIO!(rp, DIO2_N, false)
 end
 
-timerInterval = 2
+timerInterval = 3
 t = Timer(rotationSimulation, 0.05, interval=timerInterval)
 
 @info "Determining average rotation time (in clock cycles)"
@@ -39,9 +39,8 @@ savedCounter = 0
 outlierFactor = 2
 while i <= N
   lastCounter = counterTrigger_lastCounter(rp)
-  #@info "" lastCounter savedCounter
 
-  if lastCounter > timerInterval*1e9/4*outlierFactor || lastCounter < timerInterval*1e9/4/outlierFactor
+  if lastCounter > timerInterval*1e9/8*outlierFactor || lastCounter < timerInterval*1e9/4/outlierFactor
     continue
   end
 
@@ -56,7 +55,7 @@ while i <= N
 end
 
 meanCounter = mean(counterValue)
-@info "The average rotation time is $(meanCounter*4/1e9) s with a standard deviation of $(std(counterValue)*4/1e6) ms."
+@info "The average rotation time is $(meanCounter*8/1e9) s with a standard deviation of $(std(counterValue)*8/1e6) ms."
 
 counterTrigger_referenceCounter!(rp, round(Int64, meanCounter))
 counterTrigger_presamples!(rp, 50000000)
@@ -88,15 +87,6 @@ serverMode!(rp, ACQUISITION)
 masterTrigger!(rp, true)
 counterTrigger_arm!(rp)
 
-for i=1:200
-  @info "" Int64(counterTrigger_lastCounter(rp)) currentFrame(rp)
-  sleep(0.01)
-end
-
-sleep(0.01)
-@info "" Int64(counterTrigger_lastCounter(rp)) currentFrame(rp)
-
-#==
 # Transmit the first frame
 uFirstPeriod = readFrames(rp, 0, 1)
 
@@ -109,7 +99,6 @@ uCurrentPeriod = readFrames(rp, fr, 1)
 sleep(0.2)
 
 uLastPeriod = readFrames(rp, currentFrame(rp), 1)
-==#
 
 # Stop signal generation + acquisition
 masterTrigger!(rp, false)
@@ -119,7 +108,6 @@ counterTrigger_enabled!(rp, false)
 
 close(t)
 
-#==
 figure(1)
 clf()
 # Frame dimensions are [samples, chan, periods, frames]
@@ -127,8 +115,7 @@ plot(vec(uFirstPeriod[:,1,:,:]))
 plot(vec(uCurrentPeriod[:,1,:,:]))
 plot(vec(uLastPeriod[:,1,:,:]))
 legend(("first period", "current period", "last period"))
-#savefig("images/simple.png")
-==#
+savefig("images/counterTrigger.png")
 
 #==
 0: enable
@@ -140,5 +127,3 @@ legend(("first period", "current period", "last period"))
 6: source_select[4]
 7: triggerState
 ==#
-
-# Wenn master_trigger gesetzt, verzögere arm???
