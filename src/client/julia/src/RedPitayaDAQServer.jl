@@ -116,7 +116,7 @@ Waits for `timeout` seconds and checks every `timeout/N` seconds.
 See also [receive](@ref).
 """
 function query(rp::RedPitaya, cmd::String, timeout::Number=getTimeout())
-  send(rp,cmd)
+  send(rp, cmd)
   Sockets.quickack(rp.socket, true)
   receive(rp, timeout)
 end
@@ -128,9 +128,13 @@ Send a query to the RedPitaya. Parse reply as `T`.
 
 Waits for `timeout` seconds and checks every `timeout/N` seconds.
 """
-function query(rp::RedPitaya,cmd::String,T::Type, timeout::Number=getTimeout())
-  a = query(rp,cmd, timeout)
-  return parse(T,a)
+function query(rp::RedPitaya, cmd::String, T::Type, timeout::Number=getTimeout())
+  a = query(rp, cmd, timeout)
+  if T == String
+    return a[2:end-1] # Strings are wrapped like this: "\"OUT\""
+  else
+    parse(T, a)
+  end
 end
 
 # connect with timeout implementation
@@ -193,7 +197,7 @@ function stringToEnum(enumType::Type{T}, value::AbstractString) where {T <: Enum
   # If lowercase is not sufficient one could try Unicode.normalize with casefolding
   index = findfirst(isequal(lowercase(value)), lowercase.(stringInstances))
   if isnothing(index)
-    throw(ArgumentError("$value cannot be resolved to an instance of $(typeof(enumType)). Possible instances are: " * join(stringInstances, ", ", " and ")))
+    throw(ArgumentError("$value cannot be resolved to an instance of $(enumType). Possible instances are: " * join(stringInstances, ", ", " and ")))
   end
   return instances(enumType)[index]
 end
@@ -364,6 +368,7 @@ include("ClusterView.jl")
 include("Acquisition.jl")
 include("SlowIO.jl")
 include("EEPROM.jl")
+include("CounterTrigger.jl")
 include("Utility.jl")
 
 function destroy(rp::RedPitaya)

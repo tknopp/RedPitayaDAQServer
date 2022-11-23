@@ -94,6 +94,8 @@ See [`DIODirection`](@ref), [`DIODirection!`](@ref), [`DIO`](@ref), [`DIO`](@ref
   DIO2_N
 end
 
+DIOPinToCommand(pin::DIOPins) = replace(join(split(string(pin), "_"), ":Side"), "DIO" => "PIN")
+
 export isValidDIOPin
 """
 isValidDIOPin(pin::String)
@@ -118,7 +120,7 @@ DIO_OUT
 ```
 """
 DIODirection!(rp::RedPitaya, pin, direction) = query(rp, scpiCommand(DIODirection!, pin, direction), scpiReturn(DIODirection!))
-scpiCommand(::typeof(DIODirection!), pin::DIOPins, direction::DIODirectionType) = string("RP:DIO:DIR ", string(pin), ",", (direction == DIO_IN ? "IN" : "OUT"))
+scpiCommand(::typeof(DIODirection!), pin::DIOPins, direction::DIODirectionType) = string("RP:DIO:", DIOPinToCommand(pin), ":DIR ", (direction == DIO_IN ? "IN" : "OUT"))
 scpiReturn(::typeof(DIODirection!)) = Bool
 
 export DIODirection
@@ -135,8 +137,9 @@ DIO_OUT
 ```
 """
 DIODirection(rp::RedPitaya, pin) = parseReturn(DIODirection, query(rp, scpiCommand(DIODirection, pin), scpiReturn(DIODirection)))
-scpiCommand(::typeof(DIODirection), pin) = string("RP:DIO:DIR?", string(pin))
-scpiReturn(::typeof(DIODirection)) = DIODirectionType
+scpiCommand(::typeof(DIODirection), pin) = scpiCommand(DIODirection, stringToEnum(DIOPins, pin))
+scpiCommand(::typeof(DIODirection), pin::DIOPins) = string("RP:DIO:", DIOPinToCommand(pin), ":DIR?")
+scpiReturn(::typeof(DIODirection)) = String
 parseReturn(::typeof(DIODirection), ret) = stringToEnum(DIODirectionType, "DIO_"*ret)
 
 export DIO!
@@ -150,8 +153,8 @@ julia> DIO!(rp, DIO7_P, true)
 true
 ```
 """
-DIO!(rp::RedPitaya, pin, val) = query(rp, scpiCommand(DIO!, pin, val), scpiReturn(DIODirection!))
-scpiCommand(::typeof(DIO!), pin::DIOPins, val::Bool) = string("RP:DIO ", string(pin), ",", (val ? "ON" : "OFF"))
+DIO!(rp::RedPitaya, pin, val) = query(rp, scpiCommand(DIO!, pin, val), scpiReturn(DIO!))
+scpiCommand(::typeof(DIO!), pin::DIOPins, val::Bool) = string("RP:DIO:", DIOPinToCommand(pin), " ", (val ? "ON" : "OFF"))
 scpiReturn(::typeof(DIO!)) = Bool
 
 export DIO
@@ -166,6 +169,6 @@ true
 ```
 """
 DIO(rp::RedPitaya, pin) = parseReturn(DIO, query(rp, scpiCommand(DIO, pin), scpiReturn(DIO)))
-scpiCommand(::typeof(DIO), pin) = string("RP:DIO?", string(pin))
-scpiReturn(::typeof(DIO)) = Bool
+scpiCommand(::typeof(DIO), pin) = string("RP:DIO:", DIOPinToCommand(pin), "?")
+scpiReturn(::typeof(DIO)) = String
 parseReturn(::typeof(DIO), ret) = occursin("ON", ret)

@@ -47,6 +47,9 @@
 #define TRIGGER_MODE_INTERNAL 0
 #define	TRIGGER_MODE_EXTERNAL 1
 
+#define COUNTER_TRIGGER_DIO 0
+#define	COUNTER_TRIGGER_ADC 1
+
 #define OFF 0
 #define ON 1
 
@@ -61,6 +64,7 @@ extern int mmapfd;
 extern volatile uint32_t *slcr, *axi_hp0;
 // FPGA registers that are memory mapped
 extern void *pdm_sts, *reset_sts, *cfg, *ram, *buf, *dio_sts;
+extern void *counter_trigger_cfg, *counter_trigger_sts;
 extern uint16_t *pdm_cfg;
 extern uint64_t *adc_sts, *dac_cfg; 
 extern uint32_t *awg_0_cfg, *awg_1_cfg;
@@ -139,7 +143,27 @@ extern int setEnableDAC(int8_t, int, int);
 extern int setRampDownDAC(int8_t, int, int);
 extern int getRampDownDAC(int, int);
 
+// Counter trigger
+extern int counter_trigger_setEnabled(bool enable);
+extern bool counter_trigger_isEnabled();
+extern int counter_trigger_setPresamples(uint32_t presamples);
+extern int counter_trigger_getPresamples();
+extern int counter_trigger_arm();
+extern int counter_trigger_disarm();
+extern bool counter_trigger_isArmed();
+extern int counter_trigger_setReset(bool reset);
+extern bool counter_trigger_getReset();
+extern uint32_t counter_trigger_getLastCounter();
+extern int counter_trigger_setReferenceCounter();
+extern uint32_t counter_trigger_getReferenceCounter();
+extern uint32_t counter_trigger_getSelectedChannelType();
+extern bool counter_trigger_setSelectedChannelType(uint32_t channelType);
+extern char* counter_trigger_getSelectedChannel();
+extern uint32_t counter_trigger_setSelectedChannel(const char* channel);
+
 // misc
+extern int getInternalPINNumber(const char*);
+extern char* getPinFromInternalPINNumber(const uint32_t);
 extern int getDIODirection(const char*);
 extern int setDIODirection(const char*, int);
 extern int setDIO(const char*, int);

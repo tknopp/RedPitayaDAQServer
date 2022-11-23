@@ -23,6 +23,7 @@ Manifest.toml
 *.img
 *.tar.gz
 *.zip
+*.vcd
 vivado*
 webtalk*
 tmp
@@ -30,3 +31,6 @@ uImage
 .vscode
 vivado*
 .Xil
+
+# Output files of specific testbenches
+counter_delayed_trigger

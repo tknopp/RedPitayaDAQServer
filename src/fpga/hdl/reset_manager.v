@@ -23,6 +23,7 @@ module reset_manager #
     output bram_aresetn,
     output [31:0] reset_sts,
     output [7:0] led,
+    input counter_trigger,
     input [7:0] ramping_cfg,
     input [1:0] ramp_state_0,
     input [1:0] ramp_state_1,
@@ -203,14 +204,14 @@ always @(posedge clk)
 begin
     if (reset_cfg[4] == 0) // internal trigger mode
     begin
-        triggerState <= reset_cfg[5];
+        triggerState <= reset_cfg[5] & counter_trigger; // counter_trigger must always be high if not enabled
     end
     else
     begin
         triggerState <= trigger_in_int;
     end
 
-    masterTriggerState_pre <= reset_cfg[5];
+    masterTriggerState_pre <= reset_cfg[5] & counter_trigger; // counter_trigger must always be high if not enabled
     masterTriggerState <= masterTriggerState_pre;
 end
 

@@ -21,6 +21,7 @@ bool verbose = false;
 int mmapfd;
 volatile uint32_t *slcr, *axi_hp0;
 void *pdm_sts, *reset_sts, *cfg, *ram, *dio_sts;
+uint32_t *counter_trigger;
 uint16_t *pdm_cfg;
 uint64_t *adc_sts, *dac_cfg;
 uint32_t *awg_0_cfg, *awg_1_cfg;
@@ -37,9 +38,12 @@ static const uint32_t ANALOG_IN_MAX_VAL_INTEGER  = 0xFFF;
 // static const float    ANALOG_OUT_MIN_VAL         = 0.0;
 // static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
 
+static const uint32_t COUNTER_TRIGGER_CFG_OFFSET  = 0x800/sizeof(int32_t);
+
 // Cached parameter values.
 static rp_calib_params_t calib;
 
+/*
 static int16_t getCalibDACOffset(int channel) {
 	if (channel == 0) 
 		return (int16_t)(calib.dac_ch1_offs*8192.0);
@@ -58,7 +62,7 @@ double getCalibDACScale(int channel, bool isPDM) {
 		return calib.dac_ch2_fs;
 	else
 		return 0.0;
-}
+}*/
 
 // Init stuff
 
@@ -109,7 +113,7 @@ void loadBitstream() {
 			printf("Error while writing the image to the FPGA.\n");
 		}
 		else {
-			printf("Bitsream loaded\n");
+			printf("Bitstream loaded\n");
 		}
 
 		FILE* fp = fopen("/tmp/bitstreamLoaded", "a");
@@ -140,6 +144,7 @@ int init() {
 	pdm_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40003000);
 	reset_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40005000);
 	dio_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40006000);
+	counter_trigger = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40002000);
 	cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40004000);
 	ram = mmap(NULL, sizeof(int32_t)*ADC_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, ADC_BUFF_MEM_ADDRESS);
 	xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
@@ -654,7 +659,7 @@ int setPDMValue(int16_t value, int channel, int index) {
 
 	//printf("%p   %p   %d \n", (void*)pdm_cfg, (void*)((uint16_t *)(pdm_cfg+2*(channel+4*index))), 2*(channel+4*index) );
 	int offset = 8 * index + channel;
-	int16_t temp = *((int16_t *)(pdm_cfg + offset)); 
+	//int16_t temp = *((int16_t *)(pdm_cfg + offset)); 
 	*((int16_t *)(pdm_cfg + offset)) = value;
 	
 	return 0;
@@ -1102,16 +1107,38 @@ int getInternalPINNumber(const char* pin) {
 	}
 }
 
+char* getPinFromInternalPINNumber(const uint32_t pinNumber) {
+	if(pinNumber == 0) {
+		return "DIO7_P";
+	} else if(pinNumber == 1) {
+		return "DIO7_N";
+	} else if(pinNumber == 2) {
+		return "DIO6_P";
+	} else if(pinNumber == 3) {
+		return "DIO6_N";
+	} else if(pinNumber == 4) {
+		return "DIO5_N";
+	} else if(pinNumber == 5) {
+		return "DIO4_N";
+	} else if(pinNumber == 6) {
+		return "DIO3_N";
+	} else if(pinNumber == 7) {
+		return "DIO2_N";
+	} else {
+		return "ERR";
+	}
+}
+
 int getDIODirection(const char* pin) {
 	int pinInternal = getInternalPINNumber(pin);
 	if(pinInternal < 0) {
 		return -3;
 	}
 
-	uint32_t register_value = *((uint8_t *)(dio_sts));
+	uint32_t register_value = *((uint8_t *)(cfg + 9));
 	register_value = ((register_value & (0x1 << (pinInternal))) >> (pinInternal));
 	
-	if(register_value == 1) {
+	if(register_value == IN) {
 		return IN;
 	} else {
 		return OUT;
@@ -1245,7 +1272,7 @@ rp_calib_params_t calib_GetDefaultCalib(){
  * @retval       >0 Failure
  *
  */
-int calib_ReadParams(rp_calib_params_t *calib_params,bool use_factory_zone)
+int calib_ReadParams(rp_calib_params_t *calib_params, bool use_factory_zone)
 {
     FILE   *fp;
     size_t  size;
@@ -1475,4 +1502,166 @@ void calib_SetToZero() {
 */
 uint32_t cmn_CalibFullScaleFromVoltage(float voltageScale) {
     return (uint32_t) (voltageScale / 100.0 * ((uint64_t)1<<32));
+}
+
+/**
+ * Memory layout for `counter_trigger + COUNTER_TRIGGER_CFG_OFFSET` upper bits 0x40002800
+ * 
+ * 0 ................................................................................................................. 67 bit |
+ * reference_counter (32 bit) | presamples (32 bit) | enable (1 bit) | arm (1 bit) | reset (1 bit) | source selection (5 bit) |
+ * 
+ * Memory layout for `counter_trigger` lower bits 0x40002000
+ * 
+ * 0 ............................ 33 bit |
+ * last_counter (32 bit) | armed (1 bit) |
+ **/
+
+int counter_trigger_setEnabled(bool enable) {
+	if (!enable) {
+		counter_trigger_disarm(); // Always disarm when disabling
+	}
+
+	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	if (enable) {
+		register_value = register_value | (1 << 0);
+	}
+	else {
+		register_value = register_value & ~(1 << 0);
+	}
+	
+	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value;
+	return 0;
+}
+
+bool counter_trigger_isEnabled() {
+	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	register_value = register_value & (1 << 0);
+	return (register_value > 0);
+}
+
+int counter_trigger_setPresamples(uint32_t presamples) {
+	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 1) = presamples;
+	return 0;
+}
+
+int counter_trigger_getPresamples() {
+	return *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 1);
+}
+
+int counter_trigger_arm() {
+	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	register_value = register_value | (1 << 1);
+	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value;
+	return 0;
+}
+
+int counter_trigger_disarm() {
+	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	register_value = register_value & ~(1 << 1);
+	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value;
+	return 0;
+}
+
+bool counter_trigger_isArmed() {
+	uint32_t register_value = *(counter_trigger + 1);
+	register_value = register_value & (1 << 0);
+	return (register_value > 0);
+}
+
+int counter_trigger_setReset(bool reset) {
+	if (reset) {
+		counter_trigger_disarm(); // Always disarm when resetting
+	}
+
+	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	if (reset) {
+		register_value = register_value | (1 << 2);
+	}
+	else {
+		register_value = register_value & ~(1 << 2);
+	}
+	
+	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value;
+	return 0;
+}
+
+bool counter_trigger_getReset() {
+	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	register_value = register_value & (1 << 2);
+	return (register_value > 0);
+}
+
+uint32_t counter_trigger_getLastCounter() {
+	return *(counter_trigger + 0);
+}
+
+int counter_trigger_setReferenceCounter(uint32_t reference_counter) {
+	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 0) = reference_counter;
+	return 0;
+}
+
+uint32_t counter_trigger_getReferenceCounter() {
+	return *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 0);
+}
+
+uint32_t counter_trigger_getSelectedChannelType() {
+	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	return (register_value & (1 << 7)) >> 7;
+}
+
+bool counter_trigger_setSelectedChannelType(uint32_t channelType) {
+	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	if (channelType == COUNTER_TRIGGER_ADC)
+	{
+		*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value | (1 << 7);
+	}
+	else if (channelType == COUNTER_TRIGGER_DIO)
+	{
+		*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value & ~(1 << 7);
+	}
+	else
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
+char* counter_trigger_getSelectedChannel() {
+	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	uint32_t channelNumber = (register_value & (0b1111 << 3)) >> 3;
+	if (counter_trigger_getSelectedChannelType() == COUNTER_TRIGGER_DIO) {
+		return getPinFromInternalPINNumber(channelNumber);
+	} else { // ADC
+		if (channelNumber == 0) {
+			return "IN1";
+		} else if (channelNumber == 1) {
+			return "IN2";
+		} else {
+			return "ERR";
+		}
+	}
+}
+
+uint32_t counter_trigger_setSelectedChannel(const char* channel) {
+	int32_t channelNumber;
+	if (counter_trigger_getSelectedChannelType() == COUNTER_TRIGGER_DIO) {
+		channelNumber = getInternalPINNumber(channel);
+	} else { // ADC
+		if (strncmp(channel, "IN1", 3) == 0) {
+			channelNumber = 0;
+		} else if (strncmp(channel, "IN2", 3) == 0) {
+			channelNumber = 1;
+		} else {
+			channelNumber = -3;
+		}
+	}
+
+	if (channelNumber < 0) {
+		return channelNumber;
+	}
+
+	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = (register_value | (0b1111 << 3)) & ((channelNumber << 3) | ~(0b1111 << 3));
+	return 0;
 }
