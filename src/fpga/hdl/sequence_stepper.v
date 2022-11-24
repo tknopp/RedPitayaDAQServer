@@ -2,7 +2,7 @@
 
 module sequence_stepper(
     input [63:0] writepointer,
-    input [15:0] stepSize,
+    input [31:0] stepSize,
     input clk,
     input aresetn,
     output [31:0] step_counter 

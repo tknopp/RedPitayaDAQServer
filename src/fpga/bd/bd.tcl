@@ -2072,7 +2072,7 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   create_bd_pin -dir I -from 63 -to 0 adc_sts
   create_bd_pin -dir I -type rst aresetn
   create_bd_pin -dir I bram_aresetn
-  create_bd_pin -dir I -from 15 -to 0 cfg_data
+  create_bd_pin -dir I -from 31 -to 0 cfg_data
   create_bd_pin -dir I -type clk ddr_clk
   create_bd_pin -dir O -from 3 -to 0 dout
   create_bd_pin -dir O -from 1 -to 0 enable_dac
@@ -3249,10 +3249,10 @@ proc create_root_design { parentCell } {
   # Create instance: xlslice_1, and set properties
   set xlslice_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_1 ]
   set_property -dict [ list \
-   CONFIG.DIN_FROM {47} \
+   CONFIG.DIN_FROM {63} \
    CONFIG.DIN_TO {32} \
    CONFIG.DIN_WIDTH {96} \
-   CONFIG.DOUT_WIDTH {16} \
+   CONFIG.DOUT_WIDTH {32} \
  ] $xlslice_1
 
   # Create instance: xlslice_2, and set properties
