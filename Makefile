@@ -63,7 +63,7 @@ all: linux
 daq_bitfiles: $(addsuffix .bit, $(addprefix bitfiles/daq_,$(DAQ_PARTS)))
 
 bitfiles/daq_%.bit: daq_cores
-ifneq ("$(wildcard bitfiles/daq_$*.bit)","")
+ifeq ("$(wildcard bitfiles/daq_$*.bit)","")
 	vivado -nolog -nojournal -mode batch -source src/fpga/build.tcl -tclargs $*
 	vivado -nolog -nojournal -mode batch -source scripts/runSynthAndImpl.tcl -tclargs $*
 	mkdir -p bitfiles
@@ -77,7 +77,7 @@ blinker_cores: $(addprefix tmp/cores/, $(BLINKER_CORES))
 
 #$(subst $(SPACE),_,$(wordlist 1,$(call subtract,$(words $(subst _, ,$(1))),2),$(subst _, ,$(1)))) # Doesn't work yet
 define strip_core_version
-$(shell python -c "print('_'.join('$(1)'.split('_')[:-2]))")
+$(shell python3 -c "print('_'.join('$(1)'.split('_')[:-2]))")
 endef
 
 define GEN_DAQ_CORE_RULE
