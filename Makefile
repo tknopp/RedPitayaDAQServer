@@ -63,7 +63,7 @@ all: linux
 daq_bitfiles: $(addsuffix .bit, $(addprefix bitfiles/daq_,$(DAQ_PARTS)))
 
 bitfiles/daq_%.bit: daq_cores
-ifneq ("$(wildcard bitfiles/daq_$*.bit)","")
+ifeq ("$(wildcard bitfiles/daq_$*.bit)","")
 	vivado -nolog -nojournal -mode batch -source src/fpga/build.tcl -tclargs $*
 	vivado -nolog -nojournal -mode batch -source scripts/runSynthAndImpl.tcl -tclargs $*
 	mkdir -p bitfiles
