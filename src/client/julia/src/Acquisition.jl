@@ -88,9 +88,9 @@ function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView
     index += chunk
     # Add Performance Info
     if !isnothing(rpInfo)
-      perfs = temp.perf
+      perfs = temp.performance
       for (i,perf) in enumerate(perfs)
-        rpInfo.performance[i].data = perf
+        push!(rpInfo.performances[i].data, perf)
       end
     end
   end

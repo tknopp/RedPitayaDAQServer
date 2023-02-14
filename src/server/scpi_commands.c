@@ -490,12 +490,10 @@ static scpi_result_t RP_ADC_GetData(scpi_t * context) {
 		return returnSCPIBool(context, false);
 	}
 
-	uint64_t reqWP;
 	if (!SCPI_ParamInt64(context, &reqWP, TRUE)) {
 		return returnSCPIBool(context, false);
 	}
 
-	uint64_t numSamples;
 	if (!SCPI_ParamInt64(context, &numSamples, TRUE)) {
 		return returnSCPIBool(context, false);
 	}
