@@ -2,7 +2,7 @@ export TriggerMode, INTERNAL, EXTERNAL, ADCPerformanceData, RPStatus, Performanc
 decimation, decimation!, numChan, samplesPerPeriod, samplesPerPeriod!, periodsPerFrame, periodsPerFrame!,
 currentWP, currentPeriod, currentFrame, masterTrigger, masterTrigger!, keepAliveReset, keepAliveReset!,
 triggerMode, triggerMode!, startADC, stopADC, overwritten, corrupted, serverStatus, performanceData,
-readSamples, startPipelinedData
+readSamples, startPipelinedData, stopTransmission
 
 """
     TriggerMode
@@ -374,3 +374,7 @@ function startPipelinedData(rp::RedPitaya, reqWP::Int64, numSamples::Int64, chun
     error("RedPitaya $(rp.host) can not start sample pipeline.")
   end
 end
+
+stopTransmission(rp::RedPitaya) = query(rp, scpiCommand(stopTransmission), scpiReturn(stopTransmission))
+scpiCommand(::typeof(stopTransmission)) = "RP:ADC:DATa:SToP?"
+scpiReturn(::typeof(stopTransmission)) = Bool
