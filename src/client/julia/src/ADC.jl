@@ -27,6 +27,9 @@ struct RPStatus
   dacEnabled::Bool
 end
 
+RPStatus(statusRaw::Integer) = RPStatus((statusRaw >> 0) & 1, (statusRaw >> 1) & 1, (statusRaw >> 2) & 1, (statusRaw >> 3) & 1, (statusRaw >> 4) & 1)
+
+
 struct PerformanceData
   wpRead::UInt64
   adc::ADCPerformanceData
@@ -304,20 +307,15 @@ corrupted(rp::RedPitaya) = query(rp, scpiCommand(corrupted), scpiReturn(corrupte
 scpiCommand(::typeof(corrupted)) = "RP:STATus:CORRupted?"
 scpiReturn(::typeof(corrupted)) = Bool
 
-function serverStatus(rp::RedPitaya) 
-  send(rp, "RP:STATus?")
-  return readServerStatus(rp)
-end
+serverStatus(rp::RedPitaya) = query(rp, scpiCommand(serverStatus), scpiReturn(serverStatus)) 
+scpiCommand(::typeof(serverStatus)) = "RP:STATus?"
+scpiReturn(::typeof(serverStatus)) = RPStatus
+parseReturn(::typeof(serverStatus), ret) = RPStatus(parse(Int64, ret))
+
 
 function readServerStatus(rp::RedPitaya)
   statusRaw = read!(rp.dataSocket, Array{Int8}(undef, 1))[1]
-  status = RPStatus(
-   (statusRaw >> 0) & 1, # overwritten
-   (statusRaw >> 1) & 1, # corrupted
-   (statusRaw >> 2) & 1, # stepsLost
-   (statusRaw >> 3) & 1, # adcEnabled
-   (statusRaw >> 4) & 1) # dacEnabled
-  return status
+  return RPStatus(statusRaw)
 end
 
 function performanceData(rp::RedPitaya, numSamples = 0)
