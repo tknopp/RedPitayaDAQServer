@@ -524,6 +524,12 @@ static scpi_result_t RP_ADC_GetPipelinedData(scpi_t * context) {
 
 }
 
+static scpi_result_t RP_ADC_StopData(scpi_t * context) {
+	transmissionState_t state = transmissionState;
+	transmissionState = IDLE;
+	return SCPI_ResultBool(context, state != IDLE);
+}
+
 static scpi_result_t RP_ADC_Slow_GetFrames(scpi_t * context) {
 	// Reading is only possible while an acquisition is running
 	if (getServerMode() != ACQUISITION) {
@@ -1630,6 +1636,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:DATa?", .callback = RP_ADC_GetData,},
 	//{.pattern = "RP:ADC:DATa:DETailed?", .callback = RP_ADC_GetDetailedData,},
 	{.pattern = "RP:ADC:DATa:PIPElined?", .callback = RP_ADC_GetPipelinedData,},
+	{.pattern = "RP:ADC:DATa:SToP?", .callback = RP_ADC_StopData,},
 	{.pattern = "RP:ADC:BUFfer:Size?", .callback = RP_ADC_GetBufferSize,},
 	//{.pattern = "RP:ADC:Slow:FRAmes:DATa", .callback = RP_ADC_Slow_GetFrames,},
 	//{.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},

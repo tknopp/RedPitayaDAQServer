@@ -153,37 +153,27 @@ static int writeAll(int fd, const void *buf, size_t len) {
 	size_t bytesSent = 0;
 	size_t bytesLeft = len;
 	size_t n; 
-	while (bytesSent < len && commThreadRunning) {
-		n = write(fd, buf + bytesSent, bytesLeft);
-		if (n == -1) {
+	while (bytesSent < len && commThreadRunning && transmissionState != IDLE) {
+		n = send(fd, buf + bytesSent, bytesLeft, MSG_DONTWAIT);
+		if (n == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) {
+			printf("Write would have blocked\n"); // TODO Remove after tests
+			// Check if SCPI commands are waiting
+			rc = recv(clifd, smbuffer, sizeof (smbuffer), MSG_DONTWAIT);
+			if (rc > 0) {
+				SCPI_Input(&scpi_context, smbuffer, rc);
+				printf("Handled SCPI in loop\n");
+			}
+		}
+		else if (n == -1) {
 			return n;
-		} 
-		bytesSent+=n;
-		bytesLeft-=n;
+		}
+		else {
+			bytesSent+=n;
+			bytesLeft-=n;
+		}
 	}
 	return bytesSent;
 } 
-
-
-static void writeDataChunked(int fd, const void *buf, size_t count) 
-{
-	int n;
-	size_t chunkSize = 200000;
-	size_t ptr = 0;
-	size_t size;
-	while(ptr < count && commThreadRunning) {
-		size = MIN(count-ptr, chunkSize);
-
-		n = write(fd, buf + ptr, size);
-
-		if (n < 0) 
-		{
-			LOG_ERROR("Error in sendToHost()");
-		}
-		ptr += size;
-	}
-}
-
 
 void neoncopy(void *dst, const void *src, int cnt) {
 	asm volatile
@@ -377,16 +367,17 @@ void sendPerformanceDataToClient() {
 void sendADCPerformanceDataToClient() {
 	uint64_t deltas[2] = {perf.deltaRead, perf.deltaSend};
 	int n = 0;
-	n = send(newdatasockfd, deltas, sizeof(deltas), 0);
+	n = writeAll(newdatasockfd, deltas, sizeof(uint64_t) *2);
 	if (n < 0) {
 		LOG_WARN("Error while sending ADC performance data");
 	}
 }
 
 void sendDACPerformanceDataToClient() {
+	// TODO update performance values to larger bit size
 	uint8_t perfValues[4] = {avgDeltaControl, avgDeltaSet, minDeltaControl, maxDeltaSet};
 	int n = 0;
-	n = send(newdatasockfd, perfValues, sizeof(perfValues), 0);
+	n = writeAll(newdatasockfd, perfValues, sizeof(uint8_t) * 4);
 	if (n < 0) {
 		LOG_WARN("Error while sending DAC performance data");
 	}
@@ -396,8 +387,7 @@ void sendDACPerformanceDataToClient() {
 
 void sendStatusToClient() {
 	uint8_t status = getStatus();
-	int n = 0;
-	n = send(newdatasockfd, &status, sizeof(status), 0);
+	int n = writeAll(newdatasockfd, &status, sizeof(uint8_t) * 1);
 	if (n < 0) {
 		LOG_WARN("Error while sending status");
 	}
