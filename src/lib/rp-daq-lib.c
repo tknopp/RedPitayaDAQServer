@@ -150,8 +150,7 @@ int init() {
 	xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
 	awg_0_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(uint32_t)/2, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80020000);
 	awg_1_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(uint32_t)/2, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80028000);
-
-
+	
 	loadBitstream();
 	
 	calib_Init(); // Load calibration from EEPROM
