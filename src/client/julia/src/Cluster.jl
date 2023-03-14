@@ -103,7 +103,7 @@ for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samples
 end
 
 for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :samplesPerStep!,
-           :keepAliveReset!, :serverMode!, stopTransmission]
+           :keepAliveReset!, :serverMode!, :stopTransmission]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster, value)
