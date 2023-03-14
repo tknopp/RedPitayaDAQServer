@@ -3396,11 +3396,11 @@ proc create_root_design { parentCell } {
   assign_bd_address -offset 0x80028000 -range 0x00008000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs fourier_synth_standard/signal_compose1/waveform_awg1/axi_bram_ctrl_0/S_AXI/Mem0] -force
   assign_bd_address -offset 0x80020000 -range 0x00008000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs fourier_synth_standard/signal_compose/waveform_awg/axi_bram_ctrl_0/S_AXI/Mem0] -force
   assign_bd_address -offset 0x40004000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_cfg_register_cfg/s_axi/reg0] -force
-  assign_bd_address -offset 0x40002800 -range 0x00000800 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_cfg_register_counter_trigger/s_axi/reg0] -force
+  assign_bd_address -offset 0x40008000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_cfg_register_counter_trigger/s_axi/reg0] -force
   assign_bd_address -offset 0x40000000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_cfg_register_dac/s_axi/reg0] -force
   assign_bd_address -offset 0x40006000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_sts_register_DIOIn/s_axi/reg0] -force
   assign_bd_address -offset 0x40001000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_sts_register_adc/s_axi/reg0] -force
-  assign_bd_address -offset 0x40002000 -range 0x00000800 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_sts_register_counter_trigger/s_axi/reg0] -force
+  assign_bd_address -offset 0x40007000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_sts_register_counter_trigger/s_axi/reg0] -force
   assign_bd_address -offset 0x40003000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_sts_register_pdm/s_axi/reg0] -force
   assign_bd_address -offset 0x40005000 -range 0x00001000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs system/axi_sts_register_reset/s_axi/reg0] -force
   assign_bd_address -offset 0x40010000 -range 0x00010000 -target_address_space [get_bd_addr_spaces system/processing_system7_0/Data] [get_bd_addr_segs xadc_wiz_0/s_axi_lite/Reg] -force

@@ -230,6 +230,11 @@ int main(int argc, char** argv) {
 
 	logger_flush();
 
+	if(!initialized) {
+		init();
+		initialized = true;
+	}
+
 	int rc;
 	int listenfd;
 
@@ -249,7 +254,6 @@ int main(int argc, char** argv) {
 
 	// Ignore SIGPIPE signal to ensure that process is not silently terminated
 	sigaction(SIGPIPE, &(struct sigaction){SIG_IGN}, NULL);
-
 
 	getprio(pthread_self());
 
@@ -287,11 +291,6 @@ int main(int argc, char** argv) {
 
 			if(controlThreadRunning) {
 				joinControlThread();
-			}
-			
-			if(!initialized) {
-				init();
-				initialized = true;
 			}
 
 			newdatasocklen = sizeof(newdatasockaddr);

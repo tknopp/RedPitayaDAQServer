@@ -64,7 +64,7 @@ extern int mmapfd;
 extern volatile uint32_t *slcr, *axi_hp0;
 // FPGA registers that are memory mapped
 extern void *pdm_sts, *reset_sts, *cfg, *ram, *buf, *dio_sts;
-extern void *counter_trigger_cfg, *counter_trigger_sts;
+extern uint32_t *counter_trigger_cfg, *counter_trigger_sts;
 extern uint16_t *pdm_cfg;
 extern uint64_t *adc_sts, *dac_cfg; 
 extern uint32_t *awg_0_cfg, *awg_1_cfg;
