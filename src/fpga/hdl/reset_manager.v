@@ -11,6 +11,7 @@ module reset_manager #
     input clk,
     input peripheral_aresetn,
     input [7:0] reset_cfg,
+    input sata_trigger,
     inout trigger,
     inout watchdog,
     inout instant_reset,
@@ -157,6 +158,7 @@ IOBUF #(
 // Double-register inputs
 reg trigger_in_int_pre = 0;
 reg trigger_in_int = 0;
+reg sata_trigger_int = 0;
 reg watchdog_in_int_pre = 0;
 reg watchdog_in_int = 0;
 reg instant_reset_in_int_pre = 0;
@@ -167,6 +169,7 @@ always @(posedge clk)
 begin
     trigger_in_int_pre <= trigger_in;
     trigger_in_int <= trigger_in_int_pre;
+    sata_trigger_int <= sata_trigger;
     watchdog_in_int_pre <= watchdog_in;
     watchdog_in_int <= watchdog_in_int_pre;
     instant_reset_in_int_pre <= instant_reset_in;
@@ -208,7 +211,7 @@ begin
     end
     else
     begin
-        triggerState <= trigger_in_int;
+        triggerState <= trigger_in_int || sata_trigger_int
     end
 
     masterTriggerState_pre <= reset_cfg[5] & counter_trigger; // counter_trigger must always be high if not enabled
