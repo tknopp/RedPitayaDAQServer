@@ -30,7 +30,6 @@ enableRamping!(rp, 1, true)
 rampingDAC!(rp, 1, frame_period)
 
 clearSequence!(rp)
-passPDMToFastDAC!(rp, true)
 stepsPerFrame!(rp, steps_per_frame)
 seqChan!(rp, 1)
 lut = collect(range(-0.5,0.5,length=steps_per_frame))

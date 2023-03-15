@@ -28,7 +28,6 @@ triggerMode!(rp, INTERNAL)
 
 # Sequence Configuration
 clearSequence!(rp)
-passPDMToFastDAC!(rp, true) # if set the sequence will be output in DAC-out
 stepsPerFrame!(rp, steps_per_frame)
 seqChan!(rp, 1)
 lut = collect(range(-0.5,0.5,length=steps_per_frame))
@@ -40,7 +39,8 @@ masterTrigger!(rp, true)
 
 sleep(0.1)
 samples_per_step = (samples_per_period * periods_per_frame)/steps_per_frame
-uCurrentFrame = readFrames(rp, div(start(seq)*samples_per_step, samples_per_period * periods_per_frame), 2)
+timing = seqTiming(seq)
+uCurrentFrame = readFrames(rp, div(timing.start*samples_per_step, samples_per_period * periods_per_frame), 2)
 
 fig = figure(1)
 clf()

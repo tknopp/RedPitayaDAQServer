@@ -31,7 +31,6 @@ amplitudeDAC!(rp, 1, 1, 0.1)
 # No waveform on second channel
 amplitudeDAC!(rp, 2, 1, 0.0)
 
-passPDMToFastDAC!(rp, true)
 clearSequence!(rp)
 
 # Climbing offset for first channel, fixed offset for second channel
