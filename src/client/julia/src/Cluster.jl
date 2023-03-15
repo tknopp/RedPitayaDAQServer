@@ -37,8 +37,8 @@ function RedPitayaCluster(hosts::Vector{String}, port::Int64=5025, dataPort::Int
   # the first RP is the master
   rps = RedPitaya[ RedPitaya(host, port, dataPort, i==1) for (i,host) in enumerate(hosts) ]
 
-  @sync for rp in rps
-    @async triggerMode!(rp, triggerMode_)
+  @sync for (i, rp) in enumerate(rps)
+    @async triggerMode!(rp, i == 1 ? INTERNAL : triggerMode_)
   end
 
   return RedPitayaCluster(rps)
