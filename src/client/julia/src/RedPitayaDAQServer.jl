@@ -14,12 +14,13 @@ import Base: reset, iterate, length, push!, pop!
 
 export RedPitaya, send, receive, query, start, stop, disconnect, ServerMode, serverMode, serverMode!, CONFIGURATION, ACQUISITION, TRANSMISSION, getLog, ScpiBatch, execute!, clear!, @add_batch
 
-using ProgressMeter
-using Downloads
-using Scratch
-using GitHub
-using URIs
-using ZipFile
+# TODO: The update stuff increases load times quite a bit. Should we move this to a script?
+# using ProgressMeter
+# using Downloads
+# using Scratch
+# using GitHub
+# using URIs
+# using ZipFile
 
 const _awgBufferSize = 16384
 
@@ -369,7 +370,7 @@ include("Acquisition.jl")
 include("SlowIO.jl")
 include("EEPROM.jl")
 include("CounterTrigger.jl")
-include("Utility.jl")
+#include("Utility.jl")
 
 function destroy(rp::RedPitaya)
   disconnect(rp)
