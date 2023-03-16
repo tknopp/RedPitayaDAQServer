@@ -2,7 +2,7 @@ export RedPitayaCluster, master, numChan, ClusterTriggerSetup
 
 import Base: length, iterate, getindex, firstindex, lastindex
 
-@enum ClusterTriggerSetup INTERNAL, EXTERNAL, EXTERNAL_MASTER
+@enum ClusterTriggerSetup ALL_INTERNAL ALL_EXTERNAL MASTER_EXTERNAL
 """
     RedPitayaCluster
 
@@ -34,21 +34,24 @@ julia> rp == rpc[1]
 true
 ```
 """
-function RedPitayaCluster(hosts::Vector{String}, port::Int64=5025, dataPort::Int64=5026; triggerMode::ClusterTriggerSetup=INTERNAL)
+function RedPitayaCluster(hosts::Vector{String}, port::Int64=5025, dataPort::Int64=5026; triggerMode::ClusterTriggerSetup=ALL_INTERNAL)
   # the first RP is the master
   rps = RedPitaya[ RedPitaya(host, port, dataPort, i==1) for (i,host) in enumerate(hosts) ]
 
   modes = nothing
-  if triggerMode == INTERNAL
-    modes = fill(TriggerMode.INTERNAL, length(rps))
-  elseif triggerMode == EXTERNAL
-    modes = fill(TriggerMode.EXTERNAL, length(rps))
-  elseif triggerMode == EXTERNAL_MASTER
-    modes = fill(TriggerMode.INTERNAL, length(rps))
+  if triggerMode == ALL_INTERNAL
+    modes = fill(INTERNAL, length(rps))
+  elseif triggerMode == ALL_EXTERNAL
+    modes = fill(EXTERNAL, length(rps))
+  elseif triggerMode == MASTER_EXTERNAL
+    modes = fill(INTERNAL, length(rps))
     modes[1] = EXTERNAL
   end
   @sync for (i, rp) in enumerate(rps)
-    @async triggerMode!(rp, modes[i])
+    @async begin 
+      triggerMode!(rp, modes[i])
+      triggerPropagation!(rp, true)
+    end
   end
 
   triggerPropagation!(rps[end], false)
