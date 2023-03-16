@@ -26,6 +26,11 @@
 #include "../lib/rp-daq-lib.h"
 #include "../server/daq_server_scpi.h"
 
+scpi_choice_def_t onoff_modes[] = {
+	{"OFF", OFF},
+	{"ON", ON},
+	SCPI_CHOICE_LIST_END /* termination of option list */
+};
 
 static int readAll(int fd, void *buf,  size_t len) {
 	size_t left = len;
@@ -655,12 +660,6 @@ static scpi_result_t RP_DIO_SetDIODirectionN(scpi_t * context) {
 static scpi_result_t RP_DIO_SetDIODirectionP(scpi_t * context) {
 	return RP_DIO_SetDIODirection(context, true);
 }
-
-scpi_choice_def_t onoff_modes[] = {
-	{"OFF", OFF},
-	{"ON", ON},
-	SCPI_CHOICE_LIST_END /* termination of option list */
-};
 
 static scpi_result_t RP_DIO_SetDIOOutput(scpi_t * context, bool pinSide) {
 	int32_t numbers[1];
