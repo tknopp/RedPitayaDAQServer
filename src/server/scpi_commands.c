@@ -312,6 +312,34 @@ static scpi_result_t RP_DAC_GetTriggerMode(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_DAC_SetTriggerPropagation(scpi_t * context) {
+	if (getServerMode() != CONFIGURATION) {
+		return returnSCPIBool(context, false);
+	}
+
+	int32_t trigger_mode_selection;
+
+	if (!SCPI_ParamChoice(context, onoff_modes, &trigger_mode_selection, TRUE)) {
+		return returnSCPIBool(context, false);
+	}
+
+	int result = setTriggerPropagation(trigger_mode_selection);
+	if (result < 0) {
+		return returnSCPIBool(context, false);
+	}
+
+	return returnSCPIBool(context, true);
+}
+
+static scpi_result_t RP_DAC_GetTriggerPropagation(scpi_t * context) {
+	const char * name;
+
+	SCPI_ChoiceToName(onoff_modes, getTriggerPropagation(), &name);
+	SCPI_ResultText(context, name);
+
+	return SCPI_RES_OK;
+}
+
 scpi_choice_def_t signal_types[] = {
 	{"SINE", SIGNAL_TYPE_SINE},
 	{"SQUARE", SIGNAL_TYPE_SQUARE},
@@ -1654,6 +1682,8 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:TRIGger:ALiVe?", .callback = RP_GetKeepAliveReset,},
 	{.pattern = "RP:TRIGger:MODe", .callback = RP_DAC_SetTriggerMode,},
 	{.pattern = "RP:TRIGger:MODe?", .callback = RP_DAC_GetTriggerMode,},
+	{.pattern = "RP:TRIGger:PROP", .callback = RP_DAC_SetTriggerPropagation,},
+	{.pattern = "RP:TRIGger:PROP?", .callback = RP_DAC_GetTriggerPropagation,},
 	{.pattern = "RP:TRIGger", .callback = RP_SetMasterTrigger,},
 	{.pattern = "RP:TRIGger?", .callback = RP_GetMasterTrigger,},
 	//{.pattern = "RP:InstantResetMode", .callback = RP_SetInstantResetMode,},
