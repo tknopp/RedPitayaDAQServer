@@ -211,7 +211,7 @@ begin
     end
     else
     begin
-        triggerState <= trigger_in_int || sata_trigger_int
+        triggerState <= trigger_in_int || sata_trigger_int;
     end
 
     masterTriggerState_pre <= reset_cfg[5] & counter_trigger; // counter_trigger must always be high if not enabled
