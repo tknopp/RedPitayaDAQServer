@@ -1,4 +1,4 @@
-export RedPitayaCluster, master, numChan, ClusterTriggerSetup
+export RedPitayaCluster, master, numChan, ClusterTriggerSetup, ALL_INTERNAL, ALL_EXTERNAL, MASTER_EXTERNAL
 
 import Base: length, iterate, getindex, firstindex, lastindex
 

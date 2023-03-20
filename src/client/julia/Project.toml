@@ -1,7 +1,7 @@
 name = "RedPitayaDAQServer"
 uuid = "c544963a-496b-56d4-a5fe-f99a3f174c8f"
 authors = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.5.2"
+version = "0.6.0"
 
 [deps]
 #Downloads = "f43a241f-c20a-4ad4-852c-f6b1247861c6"
