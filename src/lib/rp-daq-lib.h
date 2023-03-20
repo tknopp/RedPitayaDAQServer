@@ -170,6 +170,8 @@ extern int setDIO(const char*, int);
 extern int getDIO(const char*);
 extern int setTriggerMode(int);
 extern int getTriggerMode();
+extern int setTriggerPropagation(int);
+extern int getTriggerPropagation();
 extern int getWatchdogMode();
 extern int setWatchdogMode(int);
 extern int getRAMWriterMode();

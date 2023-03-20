@@ -2,7 +2,7 @@ export TriggerMode, INTERNAL, EXTERNAL, ADCPerformanceData, RPStatus, Performanc
 decimation, decimation!, numChan, samplesPerPeriod, samplesPerPeriod!, periodsPerFrame, periodsPerFrame!,
 currentWP, currentPeriod, currentFrame, masterTrigger, masterTrigger!, keepAliveReset, keepAliveReset!,
 triggerMode, triggerMode!, startADC, stopADC, overwritten, corrupted, serverStatus, performanceData,
-readSamples, startPipelinedData, stopTransmission
+readSamples, startPipelinedData, stopTransmission, triggerPropagation, triggerPropagation!
 
 """
     TriggerMode
@@ -299,6 +299,44 @@ end
 scpiCommand(::typeof(triggerMode)) = "RP:TRIGger:MODe?"
 scpiReturn(::typeof(triggerMode)) = TriggerMode
 parseReturn(::typeof(triggerMode), ret) = stringToEnum(TriggerMode, strip(ret, '\"'))
+
+"""
+    triggerPropagation!(rp::RedPitaya, val::Bool)
+
+Set the trigger propagation of the RedPitaya to `val`. Return `true` if the command was successful.
+
+# Example
+```julia
+julia> triggerPropagation!(rp, true)
+true
+
+julia>triggerPropagation(rp)
+true
+```
+"""
+function triggerPropagation!(rp::RedPitaya, val)
+  return query(rp, scpiCommand(triggerPropagation!, val), scpiReturn(triggerPropagation!))
+end
+scpiCommand(::typeof(triggerPropagation!), val::Bool) = scpiCommand(triggerPropagation!, val ? "ON" : "OFF")
+scpiCommand(::typeof(triggerPropagation!), val::String) = string("RP:TRIGger:PROP ", val)
+scpiReturn(::typeof(triggerPropagation!)) = Bool
+"""
+    triggerPropagation(rp::RedPitaya)
+
+Determine whether the trigger propagation is set.
+# Example
+```julia
+julia> triggerPropagation!(rp, true)
+
+julia>triggerPropagation(rp)
+true
+```
+"""
+triggerPropagation(rp::RedPitaya) = occursin("ON", query(rp, scpiCommand(triggerPropagation)))
+scpiCommand(::typeof(triggerPropagation)) = "RP:TRIGger:PROP?"
+scpiReturn(::typeof(triggerPropagation)) = String
+parseReturn(::typeof(triggerPropagation), ret) = occursin("ON", ret)
+
 
 overwritten(rp::RedPitaya) = query(rp, scpiCommand(overwritten), scpiReturn(overwritten))
 scpiCommand(::typeof(overwritten)) = "RP:STATus:OVERwritten?"

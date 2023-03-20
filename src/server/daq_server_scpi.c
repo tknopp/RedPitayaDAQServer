@@ -230,11 +230,6 @@ int main(int argc, char** argv) {
 
 	logger_flush();
 
-	if(!initialized) {
-		init();
-		initialized = true;
-	}
-
 	int rc;
 	int listenfd;
 
@@ -291,6 +286,11 @@ int main(int argc, char** argv) {
 
 			if(controlThreadRunning) {
 				joinControlThread();
+			}
+
+			if(!initialized) {
+				init();
+				initialized = true;
 			}
 
 			newdatasocklen = sizeof(newdatasockaddr);

@@ -841,6 +841,30 @@ int setTriggerMode(int mode) {
 	return 0;
 }
 
+int getTriggerPropagation() {
+	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x04) >> 2);
+
+	if(value == 0) {
+		return OFF;
+	} else if(value == 1) {
+		return ON;
+	}
+
+	return -1;
+}
+
+int setTriggerPropagation(int mode) {
+	if(mode == OFF) {
+		*((uint8_t *)(cfg + 1)) &= ~4;
+	} else if(mode == ON) {
+		*((uint8_t *)(cfg + 1)) |= 4;
+	} else {
+		return -1;
+	}
+
+	return 0;
+}
+
 int getMasterTrigger() {
 	int value;
 

@@ -1,7 +1,8 @@
-export RedPitayaCluster, master, numChan
+export RedPitayaCluster, master, numChan, ClusterTriggerSetup
 
 import Base: length, iterate, getindex, firstindex, lastindex
 
+@enum ClusterTriggerSetup ALL_INTERNAL ALL_EXTERNAL MASTER_EXTERNAL
 """
     RedPitayaCluster
 
@@ -33,14 +34,28 @@ julia> rp == rpc[1]
 true
 ```
 """
-function RedPitayaCluster(hosts::Vector{String}, port::Int64=5025, dataPort::Int64=5026; triggerMode_="EXTERNAL")
+function RedPitayaCluster(hosts::Vector{String}, port::Int64=5025, dataPort::Int64=5026; triggerMode::ClusterTriggerSetup=ALL_INTERNAL)
   # the first RP is the master
   rps = RedPitaya[ RedPitaya(host, port, dataPort, i==1) for (i,host) in enumerate(hosts) ]
 
+  modes = nothing
+  if triggerMode == ALL_INTERNAL
+    modes = fill(INTERNAL, length(rps))
+  elseif triggerMode == ALL_EXTERNAL
+    modes = fill(EXTERNAL, length(rps))
+  elseif triggerMode == MASTER_EXTERNAL
+    modes = fill(INTERNAL, length(rps))
+    modes[1] = EXTERNAL
+  end
   @sync for (i, rp) in enumerate(rps)
-    @async triggerMode!(rp, i == 1 ? INTERNAL : triggerMode_)
+    @async begin 
+      triggerMode!(rp, modes[i])
+      triggerPropagation!(rp, true)
+    end
   end
 
+  triggerPropagation!(rps[end], false)
+  
   return RedPitayaCluster(rps)
 end
 
@@ -87,9 +102,9 @@ end
 for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset,
            :triggerMode, :samplesPerStep, :serverMode, :masterTrigger,
            :counterTrigger_enabled, :counterTrigger_enabled!, :counterTrigger_presamples,
-           :counterTrigger_presamples!, :counterTrigger_isArmed, :counterTrigger_arm!,
-           :counterTrigger_reset, :counterTrigger_reset!, :counterTrigger_lastCounter,
-           :counterTrigger_referenceCounter, :counterTrigger_referenceCounter!]
+           :counterTrigger_isArmed, :counterTrigger_arm!, :counterTrigger_reset!,
+           :counterTrigger_reset, :counterTrigger_lastCounter, :counterTrigger_referenceCounter,
+           :counterTrigger_sourceType, :counterTrigger_sourceChannel]
 
   @eval begin
     @doc """
@@ -103,7 +118,10 @@ for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samples
 end
 
 for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :samplesPerStep!,
-           :keepAliveReset!, :serverMode!, :stopTransmission]
+           :keepAliveReset!, :serverMode!, :stopTransmission,
+           :counterTrigger_enabled!, :counterTrigger_presamples!, :counterTrigger_arm!,
+           :counterTrigger_reset!, :counterTrigger_referenceCounter!,
+           :counterTrigger_sourceType!, :counterTrigger_sourceChannel!]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster, value)
