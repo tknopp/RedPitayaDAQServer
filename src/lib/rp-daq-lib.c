@@ -1161,10 +1161,10 @@ int getDIODirection(const char* pin) {
 	uint32_t register_value = *((uint8_t *)(cfg + 9));
 	register_value = ((register_value & (0x1 << (pinInternal))) >> (pinInternal));
 	
-	if(register_value == IN) {
-		return IN;
+	if(register_value == DIO_IN) {
+		return DIO_IN;
 	} else {
-		return OUT;
+		return DIO_OUT;
 	}
 }
 
@@ -1174,9 +1174,9 @@ int setDIODirection(const char* pin, int value) {
 		return -3;
 	}
 
-	if(value == OUT) {
+	if(value == DIO_IN) {
 		*((uint8_t *)(cfg + 9)) &= ~(0x1 << (pinInternal));
-	} else if(value == IN) {
+	} else if(value == DIO_OUT) {
 		*((uint8_t *)(cfg + 9)) |= (0x1 << (pinInternal));
 	} else {
 		return -1;
