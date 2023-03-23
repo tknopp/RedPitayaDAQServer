@@ -156,6 +156,7 @@ true
 counterTrigger_reset!(rp::RedPitaya, val) = query(rp, scpiCommand(counterTrigger_reset!, val), scpiReturn(counterTrigger_reset!))
 function counterTrigger_reset!(rp::RedPitaya)
   counterTrigger_reset!(rp, true)
+  sleep(0.05)
   counterTrigger_reset!(rp, false)
 end
 scpiCommand(::typeof(counterTrigger_reset!), val::Bool) = scpiCommand(counterTrigger_reset!, val ? "ON" : "OFF")
