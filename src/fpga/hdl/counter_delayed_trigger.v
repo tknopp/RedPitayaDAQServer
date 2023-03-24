@@ -146,7 +146,7 @@ begin
 				end
 				
 				// Only do internal arming when we would not directly trigger due to already satisfying the condition
-				if ((trigger_armed_int_pre == 1) && ~(delayed_trigger_counter >= reference_counter-trigger_presamples-1))
+				if ((trigger_armed_int_pre == 1) && ~(delayed_trigger_counter >= reference_counter-trigger_presamples-1) && (last_counter_out > 1))
 				begin
 					trigger_armed_int <= 1;
 				end
