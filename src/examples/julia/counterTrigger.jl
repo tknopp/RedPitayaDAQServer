@@ -87,12 +87,6 @@ serverMode!(rp, ACQUISITION)
 masterTrigger!(rp, true)
 counterTrigger_arm!(rp)
 
-# Start signal generation + acquisition
-# The trigger can only be set in ACQUISITION mode
-serverMode!(rp, ACQUISITION)
-masterTrigger!(rp, true)
-counterTrigger_arm!(rp)
-
 # Transmit the first frame
 uFirstPeriod = readFrames(rp, 0, 1)
 
