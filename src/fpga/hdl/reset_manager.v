@@ -5,7 +5,6 @@ module reset_manager #
     parameter integer ALIVE_SIGNAL_LOW_TIME = 100, // in milliseconds
     parameter integer ALIVE_SIGNAL_HIGH_TIME = 10, // in milliseconds
     parameter integer RAMWRITER_DELAY = 1 // in milliseconds
-
 )
 (
     input clk,
