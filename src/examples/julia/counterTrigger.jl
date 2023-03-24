@@ -81,46 +81,28 @@ amplitudeDAC!(rp, 1, 1, 0.5)
 offsetDAC!(rp, 1, 0)
 phaseDAC!(rp, 1, 1, 0.0)
 
-<<<<<<< Updated upstream
 # Start signal generation + acquisition
 # The trigger can only be set in ACQUISITION mode
 serverMode!(rp, ACQUISITION)
 masterTrigger!(rp, true)
 counterTrigger_arm!(rp)
-=======
-N = 5
-for i = 1:N
-  #serverMode!(rp, CONFIGURATION)
-  #counterTrigger_reset!(rp)
-  # counterTrigger_sourceType!(rp, COUNTER_TRIGGER_DIO)
-  # counterTrigger_sourceChannel!(rp, DIO7_P)
-  # DIODirection!(rp, DIO7_P, DIO_IN)
-  #counterTrigger_enabled!(rp, true)
-  # counterTrigger_referenceCounter!(rp, round(Int64, meanCounter))
-  # counterTrigger_presamples!(rp, 0)
 
-  # Start signal generation + acquisition
-  # The trigger can only be set in ACQUISITION mode
-  serverMode!(rp, ACQUISITION)
-  masterTrigger!(rp, true)
-  counterTrigger_arm!(rp)
->>>>>>> Stashed changes
+# Start signal generation + acquisition
+# The trigger can only be set in ACQUISITION mode
+serverMode!(rp, ACQUISITION)
+masterTrigger!(rp, true)
+counterTrigger_arm!(rp)
 
 # Transmit the first frame
 uFirstPeriod = readFrames(rp, 0, 1)
 
 sleep(0.1)
 
-<<<<<<< Updated upstream
 # Transmit the current frame
 fr = currentFrame(rp)
 # Dimensions of frames are [samples channel, period, frame]
 uCurrentPeriod = readFrames(rp, fr, 1)
 sleep(0.2)
-=======
-  counterTrigger_enabled!(rp, false)
-  counterTrigger_reset!(rp)
->>>>>>> Stashed changes
 
 uLastPeriod = readFrames(rp, currentFrame(rp), 1)
 
