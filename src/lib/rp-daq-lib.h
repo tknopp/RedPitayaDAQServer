@@ -53,8 +53,8 @@
 #define OFF 0
 #define ON 1
 
-#define IN 0
-#define OUT 1
+#define DIO_IN 1
+#define DIO_OUT 0
 
 #define CALIB_VERSION 1
 

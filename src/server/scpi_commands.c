@@ -600,8 +600,8 @@ static scpi_result_t RP_XADC_GetXADCValueVolt(scpi_t * context) {
 }
 
 scpi_choice_def_t inout_modes[] = {
-	{"IN", IN},
-	{"OUT", OUT},
+	{"IN", DIO_IN},
+	{"OUT", DIO_OUT},
 	SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
