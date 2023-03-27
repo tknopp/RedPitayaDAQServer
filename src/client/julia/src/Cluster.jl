@@ -1,8 +1,10 @@
-export RedPitayaCluster, master, numChan, ClusterTriggerSetup, ALL_INTERNAL, ALL_EXTERNAL, MASTER_EXTERNAL
+export RedPitayaCluster, master, numChan
 
 import Base: length, iterate, getindex, firstindex, lastindex
 
+export ClusterTriggerSetup, ALL_INTERNAL, ALL_EXTERNAL, MASTER_EXTERNAL
 @enum ClusterTriggerSetup ALL_INTERNAL ALL_EXTERNAL MASTER_EXTERNAL
+
 """
     RedPitayaCluster
 
