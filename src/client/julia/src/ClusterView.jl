@@ -1,4 +1,4 @@
-export RedPitayaClusterView, master, readDataPeriods, numChan, readDataSlow, readFrames, readPeriods, readPipelinedSamples, startPipelinedData, collectSamples!, readData, readDataPeriods, modeDAC, viewToCluster, clusterToView
+export RedPitayaClusterView, master, numChan, readFrames, readPeriods, startPipelinedData, collectSamples!, viewToCluster, clusterToView
 
 import Base: length, iterate, getindex, firstindex, lastindex
 

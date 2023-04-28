@@ -121,8 +121,8 @@ struct SimpleSequence <: AbstractSequence
     return new(SequenceLUT(lut, repetitions), enable)
   end
 end
-SimpleSequence(lut::Array, repetitions::Integer, enable=nothing) = SimpleSequence(map(Float32, lut), repetitions, enable)
-SimpleSequence(lut::Vector, repetitions::Integer, enable=nothing) = SimpleSequence(reshape(lut, 1, :), repetitions, enable)
+SimpleSequence(lut::Array{T}, repetitions::Integer, enable::Union{Array{Bool}, Nothing}=nothing) where T <: Real = SimpleSequence(map(Float32, lut), repetitions, enable)
+SimpleSequence(lut::Vector{T}, repetitions::Integer, enable::Union{Array{Bool}, Nothing}=nothing) where T <: Real = SimpleSequence(reshape(lut, 1, :), repetitions, enable)
 
 enableLUT(seq::SimpleSequence) = seq.enable
 valueLUT(seq::SimpleSequence) = seq.lut
@@ -179,8 +179,8 @@ struct HoldBorderRampingSequence <: RampingSequence
   end
 end
 
-HoldBorderRampingSequence(lut::Array, repetitions::Integer, rampingSteps::Integer, enable=nothing) = HoldBorderRampingSequence(map(Float32, lut), repetitions, rampingSteps, enable)
-HoldBorderRampingSequence(lut::Vector, repetitions::Integer, rampingSteps::Integer, enable=nothing) = HoldBorderRampingSequence(reshape(lut, 1, :), repetitions, rampingSteps, enable)
+HoldBorderRampingSequence(lut::Array{T}, repetitions::Integer, rampingSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing) where T <: Real = HoldBorderRampingSequence(map(Float32, lut), repetitions, rampingSteps, enable)
+HoldBorderRampingSequence(lut::Vector{T}, repetitions::Integer, rampingSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing) where T <: Real = HoldBorderRampingSequence(reshape(lut, 1, :), repetitions, rampingSteps, enable)
 
 function HoldBorderRampingSequence(rp::RedPitaya, lut, repetitions, enable=nothing)
   rampTime = maximum([rampingDAC(rp,i) for i=1:2 if enableRamping(rp, i)])
@@ -197,7 +197,7 @@ struct ConstantRampingSequence <: RampingSequence
   lut::SequenceLUT
   enable::Union{Array{Bool}, Nothing}
   ramping::SequenceLUT
-  function ConstantRampingSequence(lut::Array{Float32}, repetitions::Integer, rampingValue::Float32, rampingSteps::Integer, enable::Union{Array{Bool}, Nothing} = nothing)
+  function ConstantRampingSequence(lut::Array{Float32}, repetitions::Integer, rampingValue::Float32, rampingSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing)
     if !isnothing(enable) && size(lut) != size(enable)
       throw(DimensionMismatch("Size of enable LUT does not match size of value LUT"))
     end
@@ -205,9 +205,9 @@ struct ConstantRampingSequence <: RampingSequence
     return new(SequenceLUT(lut, repetitions), enable, rampingLut)
   end
 end
-
-ConstantRampingSequence(lut::Array, repetitions, rampingValue, rampingSteps, enable=nothing) = ConstantRampingSequence(map(Float32, lut), repetitions, Float32(rampingValue), rampingSteps, enable)
-ConstantRampingSequence(lut::Vector, repetitions, rampingValue, rampingSteps, enable=nothing) = ConstantRampingSequence(reshape(lut, 1, :), repetitions, rampingValue, rampingSteps, enable)
+ConstantRampingSequence(lut::Array{T}, repetitions::Integer, rampingValue::Real, rampingSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing) where T <: Real = ConstantRampingSequence(map(Float32, lut), repetitions, Float32(rampingValue), rampingSteps, enable)
+ConstantRampingSequence(lut::Vector{Float32}, repetitions::Integer, rampingValue::Float32, rampingSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing) = ConstantRampingSequence(reshape(lut, 1, :), repetitions, rampingValue, rampingSteps, enable)
+ConstantRampingSequence(lut::Vector{T}, repetitions::Integer, rampingValue::Real, rampingSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing) where T <: Real = ConstantRampingSequence(reshape(lut, 1, :), repetitions, rampingValue, rampingSteps, enable)
 
 enableLUT(seq::ConstantRampingSequence) = seq.enable
 valueLUT(seq::ConstantRampingSequence) = seq.lut
@@ -240,10 +240,9 @@ struct StartUpSequence <: RampingSequence
     return new(SequenceLUT(lut, repetitions), enable, up, down)
   end
 end
-
-
-StartUpSequence(lut::Array, repetitions::Integer, rampingSteps::Integer, startUpSteps::Integer, enable=nothing) = StartUpSequence(map(Float32, lut), repetitions, rampingSteps, startUpSteps, enable)
-StartUpSequence(lut::Vector, repetitions::Integer, rampingSteps::Integer, startUpSteps::Integer, enable=nothing) = StartUpSequence(reshape(lut, 1, :), repetitions, rampingSteps, startUpSteps, enable)
+StartUpSequence(lut::Array{T}, repetitions::Integer, rampingSteps::Integer, startUpSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing) where T <: Real = StartUpSequence(map(Float32, lut), repetitions, rampingSteps, startUpSteps, enable)
+#StartUpSequence(lut::Vector{Float32}, repetitions::Integer, rampingSteps::Integer, startUpSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing) = StartUpSequence(reshape(lut, 1, :), repetitions, rampingSteps, startUpSteps, enable)
+StartUpSequence(lut::Vector{T}, repetitions::Integer, rampingSteps::Integer, startUpSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing) where T <: Real = StartUpSequence(reshape(lut, 1, :), repetitions, rampingSteps, startUpSteps, enable)
 
 enableLUT(seq::StartUpSequence) = seq.enable
 valueLUT(seq::StartUpSequence) = seq.lut
