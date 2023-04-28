@@ -1,5 +1,10 @@
 using RedPitayaDAQServer
 using Test
+using Aqua
 
-# write your own tests here
-@test 1 == 1
+@testset "RedPitayaDAQServer" begin
+  @testset "Aqua" begin
+    #@warn "Ambiguities and piracies are accepted for now"
+    Aqua.test_all(RedPitayaDAQServer) # , ambiguities=false, piracy=false)
+  end
+end
