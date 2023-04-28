@@ -12,7 +12,7 @@ import LinearAlgebra: normalize
 
 import Base: reset, iterate, length, push!, pop!
 
-export RedPitaya, send, receive, query, start, stop, disconnect, ServerMode, serverMode, serverMode!, CONFIGURATION, ACQUISITION, TRANSMISSION, getLog, ScpiBatch, execute!, clear!, @add_batch
+export RedPitaya, send, receive, query, disconnect, ServerMode, serverMode, serverMode!, CONFIGURATION, ACQUISITION, TRANSMISSION, getLog, ScpiBatch, execute!, clear!, @add_batch
 
 # TODO: The update stuff increases load times quite a bit. Should we move this to a script?
 # using ProgressMeter
@@ -139,7 +139,7 @@ function query(rp::RedPitaya, cmd::String, T::Type, timeout::Number=getTimeout()
 end
 
 # connect with timeout implementation
-function Sockets.connect(host, port::Integer, timeout::Number)
+function connectTimeout(host, port::Integer, timeout::Number)
   s = TCPSocket()
   t = Timer(_ -> close(s), timeout)
   try
@@ -156,8 +156,8 @@ end
 function connect(rp::RedPitaya)
   if !rp.isConnected
     begin
-      rp.socket = connect(rp.host, rp.port, getTimeout())
-      rp.dataSocket = connect(rp.host, rp.dataPort, getTimeout())
+      rp.socket = connectTimeout(rp.host, rp.port, getTimeout())
+      rp.dataSocket = connectTimeout(rp.host, rp.dataPort, getTimeout())
       rp.isConnected = true
       updateCalib!(rp)
       temp = findall([calibDACScale(rp, 1) < _scaleWarning, calibDACScale(rp, 2) < _scaleWarning])
