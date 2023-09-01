@@ -41,12 +41,14 @@ export RedPitaya,
 @template TYPES = """
                   $(TYPEDEF)
                   $(DOCSTRING)
+
+                  # Fields
+                  $(TYPEDFIELDS)
                   """
 
 @template (FUNCTIONS, METHODS, MACROS) = """
                                          $(TYPEDSIGNATURES)
                                          $(DOCSTRING)
-                                         $(METHODLIST)
                                          """
 
 const _awgBufferSize = 16384
