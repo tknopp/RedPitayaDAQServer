@@ -1,8 +1,6 @@
 rp = RedPitaya(singleIP)
 
-@testset "Acquisition.jl" begin
-  
-end
+@testset "Acquisition.jl" begin end
 
 @testset "ADC.jl" begin
   decimation!(rp, 8)
@@ -17,7 +15,6 @@ end
   samplesPerPeriod!(rp, 625)
   @test samplesPerPeriod(rp) == 625
 
-
   periodsPerFrame!(rp, 42)
   @test samplesPerPeriod(rp) == 42
   periodsPerFrame!(rp, 1)
@@ -27,6 +24,5 @@ end
   @test currentPeriod(rp) == 0 # The aquisition is not running
   @test currentWP(rp) == 0 # The aquisition is not running
 
-  #TODO: Cont' here
-
+  @error("TODO: Cont' here")
 end

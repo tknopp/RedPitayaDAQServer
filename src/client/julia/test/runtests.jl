@@ -1,9 +1,26 @@
 using RedPitayaDAQServer
 using Test
 using Aqua
+using JuliaFormatter
 using Sockets
 
+isCIRun =
+  haskey(ENV, "GITHUB_ACTIONS") ||
+  haskey(ENV, "TRAVIS") ||
+  haskey(ENV, "CIRCLECI") ||
+  haskey(ENV, "GITLAB_CI")
+
 @testset "RedPitayaDAQServer" begin
+  @testset "Formatting" begin
+    @error pathof(RedPitayaDAQServer)
+    formatted = format(pathof(RedPitayaDAQServer); verbose = false)
+
+    if !formatted && !isCIRun
+      @info "Please re-run tests since now everything should be formatted."
+    end
+    @test formatted == true
+  end
+
   @testset "Aqua" begin
     Aqua.test_all(RedPitayaDAQServer)
   end
