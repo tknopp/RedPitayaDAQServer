@@ -1485,6 +1485,90 @@ static scpi_result_t RP_Calib_DAC_SetScale(scpi_t* context) {
 	return returnSCPIBool(context, true);
 }
 
+static scpi_result_t RP_Calib_DAC_GetLowerLimit(scpi_t* context) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+	if (channel == 0) {
+		SCPI_ResultFloat(context, calib_params.dac_ch1_lower);
+	}
+	else if (channel == 1) {
+		SCPI_ResultFloat(context, calib_params.dac_ch2_lower);
+	}
+	else {
+		SCPI_ResultFloat(context, NAN);
+ 		return SCPI_RES_ERR;
+	}
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_Calib_DAC_SetLowerLimit(scpi_t* context) {
+	if (getServerMode() != CONFIGURATION) {
+		return returnSCPIBool(context, false);
+	}
+
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+	float limit;
+
+	SCPI_ParamFloat(context, &limit, true);
+	if (calib_setDACLowerLimit(&calib_params, limit, channel)) {
+ 		return returnSCPIBool(context, false);
+	}
+
+	calib_WriteParams(calib_params, false);	
+	calib_Init(); // Reload from cache from EEPROM
+	calib_apply();
+	return returnSCPIBool(context, true);
+}
+
+static scpi_result_t RP_Calib_DAC_GetUpperLimit(scpi_t* context) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+	if (channel == 0) {
+		SCPI_ResultFloat(context, calib_params.dac_ch1_upper);
+	}
+	else if (channel == 1) {
+		SCPI_ResultFloat(context, calib_params.dac_ch2_upper);
+	}
+	else {
+		SCPI_ResultFloat(context, NAN);
+ 		return SCPI_RES_ERR;
+	}
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_Calib_DAC_SetUpperLimit(scpi_t* context) {
+	if (getServerMode() != CONFIGURATION) {
+		return returnSCPIBool(context, false);
+	}
+
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+	float limit;
+
+	SCPI_ParamFloat(context, &limit, true);
+	if (calib_setDACUpperLimit(&calib_params, limit, channel)) {
+ 		return returnSCPIBool(context, false);
+	}
+
+	calib_WriteParams(calib_params, false);	
+	calib_Init(); // Reload from cache from EEPROM
+	calib_apply();
+	return returnSCPIBool(context, true);
+}
+
 static scpi_result_t RP_Calib_ADC_GetOffset(scpi_t* context) {
 	int32_t numbers[1];
 	SCPI_CommandNumbers(context, numbers, 1, 1);
@@ -1724,6 +1808,10 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:CALib:DAC:CHannel#:OFFset", .callback = RP_Calib_DAC_SetOffset,},
 	{.pattern = "RP:CALib:DAC:CHannel#:SCAle?", .callback = RP_Calib_DAC_GetScale,},
 	{.pattern = "RP:CALib:DAC:CHannel#:SCAle", .callback = RP_Calib_DAC_SetScale,},
+	{.pattern = "RP:CALib:DAC:CHannel#:LIMit:LOWer?", .callback = RP_Calib_DAC_GetLowerLimit,},
+	{.pattern = "RP:CALib:DAC:CHannel#:LIMit:LOWer", .callback = RP_Calib_DAC_SetLowerLimit,},
+	{.pattern = "RP:CALib:DAC:CHannel#:LIMit:UPper?", .callback = RP_Calib_DAC_GetUpperLimit,},
+	{.pattern = "RP:CALib:DAC:CHannel#:LIMit:UPper", .callback = RP_Calib_DAC_SetUpperLimit,},
 	{.pattern = "RP:CALib:ADC:CHannel#:OFFset?", .callback = RP_Calib_ADC_GetOffset,},
 	{.pattern = "RP:CALib:ADC:CHannel#:OFFset", .callback = RP_Calib_ADC_SetOffset,},
 	{.pattern = "RP:CALib:ADC:CHannel#:SCAle?", .callback = RP_Calib_ADC_GetScale,},
