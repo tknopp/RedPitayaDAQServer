@@ -56,7 +56,7 @@
 #define DIO_IN 1
 #define DIO_OUT 0
 
-#define CALIB_VERSION 1
+#define CALIB_VERSION 2
 
 extern bool verbose;
 
@@ -96,6 +96,8 @@ extern int getSignalType(int, int);
 extern int setSignalType(int, int, int);
 extern int setCalibDACScale(float, int);
 extern int setCalibDACOffset(float, int);
+extern int setCalibDACLowerLimit(float, int);
+extern int setCalibDACUpperLimit(float, int);
 extern int setArbitraryWaveform(float*, int);
 //extern int getRampingPeriod(int);
 
@@ -200,7 +202,7 @@ extern void stopTx();
 typedef struct {
     char id[3+1];
     int version;
-    uint8_t set_flags;
+    uint16_t set_flags;
     float adc_ch1_fs;
     float adc_ch1_offs;
     float adc_ch2_fs;
@@ -209,6 +211,10 @@ typedef struct {
     float dac_ch1_offs;
     float dac_ch2_fs;
     float dac_ch2_offs;
+    float dac_ch1_lower;
+    float dac_ch1_upper;
+    float dac_ch2_lower;
+    float dac_ch2_upper;
 } rp_calib_params_t;
 
 extern int calib_Init();
@@ -220,6 +226,8 @@ extern int calib_setADCOffset(rp_calib_params_t * calib_params, float value, int
 extern int calib_setADCScale(rp_calib_params_t * calib_params, float value, int channel);
 extern int calib_setDACOffset(rp_calib_params_t * calib_params, float value, int channel);
 extern int calib_setDACScale(rp_calib_params_t * calib_params, float value, int channel);
+extern int calib_setDACLowerLimit(rp_calib_params_t * calib_params, float value, int channel);
+extern int calib_setDACUpperLimit(rp_calib_params_t * calib_params, float value, int channel);
 
 extern rp_calib_params_t calib_GetParams();
 extern rp_calib_params_t calib_GetDefaultCalib();

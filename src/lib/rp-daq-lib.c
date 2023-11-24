@@ -463,6 +463,39 @@ int setCalibDACOffset(float value, int channel) {
 	return 0;
 }
 
+int setCalibDACLowerLimit(float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	
+	int16_t limit = (int16_t)(value*8191.0);
+	if (limit < -8191 || limit >= 8192) {
+		return -2;
+	}
+	// Config lower limit is stored in second component freq
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel);
+	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) limit) << 48) & ~MASK_LOWER_48);
+	*(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel) = register_value;
+	return 0;
+}
+
+
+int setCalibDACUpperLimit(float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	
+	int16_t limit = (int16_t)(value*8191.0);
+	if (limit < -8191 || limit >= 8192) {
+		return -2;
+	}
+	// Config upper limit is stored in second component phase
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel);
+	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) limit) << 48) & ~MASK_LOWER_48);
+	*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel) = register_value;
+	return 0;
+}
+
 int setArbitraryWaveform(float* values, int channel) {
 	uint32_t *awg_cfg = NULL;
 	if (channel == 0) {
@@ -1392,6 +1425,10 @@ rp_calib_params_t getDefaultCalib(){
 		calib.adc_ch1_offs = 0.0;
 		calib.adc_ch2_fs = 1.0/8192.0;
 		calib.adc_ch2_offs = 0.0;
+		calib.dac_ch1_lower = -1.0;
+    calib.dac_ch1_upper = 1.0;
+    calib.dac_ch2_lower = -1.0;
+    calib.dac_ch2_upper = 1.0;
     return calib;
 }
 
@@ -1440,6 +1477,25 @@ int calib_validate(rp_calib_params_t * calib_params) {
 		calib_params->dac_ch2_offs = def.dac_ch2_offs;
 		calib_params->set_flags &= ~(1 << 7);
 	}
+
+	// DAC Limits
+	if (useDefault || !(calib_params->set_flags & (1 << 8))) {
+		calib_params->dac_ch1_lower = def.dac_ch1_lower;
+		calib_params->set_flags &= ~(1 << 8);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 9))) {
+		calib_params->dac_ch1_upper = def.dac_ch1_upper;
+		calib_params->set_flags &= ~(1 << 9);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 10))) {
+		calib_params->dac_ch2_lower = def.dac_ch2_lower;
+		calib_params->set_flags &= ~(1 << 10);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 11))) {
+		calib_params->dac_ch2_upper = def.dac_ch2_upper;
+		calib_params->set_flags &= ~(1 << 11);
+	}
+
 	return 0;
 }
 
@@ -1507,6 +1563,36 @@ int calib_setDACScale(rp_calib_params_t * calib_params, float value, int channel
 	else if (channel == 1) {
 		calib_params->dac_ch2_fs = value;
 		calib_params->set_flags |= (1 << 6);
+	}
+	return 0;
+}
+
+int calib_setDACLowerLimit(rp_calib_params_t * calib_params, float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	if (channel == 0) {
+		calib_params->dac_ch1_lower = value;
+		calib_params->set_flags |= (1 << 8);
+	}
+	else if (channel == 1) {
+		calib_params->dac_ch2_lower = value;
+		calib_params->set_flags |= (1 << 10);
+	}
+	return 0;
+}
+
+int calib_setDACUpperLimit(rp_calib_params_t * calib_params, float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	if (channel == 0) {
+		calib_params->dac_ch1_upper = value;
+		calib_params->set_flags |= (1 << 9);
+	}
+	else if (channel == 1) {
+		calib_params->dac_ch2_upper = value;
+		calib_params->set_flags |= (1 << 11);
 	}
 	return 0;
 }
