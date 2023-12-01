@@ -1705,7 +1705,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "STATus:PRESet", .callback = SCPI_StatusPreset,},
 
 	/* RP-DAQ */
-	{.pattern = "RP:VERsion:IMaGe?", .callback = RP_GetImageVersion,},
+	{.pattern = "RP:VERsion:IMAGe?", .callback = RP_GetImageVersion,},
 	{.pattern = "RP:MODe?", .callback = RP_GetServerMode,},
 	{.pattern = "RP:MODe", .callback = RP_SetServerMode,},
 	// DAC

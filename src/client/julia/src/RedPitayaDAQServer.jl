@@ -210,7 +210,7 @@ function stringToEnum(enumType::Type{T}, value::AbstractString) where {T <: Enum
 end
 
 imgversion(rp::RedPitaya) = query(rp, scpiCommand(imgversion), scpiReturn(imgversion))
-scpiCommand(::typeof(imgversion)) = "RP:VER:IMG?"
+scpiCommand(::typeof(imgversion)) = "RP:VERsion:IMAGe?"
 scpiReturn(::typeof(imgversion)) = UInt32
 
 """
