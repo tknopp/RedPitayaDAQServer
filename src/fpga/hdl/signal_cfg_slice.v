@@ -43,7 +43,7 @@ assign comp_1_amp[15:0] = cfg_data[319:304];
 assign comp_1_freq[47:0] = cfg_data[367:320];
 assign calib_limit_lower[15:0] = cfg_data[383:368];
 assign comp_1_phase[47:0] = cfg_data[431:384];
-assign calib_limit_upper[15:0] = cfg_data[474:432];
+assign calib_limit_upper[15:0] = cfg_data[447:432];
 
 // 0 bit gap
 assign comp_2_cfg[47:0] = cfg_data[495:448];
