@@ -91,6 +91,11 @@ bool isZynq7045() {
 	return (getFPGAId() == 0x11);
 }
 
+
+uint32_t getFPGAImageVersion() {
+	return *version_sts;
+}
+
 void loadBitstream() {
 	if(!access("/tmp/bitstreamLoaded", F_OK )){
 		printf("Bitfile already loaded\n");
@@ -150,9 +155,13 @@ int init() {
 	xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
 	awg_0_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(uint32_t)/2, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80020000);
 	awg_1_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(uint32_t)/2, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80028000);
+	version_sts  = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40009000);
+
+
 	
 	loadBitstream();
-	
+	printf("FPGA Image Version %u\n", getFPGAImageVersion());
+
 	calib_Init(); // Load calibration from EEPROM
 	calib_validate(&calib);
 	printf("Using calibration version %d with: %u\n", calib.version, calib.set_flags);

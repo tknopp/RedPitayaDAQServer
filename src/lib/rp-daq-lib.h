@@ -68,6 +68,7 @@ extern uint32_t *counter_trigger_cfg, *counter_trigger_sts;
 extern uint16_t *pdm_cfg;
 extern uint64_t *adc_sts, *dac_cfg; 
 extern uint32_t *awg_0_cfg, *awg_1_cfg;
+extern uint32_t *version_sts;
 
 // init routines
 extern uint32_t getFPGAId();
@@ -78,6 +79,7 @@ extern bool isZynq7030();
 extern bool isZynq7045();
 extern int init();
 extern void loadBitstream();
+extern uint32_t getFPGAImageVersion();
 
 // fast DAC
 extern uint16_t getAmplitude(int, int);

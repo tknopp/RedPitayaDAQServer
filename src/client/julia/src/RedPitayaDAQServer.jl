@@ -164,6 +164,12 @@ function connect(rp::RedPitaya)
       if length(temp) > 0
         @warn "RP $(rp.host): Channels $(string(temp)) have a small DAC scale calibration value. If this is not intended use calibDACScale!(rp, i, 1.0) to set a default scale."
       end
+
+      imageVersion = imgversion(rp)
+      packageVersion = pkgversion(@__MODULE__)
+      if packageVersion.minor != imageVersion
+        @warn "RedPitayaDAQServer (minor) client version ($packageVersion) differs from FPGA image version ($imageVersion). Incompatible (minor) versions can result in undefined behaviour"
+      end
     end
   end
 end
@@ -202,6 +208,10 @@ function stringToEnum(enumType::Type{T}, value::AbstractString) where {T <: Enum
   end
   return instances(enumType)[index]
 end
+
+imgversion(rp::RedPitaya) = query(rp, scpiCommand(imgversion), scpiReturn(imgversion))
+scpiCommand(::typeof(imgversion)) = "RP:VER:IMG?"
+scpiReturn(::typeof(imgversion)) = UInt32
 
 """
     ServerMode
