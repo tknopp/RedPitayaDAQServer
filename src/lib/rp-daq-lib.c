@@ -1502,8 +1502,12 @@ int calib_validate(rp_calib_params_t * calib_params) {
 int calib_apply() {
 	setCalibDACScale(calib.dac_ch1_fs, 0);
 	setCalibDACOffset(calib.dac_ch1_offs, 0);
+	setCalibDACLowerLimit(calib.dac_ch1_lower, 0);
+	setCalibDACUpperLimit(calib.dac_ch1_upper, 0);
 	setCalibDACScale(calib.dac_ch2_fs, 1);
 	setCalibDACOffset(calib.dac_ch2_offs, 1);
+	setCalibDACLowerLimit(calib.dac_ch2_lower, 1);
+	setCalibDACUpperLimit(calib.dac_ch2_upper, 1);
 	return 0;
 }
 
