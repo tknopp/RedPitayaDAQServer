@@ -1,4 +1,4 @@
-export calibDACOffset, calibDACOffset!, calibADCScale, calibADCScale!, calibADCOffset, calibADCOffset!, updateCalib!, calibDACScale!, calibDACScale, calibFlags
+export calibDACOffset, calibDACOffset!, calibADCScale, calibADCScale!, calibADCOffset, calibADCOffset!, updateCalib!, calibDACScale!, calibDACScale, calibFlags, calibDACLowerLimit, calibDACLowerLimit!, calibDACUpperLimit, calibDACUpperLimit!, calibDACLimit!
 
 """
     calibDACOffset!(rp::RedPitaya, channel::Integer, val)
@@ -42,6 +42,60 @@ Retrieve the calibration DAC scale for given channel from the RedPitayas EEPROM.
 calibDACScale(rp::RedPitaya, channel::Integer) = query(rp, scpiCommand(calibDACScale, channel), scpiReturn(calibDACScale))
 scpiCommand(::typeof(calibDACScale), channel::Integer) = string("RP:CALib:DAC:CH", Int(channel) - 1, ":SCA?")
 scpiReturn(::typeof(calibDACScale)) = Float64
+
+"""
+    calibDACLowerLimit!(rp::RedPitaya, channel::Integer)
+
+Store calibration DAC lower limit `val` for given channel into the RedPitayas EEPROM.
+This value is used by the server to limit the output voltage.
+"""
+function calibDACLowerLimit!(rp::RedPitaya, channel::Integer, val)
+  return query(rp, scpiCommand(calibDACLowerLimit!, channel, val), scpiReturn(calibDACLowerLimit!))
+end
+scpiCommand(::typeof(calibDACLowerLimit!), channel::Integer, val) = string("RP:CALib:DAC:CH", Int(channel) - 1, ":LIM:LOW $(Float32(val))")
+scpiReturn(::typeof(calibDACLowerLimit!)) = Bool
+"""
+    calibDACLowerLimit(rp::RedPitaya, channel::Integer)
+
+Retrieve the calibration DAC lower limit for given channel from the RedPitayas EEPROM.
+"""
+calibDACLowerLimit(rp::RedPitaya, channel::Integer) = query(rp, scpiCommand(calibDACLowerLimit, channel), scpiReturn(calibDACLowerLimit))
+scpiCommand(::typeof(calibDACLowerLimit), channel::Integer) = string("RP:CALib:DAC:CH", Int(channel) - 1, ":LIM:LOW?")
+scpiReturn(::typeof(calibDACLowerLimit)) = Float64
+
+"""
+    calibDACUpperLimit!(rp::RedPitaya, channel::Integer)
+
+Store calibration DAC upper limit `val` for given channel into the RedPitayas EEPROM.
+This value is used by the server to limit the output voltage.
+"""
+function calibDACUpperLimit!(rp::RedPitaya, channel::Integer, val)
+  return query(rp, scpiCommand(calibDACUpperLimit!, channel, val), scpiReturn(calibDACUpperLimit!))
+end
+scpiCommand(::typeof(calibDACUpperLimit!), channel::Integer, val) = string("RP:CALib:DAC:CH", Int(channel) - 1, ":LIM:UP $(Float32(val))")
+scpiReturn(::typeof(calibDACUpperLimit!)) = Bool
+"""
+    calibDACUpperLimit(rp::RedPitaya, channel::Integer)
+
+Retrieve the calibration DAC upper limit for given channel from the RedPitayas EEPROM.
+"""
+calibDACUpperLimit(rp::RedPitaya, channel::Integer) = query(rp, scpiCommand(calibDACUpperLimit, channel), scpiReturn(calibDACUpperLimit))
+scpiCommand(::typeof(calibDACUpperLimit), channel::Integer) = string("RP:CALib:DAC:CH", Int(channel) - 1, ":LIM:UP?")
+scpiReturn(::typeof(calibDACUpperLimit)) = Float64
+
+"""
+    calibDACLimit!(rp::RedPitaya, channel, val)
+
+Applies `val` with a positive sign as the upper and with a negative sign as the lower calibration DAC limit.
+
+See also [calibDACUpperLimit!](@ref), [calibDACLowerLimit!](@ref)
+"""
+function calibDACLimit!(rp::RedPitaya, channel::Integer, val)
+  val = abs(val)
+  result = calibDACLowerLimit!(rp, channel, -val)
+  result &= calibDACUpperLimit!(rp, channel, val)
+  return result
+end
 
 """
     calibADCOffset!(rp::RedPitaya, channel::Integer, val)
