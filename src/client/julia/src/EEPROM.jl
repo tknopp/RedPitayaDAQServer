@@ -1,4 +1,4 @@
-export calibDACOffset, calibDACOffset!, calibADCScale, calibADCScale!, calibADCOffset, calibADCOffset!, updateCalib!, calibDACScale!, calibDACScale, calibFlags, calibDACLowerLimit, calibDACLowerLimit!, calibDACUpperLimit, calibDACUpperLimit!
+export calibDACOffset, calibDACOffset!, calibADCScale, calibADCScale!, calibADCOffset, calibADCOffset!, updateCalib!, calibDACScale!, calibDACScale, calibFlags, calibDACLowerLimit, calibDACLowerLimit!, calibDACUpperLimit, calibDACUpperLimit!, calibDACLimit!
 
 """
     calibDACOffset!(rp::RedPitaya, channel::Integer, val)
@@ -82,6 +82,20 @@ Retrieve the calibration DAC upper limit for given channel from the RedPitayas E
 calibDACUpperLimit(rp::RedPitaya, channel::Integer) = query(rp, scpiCommand(calibDACUpperLimit, channel), scpiReturn(calibDACUpperLimit))
 scpiCommand(::typeof(calibDACUpperLimit), channel::Integer) = string("RP:CALib:DAC:CH", Int(channel) - 1, ":LIM:UP?")
 scpiReturn(::typeof(calibDACUpperLimit)) = Float64
+
+"""
+    calibDACLimit!(rp::RedPitaya, channel, val)
+
+Applies `val` with a positive sign as the upper and with a negative sign as the lower calibration DAC limit.
+
+See also [calibDACUpperLimit!](@ref), [calibDACLowerLimit!](@ref)
+"""
+function calibDACLimit!(rp::RedPitaya, channel::Integer, val)
+  val = abs(val)
+  result = calibDACLowerLimit!(rp, channel, -val)
+  result &= calibDACUpperLimit!(rp, channel, val)
+  return result
+end
 
 """
     calibADCOffset!(rp::RedPitaya, channel::Integer, val)
