@@ -473,9 +473,9 @@ int setCalibDACLowerLimit(float value, int channel) {
 		return -2;
 	}
 	// Config lower limit is stored in second component freq
-	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel);
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*1 + CHANNEL_OFFSET*channel);
 	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) limit) << 48) & ~MASK_LOWER_48);
-	*(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel) = register_value;
+	*(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*1 + CHANNEL_OFFSET*channel) = register_value;
 	return 0;
 }
 
@@ -490,9 +490,9 @@ int setCalibDACUpperLimit(float value, int channel) {
 		return -2;
 	}
 	// Config upper limit is stored in second component phase
-	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel);
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*1 + CHANNEL_OFFSET*channel);
 	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) limit) << 48) & ~MASK_LOWER_48);
-	*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel) = register_value;
+	*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*1 + CHANNEL_OFFSET*channel) = register_value;
 	return 0;
 }
 
