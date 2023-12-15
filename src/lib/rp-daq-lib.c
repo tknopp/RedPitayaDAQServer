@@ -26,6 +26,7 @@ uint32_t *counter_trigger_sts;
 uint16_t *pdm_cfg;
 uint64_t *adc_sts, *dac_cfg;
 uint32_t *awg_0_cfg, *awg_1_cfg;
+uint32_t *version_sts;
 volatile int32_t *xadc;
 
 // static const uint32_t ANALOG_OUT_MASK            = 0xFF;

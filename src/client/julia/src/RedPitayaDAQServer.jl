@@ -168,7 +168,7 @@ function connect(rp::RedPitaya)
       imageVersion = imgversion(rp)
       packageVersion = pkgversion(@__MODULE__)
       if packageVersion.minor != imageVersion
-        @warn "RedPitayaDAQServer (minor) client version ($packageVersion) differs from FPGA image version ($imageVersion). Incompatible (minor) versions can result in undefined behaviour"
+        @warn "RedPitayaDAQServer $(rp.host) (minor) client version ($packageVersion) differs from FPGA image version ($imageVersion). Incompatible (minor) versions can result in undefined behaviour"
       end
     end
   end
