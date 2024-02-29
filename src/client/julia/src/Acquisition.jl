@@ -320,6 +320,13 @@ function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView
   return data
 end
 
+"""
+    convertSamplesToPeriods!(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages=1)
+
+Converts a given set of samples to periods in-place.
+
+See [`readPeriods`](@ref)
+"""
 function convertSamplesToPeriods!(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages=1)
   convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages)
   calibs = [x.calib for x in rpu]
@@ -331,6 +338,14 @@ function convertSamplesToPeriods!(rpu::Union{RedPitaya, RedPitayaCluster, RedPit
   return periods
 
 end
+
+"""
+    convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages=1)
+
+Converts a given set of samples to periods in-place.
+
+See [`readPeriods`](@ref)
+"""
 function convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages=1)
   temp = reshape(samples, numChan, numSampPerPeriod, numPeriods)
   for d = 1:div(numChan,2)
