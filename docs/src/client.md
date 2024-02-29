@@ -61,8 +61,6 @@ RedPitayaDAQServer.samplesPerStep!
 RedPitayaDAQServer.stepsPerFrame!
 RedPitayaDAQServer.clearSequence!
 RedPitayaDAQServer.sequence!
-RedPitayaDAQServer.length(::AbstractSequence)
-RedPitayaDAQServer.start
 RedPitayaDAQServer.calibDACOffset
 RedPitayaDAQServer.calibDACOffset!
 RedPitayaDAQServer.calibDACScale
@@ -81,9 +79,18 @@ RedPitayaDAQServer.readSamples
 RedPitayaDAQServer.readFrames
 RedPitayaDAQServer.convertSamplesToFrames
 ```
-## Utility
-```@docs
-RedPitayaDAQServer.listReleaseTags
-RedPitayaDAQServer.latestReleaseTags
-RedPitayaDAQServer.update!
+## Slow IO
+```@autodocs
+Modules = [RedPitayaDAQServer]
+Pages   = ["SlowIO.jl"]
+```
+## EEPROM and Calibration
+```@autodocs
+Modules = [RedPitayaDAQServer]
+Pages   = ["EEPROM.jl"]
+```
+## Counter Trigger
+```@autodocs
+Modules = [RedPitayaDAQServer]
+Pages   = ["CounterTrigger.jl"]
 ```
