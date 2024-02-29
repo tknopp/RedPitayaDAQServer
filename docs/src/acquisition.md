@@ -1,6 +1,6 @@
-# Data Acqusition
+# Data Acquisition
 
-The data acqusition of the RedPitayaDAQServer project is based on two data flows to and from the upper 128 MB of the RedPitaya memory. This memory region acts as a ring buffer for the acquired samples and can be queried by clients using SCPI commands.
+The data acquisition of the RedPitayaDAQServer project is based on two data flows to and from the upper 128 MB of the RedPitaya memory. This memory region acts as a ring buffer for the acquired samples and can be queried by clients using SCPI commands.
 
 Signal acquisition within a cluster is based on a shared clock and trigger signal distributed via cables between the RedPitayas. Once triggered, all FPGAs continuously write the samples from their ADC channel to the sample ring-buffer with each clock tick. Both ADC channels on a RedPitaya are written to the buffer at the same time. The 14-bit values of the ADCs are converted to 16-bit signed integer samples and then concatenated into one 32-bit value, which is then written to the buffer. The sampling rate of the system can be adjusted by setting a decimation parameter and the decimation itself is realized with a CIC filter.
 
