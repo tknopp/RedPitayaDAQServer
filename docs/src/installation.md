@@ -15,7 +15,7 @@ To finish installing the RedPitaya, simply unzip one of the releases and copy th
 
 When the RedPitaya is now booted, the server should start. One can then use a client to connect, at which point the FPGA image is loaded. 
 
-The client library provided with the project is not an executable program, but it can be used to implement one. The library encapsulates the communication with the server and implements various optimizations. As the communication with the server is language agnostic one could therefore implement their own client in a different language. The Julia reference client library found in `src/client/julia`, the [SCPI commands](scpi.md) and the sections on the signal [acquisition](acqusition.md) and [generation](generation.md) are starting points for such a custom client.
+The client library provided with the project is not an executable program, but it can be used to implement one. The library encapsulates the communication with the server and implements various optimizations. As the communication with the server is language agnostic one could therefore implement their own client in a different language. The Julia reference client library found in `src/client/julia`, the [SCPI commands](scpi.md) and the sections on the signal [acquisition](acquisition.md) and [generation](generation.md) are starting points for such a custom client.
 
 ## Julia Client
 To use the provided Julia client library you need to install RedPitayaDAQServer Julia package within Julia. To this end 
