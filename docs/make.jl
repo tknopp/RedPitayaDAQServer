@@ -27,7 +27,8 @@ makedocs(
         "FPGA Development" => "fpga.md",
         "Development Tips" => "devtips.md",
         #"Getting Started" => "overview.md",
-    ]
+    ],
+    warnonly = [:missing_docs]
 #    html_prettyurls = false, #!("local" in ARGS),
 )
 
