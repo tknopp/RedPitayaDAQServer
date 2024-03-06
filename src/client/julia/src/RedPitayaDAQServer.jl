@@ -76,6 +76,11 @@ function receive(rp::RedPitaya)
   return readline(rp.socket)[1:end]
 end
 
+"""
+    receive(rp::RedPitaya, ch::Channel)
+
+Receive a String from the RedPitaya command socket. Reads until a whole line is received and puts it in the supplied channel `ch`.
+"""
 function receive(rp::RedPitaya, ch::Channel)
   put!(ch, receive(rp))
 end

@@ -2,6 +2,7 @@
 This page contains documentation of the public API of the Julia client. In the Julia
 REPL one can access this documentation by entering the help mode with `?` and
 then writing the function for which the documentation should be shown.
+
 ## Connection and Communication
 ```@docs
 RedPitayaDAQServer.RedPitaya
@@ -40,6 +41,7 @@ RedPitayaDAQServer.calibADCOffset
 RedPitayaDAQServer.calibADCOffset!
 RedPitayaDAQServer.calibADCScale
 RedPitayaDAQServer.calibADCScale!
+RedPitayaDAQServer.updateCalib!
 ```
 ## DAC Configuration
 ```@docs
@@ -65,6 +67,8 @@ RedPitayaDAQServer.calibDACOffset
 RedPitayaDAQServer.calibDACOffset!
 RedPitayaDAQServer.calibDACScale
 RedPitayaDAQServer.calibDACScale!
+RedPitayaDAQServer.calibDACUpperLimit!
+RedPitayaDAQServer.calibDACLowerLimit!
 ```
 ## Measurement and Transmission
 ```@docs
@@ -77,7 +81,9 @@ RedPitayaDAQServer.SampleChunk
 RedPitayaDAQServer.PerformanceData
 RedPitayaDAQServer.readSamples
 RedPitayaDAQServer.readFrames
-RedPitayaDAQServer.convertSamplesToFrames
+RedPitayaDAQServer.readPeriods
+RedPitayaDAQServer.convertSamplesToFrames(::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, ::Any, ::Any, ::Any, ::Any, ::Any, ::Any, ::Any)
+RedPitayaDAQServer.convertSamplesToPeriods!(::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, ::Any, ::Any, ::Any, ::Any, ::Any, ::Any)
 ```
 ## Slow IO
 ```@autodocs
