@@ -8,6 +8,7 @@ Return the number of sequence channel.
 seqChan(rp::RedPitaya) = query(rp, scpiCommand(seqChan), scpiReturn(seqChan))
 scpiCommand(::typeof(seqChan)) = "RP:DAC:SEQ:CHan?"
 scpiReturn(::typeof(seqChan)) = Int64
+
 """
     seqChan!(rp::RedPitaya, value)
 
@@ -29,7 +30,8 @@ Return the number of samples per sequence step.
 """
 samplesPerStep(rp::RedPitaya) = query(rp, scpiCommand(samplesPerStep), scpiReturn(samplesPerStep))
 scpiCommand(::typeof(samplesPerStep)) = "RP:DAC:SEQ:SAMP?"
-scpiReturn(::typeof(samplesPerStep)) = Int64 
+scpiReturn(::typeof(samplesPerStep)) = Int64
+
 """
     samplesPerStep!(rp::RedPitaya, value::Integer)
 
@@ -40,7 +42,6 @@ function samplesPerStep!(rp::RedPitaya, value::Integer)
 end
 scpiCommand(::typeof(samplesPerStep!), value) = string("RP:DAC:SEQ:SAMP ", value)
 scpiReturn(::typeof(samplesPerStep!)) = Bool
-
 
 """
     stepsPerFrame!(rp::RedPitaya, stepsPerFrame)
@@ -65,7 +66,7 @@ scpiCommand(::typeof(setSequence!)) = "RP:DAC:SEQ:SET"
 scpiReturn(::typeof(setSequence!)) = Bool
 
 """
-    clearSequences!(rp::RedPitaya)
+    clearSequence!(rp::RedPitaya)
 
 Instruct the server to remove all sequences from its list. Return `true` if the command was successful.
 """
@@ -92,10 +93,9 @@ length(seq::SequenceLUT) = seq.repetitions * size(seq.values, 2)
     AbstractSequence
 
 Abstract struct of client-side representation of a sequence.
-
-See [`appendSequence!`](@ref), [`prepareSequence!`](@ref), [`ArbitrarySequence`](@ref).
 """
 abstract type AbstractSequence end
+
 """
     SimpleSequence <: AbstractSequence
 
@@ -160,6 +160,7 @@ struct HoldBorderRampingSequence <: RampingSequence
   enable::Union{Array{Bool}, Nothing}
   rampUp::SequenceLUT
   rampDown::SequenceLUT
+
   """
       HoldBorderRampingSequence(lut::Array{Float32}, repetitions::Integer, rampingSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing)
 
@@ -197,6 +198,7 @@ struct ConstantRampingSequence <: RampingSequence
   lut::SequenceLUT
   enable::Union{Array{Bool}, Nothing}
   ramping::SequenceLUT
+
   function ConstantRampingSequence(lut::Array{Float32}, repetitions::Integer, rampingValue::Float32, rampingSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing)
     if !isnothing(enable) && size(lut) != size(enable)
       throw(DimensionMismatch("Size of enable LUT does not match size of value LUT"))
@@ -264,8 +266,6 @@ computeRamping(rp::RedPitaya, stepsPerSeq ,rampTime, rampFraction) = computeRamp
     sequence!(rp::RedPitaya, seq::AbstractSequence)
 
 Transmit the client-side representation `seq` to the server and append it to the current list of sequences. Return `true` if the required commands were successful.
-
-See [`prepareSequence!`](@ref), [`clearSequences!`](@ref).
 """
 function sequence!(rp::RedPitaya, seq::AbstractSequence)
   result = true
