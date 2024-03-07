@@ -39,7 +39,7 @@ After each SCPI command the server replies with `true` or `false` on the command
 
 
 ## Sequence Configuration
-The server maintains three acqusition sequences. When the server is in the`CONFIGURATION` mode a client can configure a set of three sequences. If the current configured sequences fits the desired signal, a client can intstruct the server to set the sequences. This moves the configuration sequences to the acquisition sequences and writes the first values to the FPGA buffer.
+The server maintains three acquisition sequences. When the server is in the`CONFIGURATION` mode a client can configure a set of three sequences. If the current configured sequences fits the desired signal, a client can intstruct the server to set the sequences. This moves the configuration sequences to the acquisition sequences and writes the first values to the FPGA buffer.
 
 During an active trigger the buffer is periodically updated by the server. If the server recognizes the end of a sequence, it sets the amplitudes of the waveform components to 0.
 

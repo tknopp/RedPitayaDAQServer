@@ -28,7 +28,7 @@ Comparable to the sample transmission of the acquisition, this updating of the L
 Sequences and their steps also have additional features. A step can be marked such that during its duration the signal is set to 0. Furthermore, a step can be marked such that it triggers the ramp down. To make this easier to manage the server actually manages three sequences, that can be set individually: A ramp up, regular and ramp down sequence. The ramp up sequence is moved to the FPGA LUT at the acquisition start, followed by the regular sequence. Afterwards the ramp down sequence is started and during its execution the ramp down flag is set.
 
 ## Calibration
-Similar to the signal acqusition, there are also calibration scale ``c_{i, scale}`` and offset ``c_{i, offset}`` values  for the signal generation. These are stored in the EEPROM of the RedPitaya and can be updated by a client. The calibration values are always applied, even when the master trigger is off.
+Similar to the signal acquisition, there are also calibration scale ``c_{i, scale}`` and offset ``c_{i, offset}`` values  for the signal generation. These are stored in the EEPROM of the RedPitaya and can be updated by a client. The calibration values are always applied, even when the master trigger is off.
 
 Thus the total signal can be described as:
 ```math
