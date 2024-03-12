@@ -6,8 +6,6 @@ export ClusterTriggerSetup, ALL_INTERNAL, ALL_EXTERNAL, MASTER_EXTERNAL
 @enum ClusterTriggerSetup ALL_INTERNAL ALL_EXTERNAL MASTER_EXTERNAL
 
 """
-    RedPitayaCluster
-
 Struct representing a cluster of `RedPitaya`s. Such a cluster should share a common clock and master trigger.
 
 The structure implements the indexing and iterable interfaces.
@@ -17,8 +15,6 @@ struct RedPitayaCluster
 end
 
 """
-    RedPitayaCluster(hosts::Vector{String} [, port = 5025])
-
 Construct a `RedPitayaCluster`.
 
 During the construction the first host is labelled the master RedPitaya of a cluster and all RedPitayas
@@ -27,6 +23,7 @@ are set to using the `EXTERNAL` trigger mode.
 See also [`RedPitaya`](@ref), [`master`](@ref).
 
 # Examples
+
 ```julia
 julia> rpc = RedPitayaCluster(["192.168.1.100", "192.168.1.101"]);
 
@@ -36,9 +33,14 @@ julia> rp == rpc[1]
 true
 ```
 """
-function RedPitayaCluster(hosts::Vector{String}, port::Int64=5025, dataPort::Int64=5026; triggerMode::ClusterTriggerSetup=ALL_INTERNAL)
+function RedPitayaCluster(
+  hosts::Vector{String},
+  port::Int64 = 5025,
+  dataPort::Int64 = 5026;
+  triggerMode::ClusterTriggerSetup = ALL_INTERNAL,
+)
   # the first RP is the master
-  rps = RedPitaya[ RedPitaya(host, port, dataPort, i==1) for (i,host) in enumerate(hosts) ]
+  rps = RedPitaya[RedPitaya(host, port, dataPort, i == 1) for (i, host) ∈ enumerate(hosts)]
 
   modes = nothing
   if triggerMode == ALL_INTERNAL
@@ -49,33 +51,29 @@ function RedPitayaCluster(hosts::Vector{String}, port::Int64=5025, dataPort::Int
     modes = fill(INTERNAL, length(rps))
     modes[1] = EXTERNAL
   end
-  @sync for (i, rp) in enumerate(rps)
-    @async begin 
+  @sync for (i, rp) ∈ enumerate(rps)
+    @async begin
       triggerMode!(rp, modes[i])
       triggerPropagation!(rp, true)
     end
   end
 
   triggerPropagation!(rps[end], false)
-  
+
   return RedPitayaCluster(rps)
 end
 
 """
-    length(rpc::RedPitayaCluster)
-
 Return the number of `RedPitaya`s in cluster `rpc`.
 """
 length(rpc::RedPitayaCluster) = length(rpc.rp)
-"""
-    numChan(rpc::RedPitayaCluster)
 
+"""
 Return the number of ADC channel in cluser `rpc`.
 """
-numChan(rpc::RedPitayaCluster) = 2*length(rpc)
-"""
-    master(rpc::RedPitayaCluster)
+numChan(rpc::RedPitayaCluster) = 2 * length(rpc)
 
+"""
 Return the master `RedPitaya` of the cluster.
 """
 master(rpc::RedPitayaCluster) = rpc.rp[1]
@@ -90,28 +88,43 @@ lastindex(rpc::RedPitayaCluster) = length(rpc)
 
 # Iterable Interface
 start_(rpc::RedPitayaCluster) = 1
-next_(rpc::RedPitayaCluster,state) = (rpc[state],state+1)
-done_(rpc::RedPitayaCluster,state) = state > length(rpc)
-iterate(rpc::RedPitayaCluster, s=start_(rpc)) = done_(rpc, s) ? nothing : next_(rpc, s)
+next_(rpc::RedPitayaCluster, state) = (rpc[state], state + 1)
+done_(rpc::RedPitayaCluster, state) = state > length(rpc)
+iterate(rpc::RedPitayaCluster, s = start_(rpc)) = done_(rpc, s) ? nothing : next_(rpc, s)
 
-batchIndices(f::Function, rpc::RedPitaya, args...) = error("Function $(string(f)) is not supported in cluster batch or has incorrect parameters.")
+function batchIndices(f::Function, rpc::RedPitaya, args...)
+  return error("Function $(string(f)) is not supported in cluster batch or has incorrect parameters.")
+end
 batchTransformArgs(::Function, rpc::RedPitayaCluster, idx, args...) = args
 
-function RPInfo(rpc::RedPitayaCluster)
-  return RPInfo([RPPerformance([]) for i = 1:length(rpc)])
-end
+RPInfo(rpc::RedPitayaCluster) = RPInfo([RPPerformance([]) for i ∈ 1:length(rpc)])
 
-for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset,
-           :triggerMode, :samplesPerStep, :serverMode, :masterTrigger,
-           :counterTrigger_enabled, :counterTrigger_enabled!, :counterTrigger_presamples,
-           :counterTrigger_isArmed, :counterTrigger_arm!, :counterTrigger_reset!,
-           :counterTrigger_reset, :counterTrigger_lastCounter, :counterTrigger_referenceCounter,
-           :counterTrigger_sourceType, :counterTrigger_sourceChannel]
-
+for op ∈ [
+  :currentFrame,
+  :currentPeriod,
+  :currentWP,
+  :periodsPerFrame,
+  :samplesPerPeriod,
+  :decimation,
+  :keepAliveReset,
+  :triggerMode,
+  :samplesPerStep,
+  :serverMode,
+  :masterTrigger,
+  :counterTrigger_enabled,
+  :counterTrigger_enabled!,
+  :counterTrigger_presamples,
+  :counterTrigger_isArmed,
+  :counterTrigger_arm!,
+  :counterTrigger_reset!,
+  :counterTrigger_reset,
+  :counterTrigger_lastCounter,
+  :counterTrigger_referenceCounter,
+  :counterTrigger_sourceType,
+  :counterTrigger_sourceChannel,
+]
   @eval begin
     @doc """
-        $($op)(rpc::RedPitayaCluster)
-
     As with single RedPitaya, but applied to only the master.
     """
     $op(rpc::RedPitayaCluster) = $op(master(rpc))
@@ -119,20 +132,30 @@ for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samples
   end
 end
 
-for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :samplesPerStep!,
-           :keepAliveReset!, :serverMode!, :stopTransmission,
-           :counterTrigger_enabled!, :counterTrigger_presamples!, :counterTrigger_arm!,
-           :counterTrigger_reset!, :counterTrigger_referenceCounter!,
-           :counterTrigger_sourceType!, :counterTrigger_sourceChannel!]
+for op ∈ [
+  :periodsPerFrame!,
+  :samplesPerPeriod!,
+  :decimation!,
+  :triggerMode!,
+  :samplesPerStep!,
+  :keepAliveReset!,
+  :serverMode!,
+  :stopTransmission,
+  :counterTrigger_enabled!,
+  :counterTrigger_presamples!,
+  :counterTrigger_arm!,
+  :counterTrigger_reset!,
+  :counterTrigger_referenceCounter!,
+  :counterTrigger_sourceType!,
+  :counterTrigger_sourceChannel!,
+]
   @eval begin
     @doc """
-        $($op)(rpc::RedPitayaCluster, value)
-
     As with single RedPitaya, but applied to all RedPitayas in a cluster.
     """
     function $op(rpc::RedPitayaCluster, value)
-      result = [false for i = 1:length(rpc)]
-      @sync for (i, rp) in enumerate(rpc)
+      result = [false for i ∈ 1:length(rpc)]
+      @sync for (i, rp) ∈ enumerate(rpc)
         @async result[i] = $op(rp, value)
       end
       return result
@@ -141,16 +164,14 @@ for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :
   end
 end
 
-for op in [:clearSequence!, :sequence!]
+for op ∈ [:clearSequence!, :sequence!]
   @eval begin
     @doc """
-        $($op)(rpc::RedPitayaCluster)
-
     As with single RedPitaya, but applied to all RedPitayas in a cluster.
     """
     function $op(rpc::RedPitayaCluster)
-      result = [false for i = 1:length(rpc)]
-      @sync for (i, rp) in enumerate(rpc)
+      result = [false for i ∈ 1:length(rpc)]
+      @sync for (i, rp) ∈ enumerate(rpc)
         @async result[i] = $op(rp)
       end
       return result
@@ -159,25 +180,19 @@ for op in [:clearSequence!, :sequence!]
   end
 end
 
-for op in [:disconnect, :connect]
+for op ∈ [:disconnect, :connect]
   @eval begin
     @doc """
-        $($op)(rpc::RedPitayaCluster)
-
     As with single RedPitaya, but applied to all RedPitayas in a cluster.
     """
-    function $op(rpc::RedPitayaCluster)
-      @sync for rp in rpc
-        @async $op(rp)
-      end
+    $op(rpc::RedPitayaCluster) = @sync for rp ∈ rpc
+      @async $op(rp)
     end
     batchIndices(::typeof($op), rpc::RedPitayaCluster) = collect(1:length(rpc))
   end
 end
 
 """
-    masterTrigger(rpc::RedPitayaCluster, val::Bool)
-
 Set the master trigger of the cluster to `val`.
 
 For `val` equals to true this is the same as calling the function on the RedPitaya returned by `master(rpc)`.
@@ -187,91 +202,86 @@ before the master trigger is disabled. Afterwards the keepAliveReset is set to f
 See also [`master`](@ref), [`keepAliveReset!`](@ref).
 """
 function masterTrigger!(rpc::RedPitayaCluster, val::Bool)
-    if val
-        masterTrigger!(master(rpc), val)
-    else
-        keepAliveReset!(rpc, true)
-        masterTrigger!(master(rpc), false)
-        keepAliveReset!(rpc, false)
-    end
-    return masterTrigger(rpc)
+  if val
+    masterTrigger!(master(rpc), val)
+  else
+    keepAliveReset!(rpc, true)
+    masterTrigger!(master(rpc), false)
+    keepAliveReset!(rpc, false)
+  end
+  return masterTrigger(rpc)
 end
 
-
-for op in [:signalTypeDAC, :amplitudeDAC, :frequencyDAC, :phaseDAC]
+for op ∈ [:signalTypeDAC, :amplitudeDAC, :frequencyDAC, :phaseDAC]
   @eval begin
     @doc """
-        $($op)(rpc::RedPitayaCluster, chan::Integer, component::Integer)
-
     As with single RedPitaya. The `chan` index refers to the total channel available in a cluster, two per `RedPitaya`.
     For example channel `4` would refer to the second channel of the second `RedPitaya`.
     """
     function $op(rpc::RedPitayaCluster, chan::Integer, component::Integer)
-      idxRP = div(chan-1, 2) + 1
+      idxRP = div(chan - 1, 2) + 1
       chanRP = mod1(chan, 2)
       return $op(rpc[idxRP], chanRP, component)
     end
-    batchIndices(::typeof($op), rpc::RedPitayaCluster, chan, component) = [div(chan -1, 2) + 1]
-    batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan, component) = (mod1(chan, 2), component)
+    batchIndices(::typeof($op), rpc::RedPitayaCluster, chan, component) = [div(chan - 1, 2) + 1]
+    function batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan, component)
+      return (mod1(chan, 2), component)
+    end
   end
 end
-for op in [:signalTypeDAC!, :amplitudeDAC!, :frequencyDAC!, :phaseDAC!]
+for op ∈ [:signalTypeDAC!, :amplitudeDAC!, :frequencyDAC!, :phaseDAC!]
   @eval begin
     @doc """
-        $($op)(rpc::RedPitayaCluster, chan::Integer, component::Integer, value)
-
     As with single RedPitaya. The `chan` index refers to the total channel available in a cluster, two per `RedPitaya`.
     For example channel `4` would refer to the second channel of the second `RedPitaya`.
     """
     function $op(rpc::RedPitayaCluster, chan::Integer, component::Integer, value)
-      idxRP = div(chan-1, 2) + 1
+      idxRP = div(chan - 1, 2) + 1
       chanRP = mod1(chan, 2)
       return $op(rpc[idxRP], chanRP, component, value)
     end
-    batchIndices(::typeof($op), rpc::RedPitayaCluster, chan, component, value) = [div(chan -1, 2) + 1]
-    batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan, component, value) = (mod1(chan, 2), component, value)
+    batchIndices(::typeof($op), rpc::RedPitayaCluster, chan, component, value) = [div(chan - 1, 2) + 1]
+    function batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan, component, value)
+      return (mod1(chan, 2), component, value)
+    end
   end
 end
 
-for op in [:offsetDAC, :rampingDAC, :enableRamping, :enableRampDown]
+for op ∈ [:offsetDAC, :rampingDAC, :enableRamping, :enableRampDown]
   @eval begin
     @doc """
-        $($op)(rpc::RedPitayaCluster, chan::Integer)
-
     As with single RedPitaya. The `chan` index refers to the total channel available in a cluster, two per `RedPitaya`.
     For example channel `4` would refer to the second channel of the second `RedPitaya`.
     """
     function $op(rpc::RedPitayaCluster, chan::Integer)
-      idxRP = div(chan-1, 2) + 1
+      idxRP = div(chan - 1, 2) + 1
       chanRP = mod1(chan, 2)
       return $op(rpc[idxRP], chanRP)
     end
-    batchIndices(::typeof($op), rpc::RedPitayaCluster, chan) = [div(chan -1, 2) + 1]
+    batchIndices(::typeof($op), rpc::RedPitayaCluster, chan) = [div(chan - 1, 2) + 1]
     batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan) = (mod1(chan, 2))
   end
 end
-for op in [:offsetDAC!, :rampingDAC!, :enableRamping!, :enableRampDown!]
+for op ∈ [:offsetDAC!, :rampingDAC!, :enableRamping!, :enableRampDown!]
   @eval begin
     @doc """
-        $($op)(rpc::RedPitayaCluster, chan::Integer, value)
-
     As with single RedPitaya. The `chan` index refers to the total channel available in a cluster, two per `RedPitaya`.
     For example channel `4` would refer to the second channel of the second `RedPitaya`.
     """
     function $op(rpc::RedPitayaCluster, chan::Integer, value)
-      idxRP = div(chan-1, 2) + 1
+      idxRP = div(chan - 1, 2) + 1
       chanRP = mod1(chan, 2)
       return $op(rpc[idxRP], chanRP, value)
     end
-    batchIndices(::typeof($op), rpc::RedPitayaCluster, chan, value) = [div(chan -1, 2) + 1]
+    batchIndices(::typeof($op), rpc::RedPitayaCluster, chan, value) = [div(chan - 1, 2) + 1]
     batchTransformArgs(::typeof($op), rpc::RedPitayaCluster, idx, chan, value) = (mod1(chan, 2), value)
   end
 end
 
-for op in [:waveformDAC!, :scaleWaveformDAC!]
+for op ∈ [:waveformDAC!, :scaleWaveformDAC!]
   @eval begin
     function $op(rpc::RedPitayaCluster, channel::Integer, value)
-      idxRP = div(channel-1, 2) + 1
+      idxRP = div(channel - 1, 2) + 1
       chan = mod1(channel, 2)
       return $op(rpc[idxRP], chan, value)
     end
@@ -280,18 +290,18 @@ end
 
 function rampingStatus(rpc::RedPitayaCluster)
   result = Array{RampingStatus}(undef, length(rpc))
-  @sync for (d, rp) in enumerate(rpc)
+  @sync for (d, rp) ∈ enumerate(rpc)
     @async result[d] = rampingStatus(rp)
   end
   return result
 end
 batchIndices(::typeof(rampingStatus), rpc::RedPitayaCluster) = collect(1:length(rpc))
 
-for op in [:rampDownDone, :rampUpDone]
+for op ∈ [:rampDownDone, :rampUpDone]
   @eval begin
     function $op(rpc::RedPitayaCluster)
-      result = [false for i = 1:length(rpc)]
-      @sync for (d, rp) in enumerate(rpc)
+      result = [false for i ∈ 1:length(rpc)]
+      @sync for (d, rp) ∈ enumerate(rpc)
         @async result[d] = $op(rp)
       end
       return all(result)
@@ -300,8 +310,6 @@ for op in [:rampDownDone, :rampUpDone]
 end
 
 """
-    execute!(rpc::RedPitayaCluster, batch::ScpiBatch)
-
 Executes all commands of the given batch. Returns an array of the results in the order of the commands.
 
 Each element of the result array is again an array containing the return values of the RedPitayas.
@@ -309,14 +317,14 @@ An element of an inner array is `nothing` if the command has no return value.
 """
 function execute!(rpc::RedPitayaCluster, batch::ScpiBatch)
   # Send cmd after cmd to each "affected" RedPitaya
-  cmds = [Vector{String}() for i =1:length(rpc)]
-  for (f, args) in batch.cmds
+  cmds = [Vector{String}() for i ∈ 1:length(rpc)]
+  for (f, args) ∈ batch.cmds
     indices = batchIndices(f, rpc, args...)
-    for idx in indices
+    for idx ∈ indices
       push!(cmds[idx], scpiCommand(f, batchTransformArgs(f, rpc, idx, args...)...))
     end
   end
-  @sync for (i, cmd) in enumerate(cmds)
+  @sync for (i, cmd) ∈ enumerate(cmds)
     @async begin
       if !isempty(cmd)
         cmdStr = join(cmd, rpc[i].delim)
@@ -327,10 +335,10 @@ function execute!(rpc::RedPitayaCluster, batch::ScpiBatch)
   end
   results = []
   # Retrieve results from each "affected" RedPitaya for each cmd
-  for (f, args) in batch.cmds
+  for (f, args) ∈ batch.cmds
     result = Array{Union{Nothing, scpiReturn(f)}}(nothing, length(rpc))
     indices = batchIndices(f, rpc, args...)
-    @sync for idx in indices
+    @sync for idx ∈ indices
       @async begin
         if !isnothing(scpiReturn(f))
           ret = parseReturn(f, receive(rpc[idx], getTimeout()))
@@ -345,17 +353,18 @@ function execute!(rpc::RedPitayaCluster, batch::ScpiBatch)
 end
 
 """
-    execute!(f::Function, rp::Union{RedPitaya, RedPitayaCluster})
-
 Open a `ScpiBatch` and evaluate the function `f`. If no exception was thrown, execute the opened batch.
 
 See also [`ScpiBatch`](@ref), [`push!`](@ref), [`@add_batch`](@ref)
+
 # Examples
+
 ```julia
-julia>  execute!(rp) do b
-          @add_batch b serverMode!(rp, CONFIGURATION)
-          @add_batch b amplitudeDAC!(rp, 1, 1, 0.2)
-        end
+julia> execute!(rp) do b
+         @add_batch b serverMode!(rp, CONFIGURATION)
+         @add_batch b amplitudeDAC!(rp, 1, 1, 0.2)
+       end
+
 ```
 """
 function execute!(f::Function, rp::Union{RedPitaya, RedPitayaCluster})

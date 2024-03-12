@@ -1,7 +1,7 @@
 module RedPitayaDAQServer
 
 # package code goes here
-
+using DocStringExtensions
 using Base: UInt16
 using Sockets
 import Sockets: send, connect
@@ -12,7 +12,22 @@ import LinearAlgebra: normalize
 
 import Base: reset, iterate, length, push!, pop!
 
-export RedPitaya, send, receive, query, disconnect, ServerMode, serverMode, serverMode!, CONFIGURATION, ACQUISITION, TRANSMISSION, getLog, ScpiBatch, execute!, clear!, @add_batch
+export RedPitaya,
+  send,
+  receive,
+  query,
+  disconnect,
+  ServerMode,
+  serverMode,
+  serverMode!,
+  CONFIGURATION,
+  ACQUISITION,
+  TRANSMISSION,
+  getLog,
+  ScpiBatch,
+  execute!,
+  clear!,
+  @add_batch
 
 # TODO: The update stuff increases load times quite a bit. Should we move this to a script?
 # using ProgressMeter
@@ -22,15 +37,27 @@ export RedPitaya, send, receive, query, disconnect, ServerMode, serverMode, serv
 # using URIs
 # using ZipFile
 
+# Configure templates for docstrings
+@template TYPES = """
+                  $(TYPEDEF)
+                  $(DOCSTRING)
+
+                  # Fields
+                  $(TYPEDFIELDS)
+                  """
+
+@template (FUNCTIONS, METHODS, MACROS) = """
+                                         $(TYPEDSIGNATURES)
+                                         $(DOCSTRING)
+                                         """
+
 const _awgBufferSize = 16384
 
 """
-    RedPitaya
-
 Struct representing a connection to a RedPitayaDAQServer.
 
-Contains the sockets used for communication and connection related metadata. Also contains fields for 
-client specific concepts such as periods, frames and calibration values. 
+Contains the sockets used for communication and connection related metadata. Also contains fields for
+client specific concepts such as periods, frames and calibration values.
 """
 mutable struct RedPitaya
   host::String
@@ -52,33 +79,25 @@ end
 # Iterable Interface
 
 length(rp::RedPitaya) = 1
-iterate(rp::RedPitaya, state=1) = state > 1 ? nothing : (rp, state + 1)
+iterate(rp::RedPitaya, state = 1) = state > 1 ? nothing : (rp, state + 1)
 
 """
-    send(rp::RedPitaya, cmd::String)
-
 Send a command to the RedPitaya. Appends delimiter.
 """
-function send(rp::RedPitaya,cmd::String)
+function send(rp::RedPitaya, cmd::String)
   @debug "RP $(rp.host) sent: $cmd"
-  write(rp.socket,cmd*rp.delim)
+  return write(rp.socket, cmd * rp.delim)
 end
 
 const _timeout = Ref(5.0)
 const _scaleWarning = 0.1
 
 """
-    receive(rp::RedPitaya)
-
 Receive a String from the RedPitaya command socket. Reads until a whole line is received
 """
-function receive(rp::RedPitaya)
-  return readline(rp.socket)[1:end]
-end
+receive(rp::RedPitaya) = readline(rp.socket)[1:end]
 
 """
-    receive(rp::RedPitaya, ch::Channel)
-
 Receive a String from the RedPitaya command socket. Reads until a whole line is received and puts it in the supplied channel `ch`.
 """
 function receive(rp::RedPitaya, ch::Channel)
@@ -86,8 +105,6 @@ function receive(rp::RedPitaya, ch::Channel)
 end
 
 """
-    receive(rp::RedPitaya, timeout::Number)
-
 Receive a string from the RedPitaya command socket. Reads until a whole line is received or timeout seconds passed.
 In the latter case an error is thrown.
 """
@@ -96,7 +113,7 @@ function receive(rp::RedPitaya, timeout::Number)
   t = @async receive(rp, ch)
   result = nothing
   timeoutTimer = Timer(_ -> close(ch), timeout)
-  try 
+  try
     result = take!(ch)
   catch e
     @async Base.throwto(t, EOFError())
@@ -113,31 +130,27 @@ function receive(rp::RedPitaya, timeout::Number)
 end
 
 """
-    query(rp::RedPitaya, cmd [, timeout = 5.0, N = 100])
-
 Send a query to the RedPitaya command socket. Return reply as String.
 
 Waits for `timeout` seconds and checks every `timeout/N` seconds.
 
 See also [receive](@ref).
 """
-function query(rp::RedPitaya, cmd::String, timeout::Number=getTimeout())
+function query(rp::RedPitaya, cmd::String, timeout::Number = getTimeout())
   send(rp, cmd)
   Sockets.quickack(rp.socket, true)
-  receive(rp, timeout)
+  return receive(rp, timeout)
 end
 
 """
-    query(rp::RedPitaya, cmd, T::Type [timeout = 5.0, N = 100])
-
 Send a query to the RedPitaya. Parse reply as `T`.
 
 Waits for `timeout` seconds and checks every `timeout/N` seconds.
 """
-function query(rp::RedPitaya, cmd::String, T::Type, timeout::Number=getTimeout())
+function query(rp::RedPitaya, cmd::String, T::Type, timeout::Number = getTimeout())
   a = query(rp, cmd, timeout)
   if T == String
-    return a[2:end-1] # Strings are wrapped like this: "\"OUT\""
+    return a[2:(end - 1)] # Strings are wrapped like this: "\"OUT\""
   else
     parse(T, a)
   end
@@ -201,7 +214,7 @@ function getLog(rp::RedPitaya, log)
     recv = recv + length(buff)
     write(log, buff)
   end
-  close(log)
+  return close(log)
 end
 
 function stringToEnum(enumType::Type{T}, value::AbstractString) where {T <: Enum}
@@ -209,7 +222,12 @@ function stringToEnum(enumType::Type{T}, value::AbstractString) where {T <: Enum
   # If lowercase is not sufficient one could try Unicode.normalize with casefolding
   index = findfirst(isequal(lowercase(value)), lowercase.(stringInstances))
   if isnothing(index)
-    throw(ArgumentError("$value cannot be resolved to an instance of $(enumType). Possible instances are: " * join(stringInstances, ", ", " and ")))
+    throw(
+      ArgumentError(
+        "$value cannot be resolved to an instance of $(enumType). Possible instances are: " *
+        join(stringInstances, ", ", " and "),
+      ),
+    )
   end
   return instances(enumType)[index]
 end
@@ -219,8 +237,6 @@ scpiCommand(::typeof(imgversion)) = "RP:VERsion:IMAGe?"
 scpiReturn(::typeof(imgversion)) = UInt32
 
 """
-    ServerMode
-
 Represent the different modes the server can be in. Valid values are `CONFIGURATION`, `ACQUISITION` and `TRANSMISSION`.
 
 See also [`serverMode`](@ref), [`serverMode!`](@ref).
@@ -228,11 +244,10 @@ See also [`serverMode`](@ref), [`serverMode!`](@ref).
 @enum ServerMode CONFIGURATION ACQUISITION TRANSMISSION
 
 """
-    serverMode(rp::RedPitaya)
-
 Return the mode of the server.
 
 # Examples
+
 ```julia
 julia> serverMode!(rp, ACQUISITION);
 true
@@ -241,19 +256,16 @@ julia> serverMode(rp)
 ACQUISITION
 ```
 """
-function serverMode(rp::RedPitaya)
-  return stringToEnum(ServerMode, strip(query(rp, scpiCommand(serverMode)), '\"'))
-end
+serverMode(rp::RedPitaya) = stringToEnum(ServerMode, strip(query(rp, scpiCommand(serverMode)), '\"'))
 scpiCommand(::typeof(serverMode)) = "RP:MODe?"
 scpiReturn(::typeof(serverMode)) = ServerMode
 parseReturn(::typeof(serverMode), ret) = stringToEnum(ServerMode, strip(ret, '\"'))
 
 """
-    serverMode!(rp::RedPitaya, mode::ServerMode)
-
 Set the mode of the server. Valid values are "`CONFIGURATION`" and "`ACQUISITION`".
 
 # Examples
+
 ```julia
 julia> serverMode!(rp, ACQUISITION);
 true
@@ -262,15 +274,12 @@ julia> serverMode(rp)
 ACQUISITION
 ```
 """
-function serverMode!(rp::RedPitaya, mode::String)
-  return serverMode!(rp, stringToEnum(ServerMode, mode))
-end
+serverMode!(rp::RedPitaya, mode::String) = serverMode!(rp, stringToEnum(ServerMode, mode))
 """
-    serverMode!(rp::RedPitaya, mode::ServerMode)
-
 Set the mode of the server.
 
 # Examples
+
 ```julia
 julia> serverMode!(rp, ACQUISITION);
 true
@@ -285,10 +294,7 @@ end
 scpiCommand(::typeof(serverMode!), mode) = string("RP:MODe ", string(mode))
 scpiReturn(::typeof(serverMode!)) = Bool
 
-
 """
-    ScpiBatch
-
 Struct representing a batch of SCPI commands for a RedPitaya. Only commands that interact exclusively with the command socket should be used in a batch.
 """
 struct ScpiBatch
@@ -297,48 +303,44 @@ end
 ScpiBatch() = ScpiBatch([])
 
 """
-    push!(batch::ScpiBatch, cmd::Pair{K, T}) where {K<:Function, T<:Tuple}
-
 Add the given function and arguments to the batch
+
 # Examples
+
 ```julia
-julia> batch = ScpiBatch() 
+julia> batch = ScpiBatch()
 
 julia> push!(batch, amplitudeDAC! => (1, 1, 0.2))
-```  
-"""
-push!(batch::ScpiBatch, cmd::Pair{K, T}) where {K<:Function, T<:Tuple} = push!(batch.cmds, cmd)
-push!(batch::ScpiBatch, cmd::Pair{K, T}) where {K<:Function, T<:Any} = push!(batch, cmd.first => (cmd.second,))
-"""
-    pop!(batch::ScpiBatch)
 
+```
+"""
+push!(batch::ScpiBatch, cmd::Pair{K, T}) where {K <: Function, T <: Tuple} = push!(batch.cmds, cmd)
+function push!(batch::ScpiBatch, cmd::Pair{K, T}) where {K <: Function, T <: Any}
+  return push!(batch, cmd.first => (cmd.second,))
+end
+
+"""
 Remove the last added command from the batch
 """
 pop!(batch::ScpiBatch) = pop!(batch.cmds)
 
 """
-    clear!(batch::ScpiBatch)
-
 Remove all commands from the batch
 """
-function clear!(batch::ScpiBatch)
-  batch.cmds = []
-end
+clear!(batch::ScpiBatch) = batch.cmds = []
 
 """
-    execute!(rp::RedPitaya, batch::ScpiBatch)
-
 Executes all commands of the given batch. Returns an array of the results in the order of the commands.
 An element is `nothing` if the command has no return value.
 """
 function execute!(rp::RedPitaya, batch::ScpiBatch)
   # Send everything first
-  cmds = join([scpiCommand(f, args...) for (f, args) in batch.cmds], rp.delim)
+  cmds = join([scpiCommand(f, args...) for (f, args) ∈ batch.cmds], rp.delim)
   send(rp, cmds)
   # Then receive
   Sockets.quickack(rp.socket, true)
   result = Array{Any}(nothing, length(batch.cmds))
-  for (i, (f, _)) in enumerate(batch.cmds)
+  for (i, (f, _)) ∈ enumerate(batch.cmds)
     if !isnothing(scpiReturn(f))
       ret = receive(rp, getTimeout())
       Sockets.quickack(rp.socket, true) # quickack can be reset after tcp operations
@@ -349,17 +351,17 @@ function execute!(rp::RedPitaya, batch::ScpiBatch)
 end
 
 """
-    @add_batch batch cmd
-
 Append a usual RedPitaya function to the given batch instead of evaluating it directly.
 
 See also [`ScpiBatch`](@ref), [`push!`](@ref), [`execute!`](@ref)
 
 # Examples
+
 ```julia
-julia>  execute!(rp) do b
-          @add_batch b serverMode!(rp, CONFIGURATION)
-        end
+julia> execute!(rp) do b
+         @add_batch b serverMode!(rp, CONFIGURATION)
+       end
+
 ```
 """
 macro add_batch(batch::Symbol, expr::Expr)
@@ -369,12 +371,11 @@ macro add_batch(batch::Symbol, expr::Expr)
   func = expr.args[1]
   tuple = Expr(:call)
   push!(tuple.args, :tuple)
-  for arg in expr.args[3:end]
+  for arg ∈ expr.args[3:end]
     push!(tuple.args, :($(esc(arg))))
   end
   return :(push!($(esc(batch)), $func => $tuple))
 end
-
 
 include("DAC.jl")
 include("Sequence.jl")
@@ -389,12 +390,10 @@ include("CounterTrigger.jl")
 
 function destroy(rp::RedPitaya)
   disconnect(rp)
-  rp.destroyed = true
+  return rp.destroyed = true
 end
 
 """
-    RedPitaya(ip [, port = 5025, dataPort=5026, isMaster = false])
-
 Construct a `RedPitaya`.
 
 During the construction the connection
@@ -402,6 +401,7 @@ is established and the calibration values are loaded from the RedPitayas EEPROM.
 Throws an error if a timeout occurs while attempting to connect.
 
 # Examples
+
 ```julia
 julia> rp = RedPitaya("192.168.1.100");
 
@@ -412,9 +412,23 @@ julia> decimation(rp)
 8
 ```
 """
-function RedPitaya(host::String, port::Int64=5025, dataPort::Int64=5026, isMaster::Bool=true)
-
-  rp = RedPitaya(host, port, dataPort, "\n", TCPSocket(), TCPSocket(), 1, 1, 1, false, isMaster, false, zeros(Float32, 2, 2), zeros(Float32, _awgBufferSize, 2))
+function RedPitaya(host::String, port::Int64 = 5025, dataPort::Int64 = 5026, isMaster::Bool = true)
+  rp = RedPitaya(
+    host,
+    port,
+    dataPort,
+    "\n",
+    TCPSocket(),
+    TCPSocket(),
+    1,
+    1,
+    1,
+    false,
+    isMaster,
+    false,
+    zeros(Float32, 2, 2),
+    zeros(Float32, _awgBufferSize, 2),
+  )
 
   connect(rp)
 
@@ -428,15 +442,14 @@ parseReturn(f::Function, ret) = parse(scpiReturn(f), ret)
 
 export setTimeout
 """
-    Set the global timeout used in all functions of the package
+Set the global timeout used in all functions of the package
 """
-setTimeout(_timeoutParam::T) where T <: Real = global _timeout[] = _timeoutParam
+setTimeout(_timeoutParam::T) where {T <: Real} = global _timeout[] = _timeoutParam
 
 export getTimeout
 """
-    Get the global timeout used in all functions of the package
+Get the global timeout used in all functions of the package
 """
 getTimeout() = _timeout[]
-
 
 end # module
