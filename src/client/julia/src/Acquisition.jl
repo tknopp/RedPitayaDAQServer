@@ -268,25 +268,13 @@ function readFrames(
   return data
 end
 
-function convertSamplesToFrames(
-  rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView},
-  samples,
-  numChan,
-  numSampPerPeriod,
-  numPeriods,
-  numFrames,
-  numBlockAverages = 1,
-  numPeriodsPerPatch = 1,
-)
-  frames = convertSamplesToFrames(
-    samples,
-    numChan,
-    numSampPerPeriod,
-    numPeriods,
-    numFrames,
-    numBlockAverages,
-    numPeriodsPerPatch,
-  )
+"""
+Converts a given set of samples to frames.
+
+See [`readFrames`](@ref)
+"""
+function convertSamplesToFrames(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, samples, numChan, numSampPerPeriod, numPeriods, numFrames, numBlockAverages=1, numPeriodsPerPatch=1)
+  frames = convertSamplesToFrames(samples, numChan, numSampPerPeriod, numPeriods, numFrames, numBlockAverages, numPeriodsPerPatch)
   calibs = [x.calib for x ∈ rpu]
   calib = hcat(calibs...)
   for d ∈ 1:size(frames, 2)
@@ -296,16 +284,13 @@ function convertSamplesToFrames(
   return frames
 end
 
-function convertSamplesToFrames(
-  samples,
-  numChan,
-  numSampPerPeriod,
-  numPeriods,
-  numFrames,
-  numBlockAverages = 1,
-  numPeriodsPerPatch = 1,
-)
-  if rem(numSampPerPeriod, numBlockAverages) != 0
+"""
+Converts a given set of samples to frames.
+
+See [`readFrames`](@ref)
+"""
+function convertSamplesToFrames(samples, numChan, numSampPerPeriod, numPeriods, numFrames, numBlockAverages=1, numPeriodsPerPatch=1)
+  if rem(numSampPerPeriod,numBlockAverages) != 0
     error("block averages has to be a divider of numSampPerPeriod")
   end
   numTrueSampPerPeriod = div(numSampPerPeriod, numBlockAverages * numPeriodsPerPatch)
@@ -324,29 +309,13 @@ function convertSamplesToFrames(
   return frames
 end
 
-function convertSamplesToFrames!(
-  rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView},
-  samples,
-  frames,
-  numChan,
-  numSampPerPeriod,
-  numPeriods,
-  numFrames,
-  numTrueSampPerPeriod,
-  numBlockAverages = 1,
-  numPeriodsPerPatch = 1,
-)
-  convertSamplesToFrames!(
-    samples,
-    frames,
-    numChan,
-    numSampPerPeriod,
-    numPeriods,
-    numFrames,
-    numTrueSampPerPeriod,
-    numBlockAverages,
-    numPeriodsPerPatch,
-  )
+"""
+Converts a given set of samples to frames in-place.
+
+See [`readFrames`](@ref)
+"""
+function convertSamplesToFrames!(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages=1, numPeriodsPerPatch=1)
+  convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages, numPeriodsPerPatch)
   calibs = [x.calib for x ∈ rpu]
   calib = hcat(calibs...)
   for d ∈ 1:size(frames, 2)
@@ -355,17 +324,12 @@ function convertSamplesToFrames!(
   end
 end
 
-function convertSamplesToFrames!(
-  samples,
-  frames,
-  numChan,
-  numSampPerPeriod,
-  numPeriods,
-  numFrames,
-  numTrueSampPerPeriod,
-  numBlockAverages = 1,
-  numPeriodsPerPatch = 1,
-)
+"""
+Converts a given set of samples to frames in-place.
+
+See [`readFrames`](@ref)
+"""
+function convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages=1, numPeriodsPerPatch=1)
   temp = reshape(samples, numChan, numSampPerPeriod, numPeriods, numFrames)
   for d ∈ 1:div(numChan, 2)
     u = temp[(2 * d - 1):(2 * d), :, :, :]
@@ -440,15 +404,12 @@ function readPeriods(
   return data
 end
 
-function convertSamplesToPeriods!(
-  rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView},
-  samples,
-  periods,
-  numChan,
-  numSampPerPeriod,
-  numPeriods,
-  numBlockAverages = 1,
-)
+"""
+Converts a given set of samples to periods in-place.
+
+See [`readPeriods`](@ref)
+"""
+function convertSamplesToPeriods!(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages=1)
   convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages)
   calibs = [x.calib for x ∈ rpu]
   calib = hcat(calibs...)
@@ -458,14 +419,13 @@ function convertSamplesToPeriods!(
   end
   return periods
 end
-function convertSamplesToPeriods!(
-  samples,
-  periods,
-  numChan,
-  numSampPerPeriod,
-  numPeriods,
-  numBlockAverages = 1,
-)
+
+"""
+Converts a given set of samples to periods in-place.
+
+See [`readPeriods`](@ref)
+"""
+function convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages=1)
   temp = reshape(samples, numChan, numSampPerPeriod, numPeriods)
   for d ∈ 1:div(numChan, 2)
     u = temp[(2 * d - 1):(2 * d), :, :]

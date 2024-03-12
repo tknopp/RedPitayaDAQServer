@@ -97,7 +97,12 @@ Receive a String from the RedPitaya command socket. Reads until a whole line is 
 """
 receive(rp::RedPitaya) = readline(rp.socket)[1:end]
 
-receive(rp::RedPitaya, ch::Channel) = put!(ch, receive(rp))
+"""
+Receive a String from the RedPitaya command socket. Reads until a whole line is received and puts it in the supplied channel `ch`.
+"""
+function receive(rp::RedPitaya, ch::Channel)
+  put!(ch, receive(rp))
+end
 
 """
 Receive a string from the RedPitaya command socket. Reads until a whole line is received or timeout seconds passed.
@@ -177,6 +182,12 @@ function connect(rp::RedPitaya)
       if length(temp) > 0
         @warn "RP $(rp.host): Channels $(string(temp)) have a small DAC scale calibration value. If this is not intended use calibDACScale!(rp, i, 1.0) to set a default scale."
       end
+
+      imageVersion = imgversion(rp)
+      packageVersion = pkgversion(@__MODULE__)
+      if packageVersion.minor != imageVersion
+        @warn "RedPitayaDAQServer $(rp.host) (minor) client version ($packageVersion) differs from FPGA image version ($imageVersion). Incompatible (minor) versions can result in undefined behaviour"
+      end
     end
   end
 end
@@ -220,6 +231,10 @@ function stringToEnum(enumType::Type{T}, value::AbstractString) where {T <: Enum
   end
   return instances(enumType)[index]
 end
+
+imgversion(rp::RedPitaya) = query(rp, scpiCommand(imgversion), scpiReturn(imgversion))
+scpiCommand(::typeof(imgversion)) = "RP:VERsion:IMAGe?"
+scpiReturn(::typeof(imgversion)) = UInt32
 
 """
 Represent the different modes the server can be in. Valid values are `CONFIGURATION`, `ACQUISITION` and `TRANSMISSION`.
@@ -303,6 +318,7 @@ push!(batch::ScpiBatch, cmd::Pair{K, T}) where {K <: Function, T <: Tuple} = pus
 function push!(batch::ScpiBatch, cmd::Pair{K, T}) where {K <: Function, T <: Any}
   return push!(batch, cmd.first => (cmd.second,))
 end
+
 """
 Remove the last added command from the batch
 """

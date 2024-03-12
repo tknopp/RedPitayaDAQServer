@@ -26,6 +26,7 @@ uint32_t *counter_trigger_sts;
 uint16_t *pdm_cfg;
 uint64_t *adc_sts, *dac_cfg;
 uint32_t *awg_0_cfg, *awg_1_cfg;
+uint32_t *version_sts;
 volatile int32_t *xadc;
 
 // static const uint32_t ANALOG_OUT_MASK            = 0xFF;
@@ -91,6 +92,11 @@ bool isZynq7045() {
 	return (getFPGAId() == 0x11);
 }
 
+
+uint32_t getFPGAImageVersion() {
+	return *version_sts;
+}
+
 void loadBitstream() {
 	if(!access("/tmp/bitstreamLoaded", F_OK )){
 		printf("Bitfile already loaded\n");
@@ -150,9 +156,13 @@ int init() {
 	xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
 	awg_0_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(uint32_t)/2, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80020000);
 	awg_1_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(uint32_t)/2, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80028000);
+	version_sts  = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40009000);
+
+
 	
 	loadBitstream();
-	
+	printf("FPGA Image Version %u\n", getFPGAImageVersion());
+
 	calib_Init(); // Load calibration from EEPROM
 	calib_validate(&calib);
 	printf("Using calibration version %d with: %u\n", calib.version, calib.set_flags);
@@ -460,6 +470,39 @@ int setCalibDACOffset(float value, int channel) {
 	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel);
 	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) offset) << 48) & ~MASK_LOWER_48);
 	*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel) = register_value;
+	return 0;
+}
+
+int setCalibDACLowerLimit(float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	
+	int16_t limit = (int16_t)(value*8191.0);
+	if (limit < -8191 || limit >= 8192) {
+		return -2;
+	}
+	// Config lower limit is stored in second component freq
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*1 + CHANNEL_OFFSET*channel);
+	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) limit) << 48) & ~MASK_LOWER_48);
+	*(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*1 + CHANNEL_OFFSET*channel) = register_value;
+	return 0;
+}
+
+
+int setCalibDACUpperLimit(float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	
+	int16_t limit = (int16_t)(value*8191.0);
+	if (limit < -8191 || limit >= 8192) {
+		return -2;
+	}
+	// Config upper limit is stored in second component phase
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*1 + CHANNEL_OFFSET*channel);
+	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) limit) << 48) & ~MASK_LOWER_48);
+	*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*1 + CHANNEL_OFFSET*channel) = register_value;
 	return 0;
 }
 
@@ -882,10 +925,10 @@ int getMasterTrigger() {
 int setMasterTrigger(int mode) {
 	if(mode == OFF) {
 		setKeepAliveReset(ON);
-		double waitTime = getSamplesPerStep() * getDecimation() / 125e6;
-		usleep( 10*waitTime * 1000000);
+		//double waitTime = getSamplesPerStep() * getDecimation() / 125e6;
+		//usleep( 10*waitTime * 1000000);
 		*((uint8_t *)(cfg + 1)) &= ~(1 << 5);
-		usleep( 10*waitTime * 1000000);
+		//usleep( 10*waitTime * 1000000);
 		setRAMWriterMode(ADC_MODE_TRIGGERED);
 		setKeepAliveReset(OFF);
 	} else if(mode == ON) {
@@ -1392,6 +1435,10 @@ rp_calib_params_t getDefaultCalib(){
 		calib.adc_ch1_offs = 0.0;
 		calib.adc_ch2_fs = 1.0/8192.0;
 		calib.adc_ch2_offs = 0.0;
+		calib.dac_ch1_lower = -1.0;
+    calib.dac_ch1_upper = 1.0;
+    calib.dac_ch2_lower = -1.0;
+    calib.dac_ch2_upper = 1.0;
     return calib;
 }
 
@@ -1440,14 +1487,37 @@ int calib_validate(rp_calib_params_t * calib_params) {
 		calib_params->dac_ch2_offs = def.dac_ch2_offs;
 		calib_params->set_flags &= ~(1 << 7);
 	}
+
+	// DAC Limits
+	if (useDefault || !(calib_params->set_flags & (1 << 8))) {
+		calib_params->dac_ch1_lower = def.dac_ch1_lower;
+		calib_params->set_flags &= ~(1 << 8);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 9))) {
+		calib_params->dac_ch1_upper = def.dac_ch1_upper;
+		calib_params->set_flags &= ~(1 << 9);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 10))) {
+		calib_params->dac_ch2_lower = def.dac_ch2_lower;
+		calib_params->set_flags &= ~(1 << 10);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 11))) {
+		calib_params->dac_ch2_upper = def.dac_ch2_upper;
+		calib_params->set_flags &= ~(1 << 11);
+	}
+
 	return 0;
 }
 
 int calib_apply() {
 	setCalibDACScale(calib.dac_ch1_fs, 0);
 	setCalibDACOffset(calib.dac_ch1_offs, 0);
+	setCalibDACLowerLimit(calib.dac_ch1_lower, 0);
+	setCalibDACUpperLimit(calib.dac_ch1_upper, 0);
 	setCalibDACScale(calib.dac_ch2_fs, 1);
 	setCalibDACOffset(calib.dac_ch2_offs, 1);
+	setCalibDACLowerLimit(calib.dac_ch2_lower, 1);
+	setCalibDACUpperLimit(calib.dac_ch2_upper, 1);
 	return 0;
 }
 
@@ -1507,6 +1577,36 @@ int calib_setDACScale(rp_calib_params_t * calib_params, float value, int channel
 	else if (channel == 1) {
 		calib_params->dac_ch2_fs = value;
 		calib_params->set_flags |= (1 << 6);
+	}
+	return 0;
+}
+
+int calib_setDACLowerLimit(rp_calib_params_t * calib_params, float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	if (channel == 0) {
+		calib_params->dac_ch1_lower = value;
+		calib_params->set_flags |= (1 << 8);
+	}
+	else if (channel == 1) {
+		calib_params->dac_ch2_lower = value;
+		calib_params->set_flags |= (1 << 10);
+	}
+	return 0;
+}
+
+int calib_setDACUpperLimit(rp_calib_params_t * calib_params, float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	if (channel == 0) {
+		calib_params->dac_ch1_upper = value;
+		calib_params->set_flags |= (1 << 9);
+	}
+	else if (channel == 1) {
+		calib_params->dac_ch2_upper = value;
+		calib_params->set_flags |= (1 << 11);
 	}
 	return 0;
 }

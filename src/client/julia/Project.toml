@@ -1,7 +1,7 @@
 name = "RedPitayaDAQServer"
 uuid = "c544963a-496b-56d4-a5fe-f99a3f174c8f"
 authors = ["Tobias Knopp <tobias@knoppweb.de>"]
-version = "0.6.0"
+version = "0.8.0"
 
 [deps]
 DocStringExtensions = "ffbed154-4ef7-542d-bbb7-c09d3a79fcae"
@@ -11,7 +11,13 @@ Sockets = "6462fe0b-24de-5631-8697-dd941f90decc"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
+Aqua = "0.8"
 DocStringExtensions = "0.8, 0.9"
+LinearAlgebra = "1"
+Random = "1"
+Statistics = "1"
+Sockets = "1"
+Test = "1"
 julia = "1.7"
 
 [extras]

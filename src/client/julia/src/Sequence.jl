@@ -19,6 +19,7 @@ Return the number of sequence channel.
 seqChan(rp::RedPitaya) = query(rp, scpiCommand(seqChan), scpiReturn(seqChan))
 scpiCommand(::typeof(seqChan)) = "RP:DAC:SEQ:CHan?"
 scpiReturn(::typeof(seqChan)) = Int64
+
 """
 Set the number of sequence channel. Valid values are between `1` and `6`. Return `true` if the command was successful.
 """
@@ -37,6 +38,7 @@ Return the number of samples per sequence step.
 samplesPerStep(rp::RedPitaya) = query(rp, scpiCommand(samplesPerStep), scpiReturn(samplesPerStep))
 scpiCommand(::typeof(samplesPerStep)) = "RP:DAC:SEQ:SAMP?"
 scpiReturn(::typeof(samplesPerStep)) = Int64
+
 """
 Set the number of samples per sequence step. Return `true` if the command was successful.
 """
@@ -88,8 +90,6 @@ length(seq::SequenceLUT) = seq.repetitions * size(seq.values, 2)
 
 """
 Abstract struct of client-side representation of a sequence.
-
-See [`appendSequence!`](@ref), [`prepareSequence!`](@ref), [`ArbitrarySequence`](@ref).
 """
 abstract type AbstractSequence end
 
@@ -176,6 +176,7 @@ struct HoldBorderRampingSequence <: RampingSequence
   enable::Union{Array{Bool}, Nothing}
   rampUp::SequenceLUT
   rampDown::SequenceLUT
+
   """
   Constructor for `HoldBorderRampingSequence`.
 
@@ -230,6 +231,7 @@ struct ConstantRampingSequence <: RampingSequence
   lut::SequenceLUT
   enable::Union{Array{Bool}, Nothing}
   ramping::SequenceLUT
+  
   function ConstantRampingSequence(
     lut::Array{Float32},
     repetitions::Integer,
@@ -349,8 +351,6 @@ end
 
 """
 Transmit the client-side representation `seq` to the server and append it to the current list of sequences. Return `true` if the required commands were successful.
-
-See [`prepareSequence!`](@ref), [`clearSequences!`](@ref).
 """
 function sequence!(rp::RedPitaya, seq::AbstractSequence)
   result = true

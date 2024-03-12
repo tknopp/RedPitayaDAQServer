@@ -63,6 +63,9 @@ function RPStatus(statusRaw::Integer)
   )
 end
 
+"""
+Holds the performance data that is used for monitoring.
+"""
 struct PerformanceData
   wpRead::UInt64
   adc::ADCPerformanceData
