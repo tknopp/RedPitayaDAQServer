@@ -29,7 +29,11 @@ end
 
 RPStatus(statusRaw::Integer) = RPStatus((statusRaw >> 0) & 1, (statusRaw >> 1) & 1, (statusRaw >> 2) & 1, (statusRaw >> 3) & 1, (statusRaw >> 4) & 1)
 
+"""
+    PerformanceData
 
+Holds the performance data that is used for monitoring.
+"""
 struct PerformanceData
   wpRead::UInt64
   adc::ADCPerformanceData

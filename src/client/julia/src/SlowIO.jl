@@ -153,7 +153,12 @@ julia> DIO!(rp, DIO7_P, true)
 true
 ```
 """
-DIO!(rp::RedPitaya, pin, val) = query(rp, scpiCommand(DIO!, pin, val), scpiReturn(DIO!))
+function DIO!(rp::RedPitaya, pin, val)
+  if DIODirection(rp, pin) == DIO_IN
+    @warn "The pin $pin is currently set as input. The value is applied anyways!"
+  end
+  return query(rp, scpiCommand(DIO!, pin, val), scpiReturn(DIO!))
+end
 scpiCommand(::typeof(DIO!), pin::DIOPins, val::Bool) = string("RP:DIO:", DIOPinToCommand(pin), " ", (val ? "ON" : "OFF"))
 scpiReturn(::typeof(DIO!)) = Bool
 
@@ -168,7 +173,12 @@ julia>DIO(rp, DIO7_P)
 true
 ```
 """
-DIO(rp::RedPitaya, pin) = parseReturn(DIO, query(rp, scpiCommand(DIO, pin), scpiReturn(DIO)))
+function DIO(rp::RedPitaya, pin)
+  if DIODirection(rp, pin) == DIO_OUT
+    @warn "The pin $pin is currently set as output. The value is read anyways but might be wrong!"
+  end
+  return parseReturn(DIO, query(rp, scpiCommand(DIO, pin), scpiReturn(DIO)))
+end
 scpiCommand(::typeof(DIO), pin) = string("RP:DIO:", DIOPinToCommand(pin), "?")
 scpiReturn(::typeof(DIO)) = String
 parseReturn(::typeof(DIO), ret) = occursin("ON", ret)
