@@ -197,7 +197,7 @@ void neoncopy(void *dst, const void *src, int cnt) {
 static size_t copySamplesToBuffer(const void *adc, size_t count) {
 	size_t ptr = 0;
 	size_t size, sizeTemp;
-	while(ptr < count && commThreadRunning) {
+	while(ptr < count && commThreadRunning && transmissionState != IDLE) {
 		sizeTemp = MIN(count-ptr, userspaceSizeBytes);
 		//Neon Copy copies 64 Byte in each iteration, size should always be a multiple of 64 or a different copy needs to be used
 		size = sizeTemp - (sizeTemp % 64);
@@ -222,7 +222,7 @@ static bool sendBufferedSamplesToClient(uint64_t wpTotal, uint64_t numSamples) {
 	uint64_t samplesToCopy = 0;
 	size_t copiedBytes = 0;
 
-	while (sendSamples < numSamples && commThreadRunning) {
+	while (sendSamples < numSamples && commThreadRunning && transmissionState != IDLE) {
 		//Move samples to userspace
 		samplesToCopy = MIN(numSamples - sendSamples, userspaceSizeSamples);
 		copiedBytes = copySamplesToBuffer(ram + sizeof(uint32_t)*(wp + sendSamples), samplesToCopy*sizeof(uint32_t));
@@ -302,11 +302,11 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 	int rc;
 	
 	setServerMode(TRANSMISSION);
-	while (sendSamplesTotal < numSamples && chunkSize > 0 && commThreadRunning) {
+	while (sendSamplesTotal < numSamples && chunkSize > 0 && commThreadRunning && transmissionState != IDLE) {
 		chunk = MIN(numSamples - sendSamplesTotal, chunkSize); // Client and Server can compute same chunk value
 		
 		// Send chunk
-		while (sendSamples < chunk && commThreadRunning) {
+		while (sendSamples < chunk && commThreadRunning && transmissionState != IDLE) {
 			readWP = wpTotal + sendSamplesTotal + sendSamples;
 			writeWP = getTotalWritePointer();
 
