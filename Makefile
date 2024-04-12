@@ -30,13 +30,14 @@ DAQ_CORES = axi_cfg_register_v1_0 axis_variable_v1_0 pdm_multiplexer_v1_0 \
 
 DAQ_PARTS = xc7z010clg400-1 xc7z020clg400-1
 
-VIVADO = vivado -nolog -nojournal -mode batch
-XSCT = xsct
+VIVADO = /home/jon17221/Xilinx/Vivado/2021.2/bin/vivado -nolog -nojournal -mode batch
+XSCT = /home/jon17221/Xilinx/Vitis/2021.2/bin/xsct
 RM = rm -rf
+PYTHON = /usr/bin/python3
 
 UBOOT_TAG = 2021.04
 LINUX_TAG = 5.10
-DTREE_TAG = xilinx-v2020.2
+DTREE_TAG = xilinx-v2021.2
 
 UBOOT_DIR = $(LINUX_BUILD_DIR)/tmp/u-boot-$(UBOOT_TAG)
 LINUX_DIR = $(LINUX_BUILD_DIR)/tmp/linux-$(LINUX_TAG)
@@ -48,7 +49,7 @@ DTREE_TAR = $(LINUX_BUILD_DIR)/tmp/device-tree-xlnx-$(DTREE_TAG).tar.gz
 
 UBOOT_URL = https://ftp.denx.de/pub/u-boot/u-boot-$(UBOOT_TAG).tar.bz2
 LINUX_URL = https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-$(LINUX_TAG).80.tar.xz
-DTREE_URL = https://github.com/Xilinx/device-tree-xlnx/archive/$(DTREE_TAG).tar.gz
+DTREE_URL = https://github.com/Xilinx/device-tree-xlnx/archive/refs/tags/$(DTREE_TAG).tar.gz
 
 RTL8188_TAR = $(LINUX_BUILD_DIR)/tmp/rtl8188eu-v5.2.2.4.tar.gz
 RTL8188_URL = https://github.com/lwfinger/rtl8188eu/archive/v5.2.2.4.tar.gz
@@ -58,32 +59,32 @@ RTL8192_URL = https://github.com/pvaret/rtl8192cu-fixes/archive/master.tar.gz
 
 .PRECIOUS: $(LINUX_BUILD_DIR)/tmp/cores/% $(LINUX_BUILD_DIR)/tmp/%.xpr $(LINUX_BUILD_DIR)/tmp/%.xsa $(LINUX_BUILD_DIR)/tmp/%.bit $(LINUX_BUILD_DIR)/tmp/%.fsbl/executable.elf $(LINUX_BUILD_DIR)/tmp/%.tree/system-top.dts
 
-all: linux
+all: daq_bitfiles linux
 
 daq_bitfiles: $(addsuffix .bit, $(addprefix bitfiles/daq_,$(DAQ_PARTS)))
 
 bitfiles/daq_%.bit: daq_cores
 ifeq ("$(wildcard bitfiles/daq_$*.bit)","")
-	vivado -nolog -nojournal -mode batch -source src/fpga/build.tcl -tclargs $*
-	vivado -nolog -nojournal -mode batch -source scripts/runSynthAndImpl.tcl -tclargs $*
+	$(VIVADO) -source src/fpga/build.tcl -tclargs $*
+	$(VIVADO) -source scripts/runSynthAndImpl.tcl -tclargs $*
 	mkdir -p bitfiles
 	cp build/fpga/$*/firmware/RedPitayaDAQServer.runs/impl_1/system_wrapper.bit bitfiles/daq_$*.bit
 endif
-	
-linux: daq_bitfiles $(LINUX_BUILD_DIR)/tmp/$(NAME).bit $(LINUX_BUILD_DIR)/boot.bin $(LINUX_BUILD_DIR)/uImage $(LINUX_BUILD_DIR)/devicetree.dtb
+
+linux: $(LINUX_BUILD_DIR)/tmp/$(NAME).bit $(LINUX_BUILD_DIR)/boot.bin $(LINUX_BUILD_DIR)/uImage $(LINUX_BUILD_DIR)/devicetree.dtb
 	sh scripts/alpine.sh
 
 blinker_cores: $(addprefix tmp/cores/, $(BLINKER_CORES))
 
 #$(subst $(SPACE),_,$(wordlist 1,$(call subtract,$(words $(subst _, ,$(1))),2),$(subst _, ,$(1)))) # Doesn't work yet
 define strip_core_version
-$(shell python -c "print('_'.join('$(1)'.split('_')[:-2]))")
+$(shell $(PYTHON) -c "print('_'.join('$(1)'.split('_')[:-2]))")
 endef
 
 define GEN_DAQ_CORE_RULE
 $(FPGA_BUILD_DIR)/${daq_part}/cores/$(call strip_core_version,$(daq_core)).xpr: src/fpga/cores/$(daq_core)/core_config.tcl src/fpga/cores/$(daq_core)/*.v
 	#mkdir -p $(@D)
-	$(VIVADO)  -source scripts/core.tcl -tclargs ${daq_core} ${daq_part}
+	$(VIVADO) -source scripts/core.tcl -tclargs ${daq_core} ${daq_part}
 endef
 
 $(foreach daq_part,$(DAQ_PARTS), \
@@ -198,8 +199,8 @@ $(LINUX_BUILD_DIR)/tmp/%.tree/system-top.dts: $(LINUX_BUILD_DIR)/tmp/%.xsa $(DTR
 	$(XSCT) linux-image/scripts/devicetree.tcl $* $(PROC) $(DTREE_DIR)
 	sed -i 's|#include|/include/|' $@
 	patch -d $(@D) < linux-image/patches/devicetree.patch
-	
-server: 
+
+server:
 	git submodule update --init
 	@$(MAKE) install -C libs/scpi-parser
 	@$(MAKE) -C libs/scpi-parser
