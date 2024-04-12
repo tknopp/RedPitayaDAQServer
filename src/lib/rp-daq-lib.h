@@ -53,10 +53,10 @@
 #define OFF 0
 #define ON 1
 
-#define IN 0
-#define OUT 1
+#define DIO_IN 1
+#define DIO_OUT 0
 
-#define CALIB_VERSION 1
+#define CALIB_VERSION 2
 
 extern bool verbose;
 
@@ -64,10 +64,11 @@ extern int mmapfd;
 extern volatile uint32_t *slcr, *axi_hp0;
 // FPGA registers that are memory mapped
 extern void *pdm_sts, *reset_sts, *cfg, *ram, *buf, *dio_sts;
-extern void *counter_trigger_cfg, *counter_trigger_sts;
+extern uint32_t *counter_trigger_cfg, *counter_trigger_sts;
 extern uint16_t *pdm_cfg;
 extern uint64_t *adc_sts, *dac_cfg; 
 extern uint32_t *awg_0_cfg, *awg_1_cfg;
+extern uint32_t *version_sts;
 
 // init routines
 extern uint32_t getFPGAId();
@@ -78,6 +79,7 @@ extern bool isZynq7030();
 extern bool isZynq7045();
 extern int init();
 extern void loadBitstream();
+extern uint32_t getFPGAImageVersion();
 
 // fast DAC
 extern uint16_t getAmplitude(int, int);
@@ -96,6 +98,8 @@ extern int getSignalType(int, int);
 extern int setSignalType(int, int, int);
 extern int setCalibDACScale(float, int);
 extern int setCalibDACOffset(float, int);
+extern int setCalibDACLowerLimit(float, int);
+extern int setCalibDACUpperLimit(float, int);
 extern int setArbitraryWaveform(float*, int);
 //extern int getRampingPeriod(int);
 
@@ -170,6 +174,8 @@ extern int setDIO(const char*, int);
 extern int getDIO(const char*);
 extern int setTriggerMode(int);
 extern int getTriggerMode();
+extern int setTriggerPropagation(int);
+extern int getTriggerPropagation();
 extern int getWatchdogMode();
 extern int setWatchdogMode(int);
 extern int getRAMWriterMode();
@@ -198,7 +204,7 @@ extern void stopTx();
 typedef struct {
     char id[3+1];
     int version;
-    uint8_t set_flags;
+    uint16_t set_flags;
     float adc_ch1_fs;
     float adc_ch1_offs;
     float adc_ch2_fs;
@@ -207,6 +213,10 @@ typedef struct {
     float dac_ch1_offs;
     float dac_ch2_fs;
     float dac_ch2_offs;
+    float dac_ch1_lower;
+    float dac_ch1_upper;
+    float dac_ch2_lower;
+    float dac_ch2_upper;
 } rp_calib_params_t;
 
 extern int calib_Init();
@@ -218,6 +228,8 @@ extern int calib_setADCOffset(rp_calib_params_t * calib_params, float value, int
 extern int calib_setADCScale(rp_calib_params_t * calib_params, float value, int channel);
 extern int calib_setDACOffset(rp_calib_params_t * calib_params, float value, int channel);
 extern int calib_setDACScale(rp_calib_params_t * calib_params, float value, int channel);
+extern int calib_setDACLowerLimit(rp_calib_params_t * calib_params, float value, int channel);
+extern int calib_setDACUpperLimit(rp_calib_params_t * calib_params, float value, int channel);
 
 extern rp_calib_params_t calib_GetParams();
 extern rp_calib_params_t calib_GetDefaultCalib();

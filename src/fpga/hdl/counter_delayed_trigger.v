@@ -7,7 +7,7 @@ module counter_delayed_trigger #
 	parameter integer ADC_WIDTH = 16
 )
 (
-    input clk,
+  input clk,
 	input enable,
 	input trigger_arm, // Arm the trigger
 	input trigger_reset, // Unset the trigger after having triggered. Needs re-arming then.
@@ -19,7 +19,7 @@ module counter_delayed_trigger #
 	input [TRIGGER_COUNTER_WIDTH-1:0] reference_counter, // The reference that is used for determining when to start the trigger. Note: Splitted off to allow for e.g using an average value of the polled last counter values.
 	output trigger, // The actual trigger
 	output trigger_armed, // Arming status of the trigger
-    output [TRIGGER_COUNTER_WIDTH-1:0] last_counter // The last full counter value
+  output [TRIGGER_COUNTER_WIDTH-1:0] last_counter // The last full counter value
 );
 
 // Delayed trigger counter
@@ -146,7 +146,7 @@ begin
 				end
 				
 				// Only do internal arming when we would not directly trigger due to already satisfying the condition
-				if ((trigger_armed_int_pre == 1) && ~(delayed_trigger_counter >= reference_counter-trigger_presamples-1))
+				if ((trigger_armed_int_pre == 1) && ~(delayed_trigger_counter >= reference_counter-trigger_presamples-1) && (last_counter_out > 1))
 				begin
 					trigger_armed_int <= 1;
 				end
@@ -165,14 +165,7 @@ begin
 		trigger_armed_int_pre <= 0;
 		
 		// If the counter trigger is not enabled, it should always be on due to and-ing the triggers
-		if (enable == 1)
-		begin
-			trigger_out <= 0;
-		end
-		else
-		begin
-			trigger_out <= 1;
-		end
+		trigger_out <= 1;
 	end
 end
 

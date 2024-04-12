@@ -26,6 +26,11 @@
 #include "../lib/rp-daq-lib.h"
 #include "../server/daq_server_scpi.h"
 
+scpi_choice_def_t onoff_modes[] = {
+	{"OFF", OFF},
+	{"ON", ON},
+	SCPI_CHOICE_LIST_END /* termination of option list */
+};
 
 static int readAll(int fd, void *buf,  size_t len) {
 	size_t left = len;
@@ -69,6 +74,11 @@ scpi_choice_def_t server_modes[] = {
 	{"TRANSMISSION", TRANSMISSION},
 	SCPI_CHOICE_LIST_END
 };
+
+static scpi_result_t RP_GetImageVersion(scpi_t * context) {
+	SCPI_ResultUInt32(context, getFPGAImageVersion());
+	return SCPI_RES_OK;
+}
 
 static scpi_result_t RP_GetServerMode(scpi_t * context) {
 	const char * name;
@@ -312,6 +322,34 @@ static scpi_result_t RP_DAC_GetTriggerMode(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_DAC_SetTriggerPropagation(scpi_t * context) {
+	if (getServerMode() != CONFIGURATION) {
+		return returnSCPIBool(context, false);
+	}
+
+	int32_t trigger_mode_selection;
+
+	if (!SCPI_ParamChoice(context, onoff_modes, &trigger_mode_selection, TRUE)) {
+		return returnSCPIBool(context, false);
+	}
+
+	int result = setTriggerPropagation(trigger_mode_selection);
+	if (result < 0) {
+		return returnSCPIBool(context, false);
+	}
+
+	return returnSCPIBool(context, true);
+}
+
+static scpi_result_t RP_DAC_GetTriggerPropagation(scpi_t * context) {
+	const char * name;
+
+	SCPI_ChoiceToName(onoff_modes, getTriggerPropagation(), &name);
+	SCPI_ResultText(context, name);
+
+	return SCPI_RES_OK;
+}
+
 scpi_choice_def_t signal_types[] = {
 	{"SINE", SIGNAL_TYPE_SINE},
 	{"SQUARE", SIGNAL_TYPE_SQUARE},
@@ -490,12 +528,10 @@ static scpi_result_t RP_ADC_GetData(scpi_t * context) {
 		return returnSCPIBool(context, false);
 	}
 
-	uint64_t reqWP;
 	if (!SCPI_ParamInt64(context, &reqWP, TRUE)) {
 		return returnSCPIBool(context, false);
 	}
 
-	uint64_t numSamples;
 	if (!SCPI_ParamInt64(context, &numSamples, TRUE)) {
 		return returnSCPIBool(context, false);
 	}
@@ -524,6 +560,12 @@ static scpi_result_t RP_ADC_GetPipelinedData(scpi_t * context) {
 	transmissionState = PIPELINE;
 	return SCPI_ResultBool(context, true); // Signal that server starts sending;
 
+}
+
+static scpi_result_t RP_ADC_StopData(scpi_t * context) {
+	transmissionState_t state = transmissionState;
+	transmissionState = IDLE;
+	return SCPI_ResultBool(context, state != IDLE);
 }
 
 static scpi_result_t RP_ADC_Slow_GetFrames(scpi_t * context) {
@@ -563,8 +605,8 @@ static scpi_result_t RP_XADC_GetXADCValueVolt(scpi_t * context) {
 }
 
 scpi_choice_def_t inout_modes[] = {
-	{"IN", IN},
-	{"OUT", OUT},
+	{"IN", DIO_IN},
+	{"OUT", DIO_OUT},
 	SCPI_CHOICE_LIST_END /* termination of option list */
 };
 
@@ -623,12 +665,6 @@ static scpi_result_t RP_DIO_SetDIODirectionN(scpi_t * context) {
 static scpi_result_t RP_DIO_SetDIODirectionP(scpi_t * context) {
 	return RP_DIO_SetDIODirection(context, true);
 }
-
-scpi_choice_def_t onoff_modes[] = {
-	{"OFF", OFF},
-	{"ON", ON},
-	SCPI_CHOICE_LIST_END /* termination of option list */
-};
 
 static scpi_result_t RP_DIO_SetDIOOutput(scpi_t * context, bool pinSide) {
 	int32_t numbers[1];
@@ -1144,7 +1180,7 @@ static scpi_result_t RP_GetCorruptedStatus(scpi_t * context) {
 
 
 static scpi_result_t RP_GetStatus(scpi_t * context) {
-	sendStatusToClient();
+	SCPI_ResultInt(context, getStatus());
 	return SCPI_RES_OK;
 }
 
@@ -1454,6 +1490,90 @@ static scpi_result_t RP_Calib_DAC_SetScale(scpi_t* context) {
 	return returnSCPIBool(context, true);
 }
 
+static scpi_result_t RP_Calib_DAC_GetLowerLimit(scpi_t* context) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+	if (channel == 0) {
+		SCPI_ResultFloat(context, calib_params.dac_ch1_lower);
+	}
+	else if (channel == 1) {
+		SCPI_ResultFloat(context, calib_params.dac_ch2_lower);
+	}
+	else {
+		SCPI_ResultFloat(context, NAN);
+ 		return SCPI_RES_ERR;
+	}
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_Calib_DAC_SetLowerLimit(scpi_t* context) {
+	if (getServerMode() != CONFIGURATION) {
+		return returnSCPIBool(context, false);
+	}
+
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+	float limit;
+
+	SCPI_ParamFloat(context, &limit, true);
+	if (calib_setDACLowerLimit(&calib_params, limit, channel)) {
+ 		return returnSCPIBool(context, false);
+	}
+
+	calib_WriteParams(calib_params, false);	
+	calib_Init(); // Reload from cache from EEPROM
+	calib_apply();
+	return returnSCPIBool(context, true);
+}
+
+static scpi_result_t RP_Calib_DAC_GetUpperLimit(scpi_t* context) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+	if (channel == 0) {
+		SCPI_ResultFloat(context, calib_params.dac_ch1_upper);
+	}
+	else if (channel == 1) {
+		SCPI_ResultFloat(context, calib_params.dac_ch2_upper);
+	}
+	else {
+		SCPI_ResultFloat(context, NAN);
+ 		return SCPI_RES_ERR;
+	}
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_Calib_DAC_SetUpperLimit(scpi_t* context) {
+	if (getServerMode() != CONFIGURATION) {
+		return returnSCPIBool(context, false);
+	}
+
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int channel = numbers[0];
+
+	rp_calib_params_t calib_params = calib_GetParams();
+	float limit;
+
+	SCPI_ParamFloat(context, &limit, true);
+	if (calib_setDACUpperLimit(&calib_params, limit, channel)) {
+ 		return returnSCPIBool(context, false);
+	}
+
+	calib_WriteParams(calib_params, false);	
+	calib_Init(); // Reload from cache from EEPROM
+	calib_apply();
+	return returnSCPIBool(context, true);
+}
+
 static scpi_result_t RP_Calib_ADC_GetOffset(scpi_t* context) {
 	int32_t numbers[1];
 	SCPI_CommandNumbers(context, numbers, 1, 1);
@@ -1585,6 +1705,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "STATus:PRESet", .callback = SCPI_StatusPreset,},
 
 	/* RP-DAQ */
+	{.pattern = "RP:VERsion:IMAGe?", .callback = RP_GetImageVersion,},
 	{.pattern = "RP:MODe?", .callback = RP_GetServerMode,},
 	{.pattern = "RP:MODe", .callback = RP_SetServerMode,},
 	// DAC
@@ -1632,6 +1753,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:ADC:DATa?", .callback = RP_ADC_GetData,},
 	//{.pattern = "RP:ADC:DATa:DETailed?", .callback = RP_ADC_GetDetailedData,},
 	{.pattern = "RP:ADC:DATa:PIPElined?", .callback = RP_ADC_GetPipelinedData,},
+	{.pattern = "RP:ADC:DATa:SToP?", .callback = RP_ADC_StopData,},
 	{.pattern = "RP:ADC:BUFfer:Size?", .callback = RP_ADC_GetBufferSize,},
 	//{.pattern = "RP:ADC:Slow:FRAmes:DATa", .callback = RP_ADC_Slow_GetFrames,},
 	//{.pattern = "RP:XADC:CHannel#?", .callback = RP_XADC_GetXADCValueVolt,},
@@ -1649,6 +1771,8 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:TRIGger:ALiVe?", .callback = RP_GetKeepAliveReset,},
 	{.pattern = "RP:TRIGger:MODe", .callback = RP_DAC_SetTriggerMode,},
 	{.pattern = "RP:TRIGger:MODe?", .callback = RP_DAC_GetTriggerMode,},
+	{.pattern = "RP:TRIGger:PROP", .callback = RP_DAC_SetTriggerPropagation,},
+	{.pattern = "RP:TRIGger:PROP?", .callback = RP_DAC_GetTriggerPropagation,},
 	{.pattern = "RP:TRIGger", .callback = RP_SetMasterTrigger,},
 	{.pattern = "RP:TRIGger?", .callback = RP_GetMasterTrigger,},
 	//{.pattern = "RP:InstantResetMode", .callback = RP_SetInstantResetMode,},
@@ -1690,6 +1814,10 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:CALib:DAC:CHannel#:OFFset", .callback = RP_Calib_DAC_SetOffset,},
 	{.pattern = "RP:CALib:DAC:CHannel#:SCAle?", .callback = RP_Calib_DAC_GetScale,},
 	{.pattern = "RP:CALib:DAC:CHannel#:SCAle", .callback = RP_Calib_DAC_SetScale,},
+	{.pattern = "RP:CALib:DAC:CHannel#:LIMit:LOWer?", .callback = RP_Calib_DAC_GetLowerLimit,},
+	{.pattern = "RP:CALib:DAC:CHannel#:LIMit:LOWer", .callback = RP_Calib_DAC_SetLowerLimit,},
+	{.pattern = "RP:CALib:DAC:CHannel#:LIMit:UPper?", .callback = RP_Calib_DAC_GetUpperLimit,},
+	{.pattern = "RP:CALib:DAC:CHannel#:LIMit:UPper", .callback = RP_Calib_DAC_SetUpperLimit,},
 	{.pattern = "RP:CALib:ADC:CHannel#:OFFset?", .callback = RP_Calib_ADC_GetOffset,},
 	{.pattern = "RP:CALib:ADC:CHannel#:OFFset", .callback = RP_Calib_ADC_SetOffset,},
 	{.pattern = "RP:CALib:ADC:CHannel#:SCAle?", .callback = RP_Calib_ADC_GetScale,},

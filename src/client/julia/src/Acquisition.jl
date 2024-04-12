@@ -88,9 +88,9 @@ function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView
     index += chunk
     # Add Performance Info
     if !isnothing(rpInfo)
-      perfs = temp.perf
+      perfs = temp.performance
       for (i,perf) in enumerate(perfs)
-        rpInfo.performance[i].data = perf
+        push!(rpInfo.performances[i].data, perf)
       end
     end
   end
@@ -209,6 +209,13 @@ function readFrames(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}
   return data
 end
 
+"""
+    convertSamplesToFrames(rpu::Union{RedPitayaCluster, RedPitayaClusterView}, samples, numChan, numSampPerPeriod, numPeriods, numFrames, numBlockAverages=1, numPeriodsPerPatch=1)
+
+Converts a given set of samples to frames.
+
+See [`readFrames`](@ref)
+"""
 function convertSamplesToFrames(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, samples, numChan, numSampPerPeriod, numPeriods, numFrames, numBlockAverages=1, numPeriodsPerPatch=1)
   frames = convertSamplesToFrames(samples, numChan, numSampPerPeriod, numPeriods, numFrames, numBlockAverages, numPeriodsPerPatch)
   calibs = [x.calib for x in rpu]
@@ -220,6 +227,13 @@ function convertSamplesToFrames(rpu::Union{RedPitaya, RedPitayaCluster, RedPitay
   return frames
 end
 
+"""
+    convertSamplesToFrames(samples, numChan, numSampPerPeriod, numPeriods, numFrames, numBlockAverages=1, numPeriodsPerPatch=1)
+
+Converts a given set of samples to frames.
+
+See [`readFrames`](@ref)
+"""
 function convertSamplesToFrames(samples, numChan, numSampPerPeriod, numPeriods, numFrames, numBlockAverages=1, numPeriodsPerPatch=1)
   if rem(numSampPerPeriod,numBlockAverages) != 0
     error("block averages has to be a divider of numSampPerPeriod")
@@ -230,6 +244,13 @@ function convertSamplesToFrames(samples, numChan, numSampPerPeriod, numPeriods, 
   return frames
 end
 
+"""
+    convertSamplesToFrames!(rpu::Union{RedPitayaCluster, RedPitayaClusterView}, samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages=1, numPeriodsPerPatch=1)
+
+Converts a given set of samples to frames in-place.
+
+See [`readFrames`](@ref)
+"""
 function convertSamplesToFrames!(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages=1, numPeriodsPerPatch=1)
   convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages, numPeriodsPerPatch)
   calibs = [x.calib for x in rpu]
@@ -240,6 +261,13 @@ function convertSamplesToFrames!(rpu::Union{RedPitaya, RedPitayaCluster, RedPita
   end
 end
 
+"""
+    convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages=1, numPeriodsPerPatch=1)
+
+Converts a given set of samples to frames in-place.
+
+See [`readFrames`](@ref)
+"""
 function convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages=1, numPeriodsPerPatch=1)
   temp = reshape(samples, numChan, numSampPerPeriod, numPeriods, numFrames)
   for d = 1:div(numChan,2)
@@ -292,6 +320,13 @@ function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView
   return data
 end
 
+"""
+    convertSamplesToPeriods!(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages=1)
+
+Converts a given set of samples to periods in-place.
+
+See [`readPeriods`](@ref)
+"""
 function convertSamplesToPeriods!(rpu::Union{RedPitaya, RedPitayaCluster, RedPitayaClusterView}, samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages=1)
   convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages)
   calibs = [x.calib for x in rpu]
@@ -303,6 +338,14 @@ function convertSamplesToPeriods!(rpu::Union{RedPitaya, RedPitayaCluster, RedPit
   return periods
 
 end
+
+"""
+    convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages=1)
+
+Converts a given set of samples to periods in-place.
+
+See [`readPeriods`](@ref)
+"""
 function convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages=1)
   temp = reshape(samples, numChan, numSampPerPeriod, numPeriods)
   for d = 1:div(numChan,2)

@@ -12,14 +12,15 @@ import LinearAlgebra: normalize
 
 import Base: reset, iterate, length, push!, pop!
 
-export RedPitaya, send, receive, query, start, stop, disconnect, ServerMode, serverMode, serverMode!, CONFIGURATION, ACQUISITION, TRANSMISSION, getLog, ScpiBatch, execute!, clear!, @add_batch
+export RedPitaya, send, receive, query, disconnect, ServerMode, serverMode, serverMode!, CONFIGURATION, ACQUISITION, TRANSMISSION, getLog, ScpiBatch, execute!, clear!, @add_batch
 
-using ProgressMeter
-using Downloads
-using Scratch
-using GitHub
-using URIs
-using ZipFile
+# TODO: The update stuff increases load times quite a bit. Should we move this to a script?
+# using ProgressMeter
+# using Downloads
+# using Scratch
+# using GitHub
+# using URIs
+# using ZipFile
 
 const _awgBufferSize = 16384
 
@@ -75,6 +76,11 @@ function receive(rp::RedPitaya)
   return readline(rp.socket)[1:end]
 end
 
+"""
+    receive(rp::RedPitaya, ch::Channel)
+
+Receive a String from the RedPitaya command socket. Reads until a whole line is received and puts it in the supplied channel `ch`.
+"""
 function receive(rp::RedPitaya, ch::Channel)
   put!(ch, receive(rp))
 end
@@ -138,7 +144,7 @@ function query(rp::RedPitaya, cmd::String, T::Type, timeout::Number=getTimeout()
 end
 
 # connect with timeout implementation
-function Sockets.connect(host, port::Integer, timeout::Number)
+function connectTimeout(host, port::Integer, timeout::Number)
   s = TCPSocket()
   t = Timer(_ -> close(s), timeout)
   try
@@ -155,13 +161,19 @@ end
 function connect(rp::RedPitaya)
   if !rp.isConnected
     begin
-      rp.socket = connect(rp.host, rp.port, getTimeout())
-      rp.dataSocket = connect(rp.host, rp.dataPort, getTimeout())
+      rp.socket = connectTimeout(rp.host, rp.port, getTimeout())
+      rp.dataSocket = connectTimeout(rp.host, rp.dataPort, getTimeout())
       rp.isConnected = true
       updateCalib!(rp)
       temp = findall([calibDACScale(rp, 1) < _scaleWarning, calibDACScale(rp, 2) < _scaleWarning])
       if length(temp) > 0
         @warn "RP $(rp.host): Channels $(string(temp)) have a small DAC scale calibration value. If this is not intended use calibDACScale!(rp, i, 1.0) to set a default scale."
+      end
+
+      imageVersion = imgversion(rp)
+      packageVersion = pkgversion(@__MODULE__)
+      if packageVersion.minor != imageVersion
+        @warn "RedPitayaDAQServer $(rp.host) (minor) client version ($packageVersion) differs from FPGA image version ($imageVersion). Incompatible (minor) versions can result in undefined behaviour"
       end
     end
   end
@@ -201,6 +213,10 @@ function stringToEnum(enumType::Type{T}, value::AbstractString) where {T <: Enum
   end
   return instances(enumType)[index]
 end
+
+imgversion(rp::RedPitaya) = query(rp, scpiCommand(imgversion), scpiReturn(imgversion))
+scpiCommand(::typeof(imgversion)) = "RP:VERsion:IMAGe?"
+scpiReturn(::typeof(imgversion)) = UInt32
 
 """
     ServerMode
@@ -369,7 +385,7 @@ include("Acquisition.jl")
 include("SlowIO.jl")
 include("EEPROM.jl")
 include("CounterTrigger.jl")
-include("Utility.jl")
+#include("Utility.jl")
 
 function destroy(rp::RedPitaya)
   disconnect(rp)

@@ -21,10 +21,12 @@ bool verbose = false;
 int mmapfd;
 volatile uint32_t *slcr, *axi_hp0;
 void *pdm_sts, *reset_sts, *cfg, *ram, *dio_sts;
-uint32_t *counter_trigger;
+uint32_t *counter_trigger_cfg;
+uint32_t *counter_trigger_sts;
 uint16_t *pdm_cfg;
 uint64_t *adc_sts, *dac_cfg;
 uint32_t *awg_0_cfg, *awg_1_cfg;
+uint32_t *version_sts;
 volatile int32_t *xadc;
 
 // static const uint32_t ANALOG_OUT_MASK            = 0xFF;
@@ -37,8 +39,6 @@ static const uint32_t ANALOG_IN_MAX_VAL_INTEGER  = 0xFFF;
 // static const float    ANALOG_OUT_MAX_VAL         = 1.8;
 // static const float    ANALOG_OUT_MIN_VAL         = 0.0;
 // static const uint32_t ANALOG_OUT_MAX_VAL_INTEGER = 156;
-
-static const uint32_t COUNTER_TRIGGER_CFG_OFFSET  = 0x800/sizeof(int32_t);
 
 // Cached parameter values.
 static rp_calib_params_t calib;
@@ -90,6 +90,11 @@ bool isZynq7030() {
 
 bool isZynq7045() {
 	return (getFPGAId() == 0x11);
+}
+
+
+uint32_t getFPGAImageVersion() {
+	return *version_sts;
 }
 
 void loadBitstream() {
@@ -144,16 +149,20 @@ int init() {
 	pdm_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40003000);
 	reset_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40005000);
 	dio_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40006000);
-	counter_trigger = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40002000);
+	counter_trigger_cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40008000);
+	counter_trigger_sts = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40007000);
 	cfg = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40004000);
 	ram = mmap(NULL, sizeof(int32_t)*ADC_BUFF_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, ADC_BUFF_MEM_ADDRESS);
 	xadc = mmap(NULL, 16*sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40010000);
 	awg_0_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(uint32_t)/2, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80020000);
 	awg_1_cfg = mmap(NULL, AWG_BUFF_SIZE*sizeof(uint32_t)/2, PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x80028000);
+	version_sts  = mmap(NULL, sysconf(_SC_PAGESIZE), PROT_READ|PROT_WRITE, MAP_SHARED, mmapfd, 0x40009000);
 
 
-	loadBitstream();
 	
+	loadBitstream();
+	printf("FPGA Image Version %u\n", getFPGAImageVersion());
+
 	calib_Init(); // Load calibration from EEPROM
 	calib_validate(&calib);
 	printf("Using calibration version %d with: %u\n", calib.version, calib.set_flags);
@@ -461,6 +470,39 @@ int setCalibDACOffset(float value, int channel) {
 	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel);
 	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) offset) << 48) & ~MASK_LOWER_48);
 	*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel) = register_value;
+	return 0;
+}
+
+int setCalibDACLowerLimit(float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	
+	int16_t limit = (int16_t)(value*8191.0);
+	if (limit < -8191 || limit >= 8192) {
+		return -2;
+	}
+	// Config lower limit is stored in second component freq
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*1 + CHANNEL_OFFSET*channel);
+	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) limit) << 48) & ~MASK_LOWER_48);
+	*(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*1 + CHANNEL_OFFSET*channel) = register_value;
+	return 0;
+}
+
+
+int setCalibDACUpperLimit(float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	
+	int16_t limit = (int16_t)(value*8191.0);
+	if (limit < -8191 || limit >= 8192) {
+		return -2;
+	}
+	// Config upper limit is stored in second component phase
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*1 + CHANNEL_OFFSET*channel);
+	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) limit) << 48) & ~MASK_LOWER_48);
+	*(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*1 + CHANNEL_OFFSET*channel) = register_value;
 	return 0;
 }
 
@@ -842,6 +884,30 @@ int setTriggerMode(int mode) {
 	return 0;
 }
 
+int getTriggerPropagation() {
+	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x04) >> 2);
+
+	if(value == 0) {
+		return OFF;
+	} else if(value == 1) {
+		return ON;
+	}
+
+	return -1;
+}
+
+int setTriggerPropagation(int mode) {
+	if(mode == OFF) {
+		*((uint8_t *)(cfg + 1)) &= ~4;
+	} else if(mode == ON) {
+		*((uint8_t *)(cfg + 1)) |= 4;
+	} else {
+		return -1;
+	}
+
+	return 0;
+}
+
 int getMasterTrigger() {
 	int value;
 
@@ -859,10 +925,10 @@ int getMasterTrigger() {
 int setMasterTrigger(int mode) {
 	if(mode == OFF) {
 		setKeepAliveReset(ON);
-		double waitTime = getSamplesPerStep() * getDecimation() / 125e6;
-		usleep( 10*waitTime * 1000000);
+		//double waitTime = getSamplesPerStep() * getDecimation() / 125e6;
+		//usleep( 10*waitTime * 1000000);
 		*((uint8_t *)(cfg + 1)) &= ~(1 << 5);
-		usleep( 10*waitTime * 1000000);
+		//usleep( 10*waitTime * 1000000);
 		setRAMWriterMode(ADC_MODE_TRIGGERED);
 		setKeepAliveReset(OFF);
 	} else if(mode == ON) {
@@ -1138,10 +1204,10 @@ int getDIODirection(const char* pin) {
 	uint32_t register_value = *((uint8_t *)(cfg + 9));
 	register_value = ((register_value & (0x1 << (pinInternal))) >> (pinInternal));
 	
-	if(register_value == IN) {
-		return IN;
+	if(register_value == DIO_IN) {
+		return DIO_IN;
 	} else {
-		return OUT;
+		return DIO_OUT;
 	}
 }
 
@@ -1151,9 +1217,9 @@ int setDIODirection(const char* pin, int value) {
 		return -3;
 	}
 
-	if(value == OUT) {
+	if(value == DIO_OUT) {
 		*((uint8_t *)(cfg + 9)) &= ~(0x1 << (pinInternal));
-	} else if(value == IN) {
+	} else if(value == DIO_IN) {
 		*((uint8_t *)(cfg + 9)) |= (0x1 << (pinInternal));
 	} else {
 		return -1;
@@ -1369,6 +1435,10 @@ rp_calib_params_t getDefaultCalib(){
 		calib.adc_ch1_offs = 0.0;
 		calib.adc_ch2_fs = 1.0/8192.0;
 		calib.adc_ch2_offs = 0.0;
+		calib.dac_ch1_lower = -1.0;
+    calib.dac_ch1_upper = 1.0;
+    calib.dac_ch2_lower = -1.0;
+    calib.dac_ch2_upper = 1.0;
     return calib;
 }
 
@@ -1417,14 +1487,37 @@ int calib_validate(rp_calib_params_t * calib_params) {
 		calib_params->dac_ch2_offs = def.dac_ch2_offs;
 		calib_params->set_flags &= ~(1 << 7);
 	}
+
+	// DAC Limits
+	if (useDefault || !(calib_params->set_flags & (1 << 8))) {
+		calib_params->dac_ch1_lower = def.dac_ch1_lower;
+		calib_params->set_flags &= ~(1 << 8);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 9))) {
+		calib_params->dac_ch1_upper = def.dac_ch1_upper;
+		calib_params->set_flags &= ~(1 << 9);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 10))) {
+		calib_params->dac_ch2_lower = def.dac_ch2_lower;
+		calib_params->set_flags &= ~(1 << 10);
+	}
+	if (useDefault || !(calib_params->set_flags & (1 << 11))) {
+		calib_params->dac_ch2_upper = def.dac_ch2_upper;
+		calib_params->set_flags &= ~(1 << 11);
+	}
+
 	return 0;
 }
 
 int calib_apply() {
 	setCalibDACScale(calib.dac_ch1_fs, 0);
 	setCalibDACOffset(calib.dac_ch1_offs, 0);
+	setCalibDACLowerLimit(calib.dac_ch1_lower, 0);
+	setCalibDACUpperLimit(calib.dac_ch1_upper, 0);
 	setCalibDACScale(calib.dac_ch2_fs, 1);
 	setCalibDACOffset(calib.dac_ch2_offs, 1);
+	setCalibDACLowerLimit(calib.dac_ch2_lower, 1);
+	setCalibDACUpperLimit(calib.dac_ch2_upper, 1);
 	return 0;
 }
 
@@ -1488,6 +1581,36 @@ int calib_setDACScale(rp_calib_params_t * calib_params, float value, int channel
 	return 0;
 }
 
+int calib_setDACLowerLimit(rp_calib_params_t * calib_params, float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	if (channel == 0) {
+		calib_params->dac_ch1_lower = value;
+		calib_params->set_flags |= (1 << 8);
+	}
+	else if (channel == 1) {
+		calib_params->dac_ch2_lower = value;
+		calib_params->set_flags |= (1 << 10);
+	}
+	return 0;
+}
+
+int calib_setDACUpperLimit(rp_calib_params_t * calib_params, float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+	if (channel == 0) {
+		calib_params->dac_ch1_upper = value;
+		calib_params->set_flags |= (1 << 9);
+	}
+	else if (channel == 1) {
+		calib_params->dac_ch2_upper = value;
+		calib_params->set_flags |= (1 << 11);
+	}
+	return 0;
+}
+
 
 void calib_SetToZero() {
     calib = getDefaultCalib();
@@ -1505,12 +1628,12 @@ uint32_t cmn_CalibFullScaleFromVoltage(float voltageScale) {
 }
 
 /**
- * Memory layout for `counter_trigger + COUNTER_TRIGGER_CFG_OFFSET` upper bits 0x40002800
+ * Memory layout for `counter_trigger_cfg` upper bits 0x40008000
  * 
  * 0 ................................................................................................................. 67 bit |
  * reference_counter (32 bit) | presamples (32 bit) | enable (1 bit) | arm (1 bit) | reset (1 bit) | source selection (5 bit) |
  * 
- * Memory layout for `counter_trigger` lower bits 0x40002000
+ * Memory layout for `counter_trigger_sts` lower bits 0x40007000
  * 
  * 0 ............................ 33 bit |
  * last_counter (32 bit) | armed (1 bit) |
@@ -1521,7 +1644,7 @@ int counter_trigger_setEnabled(bool enable) {
 		counter_trigger_disarm(); // Always disarm when disabling
 	}
 
-	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	uint32_t register_value = *(counter_trigger_cfg + 2);
 	if (enable) {
 		register_value = register_value | (1 << 0);
 	}
@@ -1529,41 +1652,41 @@ int counter_trigger_setEnabled(bool enable) {
 		register_value = register_value & ~(1 << 0);
 	}
 	
-	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value;
+	*(counter_trigger_cfg + 2) = register_value;
 	return 0;
 }
 
 bool counter_trigger_isEnabled() {
-	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	uint32_t register_value = *(counter_trigger_cfg + 2);
 	register_value = register_value & (1 << 0);
 	return (register_value > 0);
 }
 
 int counter_trigger_setPresamples(uint32_t presamples) {
-	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 1) = presamples;
+	*(counter_trigger_cfg + 1) = presamples;
 	return 0;
 }
 
 int counter_trigger_getPresamples() {
-	return *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 1);
+	return *(counter_trigger_cfg + 1);
 }
 
 int counter_trigger_arm() {
-	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	uint32_t register_value = *(counter_trigger_cfg + 2);
 	register_value = register_value | (1 << 1);
-	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value;
+	*(counter_trigger_cfg + 2) = register_value;
 	return 0;
 }
 
 int counter_trigger_disarm() {
-	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	uint32_t register_value = *(counter_trigger_cfg + 2);
 	register_value = register_value & ~(1 << 1);
-	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value;
+	*(counter_trigger_cfg + 2) = register_value;
 	return 0;
 }
 
 bool counter_trigger_isArmed() {
-	uint32_t register_value = *(counter_trigger + 1);
+	uint32_t register_value = *(counter_trigger_sts + 1);
 	register_value = register_value & (1 << 0);
 	return (register_value > 0);
 }
@@ -1573,7 +1696,7 @@ int counter_trigger_setReset(bool reset) {
 		counter_trigger_disarm(); // Always disarm when resetting
 	}
 
-	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	uint32_t register_value = *(counter_trigger_cfg + 2);
 	if (reset) {
 		register_value = register_value | (1 << 2);
 	}
@@ -1581,43 +1704,43 @@ int counter_trigger_setReset(bool reset) {
 		register_value = register_value & ~(1 << 2);
 	}
 	
-	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value;
+	*(counter_trigger_cfg + 2) = register_value;
 	return 0;
 }
 
 bool counter_trigger_getReset() {
-	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	uint32_t register_value = *(counter_trigger_cfg + 2);
 	register_value = register_value & (1 << 2);
 	return (register_value > 0);
 }
 
 uint32_t counter_trigger_getLastCounter() {
-	return *(counter_trigger + 0);
+	return *(counter_trigger_sts + 0);
 }
 
 int counter_trigger_setReferenceCounter(uint32_t reference_counter) {
-	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 0) = reference_counter;
+	*(counter_trigger_cfg + 0) = reference_counter;
 	return 0;
 }
 
 uint32_t counter_trigger_getReferenceCounter() {
-	return *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 0);
+	return *(counter_trigger_cfg + 0);
 }
 
 uint32_t counter_trigger_getSelectedChannelType() {
-	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	uint32_t register_value = *(counter_trigger_cfg + 2);
 	return (register_value & (1 << 7)) >> 7;
 }
 
 bool counter_trigger_setSelectedChannelType(uint32_t channelType) {
-	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	uint32_t register_value = *(counter_trigger_cfg + 2);
 	if (channelType == COUNTER_TRIGGER_ADC)
 	{
-		*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value | (1 << 7);
+		*(counter_trigger_cfg + 2) = register_value | (1 << 7);
 	}
 	else if (channelType == COUNTER_TRIGGER_DIO)
 	{
-		*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = register_value & ~(1 << 7);
+		*(counter_trigger_cfg + 2) = register_value & ~(1 << 7);
 	}
 	else
 	{
@@ -1628,7 +1751,7 @@ bool counter_trigger_setSelectedChannelType(uint32_t channelType) {
 }
 
 char* counter_trigger_getSelectedChannel() {
-	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
+	uint32_t register_value = *(counter_trigger_cfg + 2);
 	uint32_t channelNumber = (register_value & (0b1111 << 3)) >> 3;
 	if (counter_trigger_getSelectedChannelType() == COUNTER_TRIGGER_DIO) {
 		return getPinFromInternalPINNumber(channelNumber);
@@ -1661,7 +1784,7 @@ uint32_t counter_trigger_setSelectedChannel(const char* channel) {
 		return channelNumber;
 	}
 
-	uint32_t register_value = *(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2);
-	*(counter_trigger + COUNTER_TRIGGER_CFG_OFFSET + 2) = (register_value | (0b1111 << 3)) & ((channelNumber << 3) | ~(0b1111 << 3));
+	uint32_t register_value = *(counter_trigger_cfg + 2);
+	*(counter_trigger_cfg + 2) = (register_value | (0b1111 << 3)) & ((channelNumber << 3) | ~(0b1111 << 3));
 	return 0;
 }

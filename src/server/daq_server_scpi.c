@@ -250,7 +250,6 @@ int main(int argc, char** argv) {
 	// Ignore SIGPIPE signal to ensure that process is not silently terminated
 	sigaction(SIGPIPE, &(struct sigaction){SIG_IGN}, NULL);
 
-
 	getprio(pthread_self());
 
 	/* User_context will be pointer to socket */
@@ -288,7 +287,7 @@ int main(int argc, char** argv) {
 			if(controlThreadRunning) {
 				joinControlThread();
 			}
-			
+
 			if(!initialized) {
 				init();
 				initialized = true;

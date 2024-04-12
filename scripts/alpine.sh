@@ -102,7 +102,7 @@ cp -r ../../linux-image/alpine/etc $root_dir/
 mkdir -p $root_dir/media/mmcblk0p1/apps
 
 # Copy current status of RedPitayaDAQServer directory
-rsync -av -q ../../ $root_dir/media/mmcblk0p1/apps/RedPitayaDAQServer --exclude build --exclude .Xil --exclude "red-pitaya-alpine*.zip"
+rsync -av -q ../../ $root_dir/media/mmcblk0p1/apps/RedPitayaDAQServer --exclude build --exclude tmp --exclude .Xil --exclude "red-pitaya-alpine*.zip" --exclude *.jou --exclude *.log --exclude vivado*.str 
 
 # Reset repository
 git remote set-url origin https://github.com/tknopp/RedPitayaDAQServer.git

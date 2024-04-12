@@ -5,12 +5,14 @@ module reset_manager #
     parameter integer ALIVE_SIGNAL_LOW_TIME = 100, // in milliseconds
     parameter integer ALIVE_SIGNAL_HIGH_TIME = 10, // in milliseconds
     parameter integer RAMWRITER_DELAY = 1 // in milliseconds
-
 )
 (
     input clk,
+    input isMaster,
     input peripheral_aresetn,
     input [7:0] reset_cfg,
+    input sata_trigger,
+    output sata_out,
     inout trigger,
     inout watchdog,
     inout instant_reset,
@@ -38,7 +40,7 @@ module reset_manager #
 reset_cfg:
 Bit 0 => 0: continuous mode; 1: trigger mode
 Bit 1 => 0: no watchdog; 1: watchdog mode
-Bit 2 => unused
+Bit 2 => Sata Trigger Propagation
 Bit 3 => instant reset mode: 0: disabled; 1: enabled
 Bit 4 => 0: internal trigger 1: external trigger
 Bit 5 => internal trigger enable/disable, output over DIO5_P
@@ -157,6 +159,7 @@ IOBUF #(
 // Double-register inputs
 reg trigger_in_int_pre = 0;
 reg trigger_in_int = 0;
+reg sata_trigger_int = 0;
 reg watchdog_in_int_pre = 0;
 reg watchdog_in_int = 0;
 reg instant_reset_in_int_pre = 0;
@@ -167,6 +170,7 @@ always @(posedge clk)
 begin
     trigger_in_int_pre <= trigger_in;
     trigger_in_int <= trigger_in_int_pre;
+    sata_trigger_int <= sata_trigger;
     watchdog_in_int_pre <= watchdog_in;
     watchdog_in_int <= watchdog_in_int_pre;
     instant_reset_in_int_pre <= instant_reset_in;
@@ -204,7 +208,7 @@ always @(posedge clk)
 begin
     if (reset_cfg[4] == 0) // internal trigger mode
     begin
-        triggerState <= reset_cfg[5] & counter_trigger; // counter_trigger must always be high if not enabled
+        triggerState <= (reset_cfg[5] & counter_trigger) || (!isMaster & sata_trigger_int); // counter_trigger must always be high if not enabled
     end
     else
     begin
@@ -288,6 +292,7 @@ assign reset_ack_out = watchdog_in; // Acknowledge received watchdog signal
 
 assign alive_signal_out = alive_signal_int;
 assign master_trigger_out = masterTriggerState;
+assign sata_out = triggerState & reset_cfg[2];
 
 assign ramping_enable[0] = ramping_cfg[0];
 assign ramping_enable[1] = ramping_cfg[1];
