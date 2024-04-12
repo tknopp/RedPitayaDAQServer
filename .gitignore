@@ -31,6 +31,7 @@ uImage
 .vscode
 vivado*
 .Xil
+red-pitaya-alpine*
 
 # Output files of specific testbenches
 counter_delayed_trigger
