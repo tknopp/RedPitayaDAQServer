@@ -102,7 +102,7 @@ function RPInfo(rpc::RedPitayaCluster)
 end
 
 for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset,
-           :triggerMode, :samplesPerStep, :serverMode, :masterTrigger,
+           :triggerMode, :samplesPerStep, :serverMode, :masterTrigger, :stopTransmission,
            :counterTrigger_enabled, :counterTrigger_enabled!, :counterTrigger_presamples,
            :counterTrigger_isArmed, :counterTrigger_arm!, :counterTrigger_reset!,
            :counterTrigger_reset, :counterTrigger_lastCounter, :counterTrigger_referenceCounter,
@@ -120,7 +120,7 @@ for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samples
 end
 
 for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :samplesPerStep!,
-           :keepAliveReset!, :serverMode!, :stopTransmission,
+           :keepAliveReset!, :serverMode!, 
            :counterTrigger_enabled!, :counterTrigger_presamples!, :counterTrigger_arm!,
            :counterTrigger_reset!, :counterTrigger_referenceCounter!,
            :counterTrigger_sourceType!, :counterTrigger_sourceChannel!]
