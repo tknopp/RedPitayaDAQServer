@@ -102,7 +102,7 @@ function RPInfo(rpc::RedPitayaCluster)
 end
 
 for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset,
-           :triggerMode, :samplesPerStep, :serverMode, :masterTrigger, :stopTransmission,
+           :triggerMode, :samplesPerStep, :serverMode, :masterTrigger,
            :counterTrigger_enabled, :counterTrigger_enabled!, :counterTrigger_presamples,
            :counterTrigger_isArmed, :counterTrigger_arm!, :counterTrigger_reset!,
            :counterTrigger_reset, :counterTrigger_lastCounter, :counterTrigger_referenceCounter,
@@ -141,7 +141,7 @@ for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :
   end
 end
 
-for op in [:clearSequence!, :sequence!]
+for op in [:clearSequence!, :sequence!, :stopTransmission]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster)
