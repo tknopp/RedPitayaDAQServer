@@ -332,11 +332,13 @@ void sendPipelinedDataToClient(uint64_t wpTotal, uint64_t numSamples, uint64_t c
 		sendSamplesTotal += chunk;
 
 		// Check if SCPI commands are waiting
-		rc = recv(clifd, smbuffer, sizeof (smbuffer), MSG_DONTWAIT);
-		if (rc > 0) {
-			SCPI_Input(&scpi_context, smbuffer, rc);
-			printf("Handled SCPI in loop\n");
-		}
+		do {
+			rc = recv(clifd, smbuffer, sizeof (smbuffer), MSG_DONTWAIT);
+			if (rc > 0) {
+				SCPI_Input(&scpi_context, smbuffer, rc);
+				printf("Handled SCPI in loop\n");
+			}
+		} while (rc > 0);
 
 	}
 	setServerMode(ACQUISITION); // Maybe get and reset previous mode later. Atm it has to be ACQUISITION anyways
