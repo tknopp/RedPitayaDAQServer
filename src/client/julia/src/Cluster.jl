@@ -121,7 +121,7 @@ for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samples
 end
 
 for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :samplesPerStep!,
-           :keepAliveReset!, :serverMode!, :stopTransmission,
+           :keepAliveReset!, :serverMode!, 
            :counterTrigger_enabled!, :counterTrigger_presamples!, :counterTrigger_arm!,
            :counterTrigger_reset!, :counterTrigger_referenceCounter!,
            :counterTrigger_sourceType!, :counterTrigger_sourceChannel!]
@@ -142,7 +142,7 @@ for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :
   end
 end
 
-for op in [:clearSequence!, :sequence!]
+for op in [:clearSequence!, :sequence!, :stopTransmission]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster)

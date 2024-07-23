@@ -77,7 +77,7 @@ blinker_cores: $(addprefix tmp/cores/, $(BLINKER_CORES))
 
 #$(subst $(SPACE),_,$(wordlist 1,$(call subtract,$(words $(subst _, ,$(1))),2),$(subst _, ,$(1)))) # Doesn't work yet
 define strip_core_version
-$(shell python -c "print('_'.join('$(1)'.split('_')[:-2]))")
+$(shell python3 -c "print('_'.join('$(1)'.split('_')[:-2]))")
 endef
 
 define GEN_DAQ_CORE_RULE
