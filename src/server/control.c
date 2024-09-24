@@ -46,6 +46,7 @@ sequenceData_t * allocSequence() {
 	seq->enableLUT = NULL;
 	seq->rampUp = NULL;
 	seq->rampDown = NULL;
+	seq->resyncLUT = NULL;
 	return seq; 
 }
 
@@ -65,6 +66,10 @@ void freeSequence(sequenceData_t *seqData) {
 	if (seqData->rampDown != NULL) {
 		freeRamping(seqData->rampDown);
 		seqData->rampDown = NULL;
+	}
+	if (seqData->resyncLUT != NULL) {
+		free(seqData->resyncLUT);
+		seqData->resyncLUT = NULL;
 	}
 }
 
@@ -119,6 +124,15 @@ bool getSequenceEnableValue(sequenceData_t *seqData, int seqStep, int channel) {
 	if (seqData->enableLUT != NULL) {
 		int localStep = seqStep % seqData->numStepsPerRepetition;
 		result = seqData->enableLUT[localStep * numSlowDACChan + channel];
+	}
+	return result;
+}
+
+bool getSequenceResyncValue(sequenceData_t *seqData, int seqStep, int channel) {
+	bool result = false;
+	if (seqData->resyncLUT != NULL) {
+		int localStep = seqStep % seqData->numStepsPerRepetition;
+		result = seqData->resyncLUT[localStep + channel];
 	}
 	return result;
 }
@@ -219,6 +233,7 @@ static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
 	float val = 0.0;
 	bool enable = true;
 	bool rampDown = false;
+	bool resync = false;
 
 	switch(interval) {
 		case RAMPUP:
@@ -227,6 +242,7 @@ static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
 		case REGULAR:
 			val = getSequenceValue(activeSequence, localStep, channel);
 			enable = getSequenceEnableValue(activeSequence, localStep, channel);
+			resync = getSequenceResyncValue(activeSequence, localStep, channel);
 			break;
 		case RAMPDOWN:
 			val = getRampingValue(activeSequence->rampDown, localStep, channel);
@@ -243,6 +259,9 @@ static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
 		printf("Could not set AO[%d] voltage.\n", channel);	
 	}
 	setEnableDAC(enable, channel, currPDMIndex);
+	if (channel < 2) {
+		setResyncDAC(resync, channel, currPDMIndex);
+	}
 	setRampDownDAC(rampDown, channel, currPDMIndex);
 
 }
