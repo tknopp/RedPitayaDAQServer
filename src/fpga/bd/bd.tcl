@@ -796,6 +796,7 @@ proc create_hier_cell_signal_compose1 { parentCell nameHier } {
   create_bd_pin -dir O -from 0 -to 0 m_axis_data_tvalid_1
   create_bd_pin -dir I -from 15 -to 0 offset
   create_bd_pin -dir O -from 1 -to 0 ramp_state_1
+  create_bd_pin -dir I resync_dac
   create_bd_pin -dir I start_ramp_down
 
   # Create instance: signal_calib_0, and set properties
@@ -899,10 +900,11 @@ proc create_hier_cell_signal_compose1 { parentCell nameHier } {
   connect_bd_net -net disable_dac_1 [get_bd_pins disable_dac] [get_bd_pins signal_composer_0/disable_dac]
   connect_bd_net -net enable_ramping_1 [get_bd_pins enable_ramping] [get_bd_pins signal_ramp_0/enableRamping]
   connect_bd_net -net offset_1 [get_bd_pins offset] [get_bd_pins signal_composer_0/seq]
+  connect_bd_net -net resync_dac_1 [get_bd_pins resync_dac] [get_bd_pins waveform_gen_0/resync] [get_bd_pins waveform_gen_1/resync] [get_bd_pins waveform_gen_2/resync] [get_bd_pins waveform_gen_3/resync]
   connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins signal_ramp_0/aresetn] [get_bd_pins waveform_awg1/aresetn] [get_bd_pins waveform_gen_0/aresetn] [get_bd_pins waveform_gen_1/aresetn] [get_bd_pins waveform_gen_2/aresetn] [get_bd_pins waveform_gen_3/aresetn]
   connect_bd_net -net signal_calib_0_signal_out [get_bd_pins S] [get_bd_pins signal_calib_0/signal_out]
-  connect_bd_net -net signal_cfg_slice_0_calib_limit_lower [get_bd_pins signal_calib_0/calib_limit_lower] [get_bd_pins signal_cfg_slice_0/calib_limit_lower]
-  connect_bd_net -net signal_cfg_slice_0_calib_limit_upper [get_bd_pins signal_calib_0/calib_limit_upper] [get_bd_pins signal_cfg_slice_0/calib_limit_upper]
+  connect_bd_net -net signal_cfg_slice_0_calib_limit_lower [get_bd_pins signal_cfg_slice_0/calib_limit_lower]
+  connect_bd_net -net signal_cfg_slice_0_calib_limit_upper [get_bd_pins signal_cfg_slice_0/calib_limit_upper]
   connect_bd_net -net signal_cfg_slice_0_calib_offset [get_bd_pins signal_calib_0/calib_offset] [get_bd_pins signal_cfg_slice_0/calib_offset]
   connect_bd_net -net signal_cfg_slice_0_calib_scale [get_bd_pins signal_calib_0/calib_scale] [get_bd_pins signal_cfg_slice_0/calib_scale]
   connect_bd_net -net signal_cfg_slice_0_comp_0_amp [get_bd_pins signal_cfg_slice_0/comp_0_amp] [get_bd_pins waveform_gen_0/amplitude]
@@ -990,6 +992,7 @@ proc create_hier_cell_signal_compose { parentCell nameHier } {
   create_bd_pin -dir O -from 0 -to 0 m_axis_data_tvalid_1
   create_bd_pin -dir I -from 15 -to 0 offset
   create_bd_pin -dir O -from 1 -to 0 ramp_state_0
+  create_bd_pin -dir I resync_dac
   create_bd_pin -dir I start_ramp_down
 
   # Create instance: signal_calib_0, and set properties
@@ -1094,9 +1097,10 @@ proc create_hier_cell_signal_compose { parentCell nameHier } {
   connect_bd_net -net disable_dac_1 [get_bd_pins disable_dac] [get_bd_pins signal_composer_0/disable_dac]
   connect_bd_net -net offset_1 [get_bd_pins offset] [get_bd_pins signal_composer_0/seq]
   connect_bd_net -net ramping_enable_1 [get_bd_pins enable_ramping] [get_bd_pins signal_ramp/enableRamping]
+  connect_bd_net -net resync_dac_1 [get_bd_pins resync_dac] [get_bd_pins waveform_gen_0/resync] [get_bd_pins waveform_gen_1/resync] [get_bd_pins waveform_gen_2/resync] [get_bd_pins waveform_gen_3/resync]
   connect_bd_net -net signal_calib_0_signal_out [get_bd_pins S] [get_bd_pins signal_calib_0/signal_out]
-  connect_bd_net -net signal_cfg_slice_0_calib_limit_lower [get_bd_pins signal_calib_0/calib_limit_lower] [get_bd_pins signal_cfg_slice_0/calib_limit_lower]
-  connect_bd_net -net signal_cfg_slice_0_calib_limit_upper [get_bd_pins signal_calib_0/calib_limit_upper] [get_bd_pins signal_cfg_slice_0/calib_limit_upper]
+  connect_bd_net -net signal_cfg_slice_0_calib_limit_lower [get_bd_pins signal_cfg_slice_0/calib_limit_lower]
+  connect_bd_net -net signal_cfg_slice_0_calib_limit_upper [get_bd_pins signal_cfg_slice_0/calib_limit_upper]
   connect_bd_net -net signal_cfg_slice_0_calib_offset [get_bd_pins signal_calib_0/calib_offset] [get_bd_pins signal_cfg_slice_0/calib_offset]
   connect_bd_net -net signal_cfg_slice_0_calib_scale [get_bd_pins signal_calib_0/calib_scale] [get_bd_pins signal_cfg_slice_0/calib_scale]
   connect_bd_net -net signal_cfg_slice_0_comp_0_amp [get_bd_pins signal_cfg_slice_0/comp_0_amp] [get_bd_pins waveform_gen_0/amplitude]
@@ -1576,7 +1580,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   # Create instance: image_version, and set properties
   set image_version [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 image_version ]
   set_property -dict [ list \
-   CONFIG.CONST_VAL {8} \
+   CONFIG.CONST_VAL {9} \
    CONFIG.CONST_WIDTH {32} \
  ] $image_version
 
@@ -2099,6 +2103,7 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   create_bd_pin -dir I -type rst keep_alive_aresetn
   create_bd_pin -dir O -from 31 -to 0 oa_dac
   create_bd_pin -dir O -from 31 -to 0 pdm_sts
+  create_bd_pin -dir O -from 1 -to 0 resync_dac
   create_bd_pin -dir O -from 1 -to 0 seq_ramp_down
 
   # Create instance: axi_bram_ctrl_0, and set properties
@@ -2251,6 +2256,7 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   connect_bd_net -net sequence_slice_0_pdm_value_1 [get_bd_pins pdm_2/din] [get_bd_pins sequence_slice_0/pdm_value_1]
   connect_bd_net -net sequence_slice_0_pdm_value_2 [get_bd_pins pdm_3/din] [get_bd_pins sequence_slice_0/pdm_value_2]
   connect_bd_net -net sequence_slice_0_pdm_value_3 [get_bd_pins pdm_4/din] [get_bd_pins sequence_slice_0/pdm_value_3]
+  connect_bd_net -net sequence_slice_0_resync_dac [get_bd_pins resync_dac] [get_bd_pins sequence_slice_0/resync_dac]
   connect_bd_net -net util_vector_logic_7_Res [get_bd_pins dout] [get_bd_pins util_vector_logic_7/Res]
   connect_bd_net -net xlconcat_0_dout [get_bd_pins util_vector_logic_7/Op1] [get_bd_pins xlconcat_0/dout]
   connect_bd_net -net xlconcat_1_dout [get_bd_pins oa_dac] [get_bd_pins xlconcat_1/dout]
@@ -2313,6 +2319,7 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
   create_bd_pin -dir I -from 31 -to 0 oa_dac
   create_bd_pin -dir O -from 1 -to 0 ramp_state_0
   create_bd_pin -dir O -from 1 -to 0 ramp_state_1
+  create_bd_pin -dir I -from 1 -to 0 resync_dac
   create_bd_pin -dir I -from 1 -to 0 seq_ramp_down
   create_bd_pin -dir I -from 1 -to 0 start_ramp_down
   create_bd_pin -dir O -from 31 -to 0 synth_tdata
@@ -2405,6 +2412,23 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
    CONFIG.DOUT_WIDTH {1} \
  ] $xlslice_5
 
+  # Create instance: xlslice_6, and set properties
+  set xlslice_6 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_6 ]
+  set_property -dict [ list \
+   CONFIG.DIN_FROM {0} \
+   CONFIG.DIN_TO {0} \
+   CONFIG.DIN_WIDTH {2} \
+ ] $xlslice_6
+
+  # Create instance: xlslice_7, and set properties
+  set xlslice_7 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_7 ]
+  set_property -dict [ list \
+   CONFIG.DIN_FROM {1} \
+   CONFIG.DIN_TO {1} \
+   CONFIG.DIN_WIDTH {2} \
+   CONFIG.DOUT_WIDTH {1} \
+ ] $xlslice_7
+
   # Create interface connections
   connect_bd_intf_net -intf_net awg_0_bram_1 [get_bd_intf_pins awg_0_bram] [get_bd_intf_pins signal_compose/awg_bram]
   connect_bd_intf_net -intf_net awg_1_bram_1 [get_bd_intf_pins awg_1_bram] [get_bd_intf_pins signal_compose1/awg_bram]
@@ -2422,6 +2446,7 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
   connect_bd_net -net enable_ramping_slice_0_start_ramp_down_0 [get_bd_pins enable_ramping_slice_0/start_ramp_down_0] [get_bd_pins signal_compose/start_ramp_down]
   connect_bd_net -net enable_ramping_slice_0_start_ramp_down_1 [get_bd_pins enable_ramping_slice_0/start_ramp_down_1] [get_bd_pins signal_compose1/start_ramp_down]
   connect_bd_net -net oa_dac_1 [get_bd_pins oa_dac] [get_bd_pins xlslice_2/Din] [get_bd_pins xlslice_3/Din]
+  connect_bd_net -net resync_dac_1 [get_bd_pins resync_dac] [get_bd_pins xlslice_6/Din] [get_bd_pins xlslice_7/Din]
   connect_bd_net -net seq_ramp_down_1 [get_bd_pins seq_ramp_down] [get_bd_pins enable_ramping_slice_0/seq_ramp_down]
   connect_bd_net -net signal_compose1_S [get_bd_pins signal_compose1/S] [get_bd_pins xlconcat_2/In1]
   connect_bd_net -net signal_compose1_m_axis_data_tvalid_1 [get_bd_pins signal_compose1/m_axis_data_tvalid_1] [get_bd_pins util_vector_logic_1/Op2]
@@ -2438,6 +2463,8 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
   connect_bd_net -net xlslice_3_Dout [get_bd_pins signal_compose/offset] [get_bd_pins xlslice_3/Dout]
   connect_bd_net -net xlslice_4_Dout [get_bd_pins signal_compose/disable_dac] [get_bd_pins xlslice_4/Dout]
   connect_bd_net -net xlslice_5_Dout [get_bd_pins signal_compose1/disable_dac] [get_bd_pins xlslice_5/Dout]
+  connect_bd_net -net xlslice_6_Dout [get_bd_pins signal_compose/resync_dac] [get_bd_pins xlslice_6/Dout]
+  connect_bd_net -net xlslice_7_Dout [get_bd_pins signal_compose1/resync_dac] [get_bd_pins xlslice_7/Dout]
 
   # Restore current instance
   current_bd_instance $oldCurInst
@@ -3391,6 +3418,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net selectio_wiz_2_clk_out [get_bd_pins clk_wiz_1/clk_in1] [get_bd_pins selectio_wiz_2/clk_out]
   connect_bd_net -net selectio_wiz_2_data_in_to_device [get_bd_pins reset_manager_0/sata_trigger] [get_bd_pins selectio_wiz_2/data_in_to_device]
   connect_bd_net -net sequencer_enable_dac [get_bd_pins fourier_synth_standard/enable_dac] [get_bd_pins sequencer/enable_dac]
+  connect_bd_net -net sequencer_resync_dac [get_bd_pins fourier_synth_standard/resync_dac] [get_bd_pins sequencer/resync_dac]
   connect_bd_net -net sequencer_seq_ramp_down [get_bd_pins fourier_synth_standard/seq_ramp_down] [get_bd_pins sequencer/seq_ramp_down]
   connect_bd_net -net system_FCLK_RESET0_N [get_bd_pins system/FCLK_RESET0_N] [get_bd_pins util_vector_logic_1/Op1]
   connect_bd_net -net system_cfg_data [get_bd_pins fourier_synth_standard/cfg_data] [get_bd_pins system/dac_cfg]
@@ -3434,7 +3462,6 @@ proc create_root_design { parentCell } {
   # Restore current instance
   current_bd_instance $oldCurInst
 
-  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -3446,4 +3473,6 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
+
+common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
