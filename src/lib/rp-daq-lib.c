@@ -637,6 +637,32 @@ int setEnableDAC(int8_t value, int channel, int index) {
 	return 0;
 }
 
+int setResyncDACAll(int8_t value, int channel) {
+	for(int i=0; i<PDM_BUFF_SIZE; i++) {
+		setResyncDAC(value,channel,i);
+	}
+	return 0;
+}
+
+int setResyncDAC(int8_t value, int channel, int index) {
+	if(channel < 0 || channel >= 2) {
+		return -2;
+	}
+
+	if (value < 0 || value >= 2)
+		return -1;
+
+	int bitpos = 14 + channel;
+	// Reset bit is in the 2-th channel
+	int offset = 8 * index + 2;
+	// clear the bit
+	*((int16_t *)(pdm_cfg + offset)) &= ~(1u << bitpos);
+	// set the bit
+	*((int16_t *)(pdm_cfg + offset)) |= (value << bitpos);
+	//printf("%d reset pdm\n", *((int16_t *)(pdm_cfg + 2*(0+4*index))));
+	return 0;
+}
+
 int setResetDAC(int8_t value, int index) {
 	if (value < 0 || value >= 2)
 		return -1;
