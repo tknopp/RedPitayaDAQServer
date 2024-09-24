@@ -134,17 +134,19 @@ abstract type RampingSequence <: AbstractSequence end
 struct SimpleRampingSequence <: AbstractSequence 
   lut::SequenceLUT
   enable::Union{Array{Bool}, Nothing}
+  resync::Union{Array{Bool}, Nothing}
   rampUp::SequenceLUT
   rampDown::SequenceLUT
-  function SimpleRampingSequencee(lut::SequenceLUT, up::SequenceLUT, down::SequenceLUT, enable::Union{Array{Bool}, Nothing}=nothing)
+  function SimpleRampingSequencee(lut::SequenceLUT, up::SequenceLUT, down::SequenceLUT, enable::Union{Array{Bool}, Nothing}=nothing, resync::Union{Array{Bool}, Nothing}=nothing)
     if !isnothing(enable) && size(values(lut)) != size(enable)
       throw(DimensionMismatch("Size of enable LUT does not match size of value LUT"))
     end
-    return new(SequenceLUT(lut, repetitions), enable, up, down)
+    return new(SequenceLUT(lut, repetitions), enable, resync, up, down)
   end
 end
 
 enableLUT(seq::SimpleRampingSequence) = seq.enable
+resyncLUT(seq::SimpleRampingSequence) = seq.resync
 valueLUT(seq::SimpleRampingSequence) = seq.lut
 rampUpLUT(seq::SimpleRampingSequence) = nothing
 rampDownLUT(seq::SimpleRampingSequence) = nothing
@@ -158,6 +160,7 @@ end
 struct HoldBorderRampingSequence <: RampingSequence
   lut::SequenceLUT
   enable::Union{Array{Bool}, Nothing}
+  resync::Union{Array{Bool}, Nothing}
   rampUp::SequenceLUT
   rampDown::SequenceLUT
 
@@ -170,13 +173,13 @@ struct HoldBorderRampingSequence <: RampingSequence
   - `lut`,`repetitions`,`enable` are used the same as for a `SimpleSequence`
   - `rampingSteps` is the number of steps the first and last value of the given sequence are repeated before the sequence is started
   """
-  function HoldBorderRampingSequence(lut::Array{Float32}, repetitions::Integer, rampingSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing)
+  function HoldBorderRampingSequence(lut::Array{Float32}, repetitions::Integer, rampingSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing, resync::Union{Array{Bool}, Nothing}=nothing)
     if !isnothing(enable) && size(lut) != size(enable)
       throw(DimensionMismatch("Size of enable LUT does not match size of value LUT"))
     end
     up = SequenceLUT(lut[:, 1], rampingSteps)
     down = SequenceLUT(lut[:, end], rampingSteps)
-    return new(SequenceLUT(lut, repetitions), enable, up, down)
+    return new(SequenceLUT(lut, repetitions), enable, resync, up, down)
   end
 end
 
@@ -190,6 +193,7 @@ function HoldBorderRampingSequence(rp::RedPitaya, lut, repetitions, enable=nothi
 end
 
 enableLUT(seq::HoldBorderRampingSequence) = seq.enable
+resyncLUT(seq::HoldBorderRampingSequence) = seq.resync
 valueLUT(seq::HoldBorderRampingSequence) = seq.lut
 rampUpLUT(seq::HoldBorderRampingSequence) = seq.rampUp
 rampDownLUT(seq::HoldBorderRampingSequence) = seq.rampDown
@@ -197,14 +201,15 @@ rampDownLUT(seq::HoldBorderRampingSequence) = seq.rampDown
 struct ConstantRampingSequence <: RampingSequence
   lut::SequenceLUT
   enable::Union{Array{Bool}, Nothing}
+  resync::Union{Array{Bool}, Nothing}
   ramping::SequenceLUT
 
-  function ConstantRampingSequence(lut::Array{Float32}, repetitions::Integer, rampingValue::Float32, rampingSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing)
+  function ConstantRampingSequence(lut::Array{Float32}, repetitions::Integer, rampingValue::Float32, rampingSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing, resync::Union{Array{Bool}, Nothing}=nothing)
     if !isnothing(enable) && size(lut) != size(enable)
       throw(DimensionMismatch("Size of enable LUT does not match size of value LUT"))
     end
     rampingLut = SequenceLUT([rampingValue for i = 1:size(lut, 1)], rampingSteps)
-    return new(SequenceLUT(lut, repetitions), enable, rampingLut)
+    return new(SequenceLUT(lut, repetitions), enable, resync, rampingLut)
   end
 end
 ConstantRampingSequence(lut::Array{T}, repetitions::Integer, rampingValue::Real, rampingSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing) where T <: Real = ConstantRampingSequence(map(Float32, lut), repetitions, Float32(rampingValue), rampingSteps, enable)
@@ -212,6 +217,7 @@ ConstantRampingSequence(lut::Vector{Float32}, repetitions::Integer, rampingValue
 ConstantRampingSequence(lut::Vector{T}, repetitions::Integer, rampingValue::Real, rampingSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing) where T <: Real = ConstantRampingSequence(reshape(lut, 1, :), repetitions, rampingValue, rampingSteps, enable)
 
 enableLUT(seq::ConstantRampingSequence) = seq.enable
+resyncLUT(seq::ConstantRampingSequence) = seq.resync
 valueLUT(seq::ConstantRampingSequence) = seq.lut
 rampUpLUT(seq::ConstantRampingSequence) = seq.ramping
 rampDownLUT(seq::ConstantRampingSequence) = seq.ramping
@@ -219,9 +225,10 @@ rampDownLUT(seq::ConstantRampingSequence) = seq.ramping
 struct StartUpSequence <: RampingSequence
   lut::SequenceLUT
   enable::Union{Array{Bool}, Nothing}
+  resync::Union{Array{Bool}, Nothing}
   rampUp::SequenceLUT
   rampDown::SequenceLUT
-  function StartUpSequence(lut::Array{Float32}, repetitions::Integer, rampingSteps::Integer, startUpSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing)
+  function StartUpSequence(lut::Array{Float32}, repetitions::Integer, rampingSteps::Integer, startUpSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing, resync::Union{Array{Bool}, Nothing}=nothing)
     if !isnothing(enable) && size(lut) != size(enable)
       throw(DimensionMismatch("Size of enable LUT does not match size of value LUT"))
     end
@@ -239,7 +246,7 @@ struct StartUpSequence <: RampingSequence
     end
     up = SequenceLUT(upLut, 1)
     down = SequenceLUT(lut[:, end], rampingSteps)
-    return new(SequenceLUT(lut, repetitions), enable, up, down)
+    return new(SequenceLUT(lut, repetitions), enable, resync, up, down)
   end
 end
 StartUpSequence(lut::Array{T}, repetitions::Integer, rampingSteps::Integer, startUpSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing) where T <: Real = StartUpSequence(map(Float32, lut), repetitions, rampingSteps, startUpSteps, enable)
@@ -247,6 +254,7 @@ StartUpSequence(lut::Array{T}, repetitions::Integer, rampingSteps::Integer, star
 StartUpSequence(lut::Vector{T}, repetitions::Integer, rampingSteps::Integer, startUpSteps::Integer, enable::Union{Array{Bool}, Nothing}=nothing) where T <: Real = StartUpSequence(reshape(lut, 1, :), repetitions, rampingSteps, startUpSteps, enable)
 
 enableLUT(seq::StartUpSequence) = seq.enable
+resyncLUT(seq::StartUpSequence) = seq.resync
 valueLUT(seq::StartUpSequence) = seq.lut
 rampUpLUT(seq::StartUpSequence) = seq.rampUp
 rampDownLUT(seq::StartUpSequence) = seq.rampDown
@@ -269,10 +277,11 @@ Transmit the client-side representation `seq` to the server and append it to the
 """
 function sequence!(rp::RedPitaya, seq::AbstractSequence)
   result = true
-  result &= valueLUT!(rp, valueLUT(seq))
-  result &= enableLUT!(rp, enableLUT(seq))
-  result &= rampUpLUT!(rp, rampUpLUT(seq))
-  result &= rampDownLUT!(rp, rampDownLUT(seq))
+  result &= valueLUT!(rp, seq)
+  result &= enableLUT!(rp, seq)
+  result &= resyncLUT!(rp, seq)
+  result &= rampUpLUT!(rp, seq)
+  result &= rampDownLUT!(rp, seq)
   result &= setSequence!(rp)
   return result
 end
@@ -283,11 +292,13 @@ function transmitLUT!(rp::RedPitaya, lut::Array{Float32}, cmd::String, repetitio
   return parse(Bool, receive(rp))
 end
 
+valueLUT!(rp::RedPitaya, lut::AbstractSequence) = valueLUT!(rp, valueLUT(lut))
 function valueLUT!(rp::RedPitaya, lut::SequenceLUT)
   lutFloat32 = map(Float32, values(lut))
   return transmitLUT!(rp, lutFloat32, "RP:DAC:SEQ:LUT", repetitions(lut))
 end
 
+rampUpLUT!(rp::RedPitaya, lut::AbstractSequence) = rampUpLUT!(rp, rampUpLUT(lut))
 function rampUpLUT!(rp::RedPitaya, lut::SequenceLUT)
   lutFloat32 = map(Float32, values(lut))
   return transmitLUT!(rp, lutFloat32, "RP:DAC:SEQ:LUT:UP", repetitions(lut))
@@ -298,6 +309,7 @@ function rampUpLUT!(rp::RedPitaya, lut::Nothing)
   return true
 end
 
+rampDownLUT!(rp::RedPitaya, lut::AbstractSequence) = rampDownLUT!(rp, rampDownLUT(lut))
 function rampDownLUT!(rp::RedPitaya, lut::SequenceLUT)
   lutFloat32 = map(Float32, values(lut))
   return transmitLUT!(rp, lutFloat32, "RP:DAC:SEQ:LUT:DOWN", repetitions(lut))
@@ -308,6 +320,7 @@ function rampDownLUT!(rp::RedPitaya, lut::Nothing)
   return true
 end
 
+enableLUT!(rp::RedPitaya, lut::AbstractSequence) = enableLUT!(rp, enableLUT(lut))
 function enableLUT!(rp::RedPitaya, lut::Array)
   lutBool = map(Bool, lut)
   send(rp, string("RP:DAC:SEQ:LUT:ENaBle"))
@@ -318,6 +331,21 @@ function enableLUT!(rp::RedPitaya, lut::Array)
 end
 
 function enableLUT!(rp::RedPitaya, lut::Nothing)
+  # NOP
+  return true
+end
+
+resyncLUT!(rp::RedPitaya, lut::AbstractSequence) = resyncLUT!(rp, resyncLUT(lut))
+function resyncLUT!(rp::RedPitaya, lut::Array)
+  lutBool = map(Bool, lut)
+  send(rp, string("RP:DAC:SEQ:LUT:ReSYNC"))
+  @debug "Writing resync DAC LUT"
+  write(rp.dataSocket, lutBool)
+  reply = receive(rp)
+  return parse(Bool, reply)
+end
+
+function resyncLUT!(rp::RedPitaya, lut::Nothing)
   # NOP
   return true
 end
