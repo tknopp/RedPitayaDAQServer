@@ -1056,6 +1056,31 @@ static scpi_result_t RP_DAC_SetEnableLUT(scpi_t * context) {
 	}
 }
 
+static scpi_result_t RP_DAC_SetResyncLUT(scpi_t * context) {
+
+	readyConfigSequence();
+
+	if(configSeq->LUT != NULL && numSlowDACChan > 0 && isSequenceConfigurable()) {
+		if(configSeq->resyncLUT != NULL) {
+			free(configSeq->resyncLUT);
+			configSeq->resyncLUT = NULL;
+		}
+
+		int numChan = numSlowDACChan > 2 ? 2 : numSlowDACChan;
+		printf("Allocating ressyncLUT\n");
+		configSeq->resyncLUT = (bool *)calloc(numChan, configSeq->numStepsPerRepetition * sizeof(bool));
+
+		int n = readAll(newdatasockfd, configSeq->resyncLUT, numSlowDACChan * configSeq->numStepsPerRepetition * sizeof(bool));
+		seqState = CONFIG;
+		if (n < 0) perror("ERROR reading from socket");
+		return returnSCPIBool(context, true);
+	}
+	else {
+		return returnSCPIBool(context, false);
+	}
+
+}
+
 static scpi_result_t RP_DAC_SetUpLUT(scpi_t * context) {
 
 	readyConfigSequence();
@@ -1739,6 +1764,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:SEQ:CHan?", .callback = RP_DAC_GetNumSlowDACChan,},
 	{.pattern = "RP:DAC:SEQ:LUT", .callback = RP_DAC_SetValueLUT,},
 	{.pattern = "RP:DAC:SEQ:LUT:ENaBle", .callback = RP_DAC_SetEnableLUT,},
+	{.pattern = "RP:DAC:SEQ:LUT:ReSYNC", .callback = RP_DAC_SetResyncLUT,},
 	{.pattern = "RP:DAC:SEQ:LUT:UP", .callback = RP_DAC_SetUpLUT,},
 	{.pattern = "RP:DAC:SEQ:LUT:DOWN", .callback = RP_DAC_SetDownLUT,},
 	{.pattern = "RP:DAC:SEQ:SET", .callback = RP_DAC_SetSequence,},
