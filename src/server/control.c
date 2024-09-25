@@ -102,9 +102,11 @@ void clearSequence() {
 	setPDMAllValuesVolt(0.0, 2);
 	setPDMAllValuesVolt(0.0, 3);
 
-	for(int d=0; d<4; d++) {
+    for(int d=0; d<6; d++) {
 		setEnableDACAll(1,d);
-	}
+    	setResyncDACAll(0,d);
+    }
+
 }
 
 bool isSequenceConfigurable() {

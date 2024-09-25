@@ -103,7 +103,8 @@ Struct representing a sequence in which the server directly takes the values fro
 """
 struct SimpleSequence <: AbstractSequence
   lut::SequenceLUT
-  enable::Union{Array{Bool}, Nothing}
+  enable::Union{Matrix{Bool}, Nothing}
+  resync::Union{Matrix{Bool}, Nothing}
   """
     SimpleSequence(lut, repetitions, enable=nothing)
 
@@ -114,17 +115,18 @@ struct SimpleSequence <: AbstractSequence
   - `repetitions::Int32`: the number of times the sequence should be repeated
   - `emable::Union{Array{Bool}, Nothing}`: matrix containing enable flags
   """
-  function SimpleSequence(lut::Array{Float32}, repetitions::Integer, enable::Union{Array{Bool}, Nothing}=nothing)
+  function SimpleSequence(lut::Matrix{Float32}, repetitions::Integer, enable::Union{Matrix{Bool}, Nothing}=nothing, resync::Union{Matrix{Bool}, Nothing} = nothing)
     if !isnothing(enable) && size(lut) != size(enable)
       throw(DimensionMismatch("Size of enable LUT does not match size of value LUT"))
     end
-    return new(SequenceLUT(lut, repetitions), enable)
+    return new(SequenceLUT(lut, repetitions), enable, resync)
   end
 end
-SimpleSequence(lut::Array{T}, repetitions::Integer, enable::Union{Array{Bool}, Nothing}=nothing) where T <: Real = SimpleSequence(map(Float32, lut), repetitions, enable)
-SimpleSequence(lut::Vector{T}, repetitions::Integer, enable::Union{Array{Bool}, Nothing}=nothing) where T <: Real = SimpleSequence(reshape(lut, 1, :), repetitions, enable)
+SimpleSequence(lut::Array{T}, repetitions::Integer, args...) where T <: Real = SimpleSequence(map(Float32, lut), repetitions, args...)
+SimpleSequence(lut::Vector{T}, repetitions::Integer, args...) where T <: Real = SimpleSequence(reshape(lut, 1, :), repetitions, args...)
 
 enableLUT(seq::SimpleSequence) = seq.enable
+resyncLUT(seq::SimpleSequence) = seq.resync
 valueLUT(seq::SimpleSequence) = seq.lut
 rampUpLUT(seq::SimpleSequence) = nothing
 rampDownLUT(seq::SimpleSequence) = nothing

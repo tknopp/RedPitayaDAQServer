@@ -653,8 +653,8 @@ int setResyncDAC(int8_t value, int channel, int index) {
 		return -1;
 
 	int bitpos = 14 + channel;
-	// Reset bit is in the 2-th channel
-	int offset = 8 * index + 2;
+	// Reset bits are in the 2nd channel -> bitpos 31:30
+	int offset = 8 * index + 1;
 	// clear the bit
 	*((int16_t *)(pdm_cfg + offset)) &= ~(1u << bitpos);
 	// set the bit
@@ -1306,6 +1306,7 @@ void stopTx() {
 	for(int d=0; d<5; d++) {
 		setPDMAllValuesVolt(0.0, d);
 		setEnableDACAll(1,d);
+		setResyncDACAll(0,d);
 	}
 }
 
