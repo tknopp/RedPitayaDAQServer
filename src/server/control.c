@@ -104,6 +104,7 @@ void clearSequence() {
 
 	for(int d=0; d<6; d++) {
 		setEnableDACAll(1,d);
+    setResyncDACAll(0,d);
 	}
 	for(int d=0; d<2; d++) {
 		setRampDownDACAll(false,d);

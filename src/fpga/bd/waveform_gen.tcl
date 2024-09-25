@@ -127,8 +127,8 @@ pavel-demin:user:axis_variable:1.0\
 xilinx.com:ip:dds_compiler:6.0\
 xilinx.com:ip:mult_gen:12.0\
 jbeuke:user:signal_generator:1.0\
+xilinx.com:ip:util_vector_logic:2.0\
 xilinx.com:ip:xlconcat:2.1\
-xilinx.com:ip:xlconstant:1.1\
 "
 
    set list_ips_missing ""
@@ -210,7 +210,7 @@ proc create_root_design { parentCell } {
   # Create instance: axis_variable_A_channel_1, and set properties
   set axis_variable_A_channel_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_1 ]
   set_property -dict [ list \
-   CONFIG.AXIS_TDATA_WIDTH {104} \
+   CONFIG.AXIS_TDATA_WIDTH {96} \
  ] $axis_variable_A_channel_1
 
   # Create instance: dds_compiler_A_channel_1, and set properties
@@ -220,6 +220,7 @@ proc create_root_design { parentCell } {
    CONFIG.DATA_Has_TLAST {Not_Required} \
    CONFIG.DDS_Clock_Rate {125} \
    CONFIG.Frequency_Resolution {4.440893e-7} \
+   CONFIG.Has_ACLKEN {false} \
    CONFIG.Has_ARESETn {true} \
    CONFIG.Has_Phase_Out {true} \
    CONFIG.Has_TREADY {false} \
@@ -235,11 +236,11 @@ proc create_root_design { parentCell } {
    CONFIG.POFF1 {0} \
    CONFIG.Parameter_Entry {System_Parameters} \
    CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
-   CONFIG.Phase_Increment {Streaming} \
+   CONFIG.Phase_Increment {Programmable} \
    CONFIG.Phase_Offset_Angles1 {0} \
    CONFIG.Phase_Width {48} \
-   CONFIG.Phase_offset {Streaming} \
-   CONFIG.Resync {true} \
+   CONFIG.Phase_offset {Programmable} \
+   CONFIG.Resync {false} \
    CONFIG.S_PHASE_Has_TUSER {Not_Required} \
    CONFIG.Spurious_Free_Dynamic_Range {84} \
  ] $dds_compiler_A_channel_1
@@ -264,8 +265,19 @@ proc create_root_design { parentCell } {
    CONFIG.CFG_DATA_WIDTH {48} \
  ] $signal_generator_0
 
-  # Create instance: xlconcat_0, and set properties
-  set xlconcat_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_0 ]
+  # Create instance: util_vector_logic_0, and set properties
+  set util_vector_logic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_0 ]
+  set_property -dict [ list \
+   CONFIG.C_OPERATION {not} \
+   CONFIG.C_SIZE {1} \
+   CONFIG.LOGO_FILE {data/sym_notgate.png} \
+ ] $util_vector_logic_0
+
+  # Create instance: util_vector_logic_1, and set properties
+  set util_vector_logic_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_1 ]
+  set_property -dict [ list \
+   CONFIG.C_SIZE {1} \
+ ] $util_vector_logic_1
 
   # Create instance: xlconcat_A_channel_1, and set properties
   set xlconcat_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_A_channel_1 ]
@@ -273,35 +285,28 @@ proc create_root_design { parentCell } {
    CONFIG.IN0_WIDTH {48} \
    CONFIG.IN1_WIDTH {48} \
    CONFIG.IN2_WIDTH {8} \
-   CONFIG.NUM_PORTS {3} \
+   CONFIG.NUM_PORTS {2} \
  ] $xlconcat_A_channel_1
 
-  # Create instance: xlconstant_0, and set properties
-  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
-  set_property -dict [ list \
-   CONFIG.CONST_VAL {0} \
-   CONFIG.CONST_WIDTH {7} \
- ] $xlconstant_0
-
   # Create interface connections
-  connect_bd_intf_net -intf_net axis_variable_A_channel_1_M_AXIS [get_bd_intf_pins axis_variable_A_channel_1/M_AXIS] [get_bd_intf_pins dds_compiler_A_channel_1/S_AXIS_PHASE]
+  connect_bd_intf_net -intf_net axis_variable_A_channel_1_M_AXIS [get_bd_intf_pins axis_variable_A_channel_1/M_AXIS] [get_bd_intf_pins dds_compiler_A_channel_1/S_AXIS_CONFIG]
   connect_bd_intf_net -intf_net dds_compiler_A_channel_1_M_AXIS_DATA [get_bd_intf_pins dds_compiler_A_channel_1/M_AXIS_DATA] [get_bd_intf_pins signal_generator_0/s_axis]
   connect_bd_intf_net -intf_net dds_compiler_A_channel_1_M_AXIS_PHASE [get_bd_intf_pins dds_compiler_A_channel_1/M_AXIS_PHASE] [get_bd_intf_pins signal_generator_0/s_axis_phase]
 
   # Create port connections
   connect_bd_net -net amplitude_A_channel_1_slice1_Dout [get_bd_ports amplitude] [get_bd_pins mult_gen_0/A]
+  connect_bd_net -net aresetn_1 [get_bd_ports aresetn] [get_bd_pins axis_variable_A_channel_1/aresetn] [get_bd_pins signal_generator_0/aresetn] [get_bd_pins util_vector_logic_1/Op2]
   connect_bd_net -net clk_wiz_0_clk_internal [get_bd_ports aclk] [get_bd_pins axis_variable_A_channel_1/aclk] [get_bd_pins dds_compiler_A_channel_1/aclk] [get_bd_pins mult_gen_0/CLK] [get_bd_pins signal_generator_0/clk]
   connect_bd_net -net freq_1 [get_bd_ports freq] [get_bd_pins xlconcat_A_channel_1/In0]
   connect_bd_net -net mult_gen_0_P [get_bd_ports wave] [get_bd_pins mult_gen_0/P]
   connect_bd_net -net phase_1 [get_bd_ports phase] [get_bd_pins xlconcat_A_channel_1/In1]
   connect_bd_net -net phase_A_channel_1_slice1_Dout [get_bd_ports cfg_data] [get_bd_pins signal_generator_0/cfg_data]
-  connect_bd_net -net resync_1 [get_bd_ports resync] [get_bd_pins xlconcat_0/In0]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_ports aresetn] [get_bd_pins axis_variable_A_channel_1/aresetn] [get_bd_pins dds_compiler_A_channel_1/aresetn] [get_bd_pins signal_generator_0/aresetn]
+  connect_bd_net -net resync_1 [get_bd_ports resync] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net signal_generator_0_m_axis_tdata [get_bd_pins mult_gen_0/B] [get_bd_pins signal_generator_0/m_axis_tdata]
   connect_bd_net -net signal_generator_0_m_axis_tvalid [get_bd_ports m_axis_data_tvalid_1] [get_bd_pins signal_generator_0/m_axis_tvalid]
-  connect_bd_net -net xlconcat_0_dout [get_bd_pins xlconcat_0/dout] [get_bd_pins xlconcat_A_channel_1/In2]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins util_vector_logic_0/Res] [get_bd_pins util_vector_logic_1/Op1]
+  connect_bd_net -net util_vector_logic_1_Res [get_bd_pins dds_compiler_A_channel_1/aresetn] [get_bd_pins util_vector_logic_1/Res]
   connect_bd_net -net xlconcat_A_channel_1_dout [get_bd_pins axis_variable_A_channel_1/cfg_data] [get_bd_pins xlconcat_A_channel_1/dout]
-  connect_bd_net -net xlconstant_0_dout [get_bd_pins xlconcat_0/In1] [get_bd_pins xlconstant_0/dout]
 
   # Create address segments
 
