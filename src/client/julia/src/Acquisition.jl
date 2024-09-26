@@ -34,7 +34,7 @@ function readSamplesHeartbeat(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCl
     # Current WP query as a heartbeat to avoid timeouts with "distant" wpStarts
     timeDifference = time() - heartBeatStartTime
     if timeDifference / (heartbeatTimeout*1000.0) >= timeOutCounter
-      @warn "Still waiting for write pointer (currently it is $(currentWP(rpu)). Are you sure there is no error and this loop is running infinitely?"
+      @warn "Still waiting for write pointer (currently it is $(currentWP(rpu))). Are you sure there is no error and this loop is running infinitely?"
       timeOutCounter += 1
     end
   end
@@ -53,6 +53,11 @@ function correctFilterDelay(wpStart::Int64, dec::Int64)
   return correctedWp
 end
 
+# See https://support.xilinx.com/s/question/0D52E00006hpfy6SAA/cic-filter-gain?language=en_US
+gain_cic(rp::RedPitaya) = gain_cic(round(Int, rp.decimation / 2), 1, 6) # M and N are fixed due to the FPGA image settings
+gain_cic(rpc::RedPitayaCluster) = gain_cic(round(Int, master(rpc).decimation / 2), 1, 6) # M and N are fixed due to the FPGA image settings
+gain_cic(rpcv::RedPitayaClusterView) = gain_cic(rpcv.rpc)
+gain_cic(R::Int64, M::Int64, N::Int64) = ((R * M)^N) / 2^(ceil(N * log2(R * M)))
 
 """
     readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing)
@@ -220,8 +225,9 @@ function convertSamplesToFrames(rpu::Union{RedPitaya, RedPitayaCluster, RedPitay
   frames = convertSamplesToFrames(samples, numChan, numSampPerPeriod, numPeriods, numFrames, numBlockAverages, numPeriodsPerPatch)
   calibs = [x.calib for x in rpu]
   calib = hcat(calibs...)
+  gainCorr_ = 1 / gain_cic(rpu)
   for d = 1:size(frames, 2)
-    frames[:, d, :, :] .*= calib[1, d]
+    frames[:, d, :, :] .*= calib[1, d] * gainCorr_
     frames[:, d, :, :] .+= calib[2, d]
   end
   return frames
@@ -255,8 +261,9 @@ function convertSamplesToFrames!(rpu::Union{RedPitaya, RedPitayaCluster, RedPita
   convertSamplesToFrames!(samples, frames, numChan, numSampPerPeriod, numPeriods, numFrames, numTrueSampPerPeriod, numBlockAverages, numPeriodsPerPatch)
   calibs = [x.calib for x in rpu]
   calib = hcat(calibs...)
+  gainCorr_ = 1 / gain_cic(rpu)
   for d = 1:size(frames, 2)
-    frames[:, d, :, :] .*= calib[1, d]
+    frames[:, d, :, :] .*= calib[1, d] * gainCorr_
     frames[:, d, :, :] .+= calib[2, d]
   end
 end
@@ -331,8 +338,9 @@ function convertSamplesToPeriods!(rpu::Union{RedPitaya, RedPitayaCluster, RedPit
   convertSamplesToPeriods!(samples, periods, numChan, numSampPerPeriod, numPeriods, numBlockAverages)
   calibs = [x.calib for x in rpu]
   calib = hcat(calibs...)
+  gainCorr_ = 1 / gain_cic(rpu)
   for d = 1:size(periods, 2)
-    periods[:, d, :] .*= calib[1, d]
+    periods[:, d, :] .*= calib[1, d] * gainCorr_
     periods[:, d, :] .+= calib[2, d]
   end
   return periods

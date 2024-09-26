@@ -540,6 +540,10 @@ int setArbitraryWaveform(float* values, int channel) {
 // Fast ADC
 
 int setDecimation(uint16_t decimation) {
+	if(!(decimation % 2 == 0)) {
+		return -1;
+	}
+
 	if(decimation < 8 || decimation > 8192) {
 		return -1;
 	}
@@ -630,6 +634,32 @@ int setEnableDAC(int8_t value, int channel, int index) {
 	// set the bit
 	*((int16_t *)(pdm_cfg + offset)) |= (value << bitpos);
 
+	return 0;
+}
+
+int setResyncDACAll(int8_t value, int channel) {
+	for(int i=0; i<PDM_BUFF_SIZE; i++) {
+		setResyncDAC(value,channel,i);
+	}
+	return 0;
+}
+
+int setResyncDAC(int8_t value, int channel, int index) {
+	if(channel < 0 || channel >= 2) {
+		return -2;
+	}
+
+	if (value < 0 || value >= 2)
+		return -1;
+
+	int bitpos = 14;
+	// Reset bits are in the 14th bit of the respective DAC channel -> 14 and 30 
+	int offset = 8 * index + channel;
+	// clear the bit
+	*((int16_t *)(pdm_cfg + offset)) &= ~(1u << bitpos);
+	// set the bit
+	*((int16_t *)(pdm_cfg + offset)) |= (value << bitpos);
+	//printf("%d reset pdm\n", *((int16_t *)(pdm_cfg + 2*(0+4*index))));
 	return 0;
 }
 
@@ -1276,6 +1306,7 @@ void stopTx() {
 	for(int d=0; d<5; d++) {
 		setPDMAllValuesVolt(0.0, d);
 		setEnableDACAll(1,d);
+		setResyncDACAll(0,d);
 	}
 }
 

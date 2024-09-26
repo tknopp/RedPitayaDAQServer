@@ -107,6 +107,7 @@ typedef struct {
 	int numStepsPerRepetition; // How many steps per repetition
 	float* LUT; // LUT for value function pointer
 	bool * enableLUT;
+	bool * resyncLUT;
 	rampingData_t* rampUp;
 	rampingData_t* rampDown;
 } sequenceData_t;
@@ -131,6 +132,7 @@ extern sequenceInterval_t computeInterval(sequenceData_t *seqData, int step);
 extern bool isSequenceConfigurable();
 extern float getSequenceValue(sequenceData_t *seqData, int seqStep, int channel);
 extern bool getSequenceEnableValue(sequenceData_t *seqData, int seqStep, int channel);
+extern bool getSequenceResyncValue(sequenceData_t *seqData, int seqStep, int channel);
 extern float getRampingValue(rampingData_t *rampData, int rampStep, int channel);
 extern int getRampUpSteps(sequenceData_t *seqData);
 extern int getRampDownSteps(sequenceData_t *seqData);
