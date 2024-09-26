@@ -1070,7 +1070,7 @@ static scpi_result_t RP_DAC_SetResyncLUT(scpi_t * context) {
 		printf("Allocating ressyncLUT\n");
 		configSeq->resyncLUT = (bool *)calloc(numChan, configSeq->numStepsPerRepetition * sizeof(bool));
 
-		int n = readAll(newdatasockfd, configSeq->resyncLUT, numSlowDACChan * configSeq->numStepsPerRepetition * sizeof(bool));
+		int n = readAll(newdatasockfd, configSeq->resyncLUT, numChan * configSeq->numStepsPerRepetition * sizeof(bool));
 		seqState = CONFIG;
 		if (n < 0) perror("ERROR reading from socket");
 		return returnSCPIBool(context, true);
