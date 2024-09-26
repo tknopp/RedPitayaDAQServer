@@ -131,8 +131,8 @@ bool getSequenceEnableValue(sequenceData_t *seqData, int seqStep, int channel) {
 
 bool getSequenceResyncValue(sequenceData_t *seqData, int seqStep, int channel) {
 	bool result = false;
-  int numChan = numSlowDACChan > 2 ? 2 : numSlowDACChan;
-	if (seqData->resyncLUT != NULL) {
+  	int numChan = numSlowDACChan > 2 ? 2 : numSlowDACChan;
+	if (seqData->resyncLUT != NULL && channel < numChan) {
 		int localStep = seqStep % seqData->numStepsPerRepetition;
 		result = seqData->resyncLUT[localStep * numChan + channel];
 	}
@@ -217,6 +217,7 @@ static void setLUTValuesFor(int futureStep, int channel, int currPDMIndex) {
 	if (activeSequence == NULL) {
 		setPDMValueVolt(0.0, channel, currPDMIndex);
 		setEnableDAC(false, channel, currPDMIndex);
+		setResyncDAC(false, channel, currPDMIndex);
 		setRampDownDAC(false, channel, currPDMIndex);
 		return;
 	}
