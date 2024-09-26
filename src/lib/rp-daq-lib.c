@@ -652,9 +652,9 @@ int setResyncDAC(int8_t value, int channel, int index) {
 	if (value < 0 || value >= 2)
 		return -1;
 
-	int bitpos = 14 + channel;
-	// Reset bits are in the 2nd channel -> bitpos 31:30
-	int offset = 8 * index + 1;
+	int bitpos = 14;
+	// Reset bits are in the 14th bit of the respective DAC channel -> 14 and 30 
+	int offset = 8 * index + channel;
 	// clear the bit
 	*((int16_t *)(pdm_cfg + offset)) &= ~(1u << bitpos);
 	// set the bit

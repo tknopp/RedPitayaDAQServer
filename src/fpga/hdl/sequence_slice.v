@@ -42,7 +42,8 @@ assign pdm_value_3[10:0] = seq_data_int[90:80];
 // Flags
 assign enable_dac[1:0] = seq_data_int[97:96];
 assign enable_pdm[3:0] = seq_data_int[101:98];
-assign resync_dac[1:0] = seq_data_int[31:30];
+assign resync_dac[0] = seq_data_int[14];
+assign resync_dac[1] = seq_data_int[30];
 assign enable_dac_ramp_down[0] = seq_data_int[112];
 assign enable_dac_ramp_down[1] = seq_data_int[113];
 
