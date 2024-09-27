@@ -1,5 +1,5 @@
 using RedPitayaDAQServer
-using PyPlot
+using CairoMakie
 
 # obtain the URL of the RedPitaya
 include("config.jl")
@@ -37,9 +37,8 @@ masterTrigger!(rp, true)
 
 uFirstPeriod = readFrames(rp, 0, 6)
 
-
-fr = currentFrame(rp)
-uCurrentPeriod = readFrames(rp, fr, 6)
+sleep(0.5)
+uCurrentPeriod = readFrames(rp, currentFrame(rp), 6)
 
 # Start ramp down asynchronously
 # Note that we might not see the actual ramping in this example, see seqRamping.jl for that
@@ -52,11 +51,10 @@ masterTrigger!(rp, false)
 serverMode!(rp, CONFIGURATION)
 enableRamping!(rp, 1, false)
 
-figure(1)
-clf()
 # Frame dimensions are [samples, chan, periods, frames]
-plot(vec(uCurrentPeriod[:,1,:,:]))
-plot(vec(uFirstPeriod[:,1,:,:]))
-plot(vec(uLastPeriod[:,1,:,:]))
-legend(("regular", "start", "end"))
-savefig("images/asyncRamping.png")
+plot = lines(vec(uCurrentPeriod[:,1,:,:]), label = "regular")
+lines!(plot.axis, vec(uFirstPeriod[:,1,:,:]), label = "start")
+lines!(plot.axis, vec(uLastPeriod[:,1,:,:]), label = "end")
+axislegend(plot.axis)
+save(joinpath(@__DIR__(), "images", "asyncRamping.png"), plot)
+plot

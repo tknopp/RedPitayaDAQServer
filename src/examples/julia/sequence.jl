@@ -1,5 +1,5 @@
 using RedPitayaDAQServer
-using PyPlot
+using CairoMakie
 
 # obtain the URL of the RedPitaya
 include("config.jl")
@@ -42,13 +42,11 @@ samples_per_step = (samples_per_period * periods_per_frame)/steps_per_frame
 timing = seqTiming(seq)
 uCurrentFrame = readFrames(rp, div(timing.start*samples_per_step, samples_per_period * periods_per_frame), 2)
 
-fig = figure(1)
-clf()
-plot(vec(uCurrentFrame[:,1,:,:]))
-plot(vec(uCurrentFrame[:,2,:,:]))
-legend(("Rx1", "Rx2"))
-
 masterTrigger!(rp, false)
 serverMode!(rp, CONFIGURATION)
 
-savefig("images/sequence.png")
+plot = lines(vec(uCurrentFrame[:,1,:,:]), label = "Rx1")
+lines!(plot.axis, vec(uCurrentFrame[:,2,:,:]), label = "Rx2")
+axislegend(plot.axis)
+save(joinpath(@__DIR__(), "images", "sequence.png"), plot)
+plot

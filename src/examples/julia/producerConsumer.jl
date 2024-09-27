@@ -1,6 +1,6 @@
 using RedPitayaDAQServer
 using ThreadPools
-using PyPlot
+using CairoMakie
 
 include("config.jl")
 
@@ -141,9 +141,7 @@ else
     # Wait for the consumer since otherwise Julia just terminates in non-interactive mode.
     wait(consumer)
 
-    figure(1)
-    clf()
     # Frame dimensions are [samples, chan, periods, frames]
-    plot(vec(buffer[:, 1, :, :]))
-    savefig("images/producerConsumer.png")
+    plot = lines(vec(buffer[:, 1, :, :]))
+    save(joinpath(@__DIR__(), "images", "producerConsumer.png"), plot)
 end
