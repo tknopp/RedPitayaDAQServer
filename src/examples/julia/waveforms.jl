@@ -1,5 +1,5 @@
 using RedPitayaDAQServer
-using PyPlot
+using CairoMakie
 
 # obtain the URL of the RedPitaya
 include("config.jl")
@@ -27,10 +27,8 @@ phaseDAC!(rp, 1, 1, 0.0 )
 
 signals = zeros(4*N)
 
-figure(1)
-clf()
+fig = Figure()
 
-color = ["g", "b", "orange", "k"]
 for (i,name) in enumerate(["SINE", "TRIANGLE", "SAWTOOTH"])
   # Set different waveforms
   signalTypeDAC!(rp, 1, 1, name)
@@ -39,11 +37,9 @@ for (i,name) in enumerate(["SINE", "TRIANGLE", "SAWTOOTH"])
   masterTrigger!(rp, true)
   local fr = 1
   local uFirstPeriod = readFrames(rp, fr, 1)
-  subplot(2,2,i)
   masterTrigger!(rp, false)
   serverMode!(rp, CONFIGURATION)
-  plot(vec(uFirstPeriod[:,1,:,:]),color[i])
-  title(name)
+  lines(fig[mod1(i, 2), div(i -1, 2) + 1], vec(uFirstPeriod[:,1,:,:]), axis = (title = name,))
 end
 
 # Fourth component of each channel is used for arbitrary waveforms
@@ -68,11 +64,9 @@ masterTrigger!(rp, false)
 masterTrigger!(rp, true)
 fr = 1
 uFirstPeriod = readFrames(rp, fr, 1)
-subplot(2,2,4)
 masterTrigger!(rp, false)
 serverMode!(rp, CONFIGURATION)
-plot(vec(uFirstPeriod[:,1,:,:]),"k")
-title("Arbitrary")
+lines(fig[2, 2], vec(uFirstPeriod[:,1,:,:]), axis = (title = "ARBITRARY",))
 
-subplots_adjust(left=0.08, bottom=0.05, right=0.98, top=0.95, wspace=0.3, hspace=0.35)
-savefig("images/waveforms.png")
+save(joinpath(@__DIR__(), "images", "waveforms.png"), fig)
+fig

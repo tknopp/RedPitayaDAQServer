@@ -1,5 +1,5 @@
 using RedPitayaDAQServer
-using PyPlot
+using CairoMakie
 
 include("config.jl")
 
@@ -46,12 +46,7 @@ sleep(1.0)
 # ClusterView only reads from selected RedPitayas
 uCurrentPeriod = readData(rpcv, currentFrame(rpc), 1)
 
-fig = figure(1)
-clf()
-subplot(1,2,1)
-plot(vec(uCurrentPeriod[:,1,:,:]))
+fig = Figure()
 # Channels from result can be mapped to channels in the cluster
-PyPlot.title("Cluster channel $(viewToClusterChannel(rpcv,1))")
-subplot(1,2,2)
-plot(vec(uCurrentPeriod[:,3,:,:]))
-PyPlot.title("Cluster channel $(viewToClusterChannel(rpcv,3))")
+lines(fig[1, 1], vec(uCurrentPeriod[:,1,:,:]), axis = (title = "Cluster channel $(viewToClusterChannel(rpcv,1))",))
+lines(fig[1, 2], vec(uCurrentPeriod[:,3,:,:]), axis = (title = "Cluster channel $(viewToClusterChannel(rpcv,3))",))

@@ -1,5 +1,5 @@
 using RedPitayaDAQServer
-using PyPlot
+using CairoMakie
 
 # obtain the URL of the RedPitaya
 include("config.jl")
@@ -44,10 +44,9 @@ uUncorrected = readSamples(rp, 0, 45, correct_filter_delay = false)
 masterTrigger!(rp, false)
 serverMode!(rp, CONFIGURATION)
 
-figure(1)
-clf()
 # Sample dimensions are [chan, samples]
-plot(vec(uCorrected[1, :]))
-plot(vec(uUncorrected[1, :]))
-legend(("first period", "Corrected", "Uncorrected"))
-savefig("images/delay.png")
+plot = lines(vec(uCorrected[1, :]), label = "Corrected")
+lines!(plot.axis, vec(uUncorrected[1, :]), label = "Uncorrected")
+axislegend(plot.axis)
+save(joinpath(@__DIR__(), "images", "delay.png"), plot)
+plot

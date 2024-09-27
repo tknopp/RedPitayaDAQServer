@@ -1,5 +1,5 @@
 using RedPitayaDAQServer
-using PyPlot
+using CairoMakie
 using Statistics
 using Base.Threads
 
@@ -108,15 +108,12 @@ counterTrigger_enabled!(rp, false)
 
 close(t)
 
-figure(1)
-clf()
-# Frame dimensions are [samples, chan, periods, frames]
-plot(vec(uFirstPeriod[:,1,:,:]))
-plot(vec(uCurrentPeriod[:,1,:,:]))
-plot(vec(uLastPeriod[:,1,:,:]))
-legend(("first period", "current period", "last period"))
-savefig("images/counterTrigger.png")
-
+plot = lines(vec(uFirstPeriod[:,1,:,:]), label = "first period")
+lines!(plot.axis, vec(uCurrentPeriod[:,1,:,:]), label = "current period")
+lines!(plot.axis, vec(uLastPeriod[:,1,:,:]), label = "last period")
+axislegend(plot.axis)
+save(joinpath(@__DIR__(), "images", "counterTrigger.png"), plot)
+plot
 #==
 0: enable
 1: trigger_arm
