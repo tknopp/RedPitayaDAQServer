@@ -97,6 +97,10 @@ julia> decimation(rp)
 ```
 """
 function decimation!(rp::RedPitaya, dec)
+  if dec < 8 || dec > 8192 || mod(dec, 2) != 0
+    error("Decimation must be an even value between 8 and 8192. Supplied value is $dec.")
+  end
+
   rp.decimation = Int64(dec)
   return query(rp, scpiCommand(decimation!, rp.decimation), scpiReturn(decimation!))
 end

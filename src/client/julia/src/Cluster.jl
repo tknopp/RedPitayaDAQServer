@@ -49,15 +49,16 @@ function RedPitayaCluster(hosts::Vector{String}, port::Int64=5025, dataPort::Int
     modes = fill(INTERNAL, length(rps))
     modes[1] = EXTERNAL
   end
-  @sync for (i, rp) in enumerate(rps)
-    @async begin 
+
+  @sync for (i, rp) ∈ enumerate(rps)
+    @async begin
       triggerMode!(rp, modes[i])
       triggerPropagation!(rp, true)
     end
   end
 
   triggerPropagation!(rps[end], false)
-  
+
   return RedPitayaCluster(rps)
 end
 

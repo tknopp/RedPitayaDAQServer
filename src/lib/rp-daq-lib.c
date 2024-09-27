@@ -540,6 +540,10 @@ int setArbitraryWaveform(float* values, int channel) {
 // Fast ADC
 
 int setDecimation(uint16_t decimation) {
+	if(!(decimation % 2 == 0)) {
+		return -1;
+	}
+
 	if(decimation < 8 || decimation > 8192) {
 		return -1;
 	}
