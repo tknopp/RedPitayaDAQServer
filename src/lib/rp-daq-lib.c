@@ -659,6 +659,13 @@ int getRampDownDAC(int channel, int index) {
 	return (*((int16_t *)(pdm_cfg + 2*(2+4*index))) >> bitpos) & 1;
 }
 
+int setRampDownDACAll(int8_t value, int channel) {
+	for(int i=0; i<PDM_BUFF_SIZE; i++) {
+		setRampDownDAC(value,channel,i);
+	}
+	return 0;
+}
+
 int setRampDownDAC(int8_t value, int channel, int index) {
 	if(value < 0 || value >= 2) {
 		return -1;
