@@ -784,11 +784,11 @@ int setPDMAllValuesVolt(float voltage, int channel) {
 
 int getSamplesPerStep() {
 	int32_t value = *((int32_t *)(cfg + 4));
-	return value;
+	return value*2/getDecimation();
 }
 
 int setSamplesPerStep(int samples) {
-	*((int32_t *)(cfg + 4)) = samples;
+	*((int32_t *)(cfg + 4)) = samples/2*getDecimation();
 	return 0;
 }
 
