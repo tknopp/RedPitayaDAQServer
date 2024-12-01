@@ -2099,7 +2099,6 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
 
   # Create pins
   create_bd_pin -dir I -type clk aclk
-  create_bd_pin -dir I -from 63 -to 0 adc_sts
   create_bd_pin -dir I -type rst aresetn
   create_bd_pin -dir I bram_aresetn
   create_bd_pin -dir I -from 31 -to 0 cfg_data
@@ -2220,6 +2219,9 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   # Create instance: xlconstant_0, and set properties
   set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
 
+  # Create instance: xlslice_0, and set properties
+  set xlslice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_0 ]
+
   # Create instance: zero_constant, and set properties
   set zero_constant [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 zero_constant ]
   set_property -dict [ list \
@@ -2240,7 +2242,6 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
 
   # Create port connections
   connect_bd_net -net aclk_1 [get_bd_pins aclk] [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] [get_bd_pins blk_mem_gen_0/clkb] [get_bd_pins sequence_slice_0/clk] [get_bd_pins sequence_stepper_0/clk]
-  connect_bd_net -net adc_sts_1 [get_bd_pins adc_sts] [get_bd_pins sequence_stepper_0/writepointer]
   connect_bd_net -net aresetn3_1 [get_bd_pins keep_alive_aresetn] [get_bd_pins util_vector_logic_0/Op2]
   connect_bd_net -net blk_mem_gen_0_doutb [get_bd_pins blk_mem_gen_0/doutb] [get_bd_pins sequence_slice_0/seq_data]
   connect_bd_net -net bram_aresetn_1 [get_bd_pins bram_aresetn] [get_bd_pins axi_bram_ctrl_0/s_axi_aresetn]
@@ -2267,7 +2268,7 @@ proc create_hier_cell_sequencer { parentCell nameHier } {
   connect_bd_net -net xlconcat_0_dout [get_bd_pins util_vector_logic_7/Op1] [get_bd_pins xlconcat_0/dout]
   connect_bd_net -net xlconcat_1_dout [get_bd_pins oa_dac] [get_bd_pins xlconcat_1/dout]
   connect_bd_net -net xlconstant_0_dout [get_bd_pins blk_mem_gen_0/enb] [get_bd_pins xlconstant_0/dout]
-  connect_bd_net -net xlslice_1_Dout [get_bd_pins pdm_sts] [get_bd_pins bram_element_slice/Din] [get_bd_pins sequence_stepper_0/step_counter]
+  connect_bd_net -net xlslice_1_Dout [get_bd_pins pdm_sts] [get_bd_pins bram_element_slice/Din] [get_bd_pins sequence_stepper_0/step_counter] [get_bd_pins xlslice_0/Din]
   connect_bd_net -net zero_constant1_dout [get_bd_pins concat_element_addr/In0] [get_bd_pins zero_constant1/dout]
   connect_bd_net -net zero_constant_dout [get_bd_pins concat_element_addr/In2] [get_bd_pins zero_constant/dout]
 
@@ -3436,7 +3437,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net util_vector_logic_0_Res [get_bd_pins clk_wiz_0/clk_in_sel] [get_bd_pins reset_manager_0/isMaster] [get_bd_pins util_vector_logic_0/Res]
   connect_bd_net -net write_to_ram_adc_out_A [get_bd_pins counter_trigger/adc0] [get_bd_pins write_to_ram/adc_out_A]
   connect_bd_net -net write_to_ram_adc_out_B [get_bd_pins counter_trigger/adc1] [get_bd_pins write_to_ram/adc_out_B]
-  connect_bd_net -net xlconcat_0_dout [get_bd_pins sequencer/adc_sts] [get_bd_pins system/adc_sts] [get_bd_pins write_to_ram/sts_data]
+  connect_bd_net -net xlconcat_0_dout [get_bd_pins system/adc_sts] [get_bd_pins write_to_ram/sts_data]
   connect_bd_net -net xlconcat_0_dout1 [get_bd_ports dac_pwm_o] [get_bd_pins sequencer/dout]
   connect_bd_net -net xlconcat_1_dout [get_bd_pins counter_trigger/counter_trigger_sts] [get_bd_pins system/counter_trigger_sts]
   connect_bd_net -net xlconstant_0_dout [get_bd_ports ext_DIO1_N] [get_bd_pins xlconstant_0/dout]
