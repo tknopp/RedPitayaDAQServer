@@ -11,7 +11,7 @@ serverMode!(rp, CONFIGURATION)
 dec = 128
 base_frequency = 125000000
 
-samples_per_step = 40 #30*16
+samples_per_step = 4000 #30*16
 steps_per_frame = 4
 numSamples = steps_per_frame * samples_per_step
 
@@ -21,9 +21,10 @@ periodsPerFrame!(rp, numSamples)
 samplesPerStep!(rp, samples_per_step)
 triggerMode!(rp, INTERNAL)
 
-
-amplitudeDAC!(rp, 1, 1, 0.0)
-amplitudeDAC!(rp, 2, 1, 0.0 )
+frequencyDAC!(rp, 1, 1, base_frequency/samples_per_step/dec)
+frequencyDAC!(rp, 2, 1, base_frequency/samples_per_step/dec)
+amplitudeDAC!(rp, 1, 1, 0.2)
+amplitudeDAC!(rp, 2, 1, 0.2 )
 
 clearSequence!(rp)
 
@@ -40,21 +41,21 @@ lutEnableDACA = ones(Bool, steps_per_frame)
 enableLUT = collect( cat(lutEnableDACA,lutEnableDACA,lutEnableDACA,lutEnableDACA,lutEnableDACA,lutEnableDACA,dims=2)' )
 #enableLUT = collect( cat(lutEnableDACA,dims=2)') #,lutEnableDACA,lutEnableDACA,lutEnableDACA,lutEnableDACA,dims=2)' )
 
-seq = SimpleSequence(lut, 300, enableLUT)
+seq = SimpleSequence(lut, 2, enableLUT)
 sequence!(rp, seq)
 
 serverMode!(rp, ACQUISITION)
 masterTrigger!(rp, true)
 
-uCurrentPeriod = readFrames(rp, 1, 3)
+uCurrentPeriod = readFrames(rp, 1, 200)
 
 masterTrigger!(rp, false)
 serverMode!(rp, CONFIGURATION)
 
 plot = lines(vec(uCurrentPeriod[:,1,:,1]), label = "Rx1")
 lines!(plot.axis, vec(uCurrentPeriod[:,2,:,1]), label = "Rx2")
-lines!(plot.axis, vec(uCurrentPeriod[:,1,:,2]), label = "Rx1_2")
-lines!(plot.axis, vec(uCurrentPeriod[:,2,:,2]), label = "Rx2_2")
+#lines!(plot.axis, vec(uCurrentPeriod[:,1,:,2]), label = "Rx1_2")
+#lines!(plot.axis, vec(uCurrentPeriod[:,2,:,2]), label = "Rx2_2")
 axislegend(plot.axis)
 save(joinpath(@__DIR__(), "images", "sequenceIssue.png"), plot)
 plot
