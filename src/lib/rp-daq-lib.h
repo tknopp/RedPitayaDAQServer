@@ -174,6 +174,8 @@ extern int getDIODirection(const char*);
 extern int setDIODirection(const char*, int);
 extern int setDIO(const char*, int);
 extern int getDIO(const char*);
+extern int getDIOHBridge(const char*);
+extern int setDIOHBridge(const char*, int);
 extern int setTriggerMode(int);
 extern int getTriggerMode();
 extern int setTriggerPropagation(int);
