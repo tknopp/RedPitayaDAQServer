@@ -653,7 +653,7 @@ int setResyncDAC(int8_t value, int channel, int index) {
 		return -1;
 
 	int bitpos = 14;
-	// Reset bits are in the 14th bit of the respective DAC channel -> 14 and 30 
+	// Reset bits are in the 14th bit of the respective DAC channel -> 14 and 30
 	int offset = 8 * index + channel;
 	// clear the bit
 	*((int16_t *)(pdm_cfg + offset)) &= ~(1u << bitpos);
@@ -1231,6 +1231,36 @@ char* getPinFromInternalPINNumber(const uint32_t pinNumber) {
 		return "ERR";
 	}
 }
+
+int getDIOHBridge(const char* pin) {
+	int pinInternal = getInternalPINNumber(pin);
+	if(pinInternal < 0) {
+		return -3;
+	}
+
+	uint32_t register_value = *((uint8_t *)(cfg + 11));
+	register_value = ((register_value & (0x1 << (pinInternal))) >> (pinInternal));
+
+	return register_value;
+}
+
+int setDIOHBridge(const char* pin, int value) {
+	int pinInternal = getInternalPINNumber(pin);
+	if(pinInternal < 0) {
+		return -3;
+	}
+
+	if(value == DIO_OUT) {
+		*((uint8_t *)(cfg + 11)) &= ~(0x1 << (pinInternal));
+	} else if(value == DIO_IN) {
+		*((uint8_t *)(cfg + 11)) |= (0x1 << (pinInternal));
+	} else {
+		return -1;
+	}
+
+	return 0;
+}
+
 
 int getDIODirection(const char* pin) {
 	int pinInternal = getInternalPINNumber(pin);

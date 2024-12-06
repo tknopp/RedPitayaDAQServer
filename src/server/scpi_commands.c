@@ -722,6 +722,68 @@ static scpi_result_t RP_DIO_GetDIOOutputP(scpi_t * context) {
 	return RP_DIO_GetDIOOutput(context, true);
 }
 
+
+
+
+static scpi_result_t RP_DIO_SetDIOHBridge(scpi_t * context, bool pinSide) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int pin_number = numbers[0];
+	char pin[8];
+	pinSide ? sprintf(pin, "DIO%d_P", pin_number) : sprintf(pin, "DIO%d_N", pin_number);
+
+	int32_t DIO_pin_output_selection;
+	if (!SCPI_ParamChoice(context, onoff_modes, &DIO_pin_output_selection, TRUE)) {
+		return returnSCPIBool(context, false);
+	}
+
+	int result = setDIOHBridge(pin, DIO_pin_output_selection);
+	if (result < 0) {
+		return returnSCPIBool(context, false);
+	}
+
+	return returnSCPIBool(context, true);
+}
+
+static scpi_result_t RP_DIO_SetDIOHBridgeN(scpi_t * context) {
+	return RP_DIO_SetDIOHBridge(context, false);
+}
+
+static scpi_result_t RP_DIO_SetDIOHBridgeP(scpi_t * context) {
+	return RP_DIO_SetDIOHBridge(context, true);
+}
+
+static scpi_result_t RP_DIO_GetDIOHBridge(scpi_t * context, bool pinSide) {
+	int32_t numbers[1];
+	SCPI_CommandNumbers(context, numbers, 1, 1);
+	int pin_number = numbers[0];
+	char pin[8];
+	pinSide ? sprintf(pin, "DIO%d_P", pin_number) : sprintf(pin, "DIO%d_N", pin_number);
+	
+	int result = getDIOHBridge(pin);
+
+	if (result < 0) {
+		return returnSCPIBool(context, false);
+	}
+
+	const char* name;
+	SCPI_ChoiceToName(onoff_modes, result,  &name);
+	SCPI_ResultText(context, name);
+
+	return SCPI_RES_OK;
+}
+
+static scpi_result_t RP_DIO_GetDIOHBridgeN(scpi_t * context) {
+	return RP_DIO_GetDIOHBridge(context, false);
+}
+
+static scpi_result_t RP_DIO_GetDIOHBridgeP(scpi_t * context) {
+	return RP_DIO_GetDIOHBridge(context, true);
+}
+
+
+
+
 static scpi_result_t RP_GetWatchdogMode(scpi_t * context) {
 	const char * name;
 
@@ -1791,6 +1853,10 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DIO:Pin#:SideP", .callback = RP_DIO_SetDIOOutputP,}, 
 	{.pattern = "RP:DIO:Pin#:SideN?", .callback = RP_DIO_GetDIOOutputN,},
 	{.pattern = "RP:DIO:Pin#:SideP?", .callback = RP_DIO_GetDIOOutputP,},
+	{.pattern = "RP:DIO:Pin#:SideN:HBridge", .callback = RP_DIO_SetDIOHBridgeN,},
+	{.pattern = "RP:DIO:Pin#:SideP:HBridge", .callback = RP_DIO_SetDIOHBridgeP,},
+	{.pattern = "RP:DIO:Pin#:SideN:HBridge?", .callback = RP_DIO_GetDIOHBridgeN,},
+	{.pattern = "RP:DIO:Pin#:SideP:HBridge?", .callback = RP_DIO_GetDIOHBridgeP,},
 	{.pattern = "RP:WatchDogMode", .callback = RP_SetWatchdogMode,},
 	{.pattern = "RP:WatchDogMode?", .callback = RP_GetWatchdogMode,},
 	{.pattern = "RP:TRIGger:ALiVe", .callback = RP_SetKeepAliveReset,},

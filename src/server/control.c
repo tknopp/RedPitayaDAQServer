@@ -131,7 +131,7 @@ bool getSequenceEnableValue(sequenceData_t *seqData, int seqStep, int channel) {
 
 bool getSequenceResyncValue(sequenceData_t *seqData, int seqStep, int channel) {
 	bool result = false;
-  	int numChan = numSlowDACChan > 2 ? 2 : numSlowDACChan;
+	int numChan = numSlowDACChan > 2 ? 2 : numSlowDACChan;
 	if (seqData->resyncLUT != NULL && channel < numChan) {
 		int localStep = seqStep % seqData->numStepsPerRepetition;
 		result = seqData->resyncLUT[localStep * numChan + channel];
