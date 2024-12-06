@@ -1567,7 +1567,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   # Create instance: image_version, and set properties
   set image_version [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 image_version ]
   set_property -dict [ list \
-   CONFIG.CONST_VAL {9} \
+   CONFIG.CONST_VAL {10} \
    CONFIG.CONST_WIDTH {32} \
  ] $image_version
 
