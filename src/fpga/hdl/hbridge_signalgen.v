@@ -15,7 +15,6 @@ module hbridge_signalgen #
     
     input clk,
     input aresetn,
-    input enable_dac,
     output H1, H2
 );
 
@@ -39,41 +38,34 @@ module hbridge_signalgen #
             phase <= s_axis_tdata_phase >>> (AXIS_TDATA_PHASE_WIDTH - CFG_DATA_WIDTH);
             //4096 = (1<<<(CFG_DATA_WIDTH-2))
 
-            if  (enable_dac)
+            if (phase < 4096-A)
             begin
-                if (phase < 4096-A)
-                begin
-                    h1 <= 0;
-                    h2 <= 0;
-                end
-                else if (phase < 4096+A)
-                begin
-                    h1 <= 0;
-                    h2 <= 1;
-                end
-                else if (phase < 12288-A)
-                begin
-                    h1 <= 0;
-                    h2 <= 0;
-                end
-                else if (phase < 12288+A)
-                begin
-                    h1 <= 1;
-                    h2 <= 0;
-                end
-                else
-                begin
-                    h1 <= 0;
-                    h2 <= 0;
-                end
-            end else begin
+                h1 <= 0;
+                h2 <= 0;
+            end
+            else if (phase < 4096+A)
+            begin
+                h1 <= 0;
+                h2 <= 1;
+            end
+            else if (phase < 12288-A)
+            begin
+                h1 <= 0;
+                h2 <= 0;
+            end
+            else if (phase < 12288+A)
+            begin
+                h1 <= 1;
+                h2 <= 0;
+            end
+            else
+            begin
                 h1 <= 0;
                 h2 <= 0;
             end
 
          end
          
-
     end
     
 assign H1 = h1;
