@@ -18,7 +18,7 @@ begin
         step_counter_next <= 0;
         step_counter_local <= 0;
         step_counter_local_next <= 0;
-        step_size_local <= stepSize-1;
+        step_size_local <= (stepSize>>1)-1;
     end else begin
         step_counter_reg <= step_counter_next;
         step_counter_local <= step_counter_local_next;
