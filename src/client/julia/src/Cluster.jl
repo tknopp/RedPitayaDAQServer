@@ -121,7 +121,7 @@ for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samples
 end
 
 for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :samplesPerStep!,
-           :keepAliveReset!, :serverMode!, 
+           :keepAliveReset!, :serverMode!,
            :counterTrigger_enabled!, :counterTrigger_presamples!, :counterTrigger_arm!,
            :counterTrigger_reset!, :counterTrigger_referenceCounter!,
            :counterTrigger_sourceType!, :counterTrigger_sourceChannel!]

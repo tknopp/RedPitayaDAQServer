@@ -1,5 +1,5 @@
 using RedPitayaDAQServer
-using PyPlot
+using CairoMakie
 
 # obtain the URL of the RedPitaya
 include("config.jl")
@@ -29,7 +29,7 @@ phaseDAC!(rp, 1, 1, 0.0)
 amplitudeDAC!(rp, 1, 1, 0.1)
 
 # No waveform on second channel
-amplitudeDAC!(rp, 2, 1, 0.0)
+amplitudeDAC!(rp, 2, 1, 0.2 )
 
 clearSequence!(rp)
 
@@ -42,8 +42,7 @@ lut = collect(cat(lutA,lutB*0.1,dims=2)')
 # Alternate in disabling the DAC output of the channels from step to step
 lutEnableDACA = ones(Bool, steps_per_frame)
 lutEnableDACA[1:2:end] .= false
-lutEnableDACB = ones(Bool, steps_per_frame)
-lutEnableDACB[2:2:end] .= false
+lutEnableDACB = map(!, lutEnableDACA)
 enableLUT = collect( cat(lutEnableDACA,lutEnableDACB,dims=2)' )
 
 seq = SimpleSequence(lut, 1, enableLUT)
@@ -57,11 +56,9 @@ uCurrentPeriod = readFrames(rp, 0, 1)
 masterTrigger!(rp, false)
 serverMode!(rp, CONFIGURATION)
 
-fig = figure(1)
-clf()
-plot(vec(uCurrentPeriod[:,1,:,:]))
-plot(vec(uCurrentPeriod[:,2,:,:]))
-legend(("Rx1", "Rx2"))
+plot = lines(vec(uCurrentPeriod[:,1,:,:]), label = "Rx1")
+lines!(plot.axis, vec(uCurrentPeriod[:,2,:,:]), label = "Rx2")
+axislegend(plot.axis)
+save(joinpath(@__DIR__(), "images", "sequenceMultiChannelWithOffsetAndEnable.png"), plot)
+plot
 
-
-savefig("images/sequenceMultiChannelWithOffsetAndEnable.png")

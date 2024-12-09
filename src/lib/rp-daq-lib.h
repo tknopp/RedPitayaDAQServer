@@ -147,6 +147,7 @@ extern int setResyncDACAll(int8_t, int);
 extern int setResyncDAC(int8_t, int, int);
 //extern int setResetDAC(int8_t, int);
 extern int setRampDownDAC(int8_t, int, int);
+extern int setRampDownDACAll(int8_t, int);
 extern int getRampDownDAC(int, int);
 
 // Counter trigger

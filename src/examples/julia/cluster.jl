@@ -1,5 +1,5 @@
 using RedPitayaDAQServer
-using PyPlot
+using CairoMakie
 
 # obtain the URL of the RedPitaya
 include("config.jl")
@@ -44,14 +44,12 @@ uCurrentPeriod = readFrames(rpc, currentFrame(rpc), 1)
 masterTrigger!(rpc, false)
 serverMode!(rpc, CONFIGURATION)
 
-figure(1)
-clf()
-subplot(2, 1, 1)
-plot(vec(uFirstPeriod[:,1,:,:]))
-plot(vec(uFirstPeriod[:,3,:,:]))
-legend(("Channel 1", "Channel 3"))
-subplot(2, 1, 2)
-plot(vec(uCurrentPeriod[:,1,:,:]))
-plot(vec(uCurrentPeriod[:,3,:,:]))
-legend(("Channel 1", "Channel 3"))
-savefig("images/cluster.png")
+fig = Figure()
+plot = lines(fig[1,1], vec(uFirstPeriod[:,1,:,:]), label = "Channel 1")
+lines!(plot.axis, vec(uFirstPeriod[:,3,:,:]), label = "Channel 3")
+axislegend(plot.axis)
+plot = lines(fig[1, 2], vec(uCurrentPeriod[:,1,:,:]), label = "Channel 1")
+lines!(plot.axis, vec(uCurrentPeriod[:,3,:,:]), label = "Channel 3")
+axislegend(plot.axis)
+save(joinpath(@__DIR__(), "images", "cluster.png"), fig)
+fig

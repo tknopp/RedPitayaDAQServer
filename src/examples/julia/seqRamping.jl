@@ -1,5 +1,5 @@
 using RedPitayaDAQServer
-using PyPlot
+using CairoMakie
 
 # obtain the URL of the RedPitaya
 include("config.jl")
@@ -46,13 +46,12 @@ masterTrigger!(rp, true)
 samples_per_step = (samples_per_period * periods_per_frame)/steps_per_frame
 uCurrentFrame = readFrames(rp, 0, 4)
 
-fig = figure(1)
-clf()
-plot(vec(uCurrentFrame[:,1,:,1:4]))
-
 masterTrigger!(rp, false)
 serverMode!(rp, CONFIGURATION)
 enableRamping!(rp, 1, false)
 clearSequence!(rp)
 
-savefig("images/seqRamping.png")
+plot = lines(vec(uCurrentFrame[:,1,:,1:4]))
+
+save(joinpath(@__DIR__(), "images", "seqRamping.png"), plot)
+plot
