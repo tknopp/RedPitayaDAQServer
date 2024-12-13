@@ -182,3 +182,43 @@ end
 scpiCommand(::typeof(DIO), pin) = string("RP:DIO:", DIOPinToCommand(pin), "?")
 scpiReturn(::typeof(DIO)) = String
 parseReturn(::typeof(DIO), ret) = occursin("ON", ret)
+
+
+
+
+
+
+export DIOHBridge!
+"""
+DIOHBridge!(rp::RedPitaya, pin::DIOPins, val::Bool)
+
+Set the value of DIOHBridge pin `pin` to the value `val`.
+# Example
+```julia
+julia> DIOHBridge!(rp, DIO7_P, true)
+true
+```
+"""
+function DIOHBridge!(rp::RedPitaya, pin, val)
+  return query(rp, scpiCommand(DIOHBridge!, pin, val), scpiReturn(DIOHBridge!))
+end
+scpiCommand(::typeof(DIOHBridge!), pin::DIOPins, val::Bool) = string("RP:DIO:", DIOPinToCommand(pin), ":HBRIDGE ", (val ? "ON" : "OFF"))
+scpiReturn(::typeof(DIOHBridge!)) = Bool
+
+export DIOHBridge
+"""
+  DIOHBridge(rp::RedPitaya, pin::DIOPins)
+
+Get the value of DIOHBridge pin `pin`.
+# Example
+```julia
+julia>DIOHBridge(rp, DIO7_P)
+true
+```
+"""
+function DIOHBridge(rp::RedPitaya, pin)
+  return parseReturn(DIOHBridge, query(rp, scpiCommand(DIOHBridge, pin), scpiReturn(DIOHBridge)))
+end
+scpiCommand(::typeof(DIOHBridge), pin) = string("RP:DIO:", DIOPinToCommand(pin), ":HBRIDGE?")
+scpiReturn(::typeof(DIOHBridge)) = String
+parseReturn(::typeof(DIOHBridge), ret) = occursin("ON", ret)

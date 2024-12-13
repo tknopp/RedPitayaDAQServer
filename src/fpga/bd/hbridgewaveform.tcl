@@ -1,6 +1,6 @@
 
 ################################################################
-# This is a generated script based on design: waveform_gen
+# This is a generated script based on design: hbridgewaveform
 #
 # Though there are limitations about the generated script,
 # the main purpose of this utility is to make learning
@@ -35,7 +35,14 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 ################################################################
 
 # To test this script, run the following commands from Vivado Tcl console:
-# source waveform_gen_script.tcl
+# source hbridgewaveform_script.tcl
+
+
+# The design that will be created by this Tcl script contains the following 
+# module references:
+# hbridge_signalgen
+
+# Please add the sources of those modules before sourcing this Tcl script.
 
 # If there is no project opened, this script will create a
 # project, but make sure you do not have an existing project
@@ -49,7 +56,7 @@ if { $list_projs eq "" } {
 
 # CHANGE DESIGN NAME HERE
 variable design_name
-set design_name waveform_gen
+set design_name hbridgewaveform
 
 # If you do not already have an existing IP Integrator design open,
 # you can create a design using the following command:
@@ -125,10 +132,9 @@ if { $bCheckIPs == 1 } {
    set list_check_ips "\ 
 pavel-demin:user:axis_variable:1.0\
 xilinx.com:ip:dds_compiler:6.0\
-xilinx.com:ip:mult_gen:12.0\
-jbeuke:user:signal_generator:1.0\
 xilinx.com:ip:util_vector_logic:2.0\
 xilinx.com:ip:xlconcat:2.1\
+xilinx.com:ip:xlslice:1.0\
 "
 
    set list_ips_missing ""
@@ -146,6 +152,31 @@ xilinx.com:ip:xlconcat:2.1\
       set bCheckIPsPassed 0
    }
 
+}
+
+##################################################################
+# CHECK Modules
+##################################################################
+set bCheckModules 1
+if { $bCheckModules == 1 } {
+   set list_check_mods "\ 
+hbridge_signalgen\
+"
+
+   set list_mods_missing ""
+   common::send_gid_msg -ssname BD::TCL -id 2020 -severity "INFO" "Checking if the following modules exist in the project's sources: $list_check_mods ."
+
+   foreach mod_vlnv $list_check_mods {
+      if { [can_resolve_reference $mod_vlnv] == 0 } {
+         lappend list_mods_missing $mod_vlnv
+      }
+   }
+
+   if { $list_mods_missing ne "" } {
+      catch {common::send_gid_msg -ssname BD::TCL -id 2021 -severity "ERROR" "The following module(s) are not found in the project: $list_mods_missing" }
+      common::send_gid_msg -ssname BD::TCL -id 2022 -severity "INFO" "Please add source files for the missing module(s) above."
+      set bCheckIPsPassed 0
+   }
 }
 
 if { $bCheckIPsPassed != 1 } {
@@ -194,18 +225,17 @@ proc create_root_design { parentCell } {
   # Create interface ports
 
   # Create ports
+  set H1out [ create_bd_port -dir O -from 0 -to 0 -type data H1out ]
+  set H2out [ create_bd_port -dir O -from 0 -to 0 -type data H2out ]
   set aclk [ create_bd_port -dir I -type clk -freq_hz 125000000 aclk ]
-  set_property -dict [ list \
-   CONFIG.ASSOCIATED_RESET {aresetn} \
- ] $aclk
-  set amplitude [ create_bd_port -dir I -from 15 -to 0 -type data amplitude ]
   set aresetn [ create_bd_port -dir I -type rst aresetn ]
-  set cfg_data [ create_bd_port -dir I -from 47 -to 0 cfg_data ]
+  set enable_All [ create_bd_port -dir I enable_All ]
+  set enable_H1 [ create_bd_port -dir I -type data enable_H1 ]
+  set enable_H2 [ create_bd_port -dir I -type data enable_H2 ]
   set freq [ create_bd_port -dir I -from 47 -to 0 freq ]
-  set m_axis_data_tvalid_1 [ create_bd_port -dir O m_axis_data_tvalid_1 ]
   set phase [ create_bd_port -dir I -from 47 -to 0 phase ]
+  set pulswidth [ create_bd_port -dir I -from 15 -to 0 pulswidth ]
   set resync [ create_bd_port -dir I resync ]
-  set wave [ create_bd_port -dir O -from 15 -to 0 -type data wave ]
 
   # Create instance: axis_variable_A_channel_1, and set properties
   set axis_variable_A_channel_1 [ create_bd_cell -type ip -vlnv pavel-demin:user:axis_variable:1.0 axis_variable_A_channel_1 ]
@@ -224,46 +254,41 @@ proc create_root_design { parentCell } {
    CONFIG.Has_ARESETn {true} \
    CONFIG.Has_Phase_Out {true} \
    CONFIG.Has_TREADY {false} \
-   CONFIG.Latency {9} \
+   CONFIG.Latency {2} \
    CONFIG.Latency_Configuration {Auto} \
    CONFIG.M_DATA_Has_TUSER {Not_Required} \
    CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-   CONFIG.Noise_Shaping {Phase_Dithering} \
+   CONFIG.Noise_Shaping {None} \
    CONFIG.Output_Frequency1 {0} \
    CONFIG.Output_Selection {Sine} \
-   CONFIG.Output_Width {14} \
+   CONFIG.Output_Width {3} \
    CONFIG.PINC1 {0} \
    CONFIG.POFF1 {0} \
-   CONFIG.Parameter_Entry {System_Parameters} \
-   CONFIG.PartsPresent {Phase_Generator_and_SIN_COS_LUT} \
+   CONFIG.Parameter_Entry {Hardware_Parameters} \
+   CONFIG.PartsPresent {Phase_Generator_only} \
    CONFIG.Phase_Increment {Programmable} \
    CONFIG.Phase_Offset_Angles1 {0} \
    CONFIG.Phase_Width {48} \
    CONFIG.Phase_offset {Programmable} \
    CONFIG.Resync {false} \
    CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-   CONFIG.Spurious_Free_Dynamic_Range {84} \
+   CONFIG.Spurious_Free_Dynamic_Range {88} \
  ] $dds_compiler_A_channel_1
 
-  # Create instance: mult_gen_0, and set properties
-  set mult_gen_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:mult_gen:12.0 mult_gen_0 ]
-  set_property -dict [ list \
-   CONFIG.Multiplier_Construction {Use_Mults} \
-   CONFIG.OutputWidthHigh {28} \
-   CONFIG.OutputWidthLow {13} \
-   CONFIG.PipeStages {3} \
-   CONFIG.PortAWidth {16} \
-   CONFIG.PortBWidth {16} \
-   CONFIG.SyncClear {false} \
-   CONFIG.Use_Custom_Output_Width {true} \
- ] $mult_gen_0
-
-  # Create instance: signal_generator_0, and set properties
-  set signal_generator_0 [ create_bd_cell -type ip -vlnv jbeuke:user:signal_generator:1.0 signal_generator_0 ]
-  set_property -dict [ list \
+  # Create instance: hbridge_signalgen_0_upgraded_ipi, and set properties
+  set block_name hbridge_signalgen
+  set block_cell_name hbridge_signalgen_0_upgraded_ipi
+  if { [catch {set hbridge_signalgen_0_upgraded_ipi [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $hbridge_signalgen_0_upgraded_ipi eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+    set_property -dict [ list \
    CONFIG.AXIS_TDATA_PHASE_WIDTH {48} \
-   CONFIG.CFG_DATA_WIDTH {48} \
- ] $signal_generator_0
+   CONFIG.CFG_DATA_WIDTH {14} \
+ ] $hbridge_signalgen_0_upgraded_ipi
 
   # Create instance: util_vector_logic_0, and set properties
   set util_vector_logic_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_0 ]
@@ -279,6 +304,30 @@ proc create_root_design { parentCell } {
    CONFIG.C_SIZE {1} \
  ] $util_vector_logic_1
 
+  # Create instance: util_vector_logic_2, and set properties
+  set util_vector_logic_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_2 ]
+  set_property -dict [ list \
+   CONFIG.C_SIZE {1} \
+ ] $util_vector_logic_2
+
+  # Create instance: util_vector_logic_3, and set properties
+  set util_vector_logic_3 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_3 ]
+  set_property -dict [ list \
+   CONFIG.C_SIZE {1} \
+ ] $util_vector_logic_3
+
+  # Create instance: util_vector_logic_4, and set properties
+  set util_vector_logic_4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_4 ]
+  set_property -dict [ list \
+   CONFIG.C_SIZE {1} \
+ ] $util_vector_logic_4
+
+  # Create instance: util_vector_logic_5, and set properties
+  set util_vector_logic_5 [ create_bd_cell -type ip -vlnv xilinx.com:ip:util_vector_logic:2.0 util_vector_logic_5 ]
+  set_property -dict [ list \
+   CONFIG.C_SIZE {1} \
+ ] $util_vector_logic_5
+
   # Create instance: xlconcat_A_channel_1, and set properties
   set xlconcat_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_A_channel_1 ]
   set_property -dict [ list \
@@ -288,25 +337,38 @@ proc create_root_design { parentCell } {
    CONFIG.NUM_PORTS {2} \
  ] $xlconcat_A_channel_1
 
+  # Create instance: xlslice_0, and set properties
+  set xlslice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_0 ]
+  set_property -dict [ list \
+   CONFIG.DIN_FROM {13} \
+   CONFIG.DIN_WIDTH {16} \
+   CONFIG.DOUT_WIDTH {14} \
+ ] $xlslice_0
+
   # Create interface connections
   connect_bd_intf_net -intf_net axis_variable_A_channel_1_M_AXIS [get_bd_intf_pins axis_variable_A_channel_1/M_AXIS] [get_bd_intf_pins dds_compiler_A_channel_1/S_AXIS_CONFIG]
-  connect_bd_intf_net -intf_net dds_compiler_A_channel_1_M_AXIS_DATA [get_bd_intf_pins dds_compiler_A_channel_1/M_AXIS_DATA] [get_bd_intf_pins signal_generator_0/s_axis]
-  connect_bd_intf_net -intf_net dds_compiler_A_channel_1_M_AXIS_PHASE [get_bd_intf_pins dds_compiler_A_channel_1/M_AXIS_PHASE] [get_bd_intf_pins signal_generator_0/s_axis_phase]
+  connect_bd_intf_net -intf_net dds_compiler_A_channel_1_M_AXIS_PHASE [get_bd_intf_pins dds_compiler_A_channel_1/M_AXIS_PHASE] [get_bd_intf_pins hbridge_signalgen_0_upgraded_ipi/s_axis_phase]
 
   # Create port connections
-  connect_bd_net -net amplitude_A_channel_1_slice1_Dout [get_bd_ports amplitude] [get_bd_pins mult_gen_0/A]
-  connect_bd_net -net aresetn_1 [get_bd_ports aresetn] [get_bd_pins axis_variable_A_channel_1/aresetn] [get_bd_pins signal_generator_0/aresetn] [get_bd_pins util_vector_logic_1/Op2]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_ports aclk] [get_bd_pins axis_variable_A_channel_1/aclk] [get_bd_pins dds_compiler_A_channel_1/aclk] [get_bd_pins mult_gen_0/CLK] [get_bd_pins signal_generator_0/clk]
+  connect_bd_net -net aresetn_1 [get_bd_ports aresetn] [get_bd_pins axis_variable_A_channel_1/aresetn] [get_bd_pins hbridge_signalgen_0_upgraded_ipi/aresetn] [get_bd_pins util_vector_logic_1/Op2]
+  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_ports aclk] [get_bd_pins axis_variable_A_channel_1/aclk] [get_bd_pins dds_compiler_A_channel_1/aclk] [get_bd_pins hbridge_signalgen_0_upgraded_ipi/clk]
+  connect_bd_net -net enable_All_1 [get_bd_ports enable_All] [get_bd_pins util_vector_logic_4/Op1] [get_bd_pins util_vector_logic_5/Op1]
+  connect_bd_net -net enable_H1_1 [get_bd_ports enable_H1] [get_bd_pins util_vector_logic_2/Op1]
+  connect_bd_net -net enable_H2_1 [get_bd_ports enable_H2] [get_bd_pins util_vector_logic_3/Op1]
   connect_bd_net -net freq_1 [get_bd_ports freq] [get_bd_pins xlconcat_A_channel_1/In0]
-  connect_bd_net -net mult_gen_0_P [get_bd_ports wave] [get_bd_pins mult_gen_0/P]
+  connect_bd_net -net hbridge_signalgen_0_upgraded_ipi_H1 [get_bd_pins hbridge_signalgen_0_upgraded_ipi/H1] [get_bd_pins util_vector_logic_2/Op2]
+  connect_bd_net -net hbridge_signalgen_0_upgraded_ipi_H2 [get_bd_pins hbridge_signalgen_0_upgraded_ipi/H2] [get_bd_pins util_vector_logic_3/Op2]
   connect_bd_net -net phase_1 [get_bd_ports phase] [get_bd_pins xlconcat_A_channel_1/In1]
-  connect_bd_net -net phase_A_channel_1_slice1_Dout [get_bd_ports cfg_data] [get_bd_pins signal_generator_0/cfg_data]
+  connect_bd_net -net pulswidth_1 [get_bd_ports pulswidth] [get_bd_pins xlslice_0/Din]
   connect_bd_net -net resync_1 [get_bd_ports resync] [get_bd_pins util_vector_logic_0/Op1]
-  connect_bd_net -net signal_generator_0_m_axis_tdata [get_bd_pins mult_gen_0/B] [get_bd_pins signal_generator_0/m_axis_tdata]
-  connect_bd_net -net signal_generator_0_m_axis_tvalid [get_bd_ports m_axis_data_tvalid_1] [get_bd_pins signal_generator_0/m_axis_tvalid]
   connect_bd_net -net util_vector_logic_0_Res [get_bd_pins util_vector_logic_0/Res] [get_bd_pins util_vector_logic_1/Op1]
   connect_bd_net -net util_vector_logic_1_Res [get_bd_pins dds_compiler_A_channel_1/aresetn] [get_bd_pins util_vector_logic_1/Res]
+  connect_bd_net -net util_vector_logic_2_Res [get_bd_pins util_vector_logic_2/Res] [get_bd_pins util_vector_logic_4/Op2]
+  connect_bd_net -net util_vector_logic_3_Res [get_bd_pins util_vector_logic_3/Res] [get_bd_pins util_vector_logic_5/Op2]
+  connect_bd_net -net util_vector_logic_4_Res [get_bd_ports H1out] [get_bd_pins util_vector_logic_4/Res]
+  connect_bd_net -net util_vector_logic_5_Res [get_bd_ports H2out] [get_bd_pins util_vector_logic_5/Res]
   connect_bd_net -net xlconcat_A_channel_1_dout [get_bd_pins axis_variable_A_channel_1/cfg_data] [get_bd_pins xlconcat_A_channel_1/dout]
+  connect_bd_net -net xlslice_0_Dout [get_bd_pins hbridge_signalgen_0_upgraded_ipi/cfg_data] [get_bd_pins xlslice_0/Dout]
 
   # Create address segments
 

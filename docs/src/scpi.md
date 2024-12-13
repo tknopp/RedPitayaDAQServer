@@ -53,6 +53,7 @@ During an active trigger the buffer is periodically updated by the server. If th
 | RP:DAC:SEQ:CHan? |  | Return the number of sequence channel |  | |
 | RP:DAC:SEQ:LUT | steps, repetitions | Instruct the server to receive a LUT over the data socket | C | RP:DAC:SEQ:LUT 10,2 |
 | RP:DAC:SEQ:LUT:ENaBle |  | Instruct the server to receive an enable LUT over the data socket of the same shape as the regular LUT| C | |
+| RP:DAC:SEQ:LUT:ReSYNC |  | Instruct the server to receive a resync LUT over the data socket of the same shape as the regular LUT| C | |
 | RP:DAC:SEQ:LUT:UP | steps, repetitions | Instruct the server to receive a ramp up LUT over the data socket | C | |
 | RP:DAC:SEQ:LUT:DOWN | steps, repetitions | Instruct the server to receive a ramp down LUT over the data socket | C | |
 | RP:DAC:SEQ:CLEAR |  | Clear the set sequence values from the FPGA buffer | C | |

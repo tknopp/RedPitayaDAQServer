@@ -637,6 +637,32 @@ int setEnableDAC(int8_t value, int channel, int index) {
 	return 0;
 }
 
+int setResyncDACAll(int8_t value, int channel) {
+	for(int i=0; i<PDM_BUFF_SIZE; i++) {
+		setResyncDAC(value,channel,i);
+	}
+	return 0;
+}
+
+int setResyncDAC(int8_t value, int channel, int index) {
+	if(channel < 0 || channel >= 2) {
+		return -2;
+	}
+
+	if (value < 0 || value >= 2)
+		return -1;
+
+	int bitpos = 14;
+	// Reset bits are in the 14th bit of the respective DAC channel -> 14 and 30
+	int offset = 8 * index + channel;
+	// clear the bit
+	*((int16_t *)(pdm_cfg + offset)) &= ~(1u << bitpos);
+	// set the bit
+	*((int16_t *)(pdm_cfg + offset)) |= (value << bitpos);
+	//printf("%d reset pdm\n", *((int16_t *)(pdm_cfg + 2*(0+4*index))));
+	return 0;
+}
+
 int setResetDAC(int8_t value, int index) {
 	if (value < 0 || value >= 2)
 		return -1;
@@ -758,11 +784,11 @@ int setPDMAllValuesVolt(float voltage, int channel) {
 
 int getSamplesPerStep() {
 	int32_t value = *((int32_t *)(cfg + 4));
-	return value;
+	return value/getDecimation();
 }
 
 int setSamplesPerStep(int samples) {
-	*((int32_t *)(cfg + 4)) = samples;
+	*((int32_t *)(cfg + 4)) = samples*getDecimation();
 	return 0;
 }
 
@@ -1206,6 +1232,36 @@ char* getPinFromInternalPINNumber(const uint32_t pinNumber) {
 	}
 }
 
+int getDIOHBridge(const char* pin) {
+	int pinInternal = getInternalPINNumber(pin);
+	if(pinInternal < 0) {
+		return -3;
+	}
+
+	uint32_t register_value = *((uint8_t *)(cfg + 11));
+	register_value = ((register_value & (0x1 << (pinInternal))) >> (pinInternal));
+
+	return register_value;
+}
+
+int setDIOHBridge(const char* pin, int value) {
+	int pinInternal = getInternalPINNumber(pin);
+	if(pinInternal < 0) {
+		return -3;
+	}
+
+	if(value == DIO_OUT) {
+		*((uint8_t *)(cfg + 11)) &= ~(0x1 << (pinInternal));
+	} else if(value == DIO_IN) {
+		*((uint8_t *)(cfg + 11)) |= (0x1 << (pinInternal));
+	} else {
+		return -1;
+	}
+
+	return 0;
+}
+
+
 int getDIODirection(const char* pin) {
 	int pinInternal = getInternalPINNumber(pin);
 	if(pinInternal < 0) {
@@ -1287,6 +1343,7 @@ void stopTx() {
 	for(int d=0; d<5; d++) {
 		setPDMAllValuesVolt(0.0, d);
 		setEnableDACAll(1,d);
+		setResyncDACAll(0,d);
 	}
 }
 
