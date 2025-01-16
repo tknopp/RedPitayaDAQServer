@@ -17,7 +17,6 @@ module reset_manager #
     inout watchdog,
     inout instant_reset,
     output write_to_ram_aresetn,
-    output write_to_ramwriter_aresetn,
     output keep_alive_aresetn,
     output xadc_aresetn,
     output fourier_synth_aresetn_1,
@@ -32,6 +31,7 @@ module reset_manager #
     input [1:0] ramp_state_1,
     output [1:0] ramping_enable,
     output [1:0] start_ramp_down,
+    output [3:0] pdm_output_on,
     inout reset_ack,
     inout alive_signal,
     inout master_trigger
@@ -255,12 +255,12 @@ begin
             // ADC
             write_to_ram_aresetn_int <= triggerState;
             // DAC
-            if ((instant_reset_in && reset_cfg[3]) || stateOutputOn == 0)
+            if ((instant_reset_in_int && reset_cfg[3]) || stateOutputOn == 0)
             begin
                 //fourier_synth_aresetn_int <= 1'b0;
                 fourier_synth_aresetn_1_int = ramping_cfg[0];
                 fourier_synth_aresetn_2_int = ramping_cfg[1];
-                pdm_aresetn_int <= 1'b0;
+                pdm_aresetn_int <= ramping_cfg[1] || ramping_cfg[1];
                 if (triggerState == 1)
                 begin
                     stateOutputOnNext <= 0;
@@ -287,7 +287,6 @@ begin
 end
 
 assign write_to_ram_aresetn = write_to_ram_aresetn_int;
-assign write_to_ramwriter_aresetn = write_to_ram_aresetn_int;
 assign xadc_aresetn = xadc_aresetn_int;
 assign fourier_synth_aresetn_1 = fourier_synth_aresetn_1_int;
 assign fourier_synth_aresetn_2 = fourier_synth_aresetn_2_int;
@@ -323,6 +322,7 @@ assign ramping_enable[0] = ramping_cfg[0];
 assign ramping_enable[1] = ramping_cfg[1];
 assign start_ramp_down[0] = ramping_cfg[2] || ~stateOutputOn;
 assign start_ramp_down[1] = ramping_cfg[3] || ~stateOutputOn;
+assign pdm_output_on[3:0] = stateOutputOn;
 
 
 
