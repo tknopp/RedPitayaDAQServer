@@ -15,7 +15,7 @@ samples_per_period = div(modulus, dec)
 periods_per_frame = 50 # about 0.5 s frame length
 frame_period = dec*samples_per_period*periods_per_frame / base_frequency
 steps_per_frame = div(50, periods_per_step)
-numFr = 12
+numFr = 8
 
 
 decimation!(rp, dec)
@@ -46,7 +46,7 @@ serverMode!(rp, ACQUISITION)
 masterTrigger!(rp, true)
 
 samples_per_step = (samples_per_period * periods_per_frame)/steps_per_frame
-uCurrentFrame = readFrames(rp, 0, numFr)
+uCurrentFrame = readFrames(rp, 1, numFr+1)
 
 masterTrigger!(rp, false)
 serverMode!(rp, CONFIGURATION)
