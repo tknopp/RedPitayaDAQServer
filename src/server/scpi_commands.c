@@ -452,6 +452,27 @@ static scpi_result_t RP_DAC_GetSamplesPerStep(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+
+static scpi_result_t RP_Counter_SetSamplesPerStep(scpi_t * context) {
+	if(!isSequenceConfigurable()) {
+		return returnSCPIBool(context, false);
+	}
+
+	uint32_t numCounterSamplesPerStep = 0;
+	if (!SCPI_ParamInt32(context, &numCounterSamplesPerStep, TRUE)) {
+		return returnSCPIBool(context, false);
+	}
+
+	setCounterSamplesPerStep(numCounterSamplesPerStep);
+	return returnSCPIBool(context, true);
+}
+
+static scpi_result_t RP_Counter_GetSamplesPerStep(scpi_t * context) {
+	SCPI_ResultInt32(context, getCounterSamplesPerStep());
+
+	return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_DAC_SetNumSlowDACChan(scpi_t * context) {
 	if(!isSequenceConfigurable()) {
 		return returnSCPIBool(context, false);
@@ -1831,6 +1852,9 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:DAC:SEQ:LUT:DOWN", .callback = RP_DAC_SetDownLUT,},
 	{.pattern = "RP:DAC:SEQ:SET", .callback = RP_DAC_SetSequence,},
 	{.pattern = "RP:DAC:SEQ:CLEAR", .callback = RP_DAC_ClearSequence,},
+	// Counter Output
+	{.pattern = "RP:COUnter:SAMPlesperstep", .callback = RP_Counter_SetSamplesPerStep,},
+	{.pattern = "RP:COUnter:SAMPlesperstep?", .callback = RP_Counter_GetSamplesPerStep,},
 	// ADC
 	//{.pattern = "RP:ADC:SlowADC", .callback = RP_ADC_SetNumSlowADCChan,},
 	//{.pattern = "RP:ADC:SlowADC?", .callback = RP_ADC_GetNumSlowADCChan,},

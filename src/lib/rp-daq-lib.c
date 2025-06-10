@@ -182,6 +182,7 @@ int init() {
 	setRAMWriterMode(ADC_MODE_TRIGGERED);
 	setMasterTrigger(OFF);
 	setInstantResetMode(OFF);
+	setCounterSamplesPerStep(0);
 
 	stopTx();
 
@@ -789,6 +790,16 @@ int getSamplesPerStep() {
 
 int setSamplesPerStep(int samples) {
 	*((int32_t *)(cfg + 4)) = samples*getDecimation();
+	return 0;
+}
+
+int getCounterSamplesPerStep()  {
+	int32_t value = *((int32_t *)(cfg + 12));
+	return value/getDecimation();
+}
+
+int setCounterSamplesPerStep(int)  {
+	*((int32_t *)(cfg + 12)) = samples*getDecimation();
 	return 0;
 }
 

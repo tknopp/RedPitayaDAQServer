@@ -17,10 +17,10 @@ module reset_manager #
     inout watchdog,
     inout instant_reset,
     output write_to_ram_aresetn,
-    output write_to_ramwriter_aresetn,
     output keep_alive_aresetn,
     output xadc_aresetn,
-    output fourier_synth_aresetn,
+    output fourier_synth_aresetn_1,
+    output fourier_synth_aresetn_2,
     output pdm_aresetn,
     output bram_aresetn,
     output [31:0] reset_sts,
@@ -31,6 +31,7 @@ module reset_manager #
     input [1:0] ramp_state_1,
     output [1:0] ramping_enable,
     output [1:0] start_ramp_down,
+    output [3:0] pdm_output_on,
     inout reset_ack,
     inout alive_signal,
     inout master_trigger
@@ -69,7 +70,8 @@ reg masterTriggerState = 0;
 
 reg write_to_ram_aresetn_int = 0;
 reg xadc_aresetn_int = 0;
-reg fourier_synth_aresetn_int = 0;
+reg fourier_synth_aresetn_1_int = 0;
+reg fourier_synth_aresetn_2_int = 0;
 reg pdm_aresetn_int = 0;
 reg bram_aresetn_int = 0;
 reg keep_alive_aresetn_int = 0;
@@ -87,6 +89,9 @@ wire instant_reset_out;
 wire reset_ack_out;
 wire alive_signal_out;
 wire master_trigger_out;
+
+reg stateOutputOn, stateOutputOnNext;
+
 
 // Buffer Tristate inputs
 IOBUF #(
@@ -160,6 +165,7 @@ IOBUF #(
 reg trigger_in_int_pre = 0;
 reg trigger_in_int = 0;
 reg sata_trigger_int = 0;
+reg sata_instant_reset_int = 0;
 reg watchdog_in_int_pre = 0;
 reg watchdog_in_int = 0;
 reg instant_reset_in_int_pre = 0;
@@ -225,17 +231,23 @@ begin
     begin
         write_to_ram_aresetn_int <= peripheral_aresetn_int;
         xadc_aresetn_int <= peripheral_aresetn_int;
-        fourier_synth_aresetn_int <= peripheral_aresetn_int;
+        fourier_synth_aresetn_1_int <= peripheral_aresetn_int;
+        fourier_synth_aresetn_2_int <= peripheral_aresetn_int;
         pdm_aresetn_int <= peripheral_aresetn_int;
         bram_aresetn_int <= peripheral_aresetn_int;
+        stateOutputOn <= 1;
+        stateOutputOnNext <= 1;
     end
     else
     begin
+        stateOutputOn <= stateOutputOnNext;
+        
         // Write to RAM
         if (reset_cfg[0] == 0) // continuous mode
         begin
             write_to_ram_aresetn_int <= peripheral_aresetn_int;
-            fourier_synth_aresetn_int <= peripheral_aresetn_int;
+            fourier_synth_aresetn_1_int <= peripheral_aresetn_int;
+            fourier_synth_aresetn_2_int <= peripheral_aresetn_int;
             pdm_aresetn_int <= peripheral_aresetn_int;
         end
         else // trigger mode
@@ -243,15 +255,27 @@ begin
             // ADC
             write_to_ram_aresetn_int <= triggerState;
             // DAC
-            if (instant_reset_in && reset_cfg[3])
+            if ((instant_reset_in_int && reset_cfg[3]) || stateOutputOn == 0)
             begin
-                fourier_synth_aresetn_int <= 1'b0;
-                pdm_aresetn_int <= 1'b0;
+                //fourier_synth_aresetn_int <= 1'b0;
+                fourier_synth_aresetn_1_int = ramping_cfg[0];
+                fourier_synth_aresetn_2_int = ramping_cfg[1];
+                pdm_aresetn_int <= ramping_cfg[1] || ramping_cfg[1];
+                if (triggerState == 1)
+                begin
+                    stateOutputOnNext <= 0;
+                end
+                else // trigger is off, we can enable output again for next round
+                begin
+                    stateOutputOnNext <= 1;
+                end
             end
             else
             begin
-                fourier_synth_aresetn_int <= triggerState;
+                fourier_synth_aresetn_1_int <= triggerState;
+                fourier_synth_aresetn_2_int <= triggerState;
                 pdm_aresetn_int <= triggerState;
+                stateOutputOnNext <= 1;
             end
         end
 
@@ -263,15 +287,15 @@ begin
 end
 
 assign write_to_ram_aresetn = write_to_ram_aresetn_int;
-assign write_to_ramwriter_aresetn = write_to_ram_aresetn_int;
 assign xadc_aresetn = xadc_aresetn_int;
-assign fourier_synth_aresetn = fourier_synth_aresetn_int;
+assign fourier_synth_aresetn_1 = fourier_synth_aresetn_1_int;
+assign fourier_synth_aresetn_2 = fourier_synth_aresetn_2_int;
 assign pdm_aresetn = pdm_aresetn_int;
 assign bram_aresetn = bram_aresetn_int;
 assign keep_alive_aresetn = keep_alive_aresetn_int;
 
 assign reset_sts[0] = peripheral_aresetn_int;
-assign reset_sts[1] = fourier_synth_aresetn_int;
+assign reset_sts[1] = stateOutputOn;
 assign reset_sts[2] = pdm_aresetn_int;
 assign #(0,RAMWRITER_DELAY_TIME) reset_sts[3] = write_to_ram_aresetn_int;
 assign reset_sts[4] = xadc_aresetn_int;
@@ -296,8 +320,10 @@ assign sata_out = triggerState & reset_cfg[2];
 
 assign ramping_enable[0] = ramping_cfg[0];
 assign ramping_enable[1] = ramping_cfg[1];
-assign start_ramp_down[0] = ramping_cfg[2];
-assign start_ramp_down[1] = ramping_cfg[3];
+assign start_ramp_down[0] = ramping_cfg[2] || ~stateOutputOn;
+assign start_ramp_down[1] = ramping_cfg[3] || ~stateOutputOn;
+assign pdm_output_on[3:0] = stateOutputOn;
+
 
 
 endmodule
