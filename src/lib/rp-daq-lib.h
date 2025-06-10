@@ -168,6 +168,10 @@ extern bool counter_trigger_setSelectedChannelType(uint32_t channelType);
 extern char* counter_trigger_getSelectedChannel();
 extern uint32_t counter_trigger_setSelectedChannel(const char* channel);
 
+// Sequence
+extern int getCounterSamplesPerStep();
+extern int setCounterSamplesPerStep(int);
+
 // misc
 extern int getInternalPINNumber(const char*);
 extern char* getPinFromInternalPINNumber(const uint32_t);
