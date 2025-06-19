@@ -45,7 +45,8 @@ correctFilterDelay(rpcv::RedPitayaClusterView, wpStart; kwargs...) = correctFilt
 function correctFilterDelay(wpStart::Int64, dec::Int64; correct_cic_delay::Bool = true, correct_fir_delay::Bool = true)
   cic_stages = 6
   fir_taps = 92
-  cicDelay = correct_cic_delay ? ((((dec/2-1)/2*cic_stages))/dec) : 0
+  dec_div = correct_fir_delay ? 2 : 1
+  cicDelay = correct_cic_delay ? ((((dec/dec_div-1)/2*cic_stages))/dec) : 0
   firDelay = correct_fir_delay ? (((fir_taps-1)/2)/2) : 0
   delay = Int64(round((cicDelay + firDelay), RoundUp))
   correctedWp = wpStart + delay
