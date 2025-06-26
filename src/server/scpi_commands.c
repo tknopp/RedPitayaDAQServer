@@ -1774,7 +1774,7 @@ static scpi_result_t RP_Calib_GetFlags(scpi_t* context) {
 }
 
 static scpi_result_t RP_ResetCalibration(scpi_t * context) {
-	rp_calib_params_t calib_params = calib_GetDefaultParams();
+	rp_calib_params_t calib_params = calib_GetDefaultCalib();
   	calib_WriteParams(calib_params, false);	
 	calib_Init(); // Reload from cache from EEPROM
 	calib_apply();
