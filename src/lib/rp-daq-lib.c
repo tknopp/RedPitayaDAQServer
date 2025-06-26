@@ -446,6 +446,22 @@ int getSignalType(int channel, int component) {
 	return value;
 }
 
+int setCalibDACScale(float value, int channel) {
+	if (channel < 0 || channel > 1) {
+		return -3;
+	}
+
+	int16_t scale = (int16_t)(value*8191.0);
+	if (scale < -8191 || scale >= 8192) {
+		return -2;
+	}
+	// Config scale is stored in first component freq
+	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel);
+	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) scale) << 48) & ~MASK_LOWER_48);
+	*(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel) = register_value;
+	return 0;
+}
+
 int setCalibDACOffset(float value, int channel) {
 	if (channel < 0 || channel > 1) {
 		return -3;
@@ -1601,9 +1617,11 @@ int calib_validate(rp_calib_params_t * calib_params) {
 }
 
 int calib_apply() {
+	setCalibDACScale(1.0, 0);
 	setCalibDACOffset(calib.dac_ch1_offs, 0);
 	setCalibDACLowerLimit(calib.dac_ch1_lower, 0);
 	setCalibDACUpperLimit(calib.dac_ch1_upper, 0);
+	setCalibDACScale(1.0, 1);
 	setCalibDACOffset(calib.dac_ch2_offs, 1);
 	setCalibDACLowerLimit(calib.dac_ch2_lower, 1);
 	setCalibDACUpperLimit(calib.dac_ch2_upper, 1);

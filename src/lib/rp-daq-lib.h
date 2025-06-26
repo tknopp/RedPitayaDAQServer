@@ -97,6 +97,7 @@ extern int setDACMode(int);
 extern int getDACMode();
 extern int getSignalType(int, int);
 extern int setSignalType(int, int, int);
+extern int setCalibDACScale(float, int);
 extern double getCalibDACOffset(int);
 extern int setCalibDACOffset(float, int);
 extern double getCalibDACScale(int, bool);
