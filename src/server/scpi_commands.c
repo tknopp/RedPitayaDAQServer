@@ -138,7 +138,7 @@ static scpi_result_t RP_DAC_SetAmplitude(scpi_t * context) {
 
 	int result = setAmplitudeVolt(amplitude, channel, component);
 	if (result < 0) {
-		return returnSCPIStatus(context, result); //todo: pass integer error codes instead of true/false?
+		return returnSCPIStatus(context, result);
 	}
 
 	printf("channel = %d; component = %d, amplitude = %f\n", channel, component, amplitude);
@@ -169,7 +169,7 @@ static scpi_result_t RP_DAC_SetOffset(scpi_t * context) {
 
 	int result = setOffsetVolt(offset, channel);
 	if (result < 0) {
-		return returnSCPIStatus(context, result);//todo: pass integer error codes instead of true/false?
+		return returnSCPIStatus(context, result);
 	}
 
 	return returnSCPIStatus(context, SUCCESS);
