@@ -1774,10 +1774,11 @@ static scpi_result_t RP_Calib_GetFlags(scpi_t* context) {
 }
 
 static scpi_result_t RP_ResetCalibration(scpi_t * context) {
-  if(calib_LoadFromFactoryZone()){
-	return returnSCPIBool(context, false);
-  }
-  return returnSCPIBool(context, true);
+	rp_calib_params_t calib_params = calib_GetDefaultParams();
+  	calib_WriteParams(calib_params, false);	
+	calib_Init(); // Reload from cache from EEPROM
+	calib_apply();
+  	return returnSCPIBool(context, true);
 }
 
 const scpi_command_t scpi_commands[] = {
