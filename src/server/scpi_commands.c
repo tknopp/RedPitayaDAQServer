@@ -62,6 +62,17 @@ static scpi_result_t returnSCPIBool(scpi_t* context, bool val) {
 	}
 }
 
+static scpi_result_t returnSCPIStatus(scpi_t* context, int val) {
+	if (val) {
+		SCPI_ResultInt(context, val);
+		return SCPI_RES_ERR;
+	}
+	else {
+		SCPI_ResultInt(context, 0);
+		return SCPI_RES_OK;
+	}
+}
+
 static void readyConfigSequence() {
 	if (configSeq == NULL) {
 		configSeq = allocSequence();
@@ -122,17 +133,17 @@ static scpi_result_t RP_DAC_SetAmplitude(scpi_t * context) {
 
 	double amplitude;
 	if (!SCPI_ParamDouble(context, &amplitude, TRUE)) {
-		return returnSCPIBool(context, false); 
+		return returnSCPIStatus(context, -1); 
 	}
 
 	int result = setAmplitudeVolt(amplitude, channel, component);
 	if (result < 0) {
-		return returnSCPIBool(context, false); //todo: pass integer error codes instead of true/false?
+		return returnSCPIStatus(context, result); //todo: pass integer error codes instead of true/false?
 	}
 
 	printf("channel = %d; component = %d, amplitude = %f\n", channel, component, amplitude);
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, 0);
 }
 
 static scpi_result_t RP_DAC_GetOffset(scpi_t * context) {
