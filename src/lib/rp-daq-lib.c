@@ -43,12 +43,11 @@ static const uint32_t ANALOG_IN_MAX_VAL_INTEGER  = 0xFFF;
 // Cached parameter values.
 static rp_calib_params_t calib;
 
-/*
-static int16_t getCalibDACOffset(int channel) {
+double getCalibDACOffset(int channel) {
 	if (channel == 0) 
-		return (int16_t)(calib.dac_ch1_offs*8192.0);
+		return calib.dac_ch1_offs;
 	else if (channel == 1)
-		return (int16_t)(calib.dac_ch1_offs*8192.0);
+		return calib.dac_ch1_offs;
 	else
 		return 0;
 }
@@ -62,7 +61,7 @@ double getCalibDACScale(int channel, bool isPDM) {
 		return calib.dac_ch2_fs;
 	else
 		return 0.0;
-}*/
+}
 
 // Init stuff
 
@@ -218,13 +217,15 @@ uint16_t getAmplitude(int channel, int component) {
 }
 
 int setAmplitudeVolt(double amplitude, int channel, int component) {
-	return setAmplitude((uint16_t)(amplitude*8192.0), channel, component);
+
+	double scaledAmplitude = amplitude*DAC_BASESCALE*getCalibDACScale(channel, false)*2.0; // The factor of two is corrected in the FPGA, but allows more discrete amplitude values
+	if (scaledAmplitude < 0 || scaledAmplitude > 2.0*DAC_BASESCALE){
+		return -2;
+	}
+	return setAmplitude((uint16_t)(scaledAmplitude), channel, component);
 }
 
 int setAmplitude(uint16_t amplitude, int channel, int component) {
-	if(amplitude < 0 || amplitude >= 8192) {
-		return -2;
-	}
 
 	if(channel < 0 || channel > 1) {
 		return -3;
@@ -253,12 +254,15 @@ int16_t getOffset(int channel) {
 }
 
 int setOffsetVolt(double offset, int channel) {
-	return setOffset((int16_t)(offset*8192.0), channel);
-}
-int setOffset(int16_t offset, int channel) {
-	if(offset < -8191 || offset >= 8192) {
+
+	double scaledOffset = offset*DAC_BASESCALE*getCalibDACScale(channel,false);
+	if (scaledOffset < -DAC_BASESCALE || scaledOffset > DAC_BASESCALE){
 		return -2;
 	}
+	return setOffset((int16_t)scaledOffset, channel);
+}
+
+int setOffset(int16_t offset, int channel) {
 
 	if(channel < 0 || channel > 1) {
 		return -3;
@@ -442,31 +446,19 @@ int getSignalType(int channel, int component) {
 	return value;
 }
 
-int setCalibDACScale(float value, int channel) {
-	if (channel < 0 || channel > 1) {
-		return -3;
-	}
-
-	int16_t scale = (int16_t)(value*8191.0);
-	if (scale < -8191 || scale >= 8192) {
-		return -2;
-	}
-	// Config scale is stored in first component freq
-	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel);
-	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) scale) << 48) & ~MASK_LOWER_48);
-	*(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel) = register_value;
-	return 0;
-}
-
 int setCalibDACOffset(float value, int channel) {
 	if (channel < 0 || channel > 1) {
 		return -3;
 	}
-	
-	int16_t offset = (int16_t)(value*8191.0);
-	if (offset < -8191 || offset >= 8192) {
+
+	float scaledValue = value*DAC_BASESCALE*getCalibDACScale(channel,false);
+
+	if (scaledValue < -DAC_BASESCALE || scaledValue > DAC_BASESCALE){
 		return -2;
 	}
+
+	int16_t offset = (int16_t)scaledValue;
+
 	// Config offset is stored in first component phase
 	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel);
 	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) offset) << 48) & ~MASK_LOWER_48);
@@ -479,10 +471,18 @@ int setCalibDACLowerLimit(float value, int channel) {
 		return -3;
 	}
 	
-	int16_t limit = (int16_t)(value*8191.0);
-	if (limit < -8191 || limit >= 8192) {
-		return -2;
+	float scaledValue = (value+getCalibDACOffset(channel))*DAC_BASESCALE*getCalibDACScale(channel,false) ; //todo check if + or -
+
+	if (scaledValue < -DAC_BASESCALE){
+		scaledValue = -DAC_BASESCALE;
 	}
+	else if (scaledValue>DAC_BASESCALE){
+		scaledValue = DAC_BASESCALE;
+	}
+	
+	
+	int16_t limit = (int16_t)scaledValue;
+	
 	// Config lower limit is stored in second component freq
 	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*1 + CHANNEL_OFFSET*channel);
 	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) limit) << 48) & ~MASK_LOWER_48);
@@ -496,10 +496,17 @@ int setCalibDACUpperLimit(float value, int channel) {
 		return -3;
 	}
 	
-	int16_t limit = (int16_t)(value*8191.0);
-	if (limit < -8191 || limit >= 8192) {
-		return -2;
+	float scaledValue = (value+getCalibDACOffset(channel))*DAC_BASESCALE*getCalibDACScale(channel,false); //todo check if + or -
+
+	if (scaledValue < -DAC_BASESCALE){
+		scaledValue = -DAC_BASESCALE;
 	}
+	else if (scaledValue>DAC_BASESCALE){
+		scaledValue = DAC_BASESCALE;
+	}
+	
+	int16_t limit = (int16_t)scaledValue;
+
 	// Config upper limit is stored in second component phase
 	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*1 + CHANNEL_OFFSET*channel);
 	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) limit) << 48) & ~MASK_LOWER_48);
@@ -509,11 +516,14 @@ int setCalibDACUpperLimit(float value, int channel) {
 
 int setArbitraryWaveform(float* values, int channel) {
 	uint32_t *awg_cfg = NULL;
+	float calib_scale = 0.0;
 	if (channel == 0) {
 		awg_cfg = awg_0_cfg;
+		calib_scale = calib.dac_ch1_fs;
 	}
 	else if (channel == 1) {
 		awg_cfg = awg_1_cfg;
+		calib_scale = calib.dac_ch1_fs;
 	}
 	else {
 		return -3;
@@ -522,11 +532,11 @@ int setArbitraryWaveform(float* values, int channel) {
 	int16_t intValues[AWG_BUFF_SIZE];
 	// First prepare and check values
 	for (int i = 0; i< AWG_BUFF_SIZE; i++) {
-		int16_t value = (int16_t)(values[i]*8191.0);
-		if (value < -8191 || value >= 8192) {
+		float scaledValue = values[i]*DAC_BASESCALE*calib_scale;
+		if (scaledValue < -DAC_BASESCALE || scaledValue > DAC_BASESCALE) {
 			return -2;
 		}
-		intValues[i] = value;
+		intValues[i] = (int16_t)scaledValue;
 	}
 
 	for (int i = 0; i < AWG_BUFF_SIZE/2; i++) {
@@ -765,11 +775,13 @@ int setPDMValueVolt(float voltage, int channel, int index) {
 	if(channel >= 2 ) {
 		if (voltage > 1.8) voltage = 1.8;
 		if (voltage < 0) voltage = 0;
-		val = (voltage / 1.8) * 2038.;
+		val = (voltage / 1.8) * 2038.; // todo: check if number is correct? does is matter?
 	} else {
-		if (voltage > 1) voltage = 1;
-		if (voltage < -1) voltage = -1;
-		val = voltage * 8192.;
+		float scaledVoltage = voltage*DAC_BASESCALE*getCalibDACScale(channel,false)/4.0; // the division by 4 is corrected in the FPGA but is necessary to fit the PDM values into 14 bit to not collide with resync bit
+		// clip values to stay within 14-bit signed
+		if (scaledVoltage > 8191) scaledVoltage = 8191.0;
+		if (scaledVoltage < -8191) scaledVoltage = -8191.0;
+		val = (int16_t)scaledVoltage;
 	}
 
 	//printf("set val %04x.\n", val);
@@ -798,7 +810,7 @@ int getCounterSamplesPerStep()  {
 	return value/getDecimation();
 }
 
-int setCounterSamplesPerStep(int)  {
+int setCounterSamplesPerStep(int samples)  {
 	*((int32_t *)(cfg + 12)) = samples*getDecimation();
 	return 0;
 }
@@ -1510,14 +1522,14 @@ rp_calib_params_t getDefaultCalib(){
 		calib.dac_ch1_fs = 1.0;
 		calib.dac_ch2_offs = 0.0;
 		calib.dac_ch2_fs = 1.0;
-		calib.adc_ch1_fs = 1.0/8192.0;
+		calib.adc_ch1_fs = 1.0/32768.0;
 		calib.adc_ch1_offs = 0.0;
-		calib.adc_ch2_fs = 1.0/8192.0;
+		calib.adc_ch2_fs = 1.0/32768.0;
 		calib.adc_ch2_offs = 0.0;
 		calib.dac_ch1_lower = -1.0;
-    calib.dac_ch1_upper = 1.0;
-    calib.dac_ch2_lower = -1.0;
-    calib.dac_ch2_upper = 1.0;
+		calib.dac_ch1_upper = 1.0;
+		calib.dac_ch2_lower = -1.0;
+		calib.dac_ch2_upper = 1.0;
     return calib;
 }
 
@@ -1589,14 +1601,18 @@ int calib_validate(rp_calib_params_t * calib_params) {
 }
 
 int calib_apply() {
-	setCalibDACScale(calib.dac_ch1_fs, 0);
 	setCalibDACOffset(calib.dac_ch1_offs, 0);
 	setCalibDACLowerLimit(calib.dac_ch1_lower, 0);
 	setCalibDACUpperLimit(calib.dac_ch1_upper, 0);
-	setCalibDACScale(calib.dac_ch2_fs, 1);
 	setCalibDACOffset(calib.dac_ch2_offs, 1);
 	setCalibDACLowerLimit(calib.dac_ch2_lower, 1);
 	setCalibDACUpperLimit(calib.dac_ch2_upper, 1);
+
+	// set every output to zero to avoid values written to the registers with old scale factors
+	stopTx();
+	setOffset(0, 0);
+	setOffset(0, 1);
+	
 	return 0;
 }
 
@@ -1635,10 +1651,16 @@ int calib_setDACOffset(rp_calib_params_t * calib_params, float value, int channe
 		return -3;
 	}
 	if (channel == 0) {
+		if(value*calib_params->dac_ch1_fs < -1.0 || value*calib_params->dac_ch1_fs > 1.0){
+			return -2;
+		}
 		calib_params->dac_ch1_offs = value;
 		calib_params->set_flags |= (1 << 5);
 	}
 	else if (channel == 1) {
+		if(value*calib_params->dac_ch2_fs < -1.0 || value*calib_params->dac_ch2_fs > 1.0){
+			return -2;
+		}
 		calib_params->dac_ch2_offs = value;
 		calib_params->set_flags |= (1 << 7);
 	}

@@ -50,7 +50,7 @@ begin
         end
         stateRampUp : begin 
             if (~phaseRising) begin
-                rampTemp0 <= 8191;
+                rampTemp0 <= 8192;
                 stateNext <= stateNormal; 
             end
             else begin
@@ -59,7 +59,7 @@ begin
             end
         end
         stateNormal : begin
-            rampTemp0 <= 8191;
+            rampTemp0 <= 8192;
             if (startRampDown) begin
                 stateNext <= stateRampDown;
             end
@@ -86,7 +86,7 @@ begin
     begin
         rampTemp1 <= rampTemp0;
     end else begin
-        rampTemp1 <= 8191;
+        rampTemp1 <= 8192;
     end
 end
 

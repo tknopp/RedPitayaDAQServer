@@ -35,6 +35,7 @@
 
 #define DAC_MODE_AWG  1
 #define	DAC_MODE_STANDARD   0
+#define DAC_BASESCALE 32767.0
 
 #define SIGNAL_TYPE_SINE 0
 #define SIGNAL_TYPE_SQUARE 1
@@ -56,7 +57,7 @@
 #define DIO_IN 1
 #define DIO_OUT 0
 
-#define CALIB_VERSION 2
+#define CALIB_VERSION 3
 
 extern bool verbose;
 
@@ -96,8 +97,9 @@ extern int setDACMode(int);
 extern int getDACMode();
 extern int getSignalType(int, int);
 extern int setSignalType(int, int, int);
-extern int setCalibDACScale(float, int);
+extern double getCalibDACOffset(int);
 extern int setCalibDACOffset(float, int);
+extern double getCalibDACScale(int, bool);
 extern int setCalibDACLowerLimit(float, int);
 extern int setCalibDACUpperLimit(float, int);
 extern int setArbitraryWaveform(float*, int);

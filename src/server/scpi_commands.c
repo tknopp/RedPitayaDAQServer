@@ -109,7 +109,7 @@ static scpi_result_t RP_DAC_GetAmplitude(scpi_t * context) {
 	int channel = numbers[0];
 	int component = numbers[1];
 
-	SCPI_ResultDouble(context, getAmplitude(channel, component) / 8192.0 );
+	SCPI_ResultDouble(context, getAmplitude(channel, component) / DAC_BASESCALE / getCalibDACScale(channel,false) / 2.0);
 
 	return SCPI_RES_OK;
 }
@@ -122,12 +122,12 @@ static scpi_result_t RP_DAC_SetAmplitude(scpi_t * context) {
 
 	double amplitude;
 	if (!SCPI_ParamDouble(context, &amplitude, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIBool(context, false); 
 	}
 
 	int result = setAmplitudeVolt(amplitude, channel, component);
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIBool(context, false); //todo: pass integer error codes instead of true/false?
 	}
 
 	printf("channel = %d; component = %d, amplitude = %f\n", channel, component, amplitude);
@@ -140,7 +140,7 @@ static scpi_result_t RP_DAC_GetOffset(scpi_t * context) {
 	SCPI_CommandNumbers(context, numbers, 1, 1);
 	int channel = numbers[0];
 
-	double offset = getOffset(channel)/8192.0;
+	double offset = getOffset(channel)/DAC_BASESCALE/getCalibDACScale(channel,false);
 	SCPI_ResultDouble(context, offset);
 
 	return SCPI_RES_OK;
@@ -158,7 +158,7 @@ static scpi_result_t RP_DAC_SetOffset(scpi_t * context) {
 
 	int result = setOffsetVolt(offset, channel);
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIBool(context, false);//todo: pass integer error codes instead of true/false?
 	}
 
 	return returnSCPIBool(context, true);

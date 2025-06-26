@@ -14,15 +14,15 @@ module signal_composer(
     input signed [15:0] seq,
     input disable_dac,
     output signal_valid,
-    output signed [15:0] signal_out
+    output signed [23:0] signal_out
     );
 
-reg signed [15:0] signal_int = 0;
-reg signed [15:0] signal_temp0 = 0;
-reg signed [15:0] signal_temp1 = 0;
-reg signed [15:0] signal_temp2 = 0;
-reg signed [15:0] signal_temp3 = 0;
-reg signed [15:0] signal_temp4 = 0;
+reg signed [23:0] signal_int = 0;
+reg signed [23:0] signal_temp0 = 0;
+reg signed [23:0] signal_temp1 = 0;
+reg signed [23:0] signal_temp2 = 0;
+reg signed [23:0] signal_temp3 = 0;
+reg signed [23:0] signal_temp4 = 0;
 reg valid_int = 0;
 reg valid_temp0 = 0;
 reg valid_temp1 = 0;
