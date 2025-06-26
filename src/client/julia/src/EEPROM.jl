@@ -7,9 +7,6 @@ Store calibration DAC offset `val` for given channel into the RedPitayas EEPROM.
 This value is used by the server to offset the output voltage. Absolute value has to be smaller than 1.0 V. 
 """
 function calibDACOffset!(rp::RedPitaya, channel::Integer, val)
-  if abs(val) > 1.0
-    error("Absolute value of $val is larger than 1.0 V!")
-  end
   return query(rp, scpiCommand(calibDACOffset!, channel, val), scpiReturn(calibDACOffset!))
 end
 scpiCommand(::typeof(calibDACOffset!), channel::Integer, val) = string("RP:CALib:DAC:CH", Int(channel) - 1, ":OFF $(Float32(val))")
@@ -110,9 +107,6 @@ Absolute value has to be smaller than 1.0 V.
 See also [convertSamplesToPeriods!](@ref),[convertSamplesToFrames](@ref).
 """
 function calibADCOffset!(rp::RedPitaya, channel::Integer, val)
-  if abs(val) > 1.0
-    error("Absolute value of $val is larger than 1.0 V!")
-  end
   rp.calib[2, channel] = Float32(val)
   return query(rp, scpiCommand(calibADCOffset!, channel, val), scpiReturn(calibADCOffset!))
 end

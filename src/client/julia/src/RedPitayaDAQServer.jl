@@ -138,6 +138,16 @@ function query(rp::RedPitaya, cmd::String, T::Type, timeout::Number=getTimeout()
   a = query(rp, cmd, timeout)
   if T == String
     return a[2:end-1] # Strings are wrapped like this: "\"OUT\""
+  elseif T == Bool
+    res = parse(Int, a)
+    if res <= 0
+      if res < 0
+        # TODO: output human readable error messages/logs
+        @error "Error code: $res"
+      end
+      return false
+    else
+      return true
   else
     parse(T, a)
   end

@@ -129,9 +129,6 @@ julia> amplitudeDAC(rp, 1, 1)
 ```
 """
 function amplitudeDAC!(rp::RedPitaya, channel, component, value)
-  if value > 1.0
-    error("$value is larger than 1.0 V!")
-  end
   command = scpiCommand(amplitudeDAC!, channel, component, value)
   return query(rp, command, Bool)
 end
@@ -177,27 +174,18 @@ julia> offsetDAC(rp, 1)
 ```
 """
 function offsetDAC!(rp::RedPitaya, channel, value)
-  if value > 1.0
-    error("$value is larger than 1.0 V!")
-  end
   command = scpiCommand(offsetDAC!, channel, value)
   return query(rp, command, Bool)
 end
 scpiCommand(::typeof(offsetDAC!), channel, value) = string("RP:DAC:CH", Int(channel)-1, ":OFF ", Float64(value))
 scpiReturn(::typeof(offsetDAC!)) = Bool
 function offsetDACSeq!(rp::RedPitaya, channel, value)
-  if value > 1.0
-    error("$value is larger than 1.0 V!")
-  end
   command = scpiCommand(offsetDACSeq!, channel, value)
   return query(rp, command, Bool)
 end
 scpiCommand(::typeof(offsetDACSeq!), channel, value) = string("RP:DAC:SEQ:CH", Int(channel)-1, ":OFF ", Float64(value))
 scpiReturn(::typeof(offsetDACSeq!)) = Bool
 function offsetDACSeq!(config::DACConfig, channel, value)
-  if value > 1.0
-    error("$value is larger than 1.0 V!")
-  end
   config.offsets[channel] = value
 end
 
