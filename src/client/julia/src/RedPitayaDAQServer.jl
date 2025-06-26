@@ -148,6 +148,7 @@ function query(rp::RedPitaya, cmd::String, T::Type, timeout::Number=getTimeout()
       return false
     else
       return true
+    end
   else
     parse(T, a)
   end
