@@ -1,4 +1,4 @@
-export calibDACOffset, calibDACOffset!, calibADCScale, calibADCScale!, calibADCOffset, calibADCOffset!, updateCalib!, calibDACScale!, calibDACScale, calibFlags, calibDACLowerLimit, calibDACLowerLimit!, calibDACUpperLimit, calibDACUpperLimit!, calibDACLimit!
+export calibDACOffset, calibDACOffset!, calibADCScale, calibADCScale!, calibADCOffset, calibADCOffset!, updateCalib!, calibDACScale!, calibDACScale, calibFlags, calibDACLowerLimit, calibDACLowerLimit!, calibDACUpperLimit, calibDACUpperLimit!, calibDACLimit!, calibReset!
 
 """
     calibDACOffset!(rp::RedPitaya, channel::Integer, val)
@@ -151,6 +151,10 @@ scpiReturn(::typeof(calibADCScale)) = Float64
 calibFlags(rp::RedPitaya) = query(rp, scpiCommand(calibFlags), scpiReturn(calibFlags))
 scpiCommand(::typeof(calibFlags)) = "RP:CALib:FLAGs"
 scpiReturn(::typeof(calibFlags)) = Int64
+
+calibReset!(rp::RedPitaya) = query(rp, scpiCommand(calibReset!), scpiReturn(calibReset!))
+scpiCommand(::typeof(calibReset!)) = "RP:CALib:RESet"
+scpiReturn(::typeof(calibReset!)) = Bool
 
 """
     updateCalib!(rp::RedPitaya)

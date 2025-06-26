@@ -1774,8 +1774,10 @@ static scpi_result_t RP_Calib_GetFlags(scpi_t* context) {
 }
 
 static scpi_result_t RP_ResetCalibration(scpi_t * context) {
-  calib_LoadFromFactoryZone();
-  return SCPI_RES_OK;
+  if(calib_LoadFromFactoryZone()){
+	return returnSCPIBool(context, false);
+  }
+  return returnSCPIBool(context, true);
 }
 
 const scpi_command_t scpi_commands[] = {
