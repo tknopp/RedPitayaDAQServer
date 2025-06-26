@@ -127,6 +127,15 @@ function query(rp::RedPitaya, cmd::String, timeout::Number=getTimeout())
   receive(rp, timeout)
 end
 
+const ERROR_CODES = Dict(
+  -1=>"Unspecified Error",
+  -2=>"Value invalid or out of range!",
+  -3=>"Channel index out of range!",
+  -4=>"Component index out of range!",
+  -5=>"Server is in invalid mode!",
+  -6=>"Error during parsing of the SCPI command!",
+)
+
 """
     query(rp::RedPitaya, cmd, T::Type [timeout = 5.0, N = 100])
 
@@ -143,7 +152,7 @@ function query(rp::RedPitaya, cmd::String, T::Type, timeout::Number=getTimeout()
     if res <= 0
       if res < 0
         # TODO: output human readable error messages/logs
-        @error "Error code: $res"
+        @error ERROR_CODES[res]
       end
       return false
     else

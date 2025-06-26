@@ -59,6 +59,14 @@
 
 #define CALIB_VERSION 3
 
+#define SUCCESS 1
+#define INVALID_VALUE -2
+#define INVALID_CHANNEL -3
+#define INVALID_COMPONENT -4
+#define INVALID_MODE -5
+#define INVALID_SCPI -6
+#define INVALID_SEQUENCESTATE -7
+
 extern bool verbose;
 
 extern int mmapfd;

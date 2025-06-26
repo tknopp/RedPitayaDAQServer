@@ -102,16 +102,16 @@ static scpi_result_t RP_SetServerMode(scpi_t * context) {
 	int32_t tmpMode;
 	
 	if (!SCPI_ParamChoice(context, server_modes, &tmpMode, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI);
 	}
 
 	serverMode_t current = getServerMode();
 	if (current != TRANSMISSION && (tmpMode == CONFIGURATION || tmpMode == ACQUISITION)) {
 		setServerMode((serverMode_t) tmpMode);
-		return returnSCPIBool(context, true);
+		return returnSCPIStatus(context, SUCCESS);
 	}
 
-	return returnSCPIBool(context, false);
+	return returnSCPIStatus(context, INVALID_MODE);
 }
 
 static scpi_result_t RP_DAC_GetAmplitude(scpi_t * context) {
@@ -133,7 +133,7 @@ static scpi_result_t RP_DAC_SetAmplitude(scpi_t * context) {
 
 	double amplitude;
 	if (!SCPI_ParamDouble(context, &amplitude, TRUE)) {
-		return returnSCPIStatus(context, -1); 
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = setAmplitudeVolt(amplitude, channel, component);
@@ -143,7 +143,7 @@ static scpi_result_t RP_DAC_SetAmplitude(scpi_t * context) {
 
 	printf("channel = %d; component = %d, amplitude = %f\n", channel, component, amplitude);
 
-	return returnSCPIStatus(context, 0);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_DAC_GetOffset(scpi_t * context) {
@@ -164,15 +164,15 @@ static scpi_result_t RP_DAC_SetOffset(scpi_t * context) {
 
 	double offset;
 	if (!SCPI_ParamDouble(context, &offset, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = setOffsetVolt(offset, channel);
 	if (result < 0) {
-		return returnSCPIBool(context, false);//todo: pass integer error codes instead of true/false?
+		return returnSCPIStatus(context, result);//todo: pass integer error codes instead of true/false?
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 
@@ -183,14 +183,14 @@ static scpi_result_t RP_DAC_SetRampingFast(scpi_t * context) {
 
 	double period;
 	if (!SCPI_ParamDouble(context, &period, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = setRampingFrequency(1/period, channel);
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_DAC_GetRampingFast(scpi_t * context) {
@@ -223,15 +223,15 @@ static scpi_result_t RP_DAC_SetFrequency(scpi_t * context) {
 
 	double frequency;
 	if (!SCPI_ParamDouble(context, &frequency, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = setFrequency(frequency, channel, component);
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_DAC_GetPhase(scpi_t * context) {
@@ -253,16 +253,16 @@ static scpi_result_t RP_DAC_SetPhase(scpi_t * context) {
 
 	double phase;
 	if (!SCPI_ParamDouble(context, &phase, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 	printf("channel = %d; component = %d, phase = %f\n", channel, component, phase);
 
 	int result = setPhase(phase, channel, component);
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 scpi_choice_def_t DAC_modes[] = {
@@ -273,21 +273,21 @@ scpi_choice_def_t DAC_modes[] = {
 
 static scpi_result_t RP_DAC_SetDACMode(scpi_t * context) {
 	if (getServerMode() != CONFIGURATION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	int32_t DAC_mode_selection;
 
 	if (!SCPI_ParamChoice(context, DAC_modes, &DAC_mode_selection, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = setDACMode(DAC_mode_selection);
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_DAC_GetDACMode(scpi_t * context) {
@@ -307,21 +307,21 @@ scpi_choice_def_t trigger_modes[] = {
 
 static scpi_result_t RP_DAC_SetTriggerMode(scpi_t * context) {
 	if (getServerMode() != CONFIGURATION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	int32_t trigger_mode_selection;
 
 	if (!SCPI_ParamChoice(context, trigger_modes, &trigger_mode_selection, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = setTriggerMode(trigger_mode_selection);
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_DAC_GetTriggerMode(scpi_t * context) {
@@ -335,21 +335,21 @@ static scpi_result_t RP_DAC_GetTriggerMode(scpi_t * context) {
 
 static scpi_result_t RP_DAC_SetTriggerPropagation(scpi_t * context) {
 	if (getServerMode() != CONFIGURATION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	int32_t trigger_mode_selection;
 
 	if (!SCPI_ParamChoice(context, onoff_modes, &trigger_mode_selection, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = setTriggerPropagation(trigger_mode_selection);
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_DAC_GetTriggerPropagation(scpi_t * context) {
@@ -378,15 +378,15 @@ static scpi_result_t RP_DAC_SetSignalType(scpi_t * context) {
 	int32_t signal_type_selection;
 
 	if (!SCPI_ParamChoice(context, signal_types, &signal_type_selection, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = setSignalType(signal_type_selection, channel, component);
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_DAC_GetSignalType(scpi_t * context) {
@@ -416,22 +416,22 @@ static scpi_result_t RP_DAC_SetArbitraryWaveform(scpi_t * context) {
 
 static scpi_result_t RP_ADC_SetDecimation(scpi_t * context) {
 	if (getServerMode() != CONFIGURATION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	uint32_t decimation;
 	if (!SCPI_ParamInt32(context, &decimation, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	printf("set dec = %d \n", decimation);
 	int result = setDecimation((uint16_t)decimation);
 	if (result < 0) {
 		printf("Could not set decimation!");
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_ADC_GetDecimation(scpi_t * context) {
@@ -444,17 +444,17 @@ static scpi_result_t RP_ADC_GetDecimation(scpi_t * context) {
 
 static scpi_result_t RP_DAC_SetSamplesPerStep(scpi_t * context) {
 	if(!isSequenceConfigurable()) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SEQUENCESTATE);
 	}
 
 	if (!SCPI_ParamInt32(context, &numSamplesPerStep, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	// Adapt the slowDAC frequency to match the step length
 	setSamplesPerStep(numSamplesPerStep);
 	seqState = CONFIG;
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_DAC_GetSamplesPerStep(scpi_t * context) {
@@ -466,16 +466,16 @@ static scpi_result_t RP_DAC_GetSamplesPerStep(scpi_t * context) {
 
 static scpi_result_t RP_Counter_SetSamplesPerStep(scpi_t * context) {
 	if(!isSequenceConfigurable()) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SEQUENCESTATE);
 	}
 
 	uint32_t numCounterSamplesPerStep = 0;
 	if (!SCPI_ParamInt32(context, &numCounterSamplesPerStep, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	setCounterSamplesPerStep(numCounterSamplesPerStep);
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_Counter_GetSamplesPerStep(scpi_t * context) {
@@ -486,17 +486,17 @@ static scpi_result_t RP_Counter_GetSamplesPerStep(scpi_t * context) {
 
 static scpi_result_t RP_DAC_SetNumSlowDACChan(scpi_t * context) {
 	if(!isSequenceConfigurable()) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SEQUENCESTATE);
 	}
 
 	readyConfigSequence();
 
 	if (!SCPI_ParamInt32(context, &numSlowDACChan, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	seqState = CONFIG;
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_DAC_GetNumSlowDACChan(scpi_t * context) {
@@ -527,15 +527,15 @@ static scpi_result_t RP_ADC_SlowDACInterpolation(scpi_t * context) {
 
 static scpi_result_t RP_ADC_SetNumSlowADCChan(scpi_t * context) {
 	if(!isSequenceConfigurable()) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SEQUENCESTATE);
 	}
 
 	if (!SCPI_ParamInt32(context, &numSlowADCChan, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 	
 	seqState = CONFIG;
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_ADC_GetNumSlowADCChan(scpi_t * context) {
@@ -557,15 +557,15 @@ static scpi_result_t RP_ADC_GetBufferSize(scpi_t * context) {
 static scpi_result_t RP_ADC_GetData(scpi_t * context) {
 	// Reading is only possible while an acquisition is running
 	if (getServerMode() != ACQUISITION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	if (!SCPI_ParamInt64(context, &reqWP, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	if (!SCPI_ParamInt64(context, &numSamples, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	transmissionState = SIMPLE;
@@ -574,19 +574,19 @@ static scpi_result_t RP_ADC_GetData(scpi_t * context) {
 
 static scpi_result_t RP_ADC_GetPipelinedData(scpi_t * context) {
 	if (getServerMode() != ACQUISITION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 	
 	if (!SCPI_ParamInt64(context, &reqWP, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	if (!SCPI_ParamInt64(context, &numSamples, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	if (!SCPI_ParamInt64(context, &chunkSize, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	transmissionState = PIPELINE;
@@ -652,7 +652,7 @@ static scpi_result_t RP_DIO_GetDIODirection(scpi_t * context, bool pinSide) {
 	int result = getDIODirection(pin);
 
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
 	const char* name;
@@ -679,15 +679,15 @@ static scpi_result_t RP_DIO_SetDIODirection(scpi_t * context, bool pinSide) {
 
 	int32_t DIO_pin_output_selection;
 	if (!SCPI_ParamChoice(context, inout_modes, &DIO_pin_output_selection, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = setDIODirection(pin, DIO_pin_output_selection);
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_DIO_SetDIODirectionN(scpi_t * context) {
@@ -707,15 +707,15 @@ static scpi_result_t RP_DIO_SetDIOOutput(scpi_t * context, bool pinSide) {
 
 	int32_t DIO_pin_output_selection;
 	if (!SCPI_ParamChoice(context, onoff_modes, &DIO_pin_output_selection, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = setDIO(pin, DIO_pin_output_selection);
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_DIO_SetDIOOutputN(scpi_t * context) {
@@ -736,7 +736,7 @@ static scpi_result_t RP_DIO_GetDIOOutput(scpi_t * context, bool pinSide) {
 	int result = getDIO(pin);
 
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
 	const char* name;
@@ -766,15 +766,15 @@ static scpi_result_t RP_DIO_SetDIOHBridge(scpi_t * context, bool pinSide) {
 
 	int32_t DIO_pin_output_selection;
 	if (!SCPI_ParamChoice(context, onoff_modes, &DIO_pin_output_selection, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = setDIOHBridge(pin, DIO_pin_output_selection);
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_DIO_SetDIOHBridgeN(scpi_t * context) {
@@ -795,7 +795,7 @@ static scpi_result_t RP_DIO_GetDIOHBridge(scpi_t * context, bool pinSide) {
 	int result = getDIOHBridge(pin);
 
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
 	const char* name;
@@ -829,15 +829,15 @@ static scpi_result_t RP_SetWatchdogMode(scpi_t * context) {
 	int32_t watchdog_mode_selection;
 
 	if (!SCPI_ParamChoice(context, onoff_modes, &watchdog_mode_selection, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = setWatchdogMode(watchdog_mode_selection);
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 scpi_choice_def_t RAM_writer_modes[] = {
@@ -857,21 +857,21 @@ static scpi_result_t RP_GetRAMWriterMode(scpi_t * context) {
 
 static scpi_result_t RP_SetRAMWriterMode(scpi_t * context) {
 	if (getServerMode() != CONFIGURATION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	int32_t RAM_writer_mode_selection;
 
 	if (!SCPI_ParamChoice(context, RAM_writer_modes, &RAM_writer_mode_selection, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = setRAMWriterMode(RAM_writer_mode_selection);
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_GetMasterTrigger(scpi_t * context) {
@@ -885,13 +885,13 @@ static scpi_result_t RP_GetMasterTrigger(scpi_t * context) {
 
 static scpi_result_t RP_SetMasterTrigger(scpi_t * context) {
 	if (getServerMode() != ACQUISITION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	int32_t master_trigger_selection;
 
 	if (!SCPI_ParamChoice(context, onoff_modes, &master_trigger_selection, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = setMasterTrigger(master_trigger_selection);
@@ -900,15 +900,15 @@ static scpi_result_t RP_SetMasterTrigger(scpi_t * context) {
 		setEnableRampDown(OFF, 1);
 	}
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_DAC_SetEnableRamping(scpi_t *context) {
 	if (getServerMode() != CONFIGURATION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	int32_t numbers[1];
@@ -918,15 +918,15 @@ static scpi_result_t RP_DAC_SetEnableRamping(scpi_t *context) {
 	int32_t ramping_selection;
 
 	if (!SCPI_ParamChoice(context, onoff_modes, &ramping_selection, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = setEnableRamping(ramping_selection, channel);
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 
 }
 
@@ -945,7 +945,7 @@ static scpi_result_t RP_DAC_GetEnableRamping(scpi_t *context) {
 
 static scpi_result_t RP_DAC_SetEnableRampDown(scpi_t *context) {
 	if (!(getServerMode() == ACQUISITION || getServerMode() == TRANSMISSION)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	int32_t numbers[1];
@@ -955,15 +955,15 @@ static scpi_result_t RP_DAC_SetEnableRampDown(scpi_t *context) {
 	int32_t ramping_selection;
 
 	if (!SCPI_ParamChoice(context, onoff_modes, &ramping_selection, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = setEnableRampDown(ramping_selection, channel);
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 
 }
 
@@ -997,13 +997,13 @@ static scpi_result_t RP_GetKeepAliveReset(scpi_t * context) {
 
 static scpi_result_t RP_SetKeepAliveReset(scpi_t * context) {
 	if (getServerMode() != ACQUISITION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	int32_t param;
 
 	if (!SCPI_ParamChoice(context, onoff_modes, &param, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = setKeepAliveReset(param);
@@ -1012,10 +1012,10 @@ static scpi_result_t RP_SetKeepAliveReset(scpi_t * context) {
 		setEnableRampDown(OFF, 1);
 	}
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 
@@ -1033,15 +1033,15 @@ static scpi_result_t RP_SetInstantResetMode(scpi_t * context) {
 	int32_t instant_reset_mode_selection;
 
 	if (!SCPI_ParamChoice(context, onoff_modes, &instant_reset_mode_selection, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = setInstantResetMode(instant_reset_mode_selection);
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_PeripheralAResetN(scpi_t * context) {
@@ -1092,12 +1092,12 @@ static scpi_result_t RP_DAC_SetValueLUT(scpi_t * context) {
 
 	int stepsPerRepetition = 0;
 	if (!SCPI_ParamInt32(context, &stepsPerRepetition, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int repetitions = 0;
 	if (!SCPI_ParamInt32(context, &repetitions, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	if(numSlowDACChan > 0 && isSequenceConfigurable()) {
@@ -1121,10 +1121,10 @@ static scpi_result_t RP_DAC_SetValueLUT(scpi_t * context) {
 		configSeq->numRepetitions = repetitions;
 		configSeq->numStepsPerRepetition = stepsPerRepetition;
 		seqState = CONFIG;
-		return returnSCPIBool(context, true);
+		return returnSCPIStatus(context, SUCCESS);
 	}
 	else {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SEQUENCESTATE);
 	}
 }
 
@@ -1143,10 +1143,10 @@ static scpi_result_t RP_DAC_SetEnableLUT(scpi_t * context) {
 		int n = readAll(newdatasockfd, configSeq->enableLUT, numSlowDACChan * configSeq->numStepsPerRepetition * sizeof(bool));
 		seqState = CONFIG;
 		if (n < 0) perror("ERROR reading from socket");
-		return returnSCPIBool(context, true);
+		return returnSCPIStatus(context, SUCCESS);
 	}
 	else {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SEQUENCESTATE);
 	}
 }
 
@@ -1167,10 +1167,10 @@ static scpi_result_t RP_DAC_SetResyncLUT(scpi_t * context) {
 		int n = readAll(newdatasockfd, configSeq->resyncLUT, numChan * configSeq->numStepsPerRepetition * sizeof(bool));
 		seqState = CONFIG;
 		if (n < 0) perror("ERROR reading from socket");
-		return returnSCPIBool(context, true);
+		return returnSCPIStatus(context, SUCCESS);
 	}
 	else {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SEQUENCESTATE);
 	}
 
 }
@@ -1181,12 +1181,12 @@ static scpi_result_t RP_DAC_SetUpLUT(scpi_t * context) {
 
 	int stepsPerRepetition = 0;
 	if (!SCPI_ParamInt32(context, &stepsPerRepetition, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int repetitions = 0;
 	if (!SCPI_ParamInt32(context, &repetitions, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	if(numSlowDACChan > 0 && isSequenceConfigurable()) {
@@ -1207,10 +1207,10 @@ static scpi_result_t RP_DAC_SetUpLUT(scpi_t * context) {
 		ramp->numStepsPerRepetition = stepsPerRepetition;
 		configSeq->rampUp = ramp;
 		seqState = CONFIG;
-		return returnSCPIBool(context, true);
+		return returnSCPIStatus(context, SUCCESS);
 	}
 	else {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SEQUENCESTATE);
 	}
 }
 
@@ -1219,12 +1219,12 @@ static scpi_result_t RP_DAC_SetDownLUT(scpi_t * context) {
 
 	int stepsPerRepetition = 0;
 	if (!SCPI_ParamInt32(context, &stepsPerRepetition, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int repetitions = 0;
 	if (!SCPI_ParamInt32(context, &repetitions, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	if(numSlowDACChan > 0 && isSequenceConfigurable()) {
@@ -1245,16 +1245,16 @@ static scpi_result_t RP_DAC_SetDownLUT(scpi_t * context) {
 		ramp->numStepsPerRepetition = stepsPerRepetition;
 		configSeq->rampDown = ramp;
 		seqState = CONFIG;
-		return returnSCPIBool(context, true);
+		return returnSCPIStatus(context, SUCCESS);
 	}
 	else {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SEQUENCESTATE);
 	}
 }
 
 static scpi_result_t RP_DAC_SetSequence(scpi_t * context) {
 	if (!isSequenceConfigurable()) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SEQUENCESTATE);
 	}
 
 	if (configSeq != NULL) {
@@ -1270,11 +1270,11 @@ static scpi_result_t RP_DAC_SetSequence(scpi_t * context) {
 
 static scpi_result_t RP_DAC_ClearSequence(scpi_t * context) {
 	if (!isSequenceConfigurable()) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SEQUENCESTATE);
 	}
 	clearSequence();
 	printf("Cleared Sequence\n");
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 
@@ -1283,7 +1283,10 @@ static scpi_result_t RP_DAC_PrepareSequence(scpi_t * context) {
 	if (isSequenceConfigurable() ) {
 		result = prepareSequence();
 	}
-	return returnSCPIBool(context, result);
+	else {
+		return returnSCPIStatus(context, INVALID_SEQUENCESTATE);
+	}
+	return returnSCPIBool(context, result);	
 }
 
 static scpi_result_t RP_GetOverwrittenStatus(scpi_t * context) {
@@ -1336,35 +1339,35 @@ static scpi_result_t RP_CounterTrigger_Enable(scpi_t* context) {
 	int32_t param;
 
 	if (!SCPI_ParamChoice(context, onoff_modes, &param, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = counter_trigger_setEnabled(param);
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_CounterTrigger_SetPresamples(scpi_t * context) {
 	if (getServerMode() != CONFIGURATION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	uint32_t presamples;
 	if (!SCPI_ParamUInt32(context, &presamples, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	printf("set presamples = %d \n", presamples);
 	int result = counter_trigger_setPresamples(presamples);
 	if (result < 0) {
 		printf("Could not set presamples!\n");
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_CounterTrigger_GetPresamples(scpi_t * context) {
@@ -1382,7 +1385,7 @@ static scpi_result_t RP_CounterTrigger_Arm(scpi_t * context) {
 	int32_t param;
 
 	if (!SCPI_ParamChoice(context, onoff_modes, &param, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result;
@@ -1395,25 +1398,25 @@ static scpi_result_t RP_CounterTrigger_Arm(scpi_t * context) {
 	}
 	
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_CounterTrigger_SetReset(scpi_t* context) {
 	int32_t param;
 
 	if (!SCPI_ParamChoice(context, onoff_modes, &param, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	int result = counter_trigger_setReset(param);
 	if (result < 0) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_CounterTrigger_GetReset(scpi_t* context) {
@@ -1434,22 +1437,22 @@ static scpi_result_t RP_CounterTrigger_GetLastCounter(scpi_t * context) {
 
 static scpi_result_t RP_CounterTrigger_SetReferenceCounter(scpi_t * context) {
 	if (getServerMode() != CONFIGURATION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	uint32_t reference_counter;
 	if (!SCPI_ParamUInt32(context, &reference_counter, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	printf("set reference_counter = %d \n", reference_counter);
 	int result = counter_trigger_setReferenceCounter(reference_counter);
 	if (result < 0) {
 		printf("Could not set reference_counter!\n");
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_CounterTrigger_GetReferenceCounter(scpi_t * context) {
@@ -1467,22 +1470,22 @@ scpi_choice_def_t source_types[] = {
 
 static scpi_result_t RP_CounterTrigger_SetSourceType(scpi_t * context) {
 	if (getServerMode() != CONFIGURATION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	uint32_t source_type; // 0: DIO; 1: ADC
 	if (!SCPI_ParamChoice(context, source_types, &source_type, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	printf("set source_type = %d \n", source_type);
 	int result = counter_trigger_setSelectedChannelType(source_type);
 	if (result < 0) {
 		printf("Could not set source_type!\n");
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_CounterTrigger_GetSourceType(scpi_t * context) {
@@ -1496,23 +1499,23 @@ static scpi_result_t RP_CounterTrigger_GetSourceType(scpi_t * context) {
 
 static scpi_result_t RP_CounterTrigger_SetSourceChannel(scpi_t * context) {
 	if (getServerMode() != CONFIGURATION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	const char * source_channel;
 	uint32_t len;
 	if (!SCPI_ParamCharacters(context, &source_channel, &len, TRUE)) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_SCPI); 
 	}
 
 	printf("set source_channel = %s \n", source_channel);
 	int result = counter_trigger_setSelectedChannel(source_channel);
 	if (result < 0) {
 		printf("Could not set source_channel!\n");
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, result);
 	}
 
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_CounterTrigger_GetSourceChannel(scpi_t * context) {
@@ -1546,7 +1549,7 @@ static scpi_result_t RP_Calib_DAC_GetOffset(scpi_t* context) {
 
 static scpi_result_t RP_Calib_DAC_SetOffset(scpi_t* context) {
 	if (getServerMode() != CONFIGURATION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	int32_t numbers[1];
@@ -1556,15 +1559,19 @@ static scpi_result_t RP_Calib_DAC_SetOffset(scpi_t* context) {
 	rp_calib_params_t calib_params = calib_GetParams();
 	float calibOffset;
 
-	SCPI_ParamFloat(context, &calibOffset, true);
-	if (calib_setDACOffset(&calib_params, calibOffset, channel)) {
- 		return returnSCPIBool(context, false);
+	if(!SCPI_ParamFloat(context, &calibOffset, true)){
+		return returnSCPIStatus(context, INVALID_SCPI); 
+	}
+
+	int result = calib_setDACOffset(&calib_params, calibOffset, channel);
+	if (result) {
+ 		return returnSCPIStatus(context, result);
 	}
 
 	calib_WriteParams(calib_params, false);	
 	calib_Init(); // Reload from cache from EEPROM
 	calib_apply();
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_Calib_DAC_GetScale(scpi_t* context) {
@@ -1588,7 +1595,7 @@ static scpi_result_t RP_Calib_DAC_GetScale(scpi_t* context) {
 
 static scpi_result_t RP_Calib_DAC_SetScale(scpi_t* context) {
 	if (getServerMode() != CONFIGURATION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	int32_t numbers[1];
@@ -1598,15 +1605,19 @@ static scpi_result_t RP_Calib_DAC_SetScale(scpi_t* context) {
 	rp_calib_params_t calib_params = calib_GetParams();
 	float scale;
 
-	SCPI_ParamFloat(context, &scale, true);
-	if (calib_setDACScale(&calib_params, scale, channel)) {
- 		return returnSCPIBool(context, false);
+	if(!SCPI_ParamFloat(context, &scale, true)){
+		return returnSCPIStatus(context, INVALID_SCPI); 
+	}
+
+	int result = calib_setDACScale(&calib_params, scale, channel);
+	if (result) {
+ 		return returnSCPIStatus(context, result);
 	}
 
 	calib_WriteParams(calib_params, false);	
 	calib_Init(); // Reload from cache from EEPROM
 	calib_apply();
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_Calib_DAC_GetLowerLimit(scpi_t* context) {
@@ -1630,7 +1641,7 @@ static scpi_result_t RP_Calib_DAC_GetLowerLimit(scpi_t* context) {
 
 static scpi_result_t RP_Calib_DAC_SetLowerLimit(scpi_t* context) {
 	if (getServerMode() != CONFIGURATION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	int32_t numbers[1];
@@ -1640,15 +1651,19 @@ static scpi_result_t RP_Calib_DAC_SetLowerLimit(scpi_t* context) {
 	rp_calib_params_t calib_params = calib_GetParams();
 	float limit;
 
-	SCPI_ParamFloat(context, &limit, true);
-	if (calib_setDACLowerLimit(&calib_params, limit, channel)) {
- 		return returnSCPIBool(context, false);
+	if(!SCPI_ParamFloat(context, &limit, true)){
+		return returnSCPIStatus(context, INVALID_SCPI); 
+	}
+
+	int result = calib_setDACLowerLimit(&calib_params, limit, channel);
+	if (result) {
+ 		return returnSCPIStatus(context, result);
 	}
 
 	calib_WriteParams(calib_params, false);	
 	calib_Init(); // Reload from cache from EEPROM
 	calib_apply();
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_Calib_DAC_GetUpperLimit(scpi_t* context) {
@@ -1672,7 +1687,7 @@ static scpi_result_t RP_Calib_DAC_GetUpperLimit(scpi_t* context) {
 
 static scpi_result_t RP_Calib_DAC_SetUpperLimit(scpi_t* context) {
 	if (getServerMode() != CONFIGURATION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	int32_t numbers[1];
@@ -1682,15 +1697,19 @@ static scpi_result_t RP_Calib_DAC_SetUpperLimit(scpi_t* context) {
 	rp_calib_params_t calib_params = calib_GetParams();
 	float limit;
 
-	SCPI_ParamFloat(context, &limit, true);
-	if (calib_setDACUpperLimit(&calib_params, limit, channel)) {
- 		return returnSCPIBool(context, false);
+	if(!SCPI_ParamFloat(context, &limit, true)){
+		return returnSCPIStatus(context, INVALID_SCPI); 
+	}
+
+	int result = calib_setDACUpperLimit(&calib_params, limit, channel);
+	if (result) {
+ 		return returnSCPIStatus(context, result);
 	}
 
 	calib_WriteParams(calib_params, false);	
 	calib_Init(); // Reload from cache from EEPROM
 	calib_apply();
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_Calib_ADC_GetOffset(scpi_t* context) {
@@ -1715,7 +1734,7 @@ static scpi_result_t RP_Calib_ADC_GetOffset(scpi_t* context) {
 
 static scpi_result_t RP_Calib_ADC_SetOffset(scpi_t* context) {
 	if (getServerMode() != CONFIGURATION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	int32_t numbers[1];
@@ -1725,15 +1744,19 @@ static scpi_result_t RP_Calib_ADC_SetOffset(scpi_t* context) {
 	rp_calib_params_t calib_params = calib_GetParams();
 	float offset;
 
-	SCPI_ParamFloat(context, &offset, true);
-	if (calib_setADCOffset(&calib_params, offset, channel)) {
- 		return returnSCPIBool(context, false);
+	if(!SCPI_ParamFloat(context, &offset, true)){
+		return returnSCPIStatus(context, INVALID_SCPI); 
+	}
+
+	int result = calib_setADCOffset(&calib_params, offset, channel);
+	if (result) {
+ 		return returnSCPIStatus(context, result);
 	}
 
 	calib_WriteParams(calib_params, false);	
 	calib_Init(); // Reload from cache from EEPROM
 	calib_apply();
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_Calib_ADC_GetScale(scpi_t* context) {
@@ -1757,7 +1780,7 @@ static scpi_result_t RP_Calib_ADC_GetScale(scpi_t* context) {
 
 static scpi_result_t RP_Calib_ADC_SetScale(scpi_t* context) {
 	if (getServerMode() != CONFIGURATION) {
-		return returnSCPIBool(context, false);
+		return returnSCPIStatus(context, INVALID_MODE);
 	}
 
 	int32_t numbers[1];
@@ -1767,15 +1790,19 @@ static scpi_result_t RP_Calib_ADC_SetScale(scpi_t* context) {
 	rp_calib_params_t calib_params = calib_GetParams();
 	float scale;
 
-	SCPI_ParamFloat(context, &scale, true);
-	if (calib_setADCScale(&calib_params, scale, channel)) {
- 		return returnSCPIBool(context, false);
+	if(!SCPI_ParamFloat(context, &scale, true)){
+		return returnSCPIStatus(context, INVALID_SCPI); 
+	}
+
+	int result = calib_setADCScale(&calib_params, scale, channel);
+	if (result) {
+ 		return returnSCPIStatus(context, result);
 	}
 
 	calib_WriteParams(calib_params, false);	
 	calib_Init(); // Reload from cache from EEPROM
 	calib_apply();
-	return returnSCPIBool(context, true);
+	return returnSCPIStatus(context, SUCCESS);
 }
 
 static scpi_result_t RP_Calib_GetFlags(scpi_t* context) {
@@ -1789,7 +1816,7 @@ static scpi_result_t RP_ResetCalibration(scpi_t * context) {
   	calib_WriteParams(calib_params, false);	
 	calib_Init(); // Reload from cache from EEPROM
 	calib_apply();
-  	return returnSCPIBool(context, true);
+  	return returnSCPIStatus(context, SUCCESS);
 }
 
 const scpi_command_t scpi_commands[] = {
