@@ -148,7 +148,7 @@ calibADCScale(rp::RedPitaya, channel::Integer) = query(rp, scpiCommand(calibADCS
 scpiCommand(::typeof(calibADCScale), channel::Integer) = string("RP:CALib:ADC:CH", Int(channel) - 1, ":SCA?")
 scpiReturn(::typeof(calibADCScale)) = Float64
 
-calibFlags(rp::RedPitaya) = query(rp, scpiCommand(calibFlags), scpiReturn(calibFlags))
+calibFlags(rp::RedPitaya) = bitstring(query(rp, scpiCommand(calibFlags), scpiReturn(calibFlags)))[end-11:end]
 scpiCommand(::typeof(calibFlags)) = "RP:CALib:FLAGs"
 scpiReturn(::typeof(calibFlags)) = Int64
 
