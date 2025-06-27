@@ -191,9 +191,10 @@ function connect(rp::RedPitaya)
       end
 
       imageVersion = imgversion(rp)
+      serverVersion = serverversion(rp)
       packageVersion = pkgversion(@__MODULE__)
-      if packageVersion.minor != imageVersion
-        @warn "RedPitayaDAQServer $(rp.host) (minor) client version ($packageVersion) differs from FPGA image version ($imageVersion). Incompatible (minor) versions can result in undefined behaviour"
+      if (packageVersion.minor != imageVersion) || (packageVersion.minor != serverVersion)
+        @warn "RedPitayaDAQServer $(rp.host) (minor) client version ($packageVersion) differs from FPGA image version ($imageVersion) and/or server version ($serverVersion). Incompatible (minor) versions can result in undefined behaviour"
       end
     end
   end
@@ -234,9 +235,29 @@ function stringToEnum(enumType::Type{T}, value::AbstractString) where {T <: Enum
   return instances(enumType)[index]
 end
 
-imgversion(rp::RedPitaya) = query(rp, scpiCommand(imgversion), scpiReturn(imgversion))
+function imgversion(rp::RedPitaya)
+  try 
+    return query(rp, scpiCommand(imgversion), scpiReturn(imgversion), 0.2)
+  catch e
+    query(rp, "SYSTem:VERSion?", Float32, 0.2) # verify that the RP answers at all
+    @warn "imgversion was added with Version 0.7, the RedPitaya is running an older version!"
+    return -1    
+  end
+end
 scpiCommand(::typeof(imgversion)) = "RP:VERsion:IMAGe?"
 scpiReturn(::typeof(imgversion)) = UInt32
+
+function serverversion(rp::RedPitaya)
+  try 
+    return query(rp, scpiCommand(serverversion), scpiReturn(serverversion), 0.2)
+  catch e
+    query(rp, "SYSTem:VERSion?", Float32, 0.2) # verify that the RP answers at all
+    @warn "serverversion was added with Version 0.11, the RedPitaya is running an older server!"
+    return -1    
+  end
+end
+scpiCommand(::typeof(serverversion)) = "RP:VERsion:SERVer?"
+scpiReturn(::typeof(serverversion)) = UInt32
 
 """
     ServerMode

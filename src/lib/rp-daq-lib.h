@@ -89,6 +89,7 @@ extern bool isZynq7045();
 extern int init();
 extern void loadBitstream();
 extern uint32_t getFPGAImageVersion();
+extern uint32_t getServerVersion();
 
 // fast DAC
 extern uint16_t getAmplitude(int, int);

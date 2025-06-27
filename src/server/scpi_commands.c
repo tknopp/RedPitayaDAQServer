@@ -91,6 +91,11 @@ static scpi_result_t RP_GetImageVersion(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_GetServerVersion(scpi_t * context) {
+	SCPI_ResultUInt32(context, getServerVersion());
+	return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_GetServerMode(scpi_t * context) {
 	const char * name;
 	SCPI_ChoiceToName(server_modes, getServerMode(), &name);
@@ -1855,6 +1860,7 @@ const scpi_command_t scpi_commands[] = {
 
 	/* RP-DAQ */
 	{.pattern = "RP:VERsion:IMAGe?", .callback = RP_GetImageVersion,},
+	{.pattern = "RP:VERsion:SERVer?", .callback = RP_GetServerVersion,},
 	{.pattern = "RP:MODe?", .callback = RP_GetServerMode,},
 	{.pattern = "RP:MODe", .callback = RP_SetServerMode,},
 	// DAC

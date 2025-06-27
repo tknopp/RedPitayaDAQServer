@@ -96,6 +96,11 @@ uint32_t getFPGAImageVersion() {
 	return *version_sts;
 }
 
+uint32_t getServerVersion() {
+	return 11;
+}
+
+
 void loadBitstream() {
 	if(!access("/tmp/bitstreamLoaded", F_OK )){
 		printf("Bitfile already loaded\n");
@@ -161,6 +166,7 @@ int init() {
 	
 	loadBitstream();
 	printf("FPGA Image Version %u\n", getFPGAImageVersion());
+	printf("Server Version %u\n", getServerVersion());
 
 	calib_Init(); // Load calibration from EEPROM
 	calib_validate(&calib);
