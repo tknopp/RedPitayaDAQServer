@@ -803,8 +803,6 @@ static scpi_result_t RP_DIO_GetDIOHBridgeP(scpi_t * context) {
 }
 
 
-
-
 static scpi_result_t RP_GetWatchdogMode(scpi_t * context) {
 	const char * name;
 
@@ -829,33 +827,24 @@ static scpi_result_t RP_SetWatchdogMode(scpi_t * context) {
 	return returnSCPIBool(context, true);
 }
 
-scpi_choice_def_t RAM_writer_modes[] = {
-	{"CONTINUOUS", ADC_MODE_CONTINUOUS},
-	{"TRIGGERED", ADC_MODE_TRIGGERED},
-	SCPI_CHOICE_LIST_END /* termination of option list */
-};
 
-static scpi_result_t RP_GetRAMWriterMode(scpi_t * context) {
+static scpi_result_t RP_GetWatchdogMode(scpi_t * context) {
 	const char * name;
 
-	SCPI_ChoiceToName(RAM_writer_modes, getRAMWriterMode(), &name);
+	SCPI_ChoiceToName(onoff_modes, getWatchdogMode(), &name);
 	SCPI_ResultText(context, name);
 
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_SetRAMWriterMode(scpi_t * context) {
-	if (getServerMode() != CONFIGURATION) {
+static scpi_result_t RP_SetWatchdogMode(scpi_t * context) {
+	int32_t watchdog_mode_selection;
+
+	if (!SCPI_ParamChoice(context, onoff_modes, &watchdog_mode_selection, TRUE)) {
 		return returnSCPIBool(context, false);
 	}
 
-	int32_t RAM_writer_mode_selection;
-
-	if (!SCPI_ParamChoice(context, RAM_writer_modes, &RAM_writer_mode_selection, TRUE)) {
-		return returnSCPIBool(context, false);
-	}
-
-	int result = setRAMWriterMode(RAM_writer_mode_selection);
+	int result = setWatchdogMode(watchdog_mode_selection);
 	if (result < 0) {
 		return returnSCPIBool(context, false);
 	}
