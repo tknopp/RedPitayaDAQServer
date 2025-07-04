@@ -185,6 +185,7 @@ int init() {
 	setDACMode(DAC_MODE_STANDARD);
 	setWatchdogMode(OFF);
 	setRAMWriterMode(ADC_MODE_TRIGGERED);
+	getFIREnabled(ON);
 	setMasterTrigger(OFF);
 	setInstantResetMode(OFF);
 	setCounterSamplesPerStep(0);
@@ -580,16 +581,27 @@ int setDecimation(uint16_t decimation) {
 	if(decimation < 8 || decimation > 8192) {
 		return INVALID_VALUE;
 	}
-
-	// FIR Compensation filter also decimates by 2
-	*((uint16_t *)(cfg + 2)) = decimation/2;
+    
+	uint16_t internalDecimation;
+	if(getFIREnabled()) {
+		// FIR Compensation filter also decimates by 2
+		internalDecimation = decimation/2;
+	} else {
+        	internalDecimation = decimation;
+	}
+	
+	*((uint16_t *)(cfg + 2)) = internalDecimation;
 	return 0;
 }
 
 uint16_t getDecimation() {
-	// FIR Compensation filter also decimates by 2
 	uint16_t value = *((uint16_t *)(cfg + 2));
-	return value*2;
+	if(getFIREnabled()) {
+		// FIR Compensation filter also decimates by 2
+		return value*2;
+	} else {
+        	return value;
+	}	
 }
 
 #define BIT_MASK(__TYPE__, __ONE_COUNT__) \
@@ -913,6 +925,30 @@ int setWatchdogMode(int mode) {
 		*((uint8_t *)(cfg + 1)) |= 2;
 	} else {
 		return INVALID_VALUE;
+	}
+
+	return 0;
+}
+
+int getFIREnabled() {
+	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x40) );
+
+	if(value == 0) {
+		return OFF;
+	} else if(value == 1) {
+		return ON;
+	}
+
+	return -1;
+}
+
+int setFIREnabled(int mode) {
+	if(mode == OFF) {
+		*((uint8_t *)(cfg + 1)) &= ~128;
+	} else if(mode == ON) {
+		*((uint8_t *)(cfg + 1)) |= 128;
+	} else {
+		return -1;
 	}
 
 	return 0;
