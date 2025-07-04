@@ -187,6 +187,8 @@ extern int setTriggerPropagation(int);
 extern int getTriggerPropagation();
 extern int getWatchdogMode();
 extern int setWatchdogMode(int);
+extern int getFIREnabled();
+extern int setFIREnabled(int);
 extern int getRAMWriterMode();
 extern int setRAMWriterMode(int);
 extern int getKeepAliveReset();
