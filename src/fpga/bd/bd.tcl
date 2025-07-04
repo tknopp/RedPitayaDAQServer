@@ -1422,9 +1422,9 @@ proc create_hier_cell_write_to_ram { parentCell nameHier } {
   connect_bd_net -net sign_extend_B_dout [get_bd_pins cic_compiler_B/s_axis_data_tdata] [get_bd_pins sign_extend_B/dout]
   connect_bd_net -net util_vector_logic_0_Res [get_bd_pins fir_compiler_1/s_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Res]
   connect_bd_net -net util_vector_logic_1_Res [get_bd_pins axis_ram_writer_1/aresetn] [get_bd_pins util_vector_logic_1/Res]
-  connect_bd_net -net xlconcat_1_dout [get_bd_pins bypass_multiplexer_0/insignal0] [get_bd_pins fir_compiler_1/s_axis_data_tdata] [get_bd_pins xlconcat_1/dout]
+  connect_bd_net -net xlconcat_1_dout [get_bd_pins bypass_multiplexer_0/insignal1] [get_bd_pins fir_compiler_1/s_axis_data_tdata] [get_bd_pins xlconcat_1/dout]
   connect_bd_net -net xlconcat_3_dout [get_bd_pins axis_dwidth_converter_0/s_axis_tdata] [get_bd_pins bypass_multiplexer_0/outsignal] [get_bd_pins xlslice_out_A/Din] [get_bd_pins xlslice_out_B/Din]
-  connect_bd_net -net xlconcat_3_dout1 [get_bd_pins bypass_multiplexer_0/insignal1] [get_bd_pins xlconcat_3/dout]
+  connect_bd_net -net xlconcat_3_dout1 [get_bd_pins bypass_multiplexer_0/insignal0] [get_bd_pins xlconcat_3/dout]
   connect_bd_net -net xlconstant_2_dout [get_bd_pins axis_ram_writer_1/cfg_data] [get_bd_pins xlconstant_2/dout]
   connect_bd_net -net xlslice_0_Dout [get_bd_pins xlconcat_3/In0] [get_bd_pins xlslice_0/Dout]
   connect_bd_net -net xlslice_1_Dout [get_bd_pins xlconcat_3/In1] [get_bd_pins xlslice_1/Dout]
@@ -3849,7 +3849,6 @@ proc create_root_design { parentCell } {
   # Restore current instance
   current_bd_instance $oldCurInst
 
-  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -3861,4 +3860,6 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
+
+common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
