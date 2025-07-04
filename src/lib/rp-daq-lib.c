@@ -551,11 +551,11 @@ int setDecimation(uint16_t decimation) {
 	}
     
 	uint16_t internalDecimation;
-	if getFIREnabled() {
+	if(getFIREnabled()) {
 		// FIR Compensation filter also decimates by 2
 		internalDecimation = decimation/2;
 	} else {
-        internalDecimation = decimation;
+        	internalDecimation = decimation;
 	}
 	
 	*((uint16_t *)(cfg + 2)) = internalDecimation;
@@ -564,11 +564,11 @@ int setDecimation(uint16_t decimation) {
 
 uint16_t getDecimation() {
 	uint16_t value = *((uint16_t *)(cfg + 2));
-	if getFIREnabled() {
+	if(getFIREnabled()) {
 		// FIR Compensation filter also decimates by 2
 		return value*2;
 	} else {
-        return value;
+        	return value;
 	}	
 }
 
@@ -810,7 +810,7 @@ int getCounterSamplesPerStep()  {
 	return value/getDecimation();
 }
 
-int setCounterSamplesPerStep(int)  {
+int setCounterSamplesPerStep(int samples)  {
 	*((int32_t *)(cfg + 12)) = samples*getDecimation();
 	return 0;
 }
@@ -897,7 +897,7 @@ int setWatchdogMode(int mode) {
 }
 
 int getFIREnabled() {
-	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x40) )
+	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x40) );
 
 	if(value == 0) {
 		return OFF;

@@ -828,23 +828,23 @@ static scpi_result_t RP_SetWatchdogMode(scpi_t * context) {
 }
 
 
-static scpi_result_t RP_GetWatchdogMode(scpi_t * context) {
+static scpi_result_t RP_ADC_GetFIREnabled(scpi_t * context) {
 	const char * name;
 
-	SCPI_ChoiceToName(onoff_modes, getWatchdogMode(), &name);
+	SCPI_ChoiceToName(onoff_modes, getFIREnabled(), &name);
 	SCPI_ResultText(context, name);
 
 	return SCPI_RES_OK;
 }
 
-static scpi_result_t RP_SetWatchdogMode(scpi_t * context) {
-	int32_t watchdog_mode_selection;
+static scpi_result_t RP_ADC_SetFIREnabled(scpi_t * context) {
+	int32_t fir_enabled_selection;
 
-	if (!SCPI_ParamChoice(context, onoff_modes, &watchdog_mode_selection, TRUE)) {
+	if (!SCPI_ParamChoice(context, onoff_modes, &fir_enabled_selection, TRUE)) {
 		return returnSCPIBool(context, false);
 	}
 
-	int result = setWatchdogMode(watchdog_mode_selection);
+	int result = setFIREnabled(fir_enabled_selection);
 	if (result < 0) {
 		return returnSCPIBool(context, false);
 	}
@@ -1849,6 +1849,8 @@ const scpi_command_t scpi_commands[] = {
 	//{.pattern = "RP:ADC:SlowADC?", .callback = RP_ADC_GetNumSlowADCChan,},
 	{.pattern = "RP:ADC:DECimation", .callback = RP_ADC_SetDecimation,},
 	{.pattern = "RP:ADC:DECimation?", .callback = RP_ADC_GetDecimation,},
+	{.pattern = "RP:ADC:FIREnabled", .callback = RP_ADC_SetFIREnabled,},
+	{.pattern = "RP:ADC:FIREnabled?", .callback = RP_ADC_GetFIREnabled,},
 	//{.pattern = "RP:ADC:SlowDACInterpolation", .callback = RP_ADC_SlowDACInterpolation,},
 	{.pattern = "RP:ADC:WP?", .callback = RP_ADC_GetCurrentWP,},
 	{.pattern = "RP:ADC:DATa?", .callback = RP_ADC_GetData,},
