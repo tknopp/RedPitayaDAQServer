@@ -216,22 +216,25 @@ proc create_root_design { parentCell } {
   # Create instance: dds_compiler_A_channel_1, and set properties
   set dds_compiler_A_channel_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:dds_compiler:6.0 dds_compiler_A_channel_1 ]
   set_property -dict [ list \
-   CONFIG.Amplitude_Mode {Full_Range} \
+   CONFIG.Amplitude_Mode {Unit_Circle} \
    CONFIG.DATA_Has_TLAST {Not_Required} \
    CONFIG.DDS_Clock_Rate {125} \
+   CONFIG.DSP48_Use {Maximal} \
    CONFIG.Frequency_Resolution {4.440893e-7} \
    CONFIG.Has_ACLKEN {false} \
    CONFIG.Has_ARESETn {true} \
    CONFIG.Has_Phase_Out {true} \
    CONFIG.Has_TREADY {false} \
-   CONFIG.Latency {9} \
+   CONFIG.Latency {8} \
    CONFIG.Latency_Configuration {Auto} \
    CONFIG.M_DATA_Has_TUSER {Not_Required} \
    CONFIG.M_PHASE_Has_TUSER {Not_Required} \
-   CONFIG.Noise_Shaping {Phase_Dithering} \
+   CONFIG.Memory_Type {Distributed_ROM} \
+   CONFIG.Noise_Shaping {Auto} \
+   CONFIG.Optimization_Goal {Auto} \
    CONFIG.Output_Frequency1 {0} \
    CONFIG.Output_Selection {Sine} \
-   CONFIG.Output_Width {14} \
+   CONFIG.Output_Width {16} \
    CONFIG.PINC1 {0} \
    CONFIG.POFF1 {0} \
    CONFIG.Parameter_Entry {System_Parameters} \
@@ -242,17 +245,19 @@ proc create_root_design { parentCell } {
    CONFIG.Phase_offset {Programmable} \
    CONFIG.Resync {false} \
    CONFIG.S_PHASE_Has_TUSER {Not_Required} \
-   CONFIG.Spurious_Free_Dynamic_Range {84} \
+   CONFIG.Spurious_Free_Dynamic_Range {96} \
  ] $dds_compiler_A_channel_1
 
   # Create instance: mult_gen_0, and set properties
   set mult_gen_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:mult_gen:12.0 mult_gen_0 ]
   set_property -dict [ list \
    CONFIG.Multiplier_Construction {Use_Mults} \
-   CONFIG.OutputWidthHigh {28} \
-   CONFIG.OutputWidthLow {13} \
+   CONFIG.OutputWidthHigh {30} \
+   CONFIG.OutputWidthLow {15} \
    CONFIG.PipeStages {3} \
+   CONFIG.PortAType {Unsigned} \
    CONFIG.PortAWidth {16} \
+   CONFIG.PortBType {Signed} \
    CONFIG.PortBWidth {16} \
    CONFIG.SyncClear {false} \
    CONFIG.Use_Custom_Output_Width {true} \

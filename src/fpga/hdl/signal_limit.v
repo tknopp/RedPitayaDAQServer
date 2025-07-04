@@ -3,7 +3,7 @@
 
 module signal_limit(
     input clk,
-    input signed [23:0] signal_in,
+    input signed [18:0] signal_in,
     input signed [15:0] limit_upper,
     input signed[15:0] limit_lower,
     output [15:0] limited_signal
