@@ -849,6 +849,8 @@ static scpi_result_t RP_ADC_GetFIREnabled(scpi_t * context) {
 
 	SCPI_ChoiceToName(onoff_modes, getFIREnabled(), &name);
 	SCPI_ResultText(context, name);
+	
+	printf("get fir enabled: %d\n", getFIREnabled());
 
 	return SCPI_RES_OK;
 }
@@ -859,6 +861,8 @@ static scpi_result_t RP_ADC_SetFIREnabled(scpi_t * context) {
 	if (!SCPI_ParamChoice(context, onoff_modes, &fir_enabled_selection, TRUE)) {
 		return returnSCPIBool(context, false);
 	}
+
+	printf("set fir enabled: %d\n", fir_enabled_selection);
 
 	int result = setFIREnabled(fir_enabled_selection);
 	if (result < 0) {

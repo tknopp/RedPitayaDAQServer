@@ -931,7 +931,7 @@ int setWatchdogMode(int mode) {
 }
 
 int getFIREnabled() {
-	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x40) );
+	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x80) >> 7);
 
 	if(value == 0) {
 		return OFF;
@@ -943,6 +943,9 @@ int getFIREnabled() {
 }
 
 int setFIREnabled(int mode) {
+
+	uint16_t decimation = getDecimation();
+
 	if(mode == OFF) {
 		*((uint8_t *)(cfg + 1)) &= ~128;
 	} else if(mode == ON) {
@@ -950,6 +953,8 @@ int setFIREnabled(int mode) {
 	} else {
 		return -1;
 	}
+
+	setDecimation(decimation);
 
 	return 0;
 }
