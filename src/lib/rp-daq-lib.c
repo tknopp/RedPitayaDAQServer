@@ -1186,7 +1186,7 @@ int setInstantResetMode(int mode) {
 }
 
 int getKeepAliveReset() {
-	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x40) );
+	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x40) >> 6);
 
 	if(value == 0) {
 		return OFF;

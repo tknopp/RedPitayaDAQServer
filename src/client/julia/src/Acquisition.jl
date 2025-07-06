@@ -40,13 +40,18 @@ function readSamplesHeartbeat(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCl
   end
 end
 
-correctFilterDelay(rpu::Union{RedPitaya, RedPitayaCluster}, wpStart; kwargs...) = correctFilterDelay(wpStart, decimation(rpu); kwargs...)
+correctFilterDelay(rpu::Union{RedPitaya, RedPitayaCluster}, wpStart; kwargs...) = correctFilterDelay(wpStart, decimation(rpu); fir_enabled=firEnabled(rpu), kwargs...)
 correctFilterDelay(rpcv::RedPitayaClusterView, wpStart; kwargs...) = correctFilterDelay(rpcv.rpc, wpStart; kwargs...)
-function correctFilterDelay(wpStart::Int64, dec::Int64; correct_cic_delay::Bool = true, correct_fir_delay::Bool = true)
+function correctFilterDelay(wpStart::Int64, dec::Int64; correct_cic_delay::Bool = true, correct_fir_delay::Bool = true, fir_enabled::Bool = true)
   cic_stages = 6
   fir_taps = 92
   dec_div = correct_fir_delay ? 2 : 1
-  cicDelay = correct_cic_delay ? ((((dec/dec_div-1)/2*cic_stages))/dec) : 0
+  # the following line should actually use
+
+  @info "fir_enabled: $fir_enabled"
+
+  cicDelay = fir_enabled ? ((((dec/dec_div-1)/2*cic_stages))/dec) : (dec-1)/2*cic_stages/dec
+  cicDelay = correct_cic_delay ? cicDelay : 0
   firDelay = correct_fir_delay ? (((fir_taps-1)/2)/2) : 0
   delay = Int64(round((cicDelay + firDelay), RoundUp))
   correctedWp = wpStart + delay
@@ -67,7 +72,9 @@ Request and receive `numOfRequestedSamples` samples from `wpStart` on in a pipel
 
 If `rpInfo` is set to a `RPInfo`, the `PerformanceData` sent after every `chunkSize` samples will be pushed into `rpInfo`.
 """
-function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing, correct_cic_delay::Bool = true, correct_fir_delay::Bool = true)
+function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; 
+                     chunkSize::Int64 = 25000, rpInfo=nothing, correct_cic_delay::Bool = true, 
+                     correct_fir_delay::Bool = firEnabled(rpu))
   numOfReceivedSamples = 0
   index = 1
   rawData = zeros(Int16, numChan(rpu), numOfRequestedSamples)
@@ -110,7 +117,9 @@ Request and receive `numOfRequestedSamples` samples from `wpStart` on in a pipel
 
 See [`SampleChunk`](@ref).
 """
-function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64, channel::Channel; chunkSize::Int64 = 25000, correct_cic_delay::Bool = true, correct_fir_delay::Bool = true)
+function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64, channel::Channel; 
+                     chunkSize::Int64 = 25000, correct_cic_delay::Bool = true, 
+                     correct_fir_delay::Bool = firEnabled(rpu))
   numOfReceivedSamples = 0
   chunkBuffer = zeros(Int16, chunkSize * 2, length(rpu))
 
