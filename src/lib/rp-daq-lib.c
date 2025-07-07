@@ -185,7 +185,7 @@ int init() {
 	setDACMode(DAC_MODE_STANDARD);
 	setWatchdogMode(OFF);
 	setRAMWriterMode(ADC_MODE_TRIGGERED);
-	getFIREnabled(ON);
+	setFIREnabled(ON);
 	setMasterTrigger(OFF);
 	setInstantResetMode(OFF);
 	setCounterSamplesPerStep(0);
@@ -587,7 +587,7 @@ int setDecimation(uint16_t decimation) {
 		// FIR Compensation filter also decimates by 2
 		internalDecimation = decimation/2;
 	} else {
-        	internalDecimation = decimation;
+        internalDecimation = decimation;
 	}
 	
 	*((uint16_t *)(cfg + 2)) = internalDecimation;
@@ -600,7 +600,7 @@ uint16_t getDecimation() {
 		// FIR Compensation filter also decimates by 2
 		return value*2;
 	} else {
-        	return value;
+        return value;
 	}	
 }
 
