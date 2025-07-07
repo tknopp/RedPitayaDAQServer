@@ -29,7 +29,6 @@ module signal_generator #
     
     reg signed [AXIS_TDATA_WIDTH-1:0] dac_out;
     reg signed [AXIS_TDATA_WIDTH-1:0] dac_out_temp_0;
-    reg signed [DAC_WIDTH-1:0] phase;
 
     always @(posedge clk)
     begin
@@ -37,12 +36,10 @@ module signal_generator #
         begin
             dac_out <= 0;
             dac_out_temp_0 <= 0;
-            phase <= 0;
 	        signal_type <= cfg_data[3:0];
         end
         else
         begin
-            phase <= (s_axis_tdata_phase >>> (AXIS_TDATA_PHASE_WIDTH-DAC_WIDTH));			
             
             case (signal_type)
             	0 : begin // Sine
@@ -50,19 +47,19 @@ module signal_generator #
                     dac_out <= dac_out_temp_0;
             	end
             	1 : begin // Sawtooth (reverse)
-            	    dac_out_temp_0 <= -phase;
+            	    dac_out_temp_0 <= -(s_axis_tdata_phase >>> 1);
                     dac_out <= dac_out_temp_0;
             	end
             	2 : begin // Triangle
-            	    dac_out_temp_0 <= (phase << 1);
+            	    dac_out_temp_0 <= s_axis_tdata_phase;
             	
-					if (dac_out_temp_0 <= -8192)
+					if (dac_out_temp_0 <= -16384)
 					begin
-						dac_out <= -dac_out_temp_0-16384;
+						dac_out <= -dac_out_temp_0-32768;
 					end
-					else if (dac_out_temp_0 >= 8190)
+					else if (dac_out_temp_0 >= 16384)
 					begin
-						dac_out <= -dac_out_temp_0+16384;
+						dac_out <= -dac_out_temp_0+32768;
 					end
 					else
 					begin
@@ -70,7 +67,7 @@ module signal_generator #
 					end
             	end
             	3 : begin // Sawtooth
-            	    dac_out_temp_0 <= phase;
+            	    dac_out_temp_0 <= (s_axis_tdata_phase >>> 1);
                     dac_out <= dac_out_temp_0;
             	end
             endcase
