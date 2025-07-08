@@ -46,9 +46,6 @@ function correctFilterDelay(wpStart::Int64, dec::Int64; fir_enabled::Bool = true
   cic_stages = 6
   fir_taps = 92
   dec_div = fir_enabled ? 2 : 1
-  # the following line should actually use
-
-  @info "fir_enabled: $fir_enabled"
 
   cicDelay = fir_enabled ? ((((dec/dec_div-1)/2*cic_stages))/dec) : (dec-1)/2*cic_stages/dec
   firDelay = fir_enabled ? (((fir_taps-1)/2)/2) : 0
