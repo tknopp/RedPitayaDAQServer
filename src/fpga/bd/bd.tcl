@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# reset_manager, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, sequence_stepper, counter_delayed_trigger, enable_ramping_slice, sequence_slice, sequence_stepper, bypass_multiplexer, signal_cfg_slice, signal_composer, signal_cfg_slice, signal_composer, wave_awg_composer, wave_awg_composer
+# reset_manager, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, sequence_stepper, counter_delayed_trigger, enable_ramping_slice, sequence_slice, sequence_stepper, bypass_multiplexer, bypass_multiplexer, signal_cfg_slice, signal_composer, signal_cfg_slice, signal_composer, wave_awg_composer, wave_awg_composer
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -57,7 +57,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 set list_projs [get_projects -quiet]
 if { $list_projs eq "" } {
-   create_project project_1 myproj -part xc7z010clg400-1
+   create_project project_1 myproj -part xc7z020clg400-1
 }
 
 
@@ -200,6 +200,7 @@ counter_delayed_trigger\
 enable_ramping_slice\
 sequence_slice\
 sequence_stepper\
+bypass_multiplexer\
 bypass_multiplexer\
 signal_cfg_slice\
 signal_composer\
@@ -1217,6 +1218,20 @@ proc create_hier_cell_write_to_ram { parentCell nameHier } {
    CONFIG.DATA_WIDTH {32} \
  ] $bypass_multiplexer_0
 
+  # Create instance: bypass_multiplexer_1, and set properties
+  set block_name bypass_multiplexer
+  set block_cell_name bypass_multiplexer_1
+  if { [catch {set bypass_multiplexer_1 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $bypass_multiplexer_1 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+    set_property -dict [ list \
+   CONFIG.DATA_WIDTH {1} \
+ ] $bypass_multiplexer_1
+
   # Create instance: cic_compiler_A, and set properties
   set cic_compiler_A [ create_bd_cell -type ip -vlnv xilinx.com:ip:cic_compiler:4.0 cic_compiler_A ]
   set_property -dict [ list \
@@ -1408,19 +1423,20 @@ proc create_hier_cell_write_to_ram { parentCell nameHier } {
   connect_bd_net -net axis_ram_writer_1_sts_total_data [get_bd_pins sts_data] [get_bd_pins axis_ram_writer_1/sts_total_data]
   connect_bd_net -net axis_red_pitaya_adc_1_m_axis_tdata [get_bd_pins Din] [get_bd_pins xlslice_A/Din] [get_bd_pins xlslice_B/Din]
   connect_bd_net -net axis_red_pitaya_adc_1_m_axis_tvalid [get_bd_pins s_axis_data_tvalid] [get_bd_pins cic_compiler_A/s_axis_data_tvalid] [get_bd_pins cic_compiler_B/s_axis_data_tvalid]
+  connect_bd_net -net bypass_multiplexer_1_outsignal [get_bd_pins axis_dwidth_converter_0/s_axis_tvalid] [get_bd_pins bypass_multiplexer_1/outsignal]
   connect_bd_net -net cic_compiler_A_m_axis_data_tdata [get_bd_pins cic_compiler_A/m_axis_data_tdata] [get_bd_pins xlconcat_1/In0]
   connect_bd_net -net cic_compiler_A_m_axis_data_tvalid [get_bd_pins cic_compiler_A/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net cic_compiler_B_m_axis_data_tdata [get_bd_pins cic_compiler_B/m_axis_data_tdata] [get_bd_pins xlconcat_1/In1]
   connect_bd_net -net cic_compiler_B_m_axis_data_tvalid [get_bd_pins cic_compiler_B/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op2]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_ram_writer_1/aclk] [get_bd_pins axis_variable_decimation_A/aclk] [get_bd_pins axis_variable_decimation_B/aclk] [get_bd_pins bypass_multiplexer_0/clk] [get_bd_pins cic_compiler_A/aclk] [get_bd_pins cic_compiler_B/aclk] [get_bd_pins fir_compiler_1/aclk]
+  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_ram_writer_1/aclk] [get_bd_pins axis_variable_decimation_A/aclk] [get_bd_pins axis_variable_decimation_B/aclk] [get_bd_pins bypass_multiplexer_0/clk] [get_bd_pins bypass_multiplexer_1/clk] [get_bd_pins cic_compiler_A/aclk] [get_bd_pins cic_compiler_B/aclk] [get_bd_pins fir_compiler_1/aclk]
   connect_bd_net -net decimation_1 [get_bd_pins decimation] [get_bd_pins axis_variable_decimation_A/cfg_data] [get_bd_pins axis_variable_decimation_B/cfg_data]
-  connect_bd_net -net enableFIR_1 [get_bd_pins enableFIR] [get_bd_pins bypass_multiplexer_0/idx]
+  connect_bd_net -net enableFIR_1 [get_bd_pins enableFIR] [get_bd_pins bypass_multiplexer_0/idx] [get_bd_pins bypass_multiplexer_1/idx]
   connect_bd_net -net fir_compiler_1_m_axis_data_tdata [get_bd_pins fir_compiler_1/m_axis_data_tdata] [get_bd_pins xlslice_0/Din] [get_bd_pins xlslice_1/Din]
-  connect_bd_net -net fir_compiler_1_m_axis_data_tvalid [get_bd_pins axis_dwidth_converter_0/s_axis_tvalid] [get_bd_pins fir_compiler_1/m_axis_data_tvalid]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_variable_decimation_A/aresetn] [get_bd_pins axis_variable_decimation_B/aresetn] [get_bd_pins bypass_multiplexer_0/aresetn] [get_bd_pins cic_compiler_A/aresetn] [get_bd_pins cic_compiler_B/aresetn] [get_bd_pins fir_compiler_1/aresetn] [get_bd_pins util_vector_logic_1/Op1]
+  connect_bd_net -net fir_compiler_1_m_axis_data_tvalid [get_bd_pins bypass_multiplexer_1/insignal0] [get_bd_pins fir_compiler_1/m_axis_data_tvalid]
+  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_variable_decimation_A/aresetn] [get_bd_pins axis_variable_decimation_B/aresetn] [get_bd_pins bypass_multiplexer_0/aresetn] [get_bd_pins bypass_multiplexer_1/aresetn] [get_bd_pins cic_compiler_A/aresetn] [get_bd_pins cic_compiler_B/aresetn] [get_bd_pins fir_compiler_1/aresetn] [get_bd_pins util_vector_logic_1/Op1]
   connect_bd_net -net sign_extend_A_dout [get_bd_pins cic_compiler_A/s_axis_data_tdata] [get_bd_pins sign_extend_A/dout]
   connect_bd_net -net sign_extend_B_dout [get_bd_pins cic_compiler_B/s_axis_data_tdata] [get_bd_pins sign_extend_B/dout]
-  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins fir_compiler_1/s_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Res]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins bypass_multiplexer_1/insignal1] [get_bd_pins fir_compiler_1/s_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Res]
   connect_bd_net -net util_vector_logic_1_Res [get_bd_pins axis_ram_writer_1/aresetn] [get_bd_pins util_vector_logic_1/Res]
   connect_bd_net -net xlconcat_1_dout [get_bd_pins bypass_multiplexer_0/insignal1] [get_bd_pins fir_compiler_1/s_axis_data_tdata] [get_bd_pins xlconcat_1/dout]
   connect_bd_net -net xlconcat_3_dout [get_bd_pins axis_dwidth_converter_0/s_axis_tdata] [get_bd_pins bypass_multiplexer_0/outsignal] [get_bd_pins xlslice_out_A/Din] [get_bd_pins xlslice_out_B/Din]
@@ -1583,7 +1599,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   # Create instance: image_version, and set properties
   set image_version [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 image_version ]
   set_property -dict [ list \
-   CONFIG.CONST_VAL {9} \
+   CONFIG.CONST_VAL {11} \
    CONFIG.CONST_WIDTH {32} \
  ] $image_version
 
@@ -3849,6 +3865,7 @@ proc create_root_design { parentCell } {
   # Restore current instance
   current_bd_instance $oldCurInst
 
+  validate_bd_design
   save_bd_design
 }
 # End of create_root_design()
@@ -3860,6 +3877,4 @@ proc create_root_design { parentCell } {
 
 create_root_design ""
 
-
-common::send_gid_msg -ssname BD::TCL -id 2053 -severity "WARNING" "This Tcl script was generated from a block design that has not been validated. It is possible that design <$design_name> may result in errors during validation."
 
