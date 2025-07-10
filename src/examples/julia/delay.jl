@@ -39,7 +39,7 @@ masterTrigger!(rp, true)
 # Transmit the first frame
 uCorrected = readSamples(rp, 0, 45)
 # Dimensions of frames are [samples channel, period, frame]
-uUncorrected = readSamples(rp, 0, 45, correct_cic_delay = false, correct_fir_delay = false)
+uUncorrected = readSamples(rp, 0, 45, correct_filter_delay = false)
 
 masterTrigger!(rp, false)
 serverMode!(rp, CONFIGURATION)
