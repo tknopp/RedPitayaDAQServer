@@ -268,6 +268,7 @@ proc create_root_design { parentCell } {
   set_property -dict [ list \
    CONFIG.AXIS_TDATA_PHASE_WIDTH {48} \
    CONFIG.CFG_DATA_WIDTH {48} \
+   CONFIG.DAC_WIDTH {15} \
  ] $signal_generator_0
 
   # Create instance: util_vector_logic_0, and set properties
