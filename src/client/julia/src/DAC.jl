@@ -1,7 +1,8 @@
 export SignalType, SINE, TRIANGLE, SAWTOOTH, DACPerformanceData, DACConfig, ArbitraryWaveform, waveformDAC!, scaleWaveformDAC!,
 amplitudeDAC, amplitudeDAC!,offsetDAC, offsetDAC!, normalize,
 frequencyDAC, frequencyDAC!, phaseDAC, phaseDAC!, signalTypeDAC, signalTypeDAC!,
-rampingDAC!, rampingDAC, enableRamping!, enableRamping, enableRampDown, enableRampDown!, RampingState, RampingStatus, rampingStatus, rampDownDone, rampUpDone
+rampingDAC!, rampingDAC, enableRamping!, enableRamping, enableRampDown, enableRampDown!, RampingState, RampingStatus, rampingStatus, rampDownDone, rampUpDone,
+enableInstantReset!, enableInstantReset, instantResetStatus
 
 """
     SignalType
@@ -414,3 +415,20 @@ function rampUpDone(rp::RedPitaya)
   status = rampingStatus(rp)
   done = (!status.enableCh1 || status.stateCh1 != UP) && (!status.enableCh2 || status.stateCh2 != UP)
 end
+
+## Arm or disarm the instant reset pin (DIO3_P)
+function enableInstantReset!(rp::RedPitaya, value)
+  return query(rp, scpiCommand(enableInstantReset!, value), scpiReturn(enableInstantReset!))
+end
+scpiCommand(::typeof(enableInstantReset!), val::Bool) = scpiCommand(enableInstantReset!, val ? "ON" : "OFF")
+scpiCommand(::typeof(enableInstantReset!), val::String) = string("RP:InstantReset:MODe ", val)
+scpiReturn(::typeof(enableInstantReset!)) = Bool
+
+enableInstantReset(rp::RedPitaya) = occursin("ON", query(rp, scpiCommand(enableInstantReset)))
+scpiCommand(::typeof(enableInstantReset)) = "RP:InstantReset:MODe?"
+scpiReturn(::typeof(enableInstantReset)) = String
+parseReturn(::typeof(enableInstantReset), ret) = occursin("ON", ret)
+
+instantResetStatus(rp::RedPitaya) = query(rp, scpiCommand(instantResetStatus), scpiReturn(instantResetStatus))
+scpiCommand(::typeof(instantResetStatus)) = "RP:InstantReset:STATus?"
+scpiReturn(::typeof(instantResetStatus)) = Bool

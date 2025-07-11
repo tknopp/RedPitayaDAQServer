@@ -24,6 +24,8 @@ amplitudeDAC!(rp, 1, 1, 0.5)
 offsetDAC!(rp, 1, 0)
 phaseDAC!(rp, 1, 1, 0.0)
 
+# Enable the instant reset triggered by DIO3_P
+enableInstantReset!(rp, true)
 # Ramping
 # Ramping commands can be specified for each channel individually
 enableRamping!(rp, 1, true)

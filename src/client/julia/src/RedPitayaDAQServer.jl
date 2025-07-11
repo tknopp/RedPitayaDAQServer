@@ -134,6 +134,7 @@ const ERROR_CODES = Dict(
   -4=>"Component index out of range!",
   -5=>"Server is in invalid mode! Use serverMode! to switch",
   -6=>"Error during parsing of the SCPI command!",
+  -7=>"Sequence is in invalid state",
 )
 
 """
