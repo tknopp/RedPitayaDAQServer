@@ -260,7 +260,7 @@ begin
                 //fourier_synth_aresetn_int <= 1'b0;
                 fourier_synth_aresetn_1_int = ramping_cfg[0];
                 fourier_synth_aresetn_2_int = ramping_cfg[1];
-                pdm_aresetn_int <= ramping_cfg[1] || ramping_cfg[1];
+                pdm_aresetn_int <= ramping_cfg[0] || ramping_cfg[1];
                 if (triggerState == 1)
                 begin
                     stateOutputOnNext <= 0;
