@@ -1084,6 +1084,12 @@ static scpi_result_t RP_InstantResetStatus(scpi_t * context) {
 	return SCPI_RES_OK;
 }
 
+static scpi_result_t RP_InstantResetTriggered(scpi_t * context) {
+	SCPI_ResultBool(context, !getFourierSynthAResetN()); // when the instant reset is triggered, the AResetN of the Fourier Synth is low
+
+	return SCPI_RES_OK;
+}
+
 static scpi_result_t RP_DAC_SetValueLUT(scpi_t * context) {
 
 	readyConfigSequence();
@@ -1936,7 +1942,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:InstantReset:MODe", .callback = RP_SetInstantResetMode,},
 	{.pattern = "RP:InstantReset:MODe?", .callback = RP_GetInstantResetMode,},
 	{.pattern = "RP:InstantReset:STATus?", .callback = RP_InstantResetStatus,},
-	{.pattern = "RP:InstantReset:TRIGgered?", .callback = RP_FourierSynthAResetN,},
+	{.pattern = "RP:InstantReset:TRIGgered?", .callback = RP_InstantResetTriggered,},
 	//{.pattern = "RP:PeripheralAResetN?", .callback = RP_PeripheralAResetN,},
 	//{.pattern = "RP:FourierSynthAResetN?", .callback = RP_FourierSynthAResetN,},
 	//{.pattern = "RP:PDMAResetN?", .callback = RP_PDMAResetN,},
