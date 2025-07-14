@@ -27,7 +27,7 @@ ArbitraryWaveform(f::Function, min=0, max=_awgBufferSize) = ArbitraryWaveform([f
 function waveform!_(rp::RedPitaya, channel::Integer, wave::ArbitraryWaveform)
   send(rp, "RP:DAC:CH$(channel-1):AWG")
   write(rp.dataSocket, wave[1:end])
-  return parse(Bool, receive(rp))
+  return parseErrorCodes(receive(rp))
 end
 
 function waveformDAC!(rp::RedPitaya, channel::Integer, wave::ArbitraryWaveform)
