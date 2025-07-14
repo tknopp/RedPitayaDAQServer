@@ -429,9 +429,9 @@ scpiCommand(::typeof(enableInstantReset)) = "RP:InstantReset:MODe?"
 scpiReturn(::typeof(enableInstantReset)) = String
 parseReturn(::typeof(enableInstantReset), ret) = occursin("ON", ret)
 
-instantResetPinStatus(rp::RedPitaya) = query(rp, scpiCommand(instantResetStatus), scpiReturn(instantResetStatus))
-scpiCommand(::typeof(instantResetStatus)) = "RP:InstantReset:STATus?"
-scpiReturn(::typeof(instantResetStatus)) = Bool
+instantResetPinStatus(rp::RedPitaya) = query(rp, scpiCommand(instantResetPinStatus), scpiReturn(instantResetPinStatus))
+scpiCommand(::typeof(instantResetPinStatus)) = "RP:InstantReset:STATus?"
+scpiReturn(::typeof(instantResetPinStatus)) = Bool
 
 instantResetTriggered(rp::RedPitaya) = query(rp, scpiCommand(instantResetTriggered), scpiReturn(instantResetTriggered))
 scpiCommand(::typeof(instantResetTriggered)) = "RP:InstantReset:TRIGgered?"

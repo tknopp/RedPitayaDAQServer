@@ -18,10 +18,11 @@
 - removed hard limit of 1 V from amplitude components, as the DAC might be able to produce higher amplitudes depending on the calibration
 
 ### General Updates
-- added instant reset to the FPGA ramping down any field sequence currently being output on pin input
-- added counter output with configurable counter speed outputting on X
+- extended instant reset to ramp down the outputs if ramping is enabled instead of cutting
+- (re)added SCPI interface to enable instant reset
+- added 3-bit counter output with configurable counter speed outputting on DIO2_N (LSB) to DIO4_N (MSB)
 - Improved passing of error messages from SCPI server to the Julia client
-- added `calibReset!(rp)`
+- added `calibReset!(rp)` to reset ADC and DAC calibration to default
 - added `serverversion(rp)` to query the version of the server running of the RedPitaya
 - improved `imgversion` to not error on server versions prior to the introduction
 - added two examples on FIR switching
