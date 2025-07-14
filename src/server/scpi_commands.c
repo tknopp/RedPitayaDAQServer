@@ -1936,6 +1936,7 @@ const scpi_command_t scpi_commands[] = {
 	{.pattern = "RP:InstantReset:MODe", .callback = RP_SetInstantResetMode,},
 	{.pattern = "RP:InstantReset:MODe?", .callback = RP_GetInstantResetMode,},
 	{.pattern = "RP:InstantReset:STATus?", .callback = RP_InstantResetStatus,},
+	{.pattern = "RP:InstantReset:TRIGgered?", .callback = RP_FourierSynthAResetN,},
 	//{.pattern = "RP:PeripheralAResetN?", .callback = RP_PeripheralAResetN,},
 	//{.pattern = "RP:FourierSynthAResetN?", .callback = RP_FourierSynthAResetN,},
 	//{.pattern = "RP:PDMAResetN?", .callback = RP_PDMAResetN,},
