@@ -24,6 +24,12 @@ amplitudeDAC!(rp, 1, 1, 0.5)
 offsetDAC!(rp, 1, 0)
 phaseDAC!(rp, 1, 1, 0.0)
 
+frequencyDAC!(rp, 2, 1, base_frequency / modulus)
+signalTypeDAC!(rp, 2, 1, SINE)
+amplitudeDAC!(rp, 2, 1, 0.4)
+offsetDAC!(rp, 2, 0)
+phaseDAC!(rp, 2, 1, pi/2)
+
 # Enable the instant reset triggered by DIO3_P
 enableInstantReset!(rp, true)
 # Ramping
@@ -40,14 +46,17 @@ rampingDAC!(rp, 2, 100/(base_frequency/modulus)) # Ramp for 10 Periods = 5 Frame
 serverMode!(rp, ACQUISITION)
 masterTrigger!(rp, true)
 
-uFirstPeriod = readFrames(rp, 0, 6)
-
-sleep(0.5)
-uCurrentPeriod = readFrames(rp, currentFrame(rp), 6)
-
 # Instant Reset
 # Now one should connect the instant reset DIO3_P with 3.3 Volt (i.e. set it to high)
 # and the result will be a ramp down that can be seen on an oscilloscope
+
+while !instantResetTriggered(rp)
+    @info "Instant Reset not triggered yet."
+    sleep(1)
+end
+@info "Instant Reset is triggered!"
+
+sleep(10)
 # To run the script again, one needs to run
-#    masterTrigger!(rp, false)
+masterTrigger!(rp, false)
 
