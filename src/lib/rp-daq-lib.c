@@ -809,7 +809,7 @@ int setPDMValueVolt(float voltage, int channel, int index) {
 	if(channel >= 2 ) {
 		if (voltage > 1.8) voltage = 1.8;
 		if (voltage < 0) voltage = 0;
-		val = (voltage / 1.8) * 2038.; // todo: check if number is correct? does is matter?
+		val = (voltage / 1.8) * 2048.;
 	} else {
 		float scaledVoltage = voltage*DAC_BASESCALE*getCalibDACScale(channel,false)/4.0; // the division by 4 is corrected in the FPGA but is necessary to fit the PDM values into 14 bit to not collide with resync bit
 		// clip values to stay within 14-bit signed
