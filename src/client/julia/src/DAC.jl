@@ -1,7 +1,7 @@
 export SignalType, SINE, TRIANGLE, SAWTOOTH, DACPerformanceData, DACConfig, ArbitraryWaveform, waveformDAC!, scaleWaveformDAC!,
-amplitudeDAC, amplitudeDAC!,offsetDAC, offsetDAC!, normalize,
+amplitudeDAC, amplitudeDAC!, offsetDAC, offsetDAC!, normalize,
 frequencyDAC, frequencyDAC!, phaseDAC, phaseDAC!, signalTypeDAC, signalTypeDAC!,
-rampingDAC!, rampingDAC, enableRamping!, enableRamping, enableRampDown, enableRampDown!, RampingState, RampingStatus, rampingStatus, rampDownDone, rampUpDone,
+rampingDAC!, rampingDAC, enableRamping!, enableRamping, enableRampDown, enableRampDown!, RampingState, RampingStatus, rampingStatus, rampDownDone, rampUpDone, startRampDown!,
 enableInstantReset!, enableInstantReset, instantResetPinStatus, instantResetTriggered
 
 """
@@ -378,16 +378,27 @@ scpiReturn(::typeof(enableRamping)) = String
 parseReturn(::typeof(enableRamping), ret) = occursin("ON", ret)
 
 function enableRampDown!(rp::RedPitaya, channel, value)
+  Base.depwarn("enableRampDown! is deprecated and will potentially be removed in a future relase. Please switch to using startRampDown!", :enableRampDown!)
   return query(rp, scpiCommand(enableRampDown!, channel, value), scpiReturn(enableRampDown!))
 end
 scpiCommand(::typeof(enableRampDown!), channel, val::Bool) = scpiCommand(enableRampDown!, channel, val ? "ON" : "OFF")
 scpiCommand(::typeof(enableRampDown!), channel, val::String) = string("RP:DAC:CH", Int(channel)-1, ":RAMPing:DoWN ", val)
 scpiReturn(::typeof(enableRampDown!)) = Bool
 
-enableRampDown(rp::RedPitaya, channel) = occursin("ON", query(rp, scpiCommand(enableRampDown, channel)))
+function enableRampDown(rp::RedPitaya, channel) 
+  Base.depwarn("enableRampDown is deprecated and will potentially be removed in a future release. Please check if your call to enableRampDown is intended and if yes file an issue",:enableRampDown)
+  occursin("ON", query(rp, scpiCommand(enableRampDown, channel)))
+end
 scpiCommand(::typeof(enableRampDown), channel) = string("RP:DAC:CH", Int(channel)-1, ":RAMPing:DoWN?")
 scpiReturn(::typeof(enableRampDown)) = String
 parseReturn(::typeof(enableRampDown), ret) = occursin("ON", ret)
+
+function startRampDown!(rp::RedPitaya, channel)
+  return query(rp, scpiCommand(startRampDown!, channel), scpiReturn(startRampDown!))
+end
+scpiCommand(::typeof(startRampDown!), channel) = string("RP:DAC:CH", Int(channel)-1, ":RAMPing:DoWN ON")
+scpiReturn(::typeof(startRampDown!)) = Bool
+
 
 function rampingStatus(rp::RedPitaya)
   status = query(rp, scpiCommand(rampingStatus), scpiReturn(rampingStatus))
