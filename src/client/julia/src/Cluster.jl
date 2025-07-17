@@ -235,7 +235,7 @@ for op in [:signalTypeDAC!, :amplitudeDAC!, :frequencyDAC!, :phaseDAC!]
   end
 end
 
-for op in [:offsetDAC, :rampingDAC, :enableRamping, :enableRampDown]
+for op in [:offsetDAC, :rampingDAC, :enableRamping, :enableRampDown, :startRampDown!]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster, chan::Integer)

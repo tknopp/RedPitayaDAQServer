@@ -21,10 +21,11 @@
 - extended instant reset to ramp down the outputs if ramping is enabled instead of cutting
 - (re)added SCPI interface to enable instant reset
 - added 3-bit counter output with configurable counter speed outputting on DIO2_N (LSB) to DIO4_N (MSB)
-- Improved passing of error messages from SCPI server to the Julia client
+- Improved passing of error messages from SCPI server to the Julia client, SCPI errors still do not throw, but additional info is output as log messages
 - added `calibReset!(rp)` to reset ADC and DAC calibration to default
 - added `serverversion(rp)` to query the version of the server running of the RedPitaya
 - improved `imgversion` to not error on server versions prior to the introduction
 - added two examples on FIR switching
+- deprecated `enableRampDown!` and `enableRampDown` due to misleading names and functionality. Use `startRampDown!(rp, channel)` in the future to start a ramp down. It is not and was never possible to stop a triggered ramp down contrary to what the existence of `enableRampDown!(rp, channel, false)` might suggest.
 
 
