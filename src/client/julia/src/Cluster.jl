@@ -125,7 +125,7 @@ for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :
            :keepAliveReset!, :serverMode!, :firEnabled!,
            :counterTrigger_enabled!, :counterTrigger_presamples!, :counterTrigger_arm!,
            :counterTrigger_reset!, :counterTrigger_referenceCounter!,
-           :counterTrigger_sourceType!, :counterTrigger_sourceChannel!]
+           :counterTrigger_sourceType!, :counterTrigger_sourceChannel!, :enableInstantReset!]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster, value)
@@ -143,7 +143,7 @@ for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :
   end
 end
 
-for op in [:clearSequence!, :sequence!, :stopTransmission]
+for op in [:clearSequence!, :sequence!, :stopTransmission, :enableInstantReset, :instantResetTriggered]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster)
