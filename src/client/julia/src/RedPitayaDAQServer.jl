@@ -137,12 +137,11 @@ const ERROR_CODES = Dict(
   -7=>"Sequence is in invalid state",
 )
 
-function parseErrorCodes(reply)
+function parseErrorCodes(reply, cmd=nothing)
   res = parse(Int, reply)
     if res <= 0
       if res < 0
-        # TODO: output human readable error messages/logs
-        @error ERROR_CODES[res]
+        @error ERROR_CODES[res] cmd=cmd
       end
       return false
     else
@@ -158,13 +157,13 @@ Send a query to the RedPitaya. Parse reply as `T`.
 Waits for `timeout` seconds and checks every `timeout/N` seconds.
 """
 function query(rp::RedPitaya, cmd::String, T::Type, timeout::Number=getTimeout())
-  a = query(rp, cmd, timeout)
+  reply = query(rp, cmd, timeout)
   if T == String
-    return a[2:end-1] # Strings are wrapped like this: "\"OUT\""
+    return reply[2:end-1] # Strings are wrapped like this: "\"OUT\""
   elseif T == Bool
-    return parseErrorCodes(a)
+    return parseErrorCodes(reply, cmd)
   else
-    parse(T, a)
+    parse(T, reply)
   end
 end
 

@@ -291,7 +291,7 @@ end
 function transmitLUT!(rp::RedPitaya, lut::Array{Float32}, cmd::String, repetitions::Integer)
   send(rp, string(cmd, " ", size(lut, 2), ",", repetitions))
   write(rp.dataSocket, lut)
-  return parseErrorCodes(receive(rp))
+  return parseErrorCodes(receive(rp), cmd)
 end
 
 valueLUT!(rp::RedPitaya, lut::AbstractSequence) = valueLUT!(rp, valueLUT(lut))
@@ -329,7 +329,7 @@ function enableLUT!(rp::RedPitaya, lut::Array)
   @debug "Writing enable DAC LUT"
   write(rp.dataSocket, lutBool)
   reply = receive(rp)
-  return parseErrorCodes(reply)
+  return parseErrorCodes(reply, "RP:DAC:SEQ:LUT:ENaBle")
 end
 
 function enableLUT!(rp::RedPitaya, lut::Nothing)
@@ -344,7 +344,7 @@ function resyncLUT!(rp::RedPitaya, lut::Array)
   @debug "Writing resync DAC LUT"
   write(rp.dataSocket, lutBool)
   reply = receive(rp)
-  return parseErrorCodes(reply)
+  return parseErrorCodes(reply, "RP:DAC:SEQ:LUT:ReSYNC")
 end
 
 function resyncLUT!(rp::RedPitaya, lut::Nothing)
