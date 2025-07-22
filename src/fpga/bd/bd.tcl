@@ -2474,14 +2474,17 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
   # Create instance: xlslice_8, and set properties
   set xlslice_8 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_8 ]
   set_property -dict [ list \
+   CONFIG.DIN_FROM {1} \
+   CONFIG.DIN_TO {1} \
    CONFIG.DIN_WIDTH {2} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $xlslice_8
 
   # Create instance: xlslice_9, and set properties
   set xlslice_9 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_9 ]
   set_property -dict [ list \
-   CONFIG.DIN_FROM {1} \
-   CONFIG.DIN_TO {1} \
+   CONFIG.DIN_FROM {0} \
+   CONFIG.DIN_TO {0} \
    CONFIG.DIN_WIDTH {2} \
    CONFIG.DOUT_WIDTH {1} \
  ] $xlslice_9
