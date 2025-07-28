@@ -1,14 +1,16 @@
 # Signal Generation
-Once the acquisition is triggered, each RedPitaya also starts producing signals on their output channels. Each RedPitaya features six such channels, two of those are the 16-bit DAC channel and four of those are digital pins using PDM, see [Connections](connections.md). The output signals are composed of three parts: parameterized waveforms ``W_i(t)``, an offset ``o_i`` and repeating arbitrary LUT tables. The latter are called sequences ``seq_i(t)``. The resulting signal of the DAC channel can be described as: 
+Once the acquisition is triggered, each RedPitaya also starts producing signals on their output channels. Each RedPitaya features six such channels, two of those are the 14-bit DAC channel and four of those are digital pins using PDM, see [Connections](connections.md). The output signals are composed of three parts: parameterized waveforms ``W_i(t)``, an offset ``o_i`` and repeating arbitrary LUT tables. The latter are called sequences ``seq_i(t)``. The resulting signal of the DAC channel can be described as: 
 
 ```math
 S_i(t) = seq_i(t) + o_i + W_i(t)
 ```
 ## Waveforms
-Each of the 16-bit DAC channel can output a compositve waveform with four components. Each component can be parametrized by its amplitude ``a_{i,j}``, frequency ``f_{i,j}`` and phase ``\varphi_{i,j}``, which can all be changed via SCPI commands. Furthermore, each component also offers different waveforms ``w_{i,j}``(sine, triangle, sawtooth):
+Each of the 14-bit DAC channels can output a compositve waveform with three components. Each component can be parametrized by its amplitude ``a_{i,j}``, frequency ``f_{i,j}`` and phase ``\varphi_{i,j}``, which can all be changed via SCPI commands. Furthermore, each component also offers different waveforms ``w_{i,j}``(sine, triangle, sawtooth):
 ```math
-W_i(t) = \sum_{j=1}^{4}a_{i,j} w_{i,j}(2\pi f_{i,j}t + \varphi_{i, j})
+W_i(t) = \sum_{j=1}^{3}a_{i,j} w_{i,j}(2\pi f_{i,j}t + \varphi_{i, j})
 ```
+
+Additionally there is a fourth waveform which can be user-configured to an arbitrary waveform. The arbitrary waveform is defined by a 16384 sample buffer representing a single period, which is then also parameterized using a frequency and phase. Note, that the amplitude of the waveform has to be adjusted by updating the buffer.
 ## Ramping
 The signals output on the DAC channel can also be multiplied with an increasing/decreasing ramping factor ``r(t)``. Ramping and the ramping duration can be enabled and set on a per channel basis. The increasing factor starts from 0 and goes to 1 from the acquisition start on. The decreasing factor goes from 1 to 0.
 

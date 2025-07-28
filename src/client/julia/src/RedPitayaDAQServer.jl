@@ -127,6 +127,28 @@ function query(rp::RedPitaya, cmd::String, timeout::Number=getTimeout())
   receive(rp, timeout)
 end
 
+const ERROR_CODES = Dict(
+  -1=>"Unspecified Error",
+  -2=>"Value invalid or out of range!",
+  -3=>"Channel index out of range!",
+  -4=>"Component index out of range!",
+  -5=>"Server is in invalid mode! Use serverMode! to switch",
+  -6=>"Error during parsing of the SCPI command!",
+  -7=>"Sequence is in invalid state",
+)
+
+function parseErrorCodes(reply, cmd=nothing)
+  res = parse(Int, reply)
+    if res <= 0
+      if res < 0
+        @error ERROR_CODES[res] cmd=cmd
+      end
+      return false
+    else
+      return true
+    end
+end
+
 """
     query(rp::RedPitaya, cmd, T::Type [timeout = 5.0, N = 100])
 
@@ -135,11 +157,13 @@ Send a query to the RedPitaya. Parse reply as `T`.
 Waits for `timeout` seconds and checks every `timeout/N` seconds.
 """
 function query(rp::RedPitaya, cmd::String, T::Type, timeout::Number=getTimeout())
-  a = query(rp, cmd, timeout)
+  reply = query(rp, cmd, timeout)
   if T == String
-    return a[2:end-1] # Strings are wrapped like this: "\"OUT\""
+    return reply[2:end-1] # Strings are wrapped like this: "\"OUT\""
+  elseif T == Bool
+    return parseErrorCodes(reply, cmd)
   else
-    parse(T, a)
+    parse(T, reply)
   end
 end
 
@@ -171,9 +195,10 @@ function connect(rp::RedPitaya)
       end
 
       imageVersion = imgversion(rp)
+      serverVersion = serverversion(rp)
       packageVersion = pkgversion(@__MODULE__)
-      if packageVersion.minor != imageVersion
-        @warn "RedPitayaDAQServer $(rp.host) (minor) client version ($packageVersion) differs from FPGA image version ($imageVersion). Incompatible (minor) versions can result in undefined behaviour"
+      if (packageVersion.minor != imageVersion) || (packageVersion.minor != serverVersion)
+        @warn "RedPitayaDAQServer $(rp.host) (minor) client version ($packageVersion) differs from FPGA image version ($imageVersion) and/or server version ($serverVersion). Incompatible (minor) versions can result in undefined behaviour"
       end
     end
   end
@@ -214,9 +239,29 @@ function stringToEnum(enumType::Type{T}, value::AbstractString) where {T <: Enum
   return instances(enumType)[index]
 end
 
-imgversion(rp::RedPitaya) = query(rp, scpiCommand(imgversion), scpiReturn(imgversion))
+function imgversion(rp::RedPitaya)
+  try 
+    return query(rp, scpiCommand(imgversion), scpiReturn(imgversion), 0.2)
+  catch e
+    query(rp, "SYSTem:VERSion?", Float32, 0.2) # verify that the RP answers at all
+    @warn "imgversion was added with Version 0.7, the RedPitaya is running an older version!"
+    return -1    
+  end
+end
 scpiCommand(::typeof(imgversion)) = "RP:VERsion:IMAGe?"
 scpiReturn(::typeof(imgversion)) = UInt32
+
+function serverversion(rp::RedPitaya)
+  try 
+    return query(rp, scpiCommand(serverversion), scpiReturn(serverversion), 0.2)
+  catch e
+    query(rp, "SYSTem:VERSion?", Float32, 0.2) # verify that the RP answers at all
+    @warn "serverversion was added with Version 0.11, the RedPitaya is running an older server!"
+    return -1    
+  end
+end
+scpiCommand(::typeof(serverversion)) = "RP:VERsion:SERVer?"
+scpiReturn(::typeof(serverversion)) = UInt32
 
 """
     ServerMode

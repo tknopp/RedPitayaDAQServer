@@ -234,7 +234,7 @@ proc create_root_design { parentCell } {
   set freq [ create_bd_port -dir I -type data freq ]
   set ramp_state [ create_bd_port -dir O -from 1 -to 0 ramp_state ]
   set signal_in [ create_bd_port -dir I -from 15 -to 0 -type data signal_in ]
-  set signal_out [ create_bd_port -dir O -from 15 -to 0 -type data signal_out ]
+  set signal_out [ create_bd_port -dir O -from 18 -to 0 -type data signal_out ]
   set startRampDown [ create_bd_port -dir I startRampDown ]
 
   # Create instance: axis_variable_0, and set properties
@@ -270,10 +270,12 @@ proc create_root_design { parentCell } {
   set mult_gen_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:mult_gen:12.0 mult_gen_0 ]
   set_property -dict [ list \
    CONFIG.Multiplier_Construction {Use_Mults} \
-   CONFIG.OutputWidthHigh {28} \
+   CONFIG.OutputWidthHigh {31} \
    CONFIG.OutputWidthLow {13} \
    CONFIG.PipeStages {3} \
-   CONFIG.PortAWidth {16} \
+   CONFIG.PortAType {Signed} \
+   CONFIG.PortAWidth {19} \
+   CONFIG.PortBType {Signed} \
    CONFIG.PortBWidth {16} \
    CONFIG.Use_Custom_Output_Width {true} \
  ] $mult_gen_0

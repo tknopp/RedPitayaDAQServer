@@ -31,8 +31,8 @@ begin
 end
 
 // Values
-assign dac_value_0[15:0] = {{2{seq_data_int[13]}}, seq_data_int[13:0]};
-assign dac_value_1[15:0] = {{2{seq_data_int[31]}}, seq_data_int[29:16]};
+assign dac_value_0[15:0] = {seq_data_int[13:0], 2'b00};
+assign dac_value_1[15:0] = {seq_data_int[29:16], 2'b00};
 
 assign pdm_value_0[10:0] = seq_data_int[42:32];
 assign pdm_value_1[10:0] = seq_data_int[58:48];

@@ -40,7 +40,7 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 
 # The design that will be created by this Tcl script contains the following 
 # module references:
-# reset_manager, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, sequence_stepper, counter_delayed_trigger, enable_ramping_slice, sequence_slice, sequence_stepper, signal_cfg_slice, signal_composer, signal_cfg_slice, signal_composer, wave_awg_composer, wave_awg_composer
+# reset_manager, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, rp_iobuf, sequence_stepper, counter_delayed_trigger, enable_ramping_slice, sequence_slice, sequence_stepper, bypass_multiplexer, bypass_multiplexer, signal_cfg_slice, signal_composer, signal_cfg_slice, signal_composer, wave_awg_composer, wave_awg_composer
 
 # Please add the sources of those modules before sourcing this Tcl script.
 
@@ -200,6 +200,8 @@ counter_delayed_trigger\
 enable_ramping_slice\
 sequence_slice\
 sequence_stepper\
+bypass_multiplexer\
+bypass_multiplexer\
 signal_cfg_slice\
 signal_composer\
 signal_cfg_slice\
@@ -903,10 +905,10 @@ proc create_hier_cell_signal_compose1 { parentCell nameHier } {
   connect_bd_net -net resync_dac_1 [get_bd_pins resync_dac] [get_bd_pins waveform_gen_0/resync] [get_bd_pins waveform_gen_1/resync] [get_bd_pins waveform_gen_2/resync]
   connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins signal_ramp_0/aresetn] [get_bd_pins waveform_awg1/aresetn] [get_bd_pins waveform_gen_0/aresetn] [get_bd_pins waveform_gen_1/aresetn] [get_bd_pins waveform_gen_2/aresetn]
   connect_bd_net -net signal_calib_0_signal_out [get_bd_pins S] [get_bd_pins signal_calib_0/signal_out]
-  connect_bd_net -net signal_cfg_slice_0_calib_limit_lower [get_bd_pins signal_cfg_slice_0/calib_limit_lower]
-  connect_bd_net -net signal_cfg_slice_0_calib_limit_upper [get_bd_pins signal_cfg_slice_0/calib_limit_upper]
+  connect_bd_net -net signal_cfg_slice_0_calib_limit_lower [get_bd_pins signal_calib_0/limit_lower] [get_bd_pins signal_cfg_slice_0/calib_limit_lower]
+  connect_bd_net -net signal_cfg_slice_0_calib_limit_upper [get_bd_pins signal_calib_0/limit_upper] [get_bd_pins signal_cfg_slice_0/calib_limit_upper]
   connect_bd_net -net signal_cfg_slice_0_calib_offset [get_bd_pins signal_calib_0/calib_offset] [get_bd_pins signal_cfg_slice_0/calib_offset]
-  connect_bd_net -net signal_cfg_slice_0_calib_scale [get_bd_pins signal_calib_0/calib_scale] [get_bd_pins signal_cfg_slice_0/calib_scale]
+  connect_bd_net -net signal_cfg_slice_0_calib_scale [get_bd_pins signal_cfg_slice_0/calib_scale]
   connect_bd_net -net signal_cfg_slice_0_comp_0_amp [get_bd_pins signal_cfg_slice_0/comp_0_amp] [get_bd_pins waveform_gen_0/amplitude]
   connect_bd_net -net signal_cfg_slice_0_comp_0_cfg [get_bd_pins signal_cfg_slice_0/comp_0_cfg] [get_bd_pins waveform_gen_0/cfg_data]
   connect_bd_net -net signal_cfg_slice_0_comp_0_freq [get_bd_pins signal_cfg_slice_0/comp_0_freq] [get_bd_pins waveform_gen_0/freq]
@@ -1089,10 +1091,10 @@ proc create_hier_cell_signal_compose { parentCell nameHier } {
   connect_bd_net -net ramping_enable_1 [get_bd_pins enable_ramping] [get_bd_pins signal_ramp/enableRamping]
   connect_bd_net -net resync_dac_1 [get_bd_pins resync_dac] [get_bd_pins waveform_gen_0/resync] [get_bd_pins waveform_gen_1/resync] [get_bd_pins waveform_gen_2/resync]
   connect_bd_net -net signal_calib_0_signal_out [get_bd_pins S] [get_bd_pins signal_calib_0/signal_out]
-  connect_bd_net -net signal_cfg_slice_0_calib_limit_lower [get_bd_pins signal_cfg_slice_0/calib_limit_lower]
-  connect_bd_net -net signal_cfg_slice_0_calib_limit_upper [get_bd_pins signal_cfg_slice_0/calib_limit_upper]
+  connect_bd_net -net signal_cfg_slice_0_calib_limit_lower [get_bd_pins signal_calib_0/limit_lower] [get_bd_pins signal_cfg_slice_0/calib_limit_lower]
+  connect_bd_net -net signal_cfg_slice_0_calib_limit_upper [get_bd_pins signal_calib_0/limit_upper] [get_bd_pins signal_cfg_slice_0/calib_limit_upper]
   connect_bd_net -net signal_cfg_slice_0_calib_offset [get_bd_pins signal_calib_0/calib_offset] [get_bd_pins signal_cfg_slice_0/calib_offset]
-  connect_bd_net -net signal_cfg_slice_0_calib_scale [get_bd_pins signal_calib_0/calib_scale] [get_bd_pins signal_cfg_slice_0/calib_scale]
+  connect_bd_net -net signal_cfg_slice_0_calib_scale [get_bd_pins signal_cfg_slice_0/calib_scale]
   connect_bd_net -net signal_cfg_slice_0_comp_0_amp [get_bd_pins signal_cfg_slice_0/comp_0_amp] [get_bd_pins waveform_gen_0/amplitude]
   connect_bd_net -net signal_cfg_slice_0_comp_0_cfg [get_bd_pins signal_cfg_slice_0/comp_0_cfg] [get_bd_pins waveform_gen_0/cfg_data]
   connect_bd_net -net signal_cfg_slice_0_comp_0_freq [get_bd_pins signal_cfg_slice_0/comp_0_freq] [get_bd_pins waveform_gen_0/freq]
@@ -1172,6 +1174,7 @@ proc create_hier_cell_write_to_ram { parentCell nameHier } {
   create_bd_pin -dir O -from 15 -to 0 adc_out_B
   create_bd_pin -dir I -type rst aresetn
   create_bd_pin -dir I -from 15 -to 0 decimation
+  create_bd_pin -dir I enableFIR
   create_bd_pin -dir I -type rst keep_alive_aresetn
   create_bd_pin -dir I s_axis_data_tvalid
   create_bd_pin -dir O -from 63 -to 0 sts_data
@@ -1200,6 +1203,34 @@ proc create_hier_cell_write_to_ram { parentCell nameHier } {
   set_property -dict [ list \
    CONFIG.AXIS_TDATA_WIDTH {16} \
  ] $axis_variable_decimation_B
+
+  # Create instance: bypass_multiplexer_0, and set properties
+  set block_name bypass_multiplexer
+  set block_cell_name bypass_multiplexer_0
+  if { [catch {set bypass_multiplexer_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $bypass_multiplexer_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+    set_property -dict [ list \
+   CONFIG.DATA_WIDTH {32} \
+ ] $bypass_multiplexer_0
+
+  # Create instance: bypass_multiplexer_1, and set properties
+  set block_name bypass_multiplexer
+  set block_cell_name bypass_multiplexer_1
+  if { [catch {set bypass_multiplexer_1 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $bypass_multiplexer_1 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+    set_property -dict [ list \
+   CONFIG.DATA_WIDTH {1} \
+ ] $bypass_multiplexer_1
 
   # Create instance: cic_compiler_A, and set properties
   set cic_compiler_A [ create_bd_cell -type ip -vlnv xilinx.com:ip:cic_compiler:4.0 cic_compiler_A ]
@@ -1326,26 +1357,12 @@ proc create_hier_cell_write_to_ram { parentCell nameHier } {
   # Create instance: xlconcat_3, and set properties
   set xlconcat_3 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconcat:2.1 xlconcat_3 ]
 
-  # Create instance: xlconstant_0, and set properties
-  set xlconstant_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_0 ]
-  set_property -dict [ list \
-   CONFIG.CONST_VAL {0} \
-   CONFIG.CONST_WIDTH {42} \
- ] $xlconstant_0
-
   # Create instance: xlconstant_2, and set properties
   set xlconstant_2 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_2 ]
   set_property -dict [ list \
    CONFIG.CONST_VAL {402653184} \
    CONFIG.CONST_WIDTH {32} \
  ] $xlconstant_2
-
-  # Create instance: xlconstant_AA_HV, and set properties
-  set xlconstant_AA_HV [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 xlconstant_AA_HV ]
-  set_property -dict [ list \
-   CONFIG.CONST_VAL {0x4c5f} \
-   CONFIG.CONST_WIDTH {18} \
- ] $xlconstant_AA_HV
 
   # Create instance: xlslice_0, and set properties
   set xlslice_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_0 ]
@@ -1406,21 +1423,24 @@ proc create_hier_cell_write_to_ram { parentCell nameHier } {
   connect_bd_net -net axis_ram_writer_1_sts_total_data [get_bd_pins sts_data] [get_bd_pins axis_ram_writer_1/sts_total_data]
   connect_bd_net -net axis_red_pitaya_adc_1_m_axis_tdata [get_bd_pins Din] [get_bd_pins xlslice_A/Din] [get_bd_pins xlslice_B/Din]
   connect_bd_net -net axis_red_pitaya_adc_1_m_axis_tvalid [get_bd_pins s_axis_data_tvalid] [get_bd_pins cic_compiler_A/s_axis_data_tvalid] [get_bd_pins cic_compiler_B/s_axis_data_tvalid]
+  connect_bd_net -net bypass_multiplexer_1_outsignal [get_bd_pins axis_dwidth_converter_0/s_axis_tvalid] [get_bd_pins bypass_multiplexer_1/outsignal]
   connect_bd_net -net cic_compiler_A_m_axis_data_tdata [get_bd_pins cic_compiler_A/m_axis_data_tdata] [get_bd_pins xlconcat_1/In0]
   connect_bd_net -net cic_compiler_A_m_axis_data_tvalid [get_bd_pins cic_compiler_A/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op1]
   connect_bd_net -net cic_compiler_B_m_axis_data_tdata [get_bd_pins cic_compiler_B/m_axis_data_tdata] [get_bd_pins xlconcat_1/In1]
   connect_bd_net -net cic_compiler_B_m_axis_data_tvalid [get_bd_pins cic_compiler_B/m_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Op2]
-  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_ram_writer_1/aclk] [get_bd_pins axis_variable_decimation_A/aclk] [get_bd_pins axis_variable_decimation_B/aclk] [get_bd_pins cic_compiler_A/aclk] [get_bd_pins cic_compiler_B/aclk] [get_bd_pins fir_compiler_1/aclk]
+  connect_bd_net -net clk_wiz_0_clk_internal [get_bd_pins aclk] [get_bd_pins axis_dwidth_converter_0/aclk] [get_bd_pins axis_ram_writer_1/aclk] [get_bd_pins axis_variable_decimation_A/aclk] [get_bd_pins axis_variable_decimation_B/aclk] [get_bd_pins bypass_multiplexer_0/clk] [get_bd_pins bypass_multiplexer_1/clk] [get_bd_pins cic_compiler_A/aclk] [get_bd_pins cic_compiler_B/aclk] [get_bd_pins fir_compiler_1/aclk]
   connect_bd_net -net decimation_1 [get_bd_pins decimation] [get_bd_pins axis_variable_decimation_A/cfg_data] [get_bd_pins axis_variable_decimation_B/cfg_data]
+  connect_bd_net -net enableFIR_1 [get_bd_pins enableFIR] [get_bd_pins bypass_multiplexer_0/idx] [get_bd_pins bypass_multiplexer_1/idx]
   connect_bd_net -net fir_compiler_1_m_axis_data_tdata [get_bd_pins fir_compiler_1/m_axis_data_tdata] [get_bd_pins xlslice_0/Din] [get_bd_pins xlslice_1/Din]
-  connect_bd_net -net fir_compiler_1_m_axis_data_tvalid [get_bd_pins axis_dwidth_converter_0/s_axis_tvalid] [get_bd_pins fir_compiler_1/m_axis_data_tvalid]
-  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_variable_decimation_A/aresetn] [get_bd_pins axis_variable_decimation_B/aresetn] [get_bd_pins cic_compiler_A/aresetn] [get_bd_pins cic_compiler_B/aresetn] [get_bd_pins fir_compiler_1/aresetn] [get_bd_pins util_vector_logic_1/Op1]
+  connect_bd_net -net fir_compiler_1_m_axis_data_tvalid [get_bd_pins bypass_multiplexer_1/insignal0] [get_bd_pins fir_compiler_1/m_axis_data_tvalid]
+  connect_bd_net -net rst_ps7_0_125M_peripheral_aresetn [get_bd_pins aresetn] [get_bd_pins axis_dwidth_converter_0/aresetn] [get_bd_pins axis_variable_decimation_A/aresetn] [get_bd_pins axis_variable_decimation_B/aresetn] [get_bd_pins bypass_multiplexer_0/aresetn] [get_bd_pins bypass_multiplexer_1/aresetn] [get_bd_pins cic_compiler_A/aresetn] [get_bd_pins cic_compiler_B/aresetn] [get_bd_pins fir_compiler_1/aresetn] [get_bd_pins util_vector_logic_1/Op1]
   connect_bd_net -net sign_extend_A_dout [get_bd_pins cic_compiler_A/s_axis_data_tdata] [get_bd_pins sign_extend_A/dout]
   connect_bd_net -net sign_extend_B_dout [get_bd_pins cic_compiler_B/s_axis_data_tdata] [get_bd_pins sign_extend_B/dout]
-  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins fir_compiler_1/s_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Res]
+  connect_bd_net -net util_vector_logic_0_Res [get_bd_pins bypass_multiplexer_1/insignal1] [get_bd_pins fir_compiler_1/s_axis_data_tvalid] [get_bd_pins util_vector_logic_0/Res]
   connect_bd_net -net util_vector_logic_1_Res [get_bd_pins axis_ram_writer_1/aresetn] [get_bd_pins util_vector_logic_1/Res]
-  connect_bd_net -net xlconcat_1_dout [get_bd_pins fir_compiler_1/s_axis_data_tdata] [get_bd_pins xlconcat_1/dout]
-  connect_bd_net -net xlconcat_3_dout [get_bd_pins axis_dwidth_converter_0/s_axis_tdata] [get_bd_pins xlconcat_3/dout] [get_bd_pins xlslice_out_A/Din] [get_bd_pins xlslice_out_B/Din]
+  connect_bd_net -net xlconcat_1_dout [get_bd_pins bypass_multiplexer_0/insignal1] [get_bd_pins fir_compiler_1/s_axis_data_tdata] [get_bd_pins xlconcat_1/dout]
+  connect_bd_net -net xlconcat_3_dout [get_bd_pins axis_dwidth_converter_0/s_axis_tdata] [get_bd_pins bypass_multiplexer_0/outsignal] [get_bd_pins xlslice_out_A/Din] [get_bd_pins xlslice_out_B/Din]
+  connect_bd_net -net xlconcat_3_dout1 [get_bd_pins bypass_multiplexer_0/insignal0] [get_bd_pins xlconcat_3/dout]
   connect_bd_net -net xlconstant_2_dout [get_bd_pins axis_ram_writer_1/cfg_data] [get_bd_pins xlconstant_2/dout]
   connect_bd_net -net xlslice_0_Dout [get_bd_pins xlconcat_3/In0] [get_bd_pins xlslice_0/Dout]
   connect_bd_net -net xlslice_1_Dout [get_bd_pins xlconcat_3/In1] [get_bd_pins xlslice_1/Dout]
@@ -1579,7 +1599,7 @@ proc create_hier_cell_system_1 { parentCell nameHier } {
   # Create instance: image_version, and set properties
   set image_version [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlconstant:1.1 image_version ]
   set_property -dict [ list \
-   CONFIG.CONST_VAL {9} \
+   CONFIG.CONST_VAL {11} \
    CONFIG.CONST_WIDTH {32} \
  ] $image_version
 
@@ -2454,14 +2474,17 @@ proc create_hier_cell_fourier_synth_standard { parentCell nameHier } {
   # Create instance: xlslice_8, and set properties
   set xlslice_8 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_8 ]
   set_property -dict [ list \
+   CONFIG.DIN_FROM {1} \
+   CONFIG.DIN_TO {1} \
    CONFIG.DIN_WIDTH {2} \
+   CONFIG.DOUT_WIDTH {1} \
  ] $xlslice_8
 
   # Create instance: xlslice_9, and set properties
   set xlslice_9 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_9 ]
   set_property -dict [ list \
-   CONFIG.DIN_FROM {1} \
-   CONFIG.DIN_TO {1} \
+   CONFIG.DIN_FROM {0} \
+   CONFIG.DIN_TO {0} \
    CONFIG.DIN_WIDTH {2} \
    CONFIG.DOUT_WIDTH {1} \
  ] $xlslice_9
@@ -3690,6 +3713,15 @@ proc create_root_design { parentCell } {
    CONFIG.DOUT_WIDTH {8} \
  ] $xlslice_3
 
+  # Create instance: xlslice_4, and set properties
+  set xlslice_4 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_4 ]
+  set_property -dict [ list \
+   CONFIG.DIN_FROM {15} \
+   CONFIG.DIN_TO {15} \
+   CONFIG.DIN_WIDTH {128} \
+   CONFIG.DOUT_WIDTH {1} \
+ ] $xlslice_4
+
   # Create instance: xlslice_6, and set properties
   set xlslice_6 [ create_bd_cell -type ip -vlnv xilinx.com:ip:xlslice:1.0 xlslice_6 ]
   set_property -dict [ list \
@@ -3796,7 +3828,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net sequencer_seq_ramp_down [get_bd_pins fourier_synth_standard/seq_ramp_down] [get_bd_pins sequencer/seq_ramp_down]
   connect_bd_net -net system_FCLK_RESET0_N [get_bd_pins system/FCLK_RESET0_N] [get_bd_pins util_vector_logic_1/Op1]
   connect_bd_net -net system_cfg_data [get_bd_pins DIO/cfg_dac] [get_bd_pins fourier_synth_standard/cfg_data] [get_bd_pins system/dac_cfg]
-  connect_bd_net -net system_cfg_data1 [get_bd_pins DIO/cfg_in] [get_bd_pins system/cfg_data] [get_bd_pins xlslice_1/Din] [get_bd_pins xlslice_2/Din] [get_bd_pins xlslice_3/Din] [get_bd_pins xlslice_6/Din]
+  connect_bd_net -net system_cfg_data1 [get_bd_pins DIO/cfg_in] [get_bd_pins system/cfg_data] [get_bd_pins xlslice_1/Din] [get_bd_pins xlslice_2/Din] [get_bd_pins xlslice_3/Din] [get_bd_pins xlslice_4/Din] [get_bd_pins xlslice_6/Din]
   connect_bd_net -net system_counter_trigger_cfg [get_bd_pins counter_trigger/counter_trigger_cfg] [get_bd_pins system/counter_trigger_cfg]
   connect_bd_net -net system_peripheral_aresetn [get_bd_pins reset_manager_0/peripheral_aresetn] [get_bd_pins system/peripheral_aresetn]
   connect_bd_net -net util_ds_buf_0_OBUF_DS_N [get_bd_ports adc_enc_n_o] [get_bd_pins util_ds_buf_0/OBUF_DS_N]
@@ -3813,6 +3845,7 @@ proc create_root_design { parentCell } {
   connect_bd_net -net xlslice_1_Dout [get_bd_pins reset_manager_0/keep_alive_aresetn] [get_bd_pins sequencer/keep_alive_aresetn] [get_bd_pins write_to_ram/keep_alive_aresetn]
   connect_bd_net -net xlslice_2_Dout [get_bd_pins write_to_ram/decimation] [get_bd_pins xlslice_2/Dout]
   connect_bd_net -net xlslice_3_Dout [get_bd_pins reset_manager_0/reset_cfg] [get_bd_pins xlslice_3/Dout]
+  connect_bd_net -net xlslice_4_Dout [get_bd_pins write_to_ram/enableFIR] [get_bd_pins xlslice_4/Dout]
   connect_bd_net -net xlslice_6_Dout [get_bd_pins reset_manager_0/ramping_cfg] [get_bd_pins xlslice_6/Dout]
 
   # Create address segments

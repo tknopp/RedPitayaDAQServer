@@ -1,4 +1,4 @@
-export calibDACOffset, calibDACOffset!, calibADCScale, calibADCScale!, calibADCOffset, calibADCOffset!, updateCalib!, calibDACScale!, calibDACScale, calibFlags, calibDACLowerLimit, calibDACLowerLimit!, calibDACUpperLimit, calibDACUpperLimit!, calibDACLimit!
+export calibDACOffset, calibDACOffset!, calibADCScale, calibADCScale!, calibADCOffset, calibADCOffset!, updateCalib!, calibDACScale!, calibDACScale, calibFlags, calibDACLowerLimit, calibDACLowerLimit!, calibDACUpperLimit, calibDACUpperLimit!, calibDACLimit!, calibReset!
 
 """
     calibDACOffset!(rp::RedPitaya, channel::Integer, val)
@@ -7,9 +7,6 @@ Store calibration DAC offset `val` for given channel into the RedPitayas EEPROM.
 This value is used by the server to offset the output voltage. Absolute value has to be smaller than 1.0 V. 
 """
 function calibDACOffset!(rp::RedPitaya, channel::Integer, val)
-  if abs(val) > 1.0
-    error("Absolute value of $val is larger than 1.0 V!")
-  end
   return query(rp, scpiCommand(calibDACOffset!, channel, val), scpiReturn(calibDACOffset!))
 end
 scpiCommand(::typeof(calibDACOffset!), channel::Integer, val) = string("RP:CALib:DAC:CH", Int(channel) - 1, ":OFF $(Float32(val))")
@@ -110,9 +107,6 @@ Absolute value has to be smaller than 1.0 V.
 See also [convertSamplesToPeriods!](@ref),[convertSamplesToFrames](@ref).
 """
 function calibADCOffset!(rp::RedPitaya, channel::Integer, val)
-  if abs(val) > 1.0
-    error("Absolute value of $val is larger than 1.0 V!")
-  end
   rp.calib[2, channel] = Float32(val)
   return query(rp, scpiCommand(calibADCOffset!, channel, val), scpiReturn(calibADCOffset!))
 end
@@ -154,9 +148,13 @@ calibADCScale(rp::RedPitaya, channel::Integer) = query(rp, scpiCommand(calibADCS
 scpiCommand(::typeof(calibADCScale), channel::Integer) = string("RP:CALib:ADC:CH", Int(channel) - 1, ":SCA?")
 scpiReturn(::typeof(calibADCScale)) = Float64
 
-calibFlags(rp::RedPitaya) = query(rp, scpiCommand(calibFlags), scpiReturn(calibFlags))
+calibFlags(rp::RedPitaya) = bitstring(query(rp, scpiCommand(calibFlags), scpiReturn(calibFlags)))[end-11:end]
 scpiCommand(::typeof(calibFlags)) = "RP:CALib:FLAGs"
 scpiReturn(::typeof(calibFlags)) = Int64
+
+calibReset!(rp::RedPitaya) = query(rp, scpiCommand(calibReset!), scpiReturn(calibReset!))
+scpiCommand(::typeof(calibReset!)) = "RP:CALib:RESet"
+scpiReturn(::typeof(calibReset!)) = Bool
 
 """
     updateCalib!(rp::RedPitaya)

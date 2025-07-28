@@ -1,5 +1,5 @@
 using RedPitayaDAQServer
-using GLMakie
+using CairoMakie
 
 # obtain the URL of the RedPitaya
 include("config.jl")

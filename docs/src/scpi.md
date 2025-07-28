@@ -89,7 +89,11 @@ During an active trigger the buffer is periodically updated by the server. If th
 |RP:CALib:DAC:CHannel#:OFFset? | channel (0, 1) | Return the DAC offset value for given channel from EEPROM | Any | RP:CAL:DAC:CH1:OFF? |
 |RP:CALib:DAC:CHannel#:SCAle | channel (0, 1), scale| Store the DAC scale value for given channel in EEPROM | C | RP:CAL:DAC:CH1:SCA 1.0 |
 |RP:CALib:DAC:CHannel#:SCAle? | channel (0, 1) | Return the DAC scale value for given channel from EEPROM | Any | RP:CAL:DAC:CH1:SCA? |
-
+|RP:CALib:DAC:CHannel#:LIMit:UPper | channel (0, 1), upper limit| Store the DAC upper limit value (in V) for given channel in EEPROM | C | RP:CAL:DAC:CH1:LIM:UP 1.0 |
+|RP:CALib:DAC:CHannel#:LIMit:UPper? | channel (0, 1) | Return the DAC upper limit value (in V) for given channel from EEPROM | Any | RP:CAL:DAC:CH1:LIM:UP? |
+|RP:CALib:DAC:CHannel#:LIMit:LOWer | channel (0, 1), lower limit| Store the DAC lower limit value (in V) for given channel in EEPROM | C | RP:CAL:DAC:CH1:LIM:LOW -1.0 |
+|RP:CALib:DAC:CHannel#:LIMit:LOWer? | channel (0, 1) | Return the DAC lower limit value (in V) for given channel from EEPROM | Any | RP:CAL:DAC:CH1:LIM:LOW? |
+|RP:CALib:RESet |  | Reset all EEPROM calibration values to their default | C | RP:CAL:RES |
 ## DIO
 
 | Command        | Arguments    | Description         | Example         |

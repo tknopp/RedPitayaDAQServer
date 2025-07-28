@@ -35,6 +35,7 @@
 
 #define DAC_MODE_AWG  1
 #define	DAC_MODE_STANDARD   0
+#define DAC_BASESCALE 32767.0
 
 #define SIGNAL_TYPE_SINE 0
 #define SIGNAL_TYPE_SQUARE 1
@@ -56,7 +57,15 @@
 #define DIO_IN 1
 #define DIO_OUT 0
 
-#define CALIB_VERSION 2
+#define CALIB_VERSION 3
+
+#define SUCCESS 1
+#define INVALID_VALUE -2
+#define INVALID_CHANNEL -3
+#define INVALID_COMPONENT -4
+#define INVALID_MODE -5
+#define INVALID_SCPI -6
+#define INVALID_SEQUENCESTATE -7
 
 extern bool verbose;
 
@@ -80,6 +89,7 @@ extern bool isZynq7045();
 extern int init();
 extern void loadBitstream();
 extern uint32_t getFPGAImageVersion();
+extern uint32_t getServerVersion();
 
 // fast DAC
 extern uint16_t getAmplitude(int, int);
@@ -97,7 +107,9 @@ extern int getDACMode();
 extern int getSignalType(int, int);
 extern int setSignalType(int, int, int);
 extern int setCalibDACScale(float, int);
+extern double getCalibDACOffset(int);
 extern int setCalibDACOffset(float, int);
+extern double getCalibDACScale(int, bool);
 extern int setCalibDACLowerLimit(float, int);
 extern int setCalibDACUpperLimit(float, int);
 extern int setArbitraryWaveform(float*, int);
@@ -187,6 +199,8 @@ extern int setTriggerPropagation(int);
 extern int getTriggerPropagation();
 extern int getWatchdogMode();
 extern int setWatchdogMode(int);
+extern int getFIREnabled();
+extern int setFIREnabled(int);
 extern int getRAMWriterMode();
 extern int setRAMWriterMode(int);
 extern int getKeepAliveReset();

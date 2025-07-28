@@ -37,6 +37,13 @@ if { [string first $scripts_vivado_version $current_vivado_version] == -1 } {
 # To test this script, run the following commands from Vivado Tcl console:
 # source signal_calib_script.tcl
 
+
+# The design that will be created by this Tcl script contains the following 
+# module references:
+# signal_limit
+
+# Please add the sources of those modules before sourcing this Tcl script.
+
 # If there is no project opened, this script will create a
 # project, but make sure you do not have an existing project
 # <./myproj/project_1.xpr> in the current working folder.
@@ -124,7 +131,6 @@ set bCheckIPs 1
 if { $bCheckIPs == 1 } {
    set list_check_ips "\ 
 xilinx.com:ip:c_addsub:12.0\
-xilinx.com:ip:mult_gen:12.0\
 "
 
    set list_ips_missing ""
@@ -142,6 +148,31 @@ xilinx.com:ip:mult_gen:12.0\
       set bCheckIPsPassed 0
    }
 
+}
+
+##################################################################
+# CHECK Modules
+##################################################################
+set bCheckModules 1
+if { $bCheckModules == 1 } {
+   set list_check_mods "\ 
+signal_limit\
+"
+
+   set list_mods_missing ""
+   common::send_gid_msg -ssname BD::TCL -id 2020 -severity "INFO" "Checking if the following modules exist in the project's sources: $list_check_mods ."
+
+   foreach mod_vlnv $list_check_mods {
+      if { [can_resolve_reference $mod_vlnv] == 0 } {
+         lappend list_mods_missing $mod_vlnv
+      }
+   }
+
+   if { $list_mods_missing ne "" } {
+      catch {common::send_gid_msg -ssname BD::TCL -id 2021 -severity "ERROR" "The following module(s) are not found in the project: $list_mods_missing" }
+      common::send_gid_msg -ssname BD::TCL -id 2022 -severity "INFO" "Please add source files for the missing module(s) above."
+      set bCheckIPsPassed 0
+   }
 }
 
 if { $bCheckIPsPassed != 1 } {
@@ -192,41 +223,44 @@ proc create_root_design { parentCell } {
   # Create ports
   set aclk [ create_bd_port -dir I -type clk -freq_hz 125000000 aclk ]
   set calib_offset [ create_bd_port -dir I -from 15 -to 0 calib_offset ]
-  set calib_scale [ create_bd_port -dir I -from 15 -to 0 calib_scale ]
-  set signal_in [ create_bd_port -dir I -from 15 -to 0 signal_in ]
+  set limit_lower [ create_bd_port -dir I -from 15 -to 0 limit_lower ]
+  set limit_upper [ create_bd_port -dir I -from 15 -to 0 limit_upper ]
+  set signal_in [ create_bd_port -dir I -from 18 -to 0 signal_in ]
   set signal_out [ create_bd_port -dir O -from 15 -to 0 signal_out ]
 
-  # Create instance: c_addsub_0, and set properties
-  set c_addsub_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:c_addsub:12.0 c_addsub_0 ]
+  # Create instance: c_addsub_1, and set properties
+  set c_addsub_1 [ create_bd_cell -type ip -vlnv xilinx.com:ip:c_addsub:12.0 c_addsub_1 ]
   set_property -dict [ list \
-   CONFIG.A_Width {16} \
+   CONFIG.A_Type {Signed} \
+   CONFIG.A_Width {19} \
+   CONFIG.B_Type {Signed} \
    CONFIG.B_Value {0000000000000000} \
    CONFIG.B_Width {16} \
    CONFIG.CE {false} \
    CONFIG.Implementation {DSP48} \
    CONFIG.Latency {1} \
-   CONFIG.Out_Width {16} \
- ] $c_addsub_0
+   CONFIG.Out_Width {19} \
+ ] $c_addsub_1
 
-  # Create instance: mult_gen_0, and set properties
-  set mult_gen_0 [ create_bd_cell -type ip -vlnv xilinx.com:ip:mult_gen:12.0 mult_gen_0 ]
-  set_property -dict [ list \
-   CONFIG.Multiplier_Construction {Use_Mults} \
-   CONFIG.OutputWidthHigh {28} \
-   CONFIG.OutputWidthLow {13} \
-   CONFIG.PipeStages {3} \
-   CONFIG.PortAWidth {16} \
-   CONFIG.PortBWidth {16} \
-   CONFIG.Use_Custom_Output_Width {true} \
- ] $mult_gen_0
-
+  # Create instance: signal_limit_0, and set properties
+  set block_name signal_limit
+  set block_cell_name signal_limit_0
+  if { [catch {set signal_limit_0 [create_bd_cell -type module -reference $block_name $block_cell_name] } errmsg] } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2095 -severity "ERROR" "Unable to add referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   } elseif { $signal_limit_0 eq "" } {
+     catch {common::send_gid_msg -ssname BD::TCL -id 2096 -severity "ERROR" "Unable to referenced block <$block_name>. Please add the files for ${block_name}'s definition into the project."}
+     return 1
+   }
+  
   # Create port connections
-  connect_bd_net -net aclk_1 [get_bd_ports aclk] [get_bd_pins c_addsub_0/CLK] [get_bd_pins mult_gen_0/CLK]
-  connect_bd_net -net c_addsub_0_S [get_bd_ports signal_out] [get_bd_pins c_addsub_0/S]
-  connect_bd_net -net calib_offset_1 [get_bd_ports calib_offset] [get_bd_pins c_addsub_0/B]
-  connect_bd_net -net calib_scale_1 [get_bd_ports calib_scale] [get_bd_pins mult_gen_0/B]
-  connect_bd_net -net mult_gen_0_P [get_bd_pins c_addsub_0/A] [get_bd_pins mult_gen_0/P]
-  connect_bd_net -net signal_in_1 [get_bd_ports signal_in] [get_bd_pins mult_gen_0/A]
+  connect_bd_net -net aclk_1 [get_bd_ports aclk] [get_bd_pins c_addsub_1/CLK] [get_bd_pins signal_limit_0/clk]
+  connect_bd_net -net c_addsub_1_S [get_bd_pins c_addsub_1/S] [get_bd_pins signal_limit_0/signal_in]
+  connect_bd_net -net calib_offset_1 [get_bd_ports calib_offset] [get_bd_pins c_addsub_1/B]
+  connect_bd_net -net limit_lower_1 [get_bd_ports limit_lower] [get_bd_pins signal_limit_0/limit_lower]
+  connect_bd_net -net limit_upper_1 [get_bd_ports limit_upper] [get_bd_pins signal_limit_0/limit_upper]
+  connect_bd_net -net signal_in_1 [get_bd_ports signal_in] [get_bd_pins c_addsub_1/A]
+  connect_bd_net -net signal_limit_0_limited_signal [get_bd_ports signal_out] [get_bd_pins signal_limit_0/limited_signal]
 
   # Create address segments
 

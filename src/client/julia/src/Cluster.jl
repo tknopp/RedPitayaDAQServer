@@ -52,6 +52,7 @@ function RedPitayaCluster(hosts::Vector{String}, port::Int64=5025, dataPort::Int
 
   @sync for (i, rp) ∈ enumerate(rps)
     @async begin
+      serverMode!(rp, CONFIGURATION)
       triggerMode!(rp, modes[i])
       triggerPropagation!(rp, true)
     end
@@ -103,7 +104,7 @@ function RPInfo(rpc::RedPitayaCluster)
 end
 
 for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samplesPerPeriod, :decimation, :keepAliveReset,
-           :triggerMode, :samplesPerStep, :serverMode, :masterTrigger,
+           :triggerMode, :samplesPerStep, :serverMode, :masterTrigger, :firEnabled,
            :counterTrigger_enabled, :counterTrigger_enabled!, :counterTrigger_presamples,
            :counterTrigger_isArmed, :counterTrigger_arm!, :counterTrigger_reset!,
            :counterTrigger_reset, :counterTrigger_lastCounter, :counterTrigger_referenceCounter,
@@ -121,10 +122,10 @@ for op in [:currentFrame, :currentPeriod, :currentWP, :periodsPerFrame, :samples
 end
 
 for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :samplesPerStep!,
-           :keepAliveReset!, :serverMode!,
+           :keepAliveReset!, :serverMode!, :firEnabled!,
            :counterTrigger_enabled!, :counterTrigger_presamples!, :counterTrigger_arm!,
            :counterTrigger_reset!, :counterTrigger_referenceCounter!,
-           :counterTrigger_sourceType!, :counterTrigger_sourceChannel!]
+           :counterTrigger_sourceType!, :counterTrigger_sourceChannel!, :enableInstantReset!]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster, value)
@@ -142,7 +143,7 @@ for op in [:periodsPerFrame!, :samplesPerPeriod!, :decimation!, :triggerMode!, :
   end
 end
 
-for op in [:clearSequence!, :sequence!, :stopTransmission]
+for op in [:clearSequence!, :sequence!, :stopTransmission, :enableInstantReset, :instantResetTriggered]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster)
@@ -234,7 +235,7 @@ for op in [:signalTypeDAC!, :amplitudeDAC!, :frequencyDAC!, :phaseDAC!]
   end
 end
 
-for op in [:offsetDAC, :rampingDAC, :enableRamping, :enableRampDown]
+for op in [:offsetDAC, :rampingDAC, :enableRamping, :enableRampDown, :startRampDown!]
   @eval begin
     @doc """
         $($op)(rpc::RedPitayaCluster, chan::Integer)

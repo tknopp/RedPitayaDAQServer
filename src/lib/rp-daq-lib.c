@@ -43,12 +43,11 @@ static const uint32_t ANALOG_IN_MAX_VAL_INTEGER  = 0xFFF;
 // Cached parameter values.
 static rp_calib_params_t calib;
 
-/*
-static int16_t getCalibDACOffset(int channel) {
+double getCalibDACOffset(int channel) {
 	if (channel == 0) 
-		return (int16_t)(calib.dac_ch1_offs*8192.0);
+		return calib.dac_ch1_offs;
 	else if (channel == 1)
-		return (int16_t)(calib.dac_ch1_offs*8192.0);
+		return calib.dac_ch1_offs;
 	else
 		return 0;
 }
@@ -62,7 +61,7 @@ double getCalibDACScale(int channel, bool isPDM) {
 		return calib.dac_ch2_fs;
 	else
 		return 0.0;
-}*/
+}
 
 // Init stuff
 
@@ -96,6 +95,11 @@ bool isZynq7045() {
 uint32_t getFPGAImageVersion() {
 	return *version_sts;
 }
+
+uint32_t getServerVersion() {
+	return 11;
+}
+
 
 void loadBitstream() {
 	if(!access("/tmp/bitstreamLoaded", F_OK )){
@@ -162,6 +166,7 @@ int init() {
 	
 	loadBitstream();
 	printf("FPGA Image Version %u\n", getFPGAImageVersion());
+	printf("Server Version %u\n", getServerVersion());
 
 	calib_Init(); // Load calibration from EEPROM
 	calib_validate(&calib);
@@ -180,6 +185,7 @@ int init() {
 	setDACMode(DAC_MODE_STANDARD);
 	setWatchdogMode(OFF);
 	setRAMWriterMode(ADC_MODE_TRIGGERED);
+	setFIREnabled(ON);
 	setMasterTrigger(OFF);
 	setInstantResetMode(OFF);
 	setCounterSamplesPerStep(0);
@@ -205,11 +211,11 @@ int init() {
 
 uint16_t getAmplitude(int channel, int component) {
 	if(channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	if(component < 0 || component > 3) {
-		return -4;
+		return INVALID_COMPONENT;
 	}
 
 	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + AMPLITUDE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel);
@@ -218,20 +224,22 @@ uint16_t getAmplitude(int channel, int component) {
 }
 
 int setAmplitudeVolt(double amplitude, int channel, int component) {
-	return setAmplitude((uint16_t)(amplitude*8192.0), channel, component);
+
+	double scaledAmplitude = amplitude*DAC_BASESCALE*getCalibDACScale(channel, false)*2.0; // The factor of two is corrected in the FPGA, but allows more discrete amplitude values
+	if (scaledAmplitude < 0 || scaledAmplitude > 2.0*DAC_BASESCALE){
+		return INVALID_VALUE;
+	}
+	return setAmplitude((uint16_t)(scaledAmplitude), channel, component);
 }
 
 int setAmplitude(uint16_t amplitude, int channel, int component) {
-	if(amplitude < 0 || amplitude >= 8192) {
-		return -2;
-	}
 
 	if(channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	if(component < 0 || component > 3) {
-		return -4;
+		return INVALID_COMPONENT;
 	}
 
 	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + AMPLITUDE_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel);
@@ -243,7 +251,7 @@ int setAmplitude(uint16_t amplitude, int channel, int component) {
 
 int16_t getOffset(int channel) {
 	if(channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel);
@@ -253,15 +261,18 @@ int16_t getOffset(int channel) {
 }
 
 int setOffsetVolt(double offset, int channel) {
-	return setOffset((int16_t)(offset*8192.0), channel);
-}
-int setOffset(int16_t offset, int channel) {
-	if(offset < -8191 || offset >= 8192) {
-		return -2;
+
+	double scaledOffset = offset*DAC_BASESCALE*getCalibDACScale(channel,false);
+	if (scaledOffset < -DAC_BASESCALE || scaledOffset > DAC_BASESCALE){
+		return INVALID_VALUE;
 	}
+	return setOffset((int16_t)scaledOffset, channel);
+}
+
+int setOffset(int16_t offset, int channel) {
 
 	if(channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel);
@@ -274,11 +285,11 @@ int setOffset(int16_t offset, int channel) {
 
 double getFrequency(int channel, int component) {
 	if(channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	if(component < 0 || component > 3) {
-		return -4;
+		return INVALID_COMPONENT;
 	}
 
 	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
@@ -296,15 +307,15 @@ double getFrequency(int channel, int component) {
 int setFrequency(double frequency, int channel, int component)
 {
 	if(frequency < 0.03 || frequency >= ((double)BASE_FREQUENCY)) {
-		return -2;
+		return INVALID_VALUE;
 	}
 
 	if(channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	if(component < 0 || component > 3) {
-		return -4;
+		return INVALID_COMPONENT;
 	}
 
 	if(getDACMode() == DAC_MODE_STANDARD) {
@@ -330,11 +341,11 @@ int setFrequency(double frequency, int channel, int component)
 double getPhase(int channel, int component)
 {
 	if(channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	if(component < 0 || component > 3) {
-		return -4;
+		return INVALID_COMPONENT;
 	}
 
 	// Get register value
@@ -358,11 +369,11 @@ int setPhase(double phase, int channel, int component)
 	double phase_factor = phase / (2*M_PI);
 
 	if(channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	if(component < 0 || component > 3) {
-		return -4;
+		return INVALID_COMPONENT;
 	}
 
 	if(getDACMode() == DAC_MODE_STANDARD) {
@@ -405,18 +416,18 @@ int getDACMode() {
 
 int setSignalType(int signal_type, int channel, int component) {
 	if(channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	if(component < 0 || component > 2) {
-		return -4;
+		return INVALID_COMPONENT;
 	}
 
 	if((signal_type != SIGNAL_TYPE_SINE)
 			&& (signal_type != SIGNAL_TYPE_SQUARE)
 			&& (signal_type != SIGNAL_TYPE_TRIANGLE)
 			&& (signal_type != SIGNAL_TYPE_SAWTOOTH)) {
-		return -2;
+		return INVALID_VALUE;
 	}
 	
 	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET * channel);
@@ -429,11 +440,11 @@ int setSignalType(int signal_type, int channel, int component) {
 
 int getSignalType(int channel, int component) {
 	if(channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	if(component < 0 || component > 2) {
-		return -4;
+		return INVALID_COMPONENT;
 	}
 
 	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + COMPONENT_OFFSET*component + CHANNEL_OFFSET * channel);
@@ -444,12 +455,12 @@ int getSignalType(int channel, int component) {
 
 int setCalibDACScale(float value, int channel) {
 	if (channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	int16_t scale = (int16_t)(value*8191.0);
 	if (scale < -8191 || scale >= 8192) {
-		return -2;
+		return INVALID_VALUE;
 	}
 	// Config scale is stored in first component freq
 	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel);
@@ -460,13 +471,17 @@ int setCalibDACScale(float value, int channel) {
 
 int setCalibDACOffset(float value, int channel) {
 	if (channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
-	
-	int16_t offset = (int16_t)(value*8191.0);
-	if (offset < -8191 || offset >= 8192) {
-		return -2;
+
+	float scaledValue = value*DAC_BASESCALE*getCalibDACScale(channel,false);
+
+	if (scaledValue < -DAC_BASESCALE || scaledValue > DAC_BASESCALE){
+		return INVALID_VALUE;
 	}
+
+	int16_t offset = (int16_t)scaledValue;
+
 	// Config offset is stored in first component phase
 	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*0 + CHANNEL_OFFSET*channel);
 	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) offset) << 48) & ~MASK_LOWER_48);
@@ -476,13 +491,21 @@ int setCalibDACOffset(float value, int channel) {
 
 int setCalibDACLowerLimit(float value, int channel) {
 	if (channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 	
-	int16_t limit = (int16_t)(value*8191.0);
-	if (limit < -8191 || limit >= 8192) {
-		return -2;
+	float scaledValue = (value+getCalibDACOffset(channel))*DAC_BASESCALE*getCalibDACScale(channel,false) ; //todo check if + or -
+
+	if (scaledValue < -DAC_BASESCALE){
+		scaledValue = -DAC_BASESCALE;
 	}
+	else if (scaledValue>DAC_BASESCALE){
+		scaledValue = DAC_BASESCALE;
+	}
+	
+	
+	int16_t limit = (int16_t)scaledValue;
+	
 	// Config lower limit is stored in second component freq
 	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + FREQ_OFFSET + COMPONENT_OFFSET*1 + CHANNEL_OFFSET*channel);
 	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) limit) << 48) & ~MASK_LOWER_48);
@@ -493,13 +516,20 @@ int setCalibDACLowerLimit(float value, int channel) {
 
 int setCalibDACUpperLimit(float value, int channel) {
 	if (channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 	
-	int16_t limit = (int16_t)(value*8191.0);
-	if (limit < -8191 || limit >= 8192) {
-		return -2;
+	float scaledValue = (value+getCalibDACOffset(channel))*DAC_BASESCALE*getCalibDACScale(channel,false); //todo check if + or -
+
+	if (scaledValue < -DAC_BASESCALE){
+		scaledValue = -DAC_BASESCALE;
 	}
+	else if (scaledValue>DAC_BASESCALE){
+		scaledValue = DAC_BASESCALE;
+	}
+	
+	int16_t limit = (int16_t)scaledValue;
+
 	// Config upper limit is stored in second component phase
 	uint64_t register_value = *(dac_cfg + COMPONENT_START_OFFSET + PHASE_OFFSET + COMPONENT_OFFSET*1 + CHANNEL_OFFSET*channel);
 	register_value = (register_value & MASK_LOWER_48) | ((((int64_t) limit) << 48) & ~MASK_LOWER_48);
@@ -509,24 +539,27 @@ int setCalibDACUpperLimit(float value, int channel) {
 
 int setArbitraryWaveform(float* values, int channel) {
 	uint32_t *awg_cfg = NULL;
+	float calib_scale = 0.0;
 	if (channel == 0) {
 		awg_cfg = awg_0_cfg;
+		calib_scale = calib.dac_ch1_fs;
 	}
 	else if (channel == 1) {
 		awg_cfg = awg_1_cfg;
+		calib_scale = calib.dac_ch1_fs;
 	}
 	else {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	int16_t intValues[AWG_BUFF_SIZE];
 	// First prepare and check values
 	for (int i = 0; i< AWG_BUFF_SIZE; i++) {
-		int16_t value = (int16_t)(values[i]*8191.0);
-		if (value < -8191 || value >= 8192) {
-			return -2;
+		float scaledValue = values[i]*DAC_BASESCALE*calib_scale;
+		if (scaledValue < -DAC_BASESCALE || scaledValue > DAC_BASESCALE) {
+			return INVALID_VALUE;
 		}
-		intValues[i] = value;
+		intValues[i] = (int16_t)scaledValue;
 	}
 
 	for (int i = 0; i < AWG_BUFF_SIZE/2; i++) {
@@ -542,22 +575,33 @@ int setArbitraryWaveform(float* values, int channel) {
 
 int setDecimation(uint16_t decimation) {
 	if(!(decimation % 2 == 0)) {
-		return -1;
+		return INVALID_VALUE;
 	}
 
 	if(decimation < 8 || decimation > 8192) {
-		return -1;
+		return INVALID_VALUE;
 	}
-
-	// FIR Compensation filter also decimates by 2
-	*((uint16_t *)(cfg + 2)) = decimation/2;
+    
+	uint16_t internalDecimation;
+	if(getFIREnabled()) {
+		// FIR Compensation filter also decimates by 2
+		internalDecimation = decimation/2;
+	} else {
+        internalDecimation = decimation;
+	}
+	
+	*((uint16_t *)(cfg + 2)) = internalDecimation;
 	return 0;
 }
 
 uint16_t getDecimation() {
-	// FIR Compensation filter also decimates by 2
 	uint16_t value = *((uint16_t *)(cfg + 2));
-	return value*2;
+	if(getFIREnabled()) {
+		// FIR Compensation filter also decimates by 2
+		return value*2;
+	} else {
+        return value;
+	}	
 }
 
 #define BIT_MASK(__TYPE__, __ONE_COUNT__) \
@@ -620,11 +664,11 @@ int setEnableDACAll(int8_t value, int channel) {
 int setEnableDAC(int8_t value, int channel, int index) {
 
 	if(value < 0 || value >= 2) {
-		return -1;
+		return INVALID_VALUE;
 	}
 
 	if(channel < 0 || channel >= 6) {
-		return -2;
+		return INVALID_CHANNEL;
 	}
 
 	int bitpos = channel;
@@ -647,11 +691,11 @@ int setResyncDACAll(int8_t value, int channel) {
 
 int setResyncDAC(int8_t value, int channel, int index) {
 	if(channel < 0 || channel >= 2) {
-		return -2;
+		return INVALID_CHANNEL;
 	}
 
 	if (value < 0 || value >= 2)
-		return -1;
+		return INVALID_VALUE;
 
 	int bitpos = 14;
 	// Reset bits are in the 14th bit of the respective DAC channel -> 14 and 30
@@ -666,7 +710,7 @@ int setResyncDAC(int8_t value, int channel, int index) {
 
 int setResetDAC(int8_t value, int index) {
 	if (value < 0 || value >= 2)
-		return -1;
+		return INVALID_VALUE;
 
 	int bitpos = 14;
 	// Reset bit is in the 1-th channel
@@ -695,11 +739,11 @@ int setRampDownDACAll(int8_t value, int channel) {
 
 int setRampDownDAC(int8_t value, int channel, int index) {
 	if(value < 0 || value >= 2) {
-		return -1;
+		return INVALID_VALUE;
 	}
 
 	if(channel < 0 || channel > 1) {
-		return -2;
+		return INVALID_CHANNEL;
 	}
 
 	int bitpos = channel; // 0 or 1
@@ -734,7 +778,7 @@ int setPDMValue(int16_t value, int channel, int index) {
 	  }*/
 
 	if(channel < 0 || channel >= 6) {
-		return -2;
+		return INVALID_CHANNEL;
 	}
 
 	//printf("%p   %p   %d \n", (void*)pdm_cfg, (void*)((uint16_t *)(pdm_cfg+2*(channel+4*index))), 2*(channel+4*index) );
@@ -765,11 +809,13 @@ int setPDMValueVolt(float voltage, int channel, int index) {
 	if(channel >= 2 ) {
 		if (voltage > 1.8) voltage = 1.8;
 		if (voltage < 0) voltage = 0;
-		val = (voltage / 1.8) * 2038.;
+		val = (voltage / 1.8) * 2048.;
 	} else {
-		if (voltage > 1) voltage = 1;
-		if (voltage < -1) voltage = -1;
-		val = voltage * 8192.;
+		float scaledVoltage = voltage*DAC_BASESCALE*getCalibDACScale(channel,false)/4.0; // the division by 4 is corrected in the FPGA but is necessary to fit the PDM values into 14 bit to not collide with resync bit
+		// clip values to stay within 14-bit signed
+		if (scaledVoltage > 8191) scaledVoltage = 8191.0;
+		if (scaledVoltage < -8191) scaledVoltage = -8191.0;
+		val = (int16_t)scaledVoltage;
 	}
 
 	//printf("set val %04x.\n", val);
@@ -798,7 +844,7 @@ int getCounterSamplesPerStep()  {
 	return value/getDecimation();
 }
 
-int setCounterSamplesPerStep(int)  {
+int setCounterSamplesPerStep(int samples)  {
 	*((int32_t *)(cfg + 12)) = samples*getDecimation();
 	return 0;
 }
@@ -831,7 +877,7 @@ int* getPDMNextValues() {
 
 int getPDMNextValue(int channel) {
 	if(channel < 0 || channel >= 4) {
-		return -2;
+		return INVALID_CHANNEL;
 	}
 
 	int value = (int)(*((uint16_t *)(pdm_cfg + 2*channel)));
@@ -869,7 +915,7 @@ int getWatchdogMode() {
 		return ON;
 	}
 
-	return -1;
+	return INVALID_VALUE;
 }
 
 int setWatchdogMode(int mode) {
@@ -878,8 +924,37 @@ int setWatchdogMode(int mode) {
 	} else if(mode == ON) {
 		*((uint8_t *)(cfg + 1)) |= 2;
 	} else {
+		return INVALID_VALUE;
+	}
+
+	return 0;
+}
+
+int getFIREnabled() {
+	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x80) >> 7);
+
+	if(value == 0) {
+		return OFF;
+	} else if(value == 1) {
+		return ON;
+	}
+
+	return -1;
+}
+
+int setFIREnabled(int mode) {
+
+	uint16_t decimation = getDecimation();
+
+	if(mode == OFF) {
+		*((uint8_t *)(cfg + 1)) &= ~128;
+	} else if(mode == ON) {
+		*((uint8_t *)(cfg + 1)) |= 128;
+	} else {
 		return -1;
 	}
+
+	setDecimation(decimation);
 
 	return 0;
 }
@@ -893,7 +968,7 @@ int getRAMWriterMode() {
 		return ADC_MODE_TRIGGERED;
 	}
 
-	return -1;
+	return INVALID_VALUE;
 }
 
 int setRAMWriterMode(int mode) {
@@ -902,7 +977,7 @@ int setRAMWriterMode(int mode) {
 	} else if(mode == ADC_MODE_TRIGGERED) {
 		*((uint8_t *)(cfg + 1)) |= 1;
 	} else {
-		return -1;
+		return INVALID_VALUE;
 	}
 
 	return 0;
@@ -917,7 +992,7 @@ int getTriggerMode() {
 		return TRIGGER_MODE_EXTERNAL;
 	}
 
-	return -1;
+	return INVALID_VALUE;
 }
 
 int setTriggerMode(int mode) {
@@ -926,7 +1001,7 @@ int setTriggerMode(int mode) {
 	} else if(mode == TRIGGER_MODE_EXTERNAL) {
 		*((uint8_t *)(cfg + 1)) |= 16;
 	} else {
-		return -1;
+		return INVALID_VALUE;
 	}
 
 	return 0;
@@ -941,7 +1016,7 @@ int getTriggerPropagation() {
 		return ON;
 	}
 
-	return -1;
+	return INVALID_VALUE;
 }
 
 int setTriggerPropagation(int mode) {
@@ -950,7 +1025,7 @@ int setTriggerPropagation(int mode) {
 	} else if(mode == ON) {
 		*((uint8_t *)(cfg + 1)) |= 4;
 	} else {
-		return -1;
+		return INVALID_VALUE;
 	}
 
 	return 0;
@@ -967,7 +1042,7 @@ int getMasterTrigger() {
 		return ON;
 	}
 
-	return -1;
+	return INVALID_VALUE;
 }
 
 int setMasterTrigger(int mode) {
@@ -982,7 +1057,7 @@ int setMasterTrigger(int mode) {
 	} else if(mode == ON) {
 			*((uint8_t *)(cfg + 1)) |= (1 << 5);
 	} else {
-		return -1;
+		return INVALID_VALUE;
 	}
 
 	return 0;
@@ -991,7 +1066,7 @@ int setMasterTrigger(int mode) {
 // RAMPING
 int getEnableRamping(int channel) {
 	if(channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	int value = (int)((*((uint8_t *)(cfg + 10)) >> channel) & 1);
@@ -1001,16 +1076,16 @@ int getEnableRamping(int channel) {
 	} else if(value == 1) {
 		return ON;
 	}
-	return -1;
+	return INVALID_VALUE;
 }
 
 int setEnableRamping(int mode, int channel) {
 	if (mode != OFF && mode != ON) {
-		return -1;
+		return INVALID_VALUE;
 	}
 
 	if(channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	if (mode == OFF) {
@@ -1024,11 +1099,11 @@ int setEnableRamping(int mode, int channel) {
 
 int setEnableRampDown(int mode, int channel) {
 	if (mode != OFF && mode != ON) {
-		return -1;
+		return INVALID_VALUE;
 	}
 
 	if(channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	if (mode == OFF) {
@@ -1042,7 +1117,7 @@ int setEnableRampDown(int mode, int channel) {
 
 int getEnableRampDown(int channel) {
 	if(channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	int value = (int)((*((uint8_t *)(cfg + 10)) >> (channel + 2)) & 1);
@@ -1052,16 +1127,16 @@ int getEnableRampDown(int channel) {
 	} else if(value == 1) {
 		return ON;
 	}
-	return -1;	
+	return INVALID_VALUE;	
 }
 
 int setRampingFrequency(double period, int channel) {
 	if(channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 	
 	if(period < 0.03 || period >= ((double)BASE_FREQUENCY)) {
-		return -2;
+		return INVALID_VALUE;
 	}
 
 	uint64_t phase_increment = (uint64_t)round(period*pow(2, 48)/((double)BASE_FREQUENCY));
@@ -1074,7 +1149,7 @@ int setRampingFrequency(double period, int channel) {
 
 double getRampingFrequency(int channel) {
 	if(channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 	uint64_t register_value = *(dac_cfg + CHANNEL_OFFSET*channel) & MASK_LOWER_48;
 	double period_factor = register_value*((double)BASE_FREQUENCY)/pow(2, 48);
@@ -1095,7 +1170,7 @@ int getInstantResetMode() {
 		return ON;
 	}
 
-	return -1;
+	return INVALID_VALUE;
 }
 
 int setInstantResetMode(int mode) {
@@ -1104,14 +1179,14 @@ int setInstantResetMode(int mode) {
 	} else if(mode == ON) {
 		*((uint8_t *)(cfg + 1)) |= 8;
 	} else {
-		return -1;
+		return INVALID_VALUE;
 	}
 
 	return 0;
 }
 
 int getKeepAliveReset() {
-	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x40) );
+	int value = (((int)(*((uint8_t *)(cfg + 1))) & 0x40) >> 6);
 
 	if(value == 0) {
 		return OFF;
@@ -1119,7 +1194,7 @@ int getKeepAliveReset() {
 		return ON;
 	}
 
-	return -1;
+	return INVALID_VALUE;
 }
 
 int setKeepAliveReset(int mode) {
@@ -1139,7 +1214,7 @@ int setKeepAliveReset(int mode) {
 	} else if(mode == ON) {
 		*((uint8_t *)(cfg + 1)) |= 64;
 	} else {
-		return -1;
+		return INVALID_VALUE;
 	}
 
 	return 0;
@@ -1246,7 +1321,7 @@ char* getPinFromInternalPINNumber(const uint32_t pinNumber) {
 int getDIOHBridge(const char* pin) {
 	int pinInternal = getInternalPINNumber(pin);
 	if(pinInternal < 0) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	uint32_t register_value = *((uint8_t *)(cfg + 11));
@@ -1258,7 +1333,7 @@ int getDIOHBridge(const char* pin) {
 int setDIOHBridge(const char* pin, int value) {
 	int pinInternal = getInternalPINNumber(pin);
 	if(pinInternal < 0) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	if(value == DIO_OUT) {
@@ -1266,7 +1341,7 @@ int setDIOHBridge(const char* pin, int value) {
 	} else if(value == DIO_IN) {
 		*((uint8_t *)(cfg + 11)) |= (0x1 << (pinInternal));
 	} else {
-		return -1;
+		return INVALID_VALUE;
 	}
 
 	return 0;
@@ -1276,7 +1351,7 @@ int setDIOHBridge(const char* pin, int value) {
 int getDIODirection(const char* pin) {
 	int pinInternal = getInternalPINNumber(pin);
 	if(pinInternal < 0) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	uint32_t register_value = *((uint8_t *)(cfg + 9));
@@ -1292,7 +1367,7 @@ int getDIODirection(const char* pin) {
 int setDIODirection(const char* pin, int value) {
 	int pinInternal = getInternalPINNumber(pin);
 	if(pinInternal < 0) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	if(value == DIO_OUT) {
@@ -1300,7 +1375,7 @@ int setDIODirection(const char* pin, int value) {
 	} else if(value == DIO_IN) {
 		*((uint8_t *)(cfg + 9)) |= (0x1 << (pinInternal));
 	} else {
-		return -1;
+		return INVALID_VALUE;
 	}
 
 	return 0;
@@ -1309,7 +1384,7 @@ int setDIODirection(const char* pin, int value) {
 int setDIO(const char* pin, int value) {
 	int pinInternal = getInternalPINNumber(pin);
 	if(pinInternal < 0) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	if(value == OFF) {
@@ -1317,7 +1392,7 @@ int setDIO(const char* pin, int value) {
 	} else if(value == ON) {
 		*((uint8_t *)(cfg + 8)) |= (0x1 << (pinInternal));
 	} else {
-		return -1;
+		return INVALID_VALUE;
 	}
 
 	return 0;
@@ -1326,7 +1401,7 @@ int setDIO(const char* pin, int value) {
 int getDIO(const char* pin) {
 	int pinInternal = getInternalPINNumber(pin);
 	if(pinInternal < 0) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 
 	uint32_t register_value = *((uint8_t *)(dio_sts));
@@ -1510,14 +1585,14 @@ rp_calib_params_t getDefaultCalib(){
 		calib.dac_ch1_fs = 1.0;
 		calib.dac_ch2_offs = 0.0;
 		calib.dac_ch2_fs = 1.0;
-		calib.adc_ch1_fs = 1.0/8192.0;
+		calib.adc_ch1_fs = 1.0/32768.0;
 		calib.adc_ch1_offs = 0.0;
-		calib.adc_ch2_fs = 1.0/8192.0;
+		calib.adc_ch2_fs = 1.0/32768.0;
 		calib.adc_ch2_offs = 0.0;
 		calib.dac_ch1_lower = -1.0;
-    calib.dac_ch1_upper = 1.0;
-    calib.dac_ch2_lower = -1.0;
-    calib.dac_ch2_upper = 1.0;
+		calib.dac_ch1_upper = 1.0;
+		calib.dac_ch2_lower = -1.0;
+		calib.dac_ch2_upper = 1.0;
     return calib;
 }
 
@@ -1589,20 +1664,26 @@ int calib_validate(rp_calib_params_t * calib_params) {
 }
 
 int calib_apply() {
-	setCalibDACScale(calib.dac_ch1_fs, 0);
+	setCalibDACScale(1.0, 0);
 	setCalibDACOffset(calib.dac_ch1_offs, 0);
 	setCalibDACLowerLimit(calib.dac_ch1_lower, 0);
 	setCalibDACUpperLimit(calib.dac_ch1_upper, 0);
-	setCalibDACScale(calib.dac_ch2_fs, 1);
+	setCalibDACScale(1.0, 1);
 	setCalibDACOffset(calib.dac_ch2_offs, 1);
 	setCalibDACLowerLimit(calib.dac_ch2_lower, 1);
 	setCalibDACUpperLimit(calib.dac_ch2_upper, 1);
+
+	// set every output to zero to avoid values written to the registers with old scale factors
+	stopTx();
+	setOffset(0, 0);
+	setOffset(0, 1);
+	
 	return 0;
 }
 
 int calib_setADCOffset(rp_calib_params_t * calib_params, float value, int channel) {
 	if (channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 	if (channel == 0) {
 		calib_params->adc_ch1_offs = value;
@@ -1617,7 +1698,7 @@ int calib_setADCOffset(rp_calib_params_t * calib_params, float value, int channe
 
 int calib_setADCScale(rp_calib_params_t * calib_params, float value, int channel) {
 	if (channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 	if (channel == 0) {
 		calib_params->adc_ch1_fs = value;
@@ -1632,13 +1713,19 @@ int calib_setADCScale(rp_calib_params_t * calib_params, float value, int channel
 
 int calib_setDACOffset(rp_calib_params_t * calib_params, float value, int channel) {
 	if (channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 	if (channel == 0) {
+		if(value*calib_params->dac_ch1_fs < -1.0 || value*calib_params->dac_ch1_fs > 1.0){
+			return INVALID_VALUE;
+		}
 		calib_params->dac_ch1_offs = value;
 		calib_params->set_flags |= (1 << 5);
 	}
 	else if (channel == 1) {
+		if(value*calib_params->dac_ch2_fs < -1.0 || value*calib_params->dac_ch2_fs > 1.0){
+			return INVALID_VALUE;
+		}
 		calib_params->dac_ch2_offs = value;
 		calib_params->set_flags |= (1 << 7);
 	}
@@ -1647,7 +1734,7 @@ int calib_setDACOffset(rp_calib_params_t * calib_params, float value, int channe
 
 int calib_setDACScale(rp_calib_params_t * calib_params, float value, int channel) {
 	if (channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 	if (channel == 0) {
 		calib_params->dac_ch1_fs = value;
@@ -1662,7 +1749,7 @@ int calib_setDACScale(rp_calib_params_t * calib_params, float value, int channel
 
 int calib_setDACLowerLimit(rp_calib_params_t * calib_params, float value, int channel) {
 	if (channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 	if (channel == 0) {
 		calib_params->dac_ch1_lower = value;
@@ -1677,7 +1764,7 @@ int calib_setDACLowerLimit(rp_calib_params_t * calib_params, float value, int ch
 
 int calib_setDACUpperLimit(rp_calib_params_t * calib_params, float value, int channel) {
 	if (channel < 0 || channel > 1) {
-		return -3;
+		return INVALID_CHANNEL;
 	}
 	if (channel == 0) {
 		calib_params->dac_ch1_upper = value;
@@ -1823,7 +1910,7 @@ bool counter_trigger_setSelectedChannelType(uint32_t channelType) {
 	}
 	else
 	{
-		return -1;
+		return INVALID_VALUE;
 	}
 
 	return 0;

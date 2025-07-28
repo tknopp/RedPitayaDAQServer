@@ -42,7 +42,7 @@ module signal_generator #
         end
         else
         begin
-            phase <= (s_axis_tdata_phase >>> (AXIS_TDATA_PHASE_WIDTH-DAC_WIDTH));			
+            phase <= (s_axis_tdata_phase >>> (AXIS_TDATA_PHASE_WIDTH-DAC_WIDTH));
             
             case (signal_type)
             	0 : begin // Sine
@@ -56,13 +56,13 @@ module signal_generator #
             	2 : begin // Triangle
             	    dac_out_temp_0 <= (phase << 1);
             	
-					if (dac_out_temp_0 <= -8192)
+					if (dac_out_temp_0 <= -(1<<(DAC_WIDTH-1)))
 					begin
-						dac_out <= -dac_out_temp_0-16384;
+						dac_out <= -dac_out_temp_0-(1<<DAC_WIDTH);
 					end
-					else if (dac_out_temp_0 >= 8190)
+					else if (dac_out_temp_0 >= (1<<(DAC_WIDTH-1)))
 					begin
-						dac_out <= -dac_out_temp_0+16384;
+						dac_out <= -dac_out_temp_0+(1<<DAC_WIDTH);
 					end
 					else
 					begin

@@ -1,7 +1,8 @@
 export SignalType, SINE, TRIANGLE, SAWTOOTH, DACPerformanceData, DACConfig, ArbitraryWaveform, waveformDAC!, scaleWaveformDAC!,
-amplitudeDAC, amplitudeDAC!,offsetDAC, offsetDAC!, normalize,
+amplitudeDAC, amplitudeDAC!, offsetDAC, offsetDAC!, normalize,
 frequencyDAC, frequencyDAC!, phaseDAC, phaseDAC!, signalTypeDAC, signalTypeDAC!,
-rampingDAC!, rampingDAC, enableRamping!, enableRamping, enableRampDown, enableRampDown!, RampingState, RampingStatus, rampingStatus, rampDownDone, rampUpDone
+rampingDAC!, rampingDAC, enableRamping!, enableRamping, enableRampDown, enableRampDown!, RampingState, RampingStatus, rampingStatus, rampDownDone, rampUpDone, startRampDown!,
+enableInstantReset!, enableInstantReset, instantResetPinStatus, instantResetTriggered
 
 """
     SignalType
@@ -12,6 +13,11 @@ See [`signalTypeDAC`](@ref), [`signalTypeDAC!`](@ref).
 """
 @enum SignalType SINE TRIANGLE SAWTOOTH
 
+"""
+    ArbitraryWaveform <: AbstractArray
+
+Represents the arbitrary waveform component of the RedPitaya as a _awgBufferSize element vector of Float32
+"""
 mutable struct ArbitraryWaveform <: AbstractArray{Float32, 1}
   samples::Vector{Float32}
   ArbitraryWaveform(samples::Vector{Float32}) = length(samples) != _awgBufferSize ? error("Unexpected waveform length $(length(samples)), expected $_awgBufferSize") : new(samples)
@@ -26,9 +32,16 @@ ArbitraryWaveform(f::Function, min=0, max=_awgBufferSize) = ArbitraryWaveform([f
 function waveform!_(rp::RedPitaya, channel::Integer, wave::ArbitraryWaveform)
   send(rp, "RP:DAC:CH$(channel-1):AWG")
   write(rp.dataSocket, wave[1:end])
-  return parse(Bool, receive(rp))
+  return parseErrorCodes(receive(rp), "RP:DAC:CH$(channel-1):AWG")
 end
 
+"""
+    waveformDAC!(rp::RedPitaya, channel::Integer, wave)
+
+Set the arbitrary waveform component of `channel` to `wave`.
+
+`wave` can either be an `ArbitraryWaveform`, `SignalType`, a vector of length $(_awgBufferSize), or `nothing` (sets waveform to zero).
+"""
 function waveformDAC!(rp::RedPitaya, channel::Integer, wave::ArbitraryWaveform)
   reply = waveform!_(rp, channel, wave)
   if reply
@@ -36,7 +49,15 @@ function waveformDAC!(rp::RedPitaya, channel::Integer, wave::ArbitraryWaveform)
   end
   return reply
 end
-scaleWaveformDAC!(rp::RedPitaya, channel::Integer, scale::Float64) = waveform!_(rp, channel, ArbitraryWaveform(scale.*rp.awgs[:, channel]))
+
+"""
+    scaleWaveformDAC!(rp::RedPitaya, channel::Integer, scale)
+
+Scale the arbitrary waveform component set by `waveformDAC!` with `scale`.
+The resulting amplitude depends on the values originally set!
+If the waveform has amplitude 1, this is equivalent to `amplitudeDAC!` on the arbitrary waveform component.
+"""
+scaleWaveformDAC!(rp::RedPitaya, channel::Integer, scale::Real) = waveform!_(rp, channel, ArbitraryWaveform(scale.*rp.awgs[:, channel]))
 waveformDAC!(rp::RedPitaya, channel::Integer, samples::Vector{T}) where T <: AbstractFloat = waveformDAC!(rp, channel, ArbitraryWaveform(samples))
 waveformDAC!(rp::RedPitaya, channel::Integer, wave::Nothing) = waveformDAC!(rp, channel, ArbitraryWaveform(x-> Float32(0.0)))
 function waveformDAC!(rp::RedPitaya, channel::Integer, signal::SignalType)
@@ -129,9 +150,6 @@ julia> amplitudeDAC(rp, 1, 1)
 ```
 """
 function amplitudeDAC!(rp::RedPitaya, channel, component, value)
-  if value > 1.0
-    error("$value is larger than 1.0 V!")
-  end
   command = scpiCommand(amplitudeDAC!, channel, component, value)
   return query(rp, command, Bool)
 end
@@ -177,27 +195,18 @@ julia> offsetDAC(rp, 1)
 ```
 """
 function offsetDAC!(rp::RedPitaya, channel, value)
-  if value > 1.0
-    error("$value is larger than 1.0 V!")
-  end
   command = scpiCommand(offsetDAC!, channel, value)
   return query(rp, command, Bool)
 end
 scpiCommand(::typeof(offsetDAC!), channel, value) = string("RP:DAC:CH", Int(channel)-1, ":OFF ", Float64(value))
 scpiReturn(::typeof(offsetDAC!)) = Bool
 function offsetDACSeq!(rp::RedPitaya, channel, value)
-  if value > 1.0
-    error("$value is larger than 1.0 V!")
-  end
   command = scpiCommand(offsetDACSeq!, channel, value)
   return query(rp, command, Bool)
 end
 scpiCommand(::typeof(offsetDACSeq!), channel, value) = string("RP:DAC:SEQ:CH", Int(channel)-1, ":OFF ", Float64(value))
 scpiReturn(::typeof(offsetDACSeq!)) = Bool
 function offsetDACSeq!(config::DACConfig, channel, value)
-  if value > 1.0
-    error("$value is larger than 1.0 V!")
-  end
   config.offsets[channel] = value
 end
 
@@ -312,18 +321,18 @@ function phaseDACSeq!(config::DACConfig, channel, component, value)
 end
 
 """
-    signalTypeDAC!(rp::RedPitaya, channel, value)
+    signalTypeDAC(rp::RedPitaya, channel, component)
 
-Return the signalType of composite waveform for `channel`.
+Return the signalType of composite waveform `component` for `channel`.
 
 See [`signalTypeDAC!`](@ref).
 
 # Examples
 ```julia
-julia> signalTypeDAC!(rp, 1, SINE);
+julia> signalTypeDAC!(rp, 1, 1, SINE);
 true
 
-julia> signalTypeDAC(rp, 1)
+julia> signalTypeDAC(rp, 1, 1)
 SINE
 ```
 """
@@ -340,18 +349,18 @@ function signalTypeDAC!(rp::RedPitaya, channel, component, sigType::String)
   return signalTypeDAC!(rp, channel, component, stringToEnum(SignalType, sigType))
 end
 """
-    signalTypeDAC!(rp::RedPitaya, channel, value)
+    signalTypeDAC!(rp::RedPitaya, channel, component, value)
 
-Set the signalType of composite waveform for `channel`. Return `true` if the command was successful.
+Set the signalType of composite waveform `component` for `channel`. Return `true` if the command was successful.
 
 See [`signalTypeDAC`](@ref).
 
 # Examples
 ```julia
-julia> signalTypeDAC!(rp, 1, SINE);
+julia> signalTypeDAC!(rp, 1, 1, SINE);
 true
 
-julia> signalTypeDAC(rp, 1)
+julia> signalTypeDAC(rp, 1, 1)
 SINE
 ```
 """
@@ -361,7 +370,11 @@ end
 scpiCommand(::typeof(signalTypeDAC!), channel, component, sigType) = string("RP:DAC:CH", Int(channel)-1, ":COMP", Int(component)-1, ":SIGnaltype ", string(sigType))
 scpiReturn(::typeof(signalTypeDAC!)) = Bool
 
+"""
+    rampingDAC!(rp::RedPitaya, channel, value)
 
+Configure the DAC of `channel` to ramp for `value` seconds. 
+"""
 function rampingDAC!(rp::RedPitaya, channel, value)
   command = scpiCommand(rampingDAC!, channel, value)
   return query(rp, command, scpiReturn(rampingDAC!))
@@ -389,16 +402,27 @@ scpiReturn(::typeof(enableRamping)) = String
 parseReturn(::typeof(enableRamping), ret) = occursin("ON", ret)
 
 function enableRampDown!(rp::RedPitaya, channel, value)
+  Base.depwarn("enableRampDown! is deprecated and will potentially be removed in a future relase. Please switch to using startRampDown!", :enableRampDown!)
   return query(rp, scpiCommand(enableRampDown!, channel, value), scpiReturn(enableRampDown!))
 end
 scpiCommand(::typeof(enableRampDown!), channel, val::Bool) = scpiCommand(enableRampDown!, channel, val ? "ON" : "OFF")
 scpiCommand(::typeof(enableRampDown!), channel, val::String) = string("RP:DAC:CH", Int(channel)-1, ":RAMPing:DoWN ", val)
 scpiReturn(::typeof(enableRampDown!)) = Bool
 
-enableRampDown(rp::RedPitaya, channel) = occursin("ON", query(rp, scpiCommand(enableRampDown, channel)))
+function enableRampDown(rp::RedPitaya, channel) 
+  Base.depwarn("enableRampDown is deprecated and will potentially be removed in a future release. Please check if your call to enableRampDown is intended and if yes file an issue",:enableRampDown)
+  occursin("ON", query(rp, scpiCommand(enableRampDown, channel)))
+end
 scpiCommand(::typeof(enableRampDown), channel) = string("RP:DAC:CH", Int(channel)-1, ":RAMPing:DoWN?")
 scpiReturn(::typeof(enableRampDown)) = String
 parseReturn(::typeof(enableRampDown), ret) = occursin("ON", ret)
+
+function startRampDown!(rp::RedPitaya, channel)
+  return query(rp, scpiCommand(startRampDown!, channel), scpiReturn(startRampDown!))
+end
+scpiCommand(::typeof(startRampDown!), channel) = string("RP:DAC:CH", Int(channel)-1, ":RAMPing:DoWN ON")
+scpiReturn(::typeof(startRampDown!)) = Bool
+
 
 function rampingStatus(rp::RedPitaya)
   status = query(rp, scpiCommand(rampingStatus), scpiReturn(rampingStatus))
@@ -426,3 +450,43 @@ function rampUpDone(rp::RedPitaya)
   status = rampingStatus(rp)
   done = (!status.enableCh1 || status.stateCh1 != UP) && (!status.enableCh2 || status.stateCh2 != UP)
 end
+
+"""
+    enableInstantReset!(rp::RedPitaya, value)
+
+Arm or disarm the instant reset pin (DIO3_P). `value` can be either "ON", "OFF" or a boolean.
+"""
+function enableInstantReset!(rp::RedPitaya, value)
+  return query(rp, scpiCommand(enableInstantReset!, value), scpiReturn(enableInstantReset!))
+end
+scpiCommand(::typeof(enableInstantReset!), val::Bool) = scpiCommand(enableInstantReset!, val ? "ON" : "OFF")
+scpiCommand(::typeof(enableInstantReset!), val::String) = string("RP:InstantReset:MODe ", val)
+scpiReturn(::typeof(enableInstantReset!)) = Bool
+
+"""
+    enableInstantReset(rp::RedPitaya)
+
+Query if the instant reset is enabled
+"""
+enableInstantReset(rp::RedPitaya) = occursin("ON", query(rp, scpiCommand(enableInstantReset)))
+scpiCommand(::typeof(enableInstantReset)) = "RP:InstantReset:MODe?"
+scpiReturn(::typeof(enableInstantReset)) = String
+parseReturn(::typeof(enableInstantReset), ret) = occursin("ON", ret)
+
+"""
+    instantResetPinStatus(rp::RedPitaya)
+
+Returns the current state of the instant reset pin DIO3_P.
+"""
+instantResetPinStatus(rp::RedPitaya) = query(rp, scpiCommand(instantResetPinStatus), scpiReturn(instantResetPinStatus))
+scpiCommand(::typeof(instantResetPinStatus)) = "RP:InstantReset:STATus?"
+scpiReturn(::typeof(instantResetPinStatus)) = Bool
+
+"""
+    instantResetTriggered(rp::RedPitaya)
+
+Returns `true` if the instant reset has been triggered during the running acquisition. Will reset after turning off the master trigger.
+"""
+instantResetTriggered(rp::RedPitaya) = query(rp, scpiCommand(instantResetTriggered), scpiReturn(instantResetTriggered))
+scpiCommand(::typeof(instantResetTriggered)) = "RP:InstantReset:TRIGgered?"
+scpiReturn(::typeof(instantResetTriggered)) = Bool

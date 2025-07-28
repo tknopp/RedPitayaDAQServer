@@ -2,7 +2,7 @@ export TriggerMode, INTERNAL, EXTERNAL, ADCPerformanceData, RPStatus, Performanc
 decimation, decimation!, numChan, samplesPerPeriod, samplesPerPeriod!, periodsPerFrame, periodsPerFrame!,
 currentWP, currentPeriod, currentFrame, masterTrigger, masterTrigger!, keepAliveReset, keepAliveReset!,
 triggerMode, triggerMode!, overwritten, corrupted, serverStatus, performanceData,
-readSamples, startPipelinedData, stopTransmission, triggerPropagation, triggerPropagation!
+readSamples, startPipelinedData, stopTransmission, triggerPropagation, triggerPropagation!, firEnabled, firEnabled!
 
 """
     TriggerMode
@@ -279,6 +279,29 @@ keepAliveReset(rp::RedPitaya) = occursin("ON", query(rp, scpiCommand(keepAliveRe
 scpiCommand(::typeof(keepAliveReset)) = "RP:TRIGger?"
 scpiReturn(::typeof(keepAliveReset)) = String
 parseReturn(::typeof(keepAliveReset), ret) = occursin("ON", ret)
+
+"""
+    firEnabled!(rp::RedPitaya, val::Bool)
+
+Set the firEnabled to `val`.
+"""
+function firEnabled!(rp::RedPitaya, val::Bool)
+  return query(rp, scpiCommand(firEnabled!, val), scpiReturn(firEnabled!))
+end
+scpiCommand(::typeof(firEnabled!), val::Bool) = scpiCommand(firEnabled!, val ? "ON" : "OFF")
+scpiCommand(::typeof(firEnabled!), val::String) = string("RP:ADC:FIREnabled ", val)
+scpiReturn(::typeof(firEnabled!)) = Bool
+"""
+    firEnabled(rp::RedPitaya)
+
+Determine whether the firEnabled is set.
+"""
+firEnabled(rp::RedPitaya) = occursin("ON", query(rp, scpiCommand(firEnabled)))
+scpiCommand(::typeof(firEnabled)) = "RP:ADC:FIREnabled?"
+scpiReturn(::typeof(firEnabled)) = String
+parseReturn(::typeof(firEnabled), ret) = occursin("ON", ret)
+
+
 
 
 # "INTERNAL" or "EXTERNAL"

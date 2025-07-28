@@ -40,13 +40,15 @@ function readSamplesHeartbeat(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaCl
   end
 end
 
-correctFilterDelay(rpu::Union{RedPitaya, RedPitayaCluster}, wpStart) = correctFilterDelay(wpStart, decimation(rpu))
-correctFilterDelay(rpcv::RedPitayaClusterView, wpStart) = correctFilterDelay(rpcv.rpc, wpStart)
-function correctFilterDelay(wpStart::Int64, dec::Int64)
+correctFilterDelay(rpu::Union{RedPitaya, RedPitayaCluster}, wpStart; kwargs...) = correctFilterDelay(wpStart, decimation(rpu); fir_enabled=firEnabled(rpu), kwargs...)
+correctFilterDelay(rpcv::RedPitayaClusterView, wpStart; kwargs...) = correctFilterDelay(rpcv.rpc, wpStart; kwargs...)
+function correctFilterDelay(wpStart::Int64, dec::Int64; fir_enabled::Bool = true)
   cic_stages = 6
   fir_taps = 92
-  cicDelay = (((dec/2-1)/2*cic_stages))/dec
-  firDelay = ((fir_taps-1)/2)/2
+  dec_div = fir_enabled ? 2 : 1
+
+  cicDelay = fir_enabled ? ((((dec/dec_div-1)/2*cic_stages))/dec) : (dec-1)/2*cic_stages/dec
+  firDelay = fir_enabled ? (((fir_taps-1)/2)/2) : 0
   delay = Int64(round((cicDelay + firDelay), RoundUp))
   correctedWp = wpStart + delay
   @debug "Filter delay corrected $wpStart to $correctedWp ($cicDelay, $firDelay, $delay)"
@@ -66,7 +68,8 @@ Request and receive `numOfRequestedSamples` samples from `wpStart` on in a pipel
 
 If `rpInfo` is set to a `RPInfo`, the `PerformanceData` sent after every `chunkSize` samples will be pushed into `rpInfo`.
 """
-function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; chunkSize::Int64 = 25000, rpInfo=nothing, correct_filter_delay::Bool = true)
+function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64; 
+                     chunkSize::Int64 = 25000, rpInfo=nothing, correct_filter_delay::Bool = true)
   numOfReceivedSamples = 0
   index = 1
   rawData = zeros(Int16, numChan(rpu), numOfRequestedSamples)
@@ -109,7 +112,8 @@ Request and receive `numOfRequestedSamples` samples from `wpStart` on in a pipel
 
 See [`SampleChunk`](@ref).
 """
-function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64, channel::Channel; chunkSize::Int64 = 25000, correct_filter_delay::Bool = true)
+function readSamples(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, wpStart::Int64, numOfRequestedSamples::Int64, channel::Channel; 
+                     chunkSize::Int64 = 25000, correct_filter_delay::Bool = true)
   numOfReceivedSamples = 0
   chunkBuffer = zeros(Int16, chunkSize * 2, length(rpu))
 
@@ -189,7 +193,7 @@ See [`readSamples`](@ref), [`convertSamplesToFrames`](@ref), [`samplesPerPeriod`
 - `rpInfo=nothing`: see `readSamples`
 - `useCalibration`: convert from Int16 samples to Float32 values based on `RedPitaya`s calibration
 """
-function readFrames(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; rpInfo=nothing, chunkSize = 50000, useCalibration = false, correct_filter_delay::Bool = true)
+function readFrames(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startFrame, numFrames, numBlockAverages=1, numPeriodsPerPatch=1; useCalibration = false, kwargs...)
   numSampPerPeriod = samplesPerPeriod(rpu)
   numPeriods = periodsPerFrame(rpu)
   numSampPerFrame = numSampPerPeriod * numPeriods
@@ -202,7 +206,7 @@ function readFrames(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}
   numOfRequestedSamples = numFrames * numSampPerFrame
 
   # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
-  rawSamples = readSamples(rpu, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo, correct_filter_delay = correct_filter_delay)
+  rawSamples = readSamples(rpu, Int64(wpStart), Int64(numOfRequestedSamples); kwargs...)
 
   # Reshape/Avg Data
   if useCalibration
@@ -302,7 +306,7 @@ See [`readSamples`](@ref), [`convertSamplesToPeriods!`](@ref), [`samplesPerPerio
 - `rpInfo=nothing`: see `readSamples`
 - `useCalibration`: convert samples based on `RedPitaya`s calibration
 """
-function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startPeriod, numPeriods, numBlockAverages=1; rpInfo=nothing, chunkSize = 50000, useCalibration = false, correct_filter_delay::Bool = true)
+function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView}, startPeriod, numPeriods, numBlockAverages=1; useCalibration = false, kwargs...)
   numSampPerPeriod = samplesPerPeriod(rpu)
 
   if rem(numSampPerPeriod,numBlockAverages) != 0
@@ -316,7 +320,7 @@ function readPeriods(rpu::Union{RedPitaya,RedPitayaCluster, RedPitayaClusterView
   numOfRequestedSamples = numPeriods * numSampPerPeriod
 
   # rawSamples Int16 numofChan(rpc) x numOfRequestedSamples
-  rawSamples = readSamples(rpu, Int64(wpStart), Int64(numOfRequestedSamples), chunkSize = chunkSize, rpInfo = rpInfo, correct_filter_delay = correct_filter_delay)
+  rawSamples = readSamples(rpu, Int64(wpStart), Int64(numOfRequestedSamples); kwargs...)
 
   # Reshape/Avg Data
   if useCalibration
