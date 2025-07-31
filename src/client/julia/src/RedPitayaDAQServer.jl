@@ -137,6 +137,17 @@ const ERROR_CODES = Dict(
   -7=>"Sequence is in invalid state",
 )
 
+parseReturn(f::Function, ret) = parseReturn(scpiReturn(f), ret, f)
+function parseReturn(T::DataType, ret, cmd=nothing)
+  if T == String
+    return ret[2:end-1] # Strings are wrapped like this: "\"OUT\""
+  elseif T == Bool
+    return parseErrorCodes(ret, cmd)
+  else
+    parse(T, ret)
+  end
+end
+
 function parseErrorCodes(reply, cmd=nothing)
   res = parse(Int, reply)
     if res <= 0
@@ -158,13 +169,7 @@ Waits for `timeout` seconds and checks every `timeout/N` seconds.
 """
 function query(rp::RedPitaya, cmd::String, T::Type, timeout::Number=getTimeout())
   reply = query(rp, cmd, timeout)
-  if T == String
-    return reply[2:end-1] # Strings are wrapped like this: "\"OUT\""
-  elseif T == Bool
-    return parseErrorCodes(reply, cmd)
-  else
-    parse(T, reply)
-  end
+  return parseReturn(T, reply, cmd)
 end
 
 # connect with timeout implementation
@@ -470,7 +475,6 @@ end
 
 scpiCommand(f::Function, args...) = error("Function $(string(f)) does not support scpiCommand")
 scpiReturn(f::Function) = typeof(nothing)
-parseReturn(f::Function, ret) = parse(scpiReturn(f), ret)
 
 export setTimeout
 """
