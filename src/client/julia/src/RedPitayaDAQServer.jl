@@ -246,9 +246,9 @@ end
 
 function imgversion(rp::RedPitaya)
   try 
-    return query(rp, scpiCommand(imgversion), scpiReturn(imgversion), 0.2)
+    return query(rp, scpiCommand(imgversion), scpiReturn(imgversion), 0.5)
   catch e
-    query(rp, "SYSTem:VERSion?", Float32, 0.2) # verify that the RP answers at all
+    query(rp, "SYSTem:VERSion?", Float32, 0.5) # verify that the RP answers at all
     @warn "imgversion was added with Version 0.7, the RedPitaya is running an older version!"
     return -1    
   end
@@ -258,9 +258,9 @@ scpiReturn(::typeof(imgversion)) = UInt32
 
 function serverversion(rp::RedPitaya)
   try 
-    return query(rp, scpiCommand(serverversion), scpiReturn(serverversion), 0.2)
+    return query(rp, scpiCommand(serverversion), scpiReturn(serverversion), 0.5)
   catch e
-    query(rp, "SYSTem:VERSion?", Float32, 0.2) # verify that the RP answers at all
+    query(rp, "SYSTem:VERSion?", Float32, 0.5) # verify that the RP answers at all
     @warn "serverversion was added with Version 0.11, the RedPitaya is running an older server!"
     return -1    
   end
