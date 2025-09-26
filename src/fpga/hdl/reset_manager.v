@@ -322,8 +322,10 @@ assign ramping_enable[0] = ramping_cfg[0];
 assign ramping_enable[1] = ramping_cfg[1];
 assign start_ramp_down[0] = ramping_cfg[2] || ~stateOutputOn;
 assign start_ramp_down[1] = ramping_cfg[3] || ~stateOutputOn;
-assign pdm_output_on[3:0] = stateOutputOn;
-
+assign pdm_output_on[0] = stateOutputOn;
+assign pdm_output_on[1] = stateOutputOn;
+assign pdm_output_on[2] = stateOutputOn;
+assign pdm_output_on[3] = stateOutputOn;
 
 
 endmodule
